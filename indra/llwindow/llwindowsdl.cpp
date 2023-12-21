@@ -373,6 +373,14 @@ bool LLWindowSDL::createContext(int x, int y, int width, int height, int bits, b
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, depthBits);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, stencilBits);
 
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+#if LL_DARWIN
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+#else
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
+#endif
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
     U32 context_flags = 0;
