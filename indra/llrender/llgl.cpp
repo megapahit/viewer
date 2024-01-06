@@ -56,6 +56,9 @@
 
 #if LL_WINDOWS
 #include "lldxhardware.h"
+#elif LL_LINUX || __FreeBSD__
+#define GLX_GLXEXT_PROTOTYPES 1
+#include <GL/glx.h>
 #endif
 
 #ifdef _DEBUG
@@ -1151,7 +1154,7 @@ bool LLGLManager::initGL()
     // from being recognized as ATI.
     // NOTE: AMD has been pretty good about not breaking this check, do not rename without good reason
     if (mGLVendor.substr(0,4) == "ATI "
-#if LL_LINUX
+#if LL_LINUX || __FreeBSD__
          || mGLVendor.find("AMD") != std::string::npos
 #endif //LL_LINUX
          )
@@ -1222,7 +1225,7 @@ bool LLGLManager::initGL()
         }
     } else
 #endif
-#if LL_WINDOWS || LL_LINUX
+#if LL_WINDOWS || LL_LINUX || __FreeBSD__
     if (mHasNVXGpuMemoryInfo)
     {
         GLint mem_kb = 0;
@@ -1235,6 +1238,13 @@ bool LLGLManager::initGL()
         }
     }
 #endif
+#if LL_LINUX || __FreeBSD__
+    if (!mVRAM)
+    {
+        auto queryInteger = (PFNGLXQUERYCURRENTRENDERERINTEGERMESAPROC)glXGetProcAddressARB((const GLubyte *)"glXQueryCurrentRendererIntegerMESA");
+        queryInteger(GLX_RENDERER_VIDEO_MEMORY_MESA, &mVRAM);
+    }
+#endif // LL_LINUX || __FreeBSD__
 
 #if LL_WINDOWS
     if (mVRAM < 256)
@@ -1417,7 +1427,7 @@ void LLGLManager::shutdownGL()
 
 void LLGLManager::initExtensions()
 {
-#if LL_LINUX
+#if LL_LINUX || __FreeBSD__
     glh_init_extensions("");
 #endif
 #if LL_DARWIN
@@ -1443,7 +1453,7 @@ void LLGLManager::initExtensions()
     mHasTransformFeedback = mGLVersion >= 3.99f;
     mHasDebugOutput = mGLVersion >= 4.29f;
 
-#if LL_WINDOWS || LL_LINUX
+#if LL_WINDOWS || LL_LINUX || __FreeBSD__
     if( gGLHExts.mSysExts )
         mHasNVXGpuMemoryInfo = ExtensionExists("GL_NVX_gpu_memory_info", gGLHExts.mSysExts);
     else
