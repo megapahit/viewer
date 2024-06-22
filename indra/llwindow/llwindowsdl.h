@@ -222,7 +222,6 @@ protected:
     U32 mGrabbyKeyFlags = 0;
 
     SDL_Window *mWindow = nullptr;
-    SDL_Surface *mSurface;
     SDL_GLContext mContext;
     SDL_Cursor *mSDLCursors[UI_CURSOR_COUNT];
 

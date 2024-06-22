@@ -420,15 +420,12 @@ bool LLWindowSDL::createContext(int x, int y, int width, int height, int bits, b
         setupFailure("GL Context failed to set current failure", "Error", OSMB_OK);
     }
 
-    mSurface = SDL_GetWindowSurface(mWindow);
     if(mFullscreen)
     {
-        if (mSurface)
+        if (mWindow)
         {
             mFullscreen = true;
-            mFullscreenWidth = mSurface->w;
-            mFullscreenHeight = mSurface->h;
-            mFullscreenBits    = mSurface->format->BitsPerPixel;
+            SDL_GetWindowSize(mWindow, &mFullscreenWidth, &mFullscreenHeight);
             mFullscreenRefresh = -1;
 
             LL_INFOS() << "Running at " << mFullscreenWidth
@@ -803,10 +800,9 @@ bool LLWindowSDL::getPosition(LLCoordScreen *position) const
 
 bool LLWindowSDL::getSize(LLCoordScreen *size) const
 {
-    if (mSurface)
+    if (mWindow)
     {
-        size->mX = mSurface->w;
-        size->mY = mSurface->h;
+        SDL_GetWindowSize(mWindow, &size->mX, &size->mY);
         return true;
     }
 
@@ -815,10 +811,9 @@ bool LLWindowSDL::getSize(LLCoordScreen *size) const
 
 bool LLWindowSDL::getSize(LLCoordWindow *size) const
 {
-    if (mSurface)
+    if (mWindow)
     {
-        size->mX = mSurface->w;
-        size->mY = mSurface->h;
+        SDL_GetWindowSize(mWindow, &size->mX, &size->mY);
         return true;
     }
 
@@ -1164,7 +1159,9 @@ bool LLWindowSDL::convertCoords(LLCoordGL from, LLCoordWindow *to) const
         return false;
 
     to->mX = from.mX;
-    to->mY = mSurface->h - from.mY - 1;
+    int h;
+    SDL_GetWindowSize(mWindow, nullptr, &h);
+    to->mY = h - from.mY - 1;
 
     return true;
 }
@@ -1175,7 +1172,9 @@ bool LLWindowSDL::convertCoords(LLCoordWindow from, LLCoordGL* to) const
         return false;
 
     to->mX = from.mX;
-    to->mY = mSurface->h - from.mY - 1;
+    int h;
+    SDL_GetWindowSize(mWindow, nullptr, &h);
+    to->mY = h - from.mY - 1;
 
     return true;
 }
@@ -1539,7 +1538,6 @@ void LLWindowSDL::gatherInput(bool app_has_focus)
                         S32 width = llmax(event.window.data1, (S32)mMinWindowWidth);
                         S32 height = llmax(event.window.data2, (S32)mMinWindowHeight);
 
-                        mSurface = SDL_GetWindowSurface(mWindow);
                         mCallbacks->handleResize(this, width, height);
                         break;
                     }
