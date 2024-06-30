@@ -100,6 +100,7 @@ public:
     BOOL mIsAMD;
     BOOL mIsNVIDIA;
     BOOL mIsIntel;
+    BOOL mIsApple;
 
 #if LL_DARWIN
     // Needed to distinguish problem cards on older Macs that break with Materials

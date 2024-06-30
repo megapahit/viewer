@@ -2468,7 +2468,7 @@
       <key>Value</key>
       <integer>0</integer>
     </map>
-    <key>DoubleClickTeleport</key> 
+    <key>DoubleClickTeleport</key>
     <map>
       <key>Comment</key>
       <string>Enable double-click to teleport where allowed (afects minimap and people panel)</string>
@@ -8898,7 +8898,7 @@
       <key>Value</key>
       <integer>1</integer>
     </map>
-  
+
   <key>RenderReflectionDetail</key>
     <map>
       <key>Comment</key>
@@ -8965,7 +8965,7 @@
     <key>Value</key>
     <real>1</real>
   </map>
-  
+
   <key>RenderReflectionProbeDrawDistance</key>
   <map>
     <key>Comment</key>
@@ -9153,7 +9153,7 @@
     <key>Value</key>
     <real>0.7</real>
   </map>
-  
+
   <key>RenderReflectionProbeMaxLocalLightAmbiance</key>
   <map>
     <key>Comment</key>
@@ -10589,7 +10589,7 @@
             <string>Boolean</string>
         <key>Value</key>
             <integer>0</integer>
-    </map> 
+    </map>
     <key>NearbyListShowMap</key>
     <map>
       <key>Comment</key>
@@ -13510,13 +13510,13 @@
     <key>MaxFPS</key>
     <map>
       <key>Comment</key>
-      <string>OBSOLETE UNUSED setting.</string>
+      <string>FPS Limiter.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
-      <string>F32</string>
+      <string>U32</string>
       <key>Value</key>
-      <real>-1.0</real>
+      <real>0</real>
     </map>
     <key>ZoomDirect</key>
     <map>
@@ -15417,7 +15417,7 @@
     <key>Type</key>
     <string>Boolean</string>
     <key>Value</key>
-    <integer>1</integer>        
+    <integer>1</integer>
   </map>
   <key>UpdateAppWindowTitleBar</key>
   <map>

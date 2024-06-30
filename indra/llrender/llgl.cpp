@@ -1001,6 +1001,7 @@ LLGLManager::LLGLManager() :
     mIsAMD(FALSE),
     mIsNVIDIA(FALSE),
     mIsIntel(FALSE),
+    mIsApple(FALSE),
 #if LL_DARWIN
     mIsMobileGF(FALSE),
 #endif
@@ -1173,6 +1174,11 @@ bool LLGLManager::initGL()
     {
         mGLVendorShort = "INTEL";
         mIsIntel = TRUE;
+    }
+    else if(mGLVendor.find("APPLE") != std::string::npos)
+    {
+        mGLVendorShort = "APPLE";
+        mIsApple = TRUE;
     }
     else
     {
@@ -1373,6 +1379,7 @@ void LLGLManager::asLLSD(LLSD& info)
     info["is_ati"] = mIsAMD;  // note, do not rename is_ati to is_amd without coordinating with DW
     info["is_nvidia"] = mIsNVIDIA;
     info["is_intel"] = mIsIntel;
+    info["is_apple"] = mIsApple;
 
     info["gl_renderer"] = mGLRenderer;
 }
