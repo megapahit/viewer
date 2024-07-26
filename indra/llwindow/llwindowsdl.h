@@ -285,7 +285,6 @@ protected:
 
     int mHaveInputFocus; /* 0=no, 1=yes, else unknown */
     int mIsMinimized; /* 0=no, 1=yes, else unknown */
-    int mIsActive; /* 0=no, 1=yes, else unknown */
 
     friend class LLWindowManager;
 
@@ -316,6 +315,8 @@ public:
     void clearSecondaryText() { mSecondaryClipboard.clear(); }
 
 private:
+    void tryFindFullscreenSize(int &aWidth, int &aHeight);
+
     void initialiseX11Clipboard();
 
     bool getSelectionText(Atom selection, LLWString &text);
@@ -323,10 +324,8 @@ private:
     bool getSelectionText(Atom selection, Atom type, LLWString &text);
 
     bool setSelectionText(Atom selection, const LLWString &text);
+
 #endif
-
-    void tryFindFullscreenSize(int &aWidth, int &aHeight);
-
     LLWString mPrimaryClipboard;
     LLWString mSecondaryClipboard;
 };

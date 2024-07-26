@@ -427,7 +427,7 @@ LLWindowSDL::LLWindowSDL(LLWindowCallbacks* callbacks,
 
 #if LL_X11
     mSDL_XWindowID = None;
-    mSDL_Display = NULL;
+    mSDL_Display = nullptr;
 #endif // LL_X11
 
     // Assume 4:3 aspect ratio until we know better

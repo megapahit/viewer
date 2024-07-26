@@ -272,6 +272,7 @@ bool LLDirPicker::getDir(std::string* filename, bool blocking)
     }
     return !mDir.empty();
 #endif
+    return false;
 }
 
 std::string LLDirPicker::getDirName()
