@@ -708,7 +708,6 @@ public:
     bool pollMissingWearables();
     bool isMissingCompleted();
     void recoverMissingWearable(LLWearableType::EType type);
-    void clearCOFLinksForMissingWearables();
 
     void onWearableAssetFetch(LLViewerWearable *wearable);
     void onAllComplete();
@@ -1120,20 +1119,6 @@ bool LLWearableHoldingPattern::isMissingCompleted()
     return mTypesToLink.size()==0 && mTypesToRecover.size()==0;
 }
 
-void LLWearableHoldingPattern::clearCOFLinksForMissingWearables()
-{
-    for (found_list_t::iterator it = getFoundList().begin(); it != getFoundList().end(); ++it)
-    {
-        LLFoundData &data = *it;
-        if ((data.mWearableType < LLWearableType::WT_COUNT) && (!data.mWearable))
-        {
-            // Wearable link that was never resolved; remove links to it from COF
-            LL_INFOS("Avatar") << self_av_string() << "HP " << index() << " removing link for unresolved item " << data.mItemID.asString() << LL_ENDL;
-            LLAppearanceMgr::instance().removeCOFItemLinks(data.mItemID);
-        }
-    }
-}
-
 bool LLWearableHoldingPattern::pollMissingWearables()
 {
     if (!isMostRecent())
@@ -1164,14 +1149,6 @@ bool LLWearableHoldingPattern::pollMissingWearables()
 
         gAgentAvatarp->debugWearablesLoaded();
 
-        // BAP - if we don't call clearCOFLinksForMissingWearables()
-        // here, we won't have to add the link back in later if the
-        // wearable arrives late.  This is to avoid corruption of
-        // wearable ordering info.  Also has the effect of making
-        // unworn item links visible in the COF under some
-        // circumstances.
-
-        //clearCOFLinksForMissingWearables();
         onAllComplete();
     }
     return done;
@@ -1217,13 +1194,6 @@ void LLWearableHoldingPattern::handleLateArrivals()
                 data.mWearable = wearable;
 
                 replaced_types.insert(data.mWearableType);
-
-                // BAP - if we didn't call
-                // clearCOFLinksForMissingWearables() earlier, we
-                // don't need to restore the link here.  Fixes
-                // wearable ordering problems.
-
-                // LLAppearanceMgr::instance().addCOFItemLink(data.mItemID,false);
 
                 // BAP failing this means inventory or asset server
                 // are corrupted in a way we don't handle.
