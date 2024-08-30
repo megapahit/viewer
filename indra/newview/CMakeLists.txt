@@ -742,6 +742,9 @@ set(viewer_SOURCE_FILES
     llxmlrpctransaction.cpp
     noise.cpp
     pipeline.cpp
+    rlvactions.cpp
+    rlvcommon.cpp
+    rlvhandler.cpp
     )
 
 if (CMAKE_SYSTEM_NAME MATCHES FreeBSD)
@@ -1410,6 +1413,10 @@ set(viewer_HEADER_FILES
     llxmlrpctransaction.h
     noise.h
     pipeline.h
+    rlvdefines.h
+    rlvactions.h
+    rlvcommon.h
+    rlvhandler.h
     roles_constants.h
     VertexCache.h
     VorbisFramework.h
