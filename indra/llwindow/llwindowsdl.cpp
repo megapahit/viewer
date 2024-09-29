@@ -1099,7 +1099,6 @@ bool LLWindowSDL::getCursorPosition(LLCoordWindow *position)
     //Point cursor_point;
     LLCoordScreen screen_pos;
 
-    //GetMouse(&cursor_point);
     int x, y;
     SDL_GetMouseState(&x, &y);
 
@@ -1627,11 +1626,6 @@ void LLWindowSDL::processMiscNativeEvents()
 
 void LLWindowSDL::gatherInput()
 {
-    const Uint32 CLICK_THRESHOLD = 300;  // milliseconds
-    static int leftClick = 0;
-    static int rightClick = 0;
-    static Uint32 lastLeftDown = 0;
-    static Uint32 lastRightDown = 0;
     SDL_Event event;
 
     // Handle all outstanding SDL events
@@ -1640,13 +1634,21 @@ void LLWindowSDL::gatherInput()
         switch (event.type)
         {
             case SDL_MOUSEWHEEL:
+            {
                 if( event.wheel.y != 0 )
+                {
                     mCallbacks->handleScrollWheel(this, -event.wheel.y);
+                }
+                if (event.wheel.x != 0)
+                {
+                    mCallbacks->handleScrollHWheel(this, -event.wheel.x);
+                }
                 break;
+            }
 
             case SDL_MOUSEMOTION:
             {
-                LLCoordWindow winCoord(event.button.x, event.button.y);
+                LLCoordWindow winCoord(event.motion.x, event.motion.y);
                 LLCoordGL openGlCoord;
                 convertCoords(winCoord, &openGlCoord);
 
@@ -1725,7 +1727,6 @@ void LLWindowSDL::gatherInput()
 
             case SDL_MOUSEBUTTONDOWN:
             {
-                bool isDoubleClick = false;
                 LLCoordWindow winCoord(event.button.x, event.button.y);
                 LLCoordGL openGlCoord;
                 convertCoords(winCoord, &openGlCoord);
@@ -1735,58 +1736,25 @@ void LLWindowSDL::gatherInput()
 
                 MASK mask = gKeyboard->currentMask(true);
 
-                if (event.button.button == SDL_BUTTON_LEFT)   // SDL doesn't manage double clicking...
-                {
-                    Uint32 now = SDL_GetTicks();
-                    if ((now - lastLeftDown) > CLICK_THRESHOLD)
-                        leftClick = 1;
-                    else
-                    {
-                        if (++leftClick >= 2)
-                        {
-                            leftClick = 0;
-                            isDoubleClick = true;
-                        }
-                    }
-                    lastLeftDown = now;
-                }
-                else if (event.button.button == SDL_BUTTON_RIGHT)
-                {
-                    Uint32 now = SDL_GetTicks();
-                    if ((now - lastRightDown) > CLICK_THRESHOLD)
-                        rightClick = 1;
-                    else
-                    {
-                        if (++rightClick >= 2)
-                        {
-                            rightClick = 0;
-                            isDoubleClick = true;
-                        }
-                    }
-                    lastRightDown = now;
-                }
-
                 if (event.button.button == SDL_BUTTON_LEFT)  // left
                 {
-                    if (isDoubleClick)
+                    if (event.button.clicks >= 2)
                         mCallbacks->handleDoubleClick(this, openGlCoord, mask);
                     else
                         mCallbacks->handleMouseDown(this, openGlCoord, mask);
                 }
-
                 else if (event.button.button == SDL_BUTTON_RIGHT)  // right
                 {
                     mCallbacks->handleRightMouseDown(this, openGlCoord, mask);
                 }
-
                 else if (event.button.button == SDL_BUTTON_MIDDLE)  // middle
                 {
                     mCallbacks->handleMiddleMouseDown(this, openGlCoord, mask);
                 }
-                else if (event.button.button == 4)  // mousewheel up...thanks to X11 for making SDL consider these "buttons".
-                    mCallbacks->handleScrollWheel(this, -1);
-                else if (event.button.button == 5)  // mousewheel down...thanks to X11 for making SDL consider these "buttons".
-                    mCallbacks->handleScrollWheel(this, 1);
+                else 
+				{
+                    mCallbacks->handleOtherMouseDown(this, openGlCoord, mask, event.button.button);
+				}
 
                 break;
             }
@@ -1803,99 +1771,64 @@ void LLWindowSDL::gatherInput()
                 MASK mask = gKeyboard->currentMask(true);
 
                 if (event.button.button == SDL_BUTTON_LEFT)  // left
+                {
                     mCallbacks->handleMouseUp(this, openGlCoord, mask);
+                }
                 else if (event.button.button == SDL_BUTTON_RIGHT)  // right
+                {
                     mCallbacks->handleRightMouseUp(this, openGlCoord, mask);
+                }
                 else if (event.button.button == SDL_BUTTON_MIDDLE)  // middle
+                {
                     mCallbacks->handleMiddleMouseUp(this, openGlCoord, mask);
-                // don't handle mousewheel here...
+                }
+                else 
+				{
+                    mCallbacks->handleOtherMouseUp(this, openGlCoord, mask, event.button.button);
+				}
 
                 break;
             }
 
-            case SDL_WINDOWEVENT:  // *FIX: handle this?
+            case SDL_WINDOWEVENT:
             {
-                if( event.window.event == SDL_WINDOWEVENT_RESIZED
-                    /* || event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED*/ ) // <FS:ND> SDL_WINDOWEVENT_SIZE_CHANGED is followed by SDL_WINDOWEVENT_RESIZED, so handling one shall be enough
+                switch(event.window.event)
                 {
-                    LL_INFOS() << "Handling a resize event: " << event.window.data1 << "x" << event.window.data2 << LL_ENDL;
+                    //case SDL_WINDOWEVENT_SIZE_CHANGED: <FS:ND> SDL_WINDOWEVENT_SIZE_CHANGED is followed by SDL_WINDOWEVENT_RESIZED, so handling one shall be enough
+                    case SDL_WINDOWEVENT_RESIZED:
+                    {
+                        LL_INFOS() << "Handling a resize event: " << event.window.data1 << "x" << event.window.data2 << LL_ENDL;
+                        S32 width = llmax(event.window.data1, (S32)mMinWindowWidth);
+                        S32 height = llmax(event.window.data2, (S32)mMinWindowHeight);
 
-                    S32 width = llmax(event.window.data1, (S32)mMinWindowWidth);
-                    S32 height = llmax(event.window.data2, (S32)mMinWindowHeight);
+                        mCallbacks->handleResize(this, width * getSystemUISize(), height * getSystemUISize());
+                        break;
+                    }
+                    case SDL_WINDOWEVENT_LEAVE:
+                        mCallbacks->handleMouseLeave(this);
+                        break;
+                    case SDL_WINDOWEVENT_FOCUS_GAINED:
+                        mCallbacks->handleFocus(this);
+                        break;
+                    case SDL_WINDOWEVENT_FOCUS_LOST:
+                        mCallbacks->handleFocusLost(this);
+                        break;
+                    case SDL_WINDOWEVENT_EXPOSED:
+                    case SDL_WINDOWEVENT_SHOWN:
+                    case SDL_WINDOWEVENT_HIDDEN:
+                    case SDL_WINDOWEVENT_MINIMIZED:
+                    case SDL_WINDOWEVENT_MAXIMIZED:
+                    case SDL_WINDOWEVENT_RESTORED:
+                    {
+                        Uint32 flags = SDL_GetWindowFlags(mWindow);
+                        bool minimized = (flags & SDL_WINDOW_MINIMIZED);
+                        bool hidden = (flags & SDL_WINDOW_HIDDEN);
 
-                    // *FIX: I'm not sure this is necessary!
-                    // <FS:ND> I think is is not
-                    // SDL_SetWindowSize(mWindow, width, height);
-                    //
-
-                    mCallbacks->handleResize(this, width * getSystemUISize(), height * getSystemUISize());
+                        mCallbacks->handleActivate(this, !minimized || !hidden);
+                        LL_INFOS() << "SDL deiconification state switched to " << minimized << LL_ENDL;
+                        break;
+                    }
                 }
-                else if(event.window.event == SDL_WINDOWEVENT_ENTER)
-                {
-                    LL_INFOS() << "SDL_WINDOWEVENT_ENTER" << LL_ENDL;
-                    if(!mHaveInputFocus) mCallbacks->handleFocus(this);
-                    mHaveInputFocus = true;
-                }
-                else if(event.window.event == SDL_WINDOWEVENT_LEAVE)
-                {
-                    LL_INFOS() << "SDL_WINDOWEVENT_LEAVE" << LL_ENDL;
-                    if(mHaveInputFocus) mCallbacks->handleFocusLost(this);
-                    mHaveInputFocus = false;
-                }
-                else if( event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED ) // <FS:ND> What about SDL_WINDOWEVENT_ENTER (mouse focus)
-                {
-                    // We have to do our own state massaging because SDL
-                    // can send us two unfocus events in a row for example,
-                    // which confuses the focus code [SL-24071].
-                    mHaveInputFocus = true;
-
-                    mCallbacks->handleFocus(this);
-                }
-                else if( event.window.event == SDL_WINDOWEVENT_FOCUS_LOST ) // <FS:ND> What about SDL_WINDOWEVENT_LEAVE (mouse focus)
-                {
-                    // We have to do our own state massaging because SDL
-                    // can send us two unfocus events in a row for example,
-                    // which confuses the focus code [SL-24071].
-                    mHaveInputFocus = false;
-
-                    mCallbacks->handleFocusLost(this);
-                }
-                /*
-
-                Bug : the app remains inactive when maximized ..
-
-                else if(event.window.event == SDL_WINDOWEVENT_MINIMIZED)
-                {
-                    LL_INFOS() << "SDL_WINDOWEVENT_MINIMIZED" << LL_ENDL;
-                    if(!mIsMinimized) mCallbacks->handleActivate(this,false);
-                    mIsMinimized = true;
-                }
-                else if(event.window.event == SDL_WINDOWEVENT_MAXIMIZED)
-                {
-                    LL_INFOS() << "SDL_WINDOWEVENT_MAXIMIZED" << LL_ENDL;
-                    if(mIsMinimized) mCallbacks->handleActivate(this,true);
-                    mIsMinimized = false;
-                }
-                */
-                else if (event.window.event == SDL_WINDOWEVENT_EXPOSED)
-                {
-                    int w, h;
-                    SDL_GL_GetDrawableSize(mWindow, &w, &h);
-
-                    mCallbacks->handlePaint(this, 0, 0, w, h);
-                }
-                else if( event.window.event == SDL_WINDOWEVENT_MINIMIZED ||
-                         event.window.event == SDL_WINDOWEVENT_MAXIMIZED ||
-                         event.window.event == SDL_WINDOWEVENT_RESTORED ||
-                         event.window.event == SDL_WINDOWEVENT_EXPOSED ||
-                         event.window.event == SDL_WINDOWEVENT_SHOWN )
-                {
-                    mIsMinimized = (event.window.event == SDL_WINDOWEVENT_MINIMIZED);
-
-                    mCallbacks->handleActivate(this, !mIsMinimized);
-                    LL_INFOS() << "SDL deiconification state switched to " << mIsMinimized << LL_ENDL;
-                }
-
                 break;
             }
             case SDL_QUIT:
