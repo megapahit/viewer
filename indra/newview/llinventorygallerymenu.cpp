@@ -92,6 +92,7 @@ LLContextMenu* LLInventoryGalleryContextMenu::createMenu()
 
     registrar.add("Inventory.DoToSelected", boost::bind(&LLInventoryGalleryContextMenu::doToSelected, this, _2));
     registrar.add("Inventory.FileUploadLocation", boost::bind(&LLInventoryGalleryContextMenu::fileUploadLocation, this, _2));
+    registrar.add("Inventory.SetFavoriteFolder", boost::bind(&LLInventoryGalleryContextMenu::setFavoriteFolder, this));
     registrar.add("Inventory.EmptyTrash", boost::bind(&LLInventoryModel::emptyFolderType, &gInventory, "ConfirmEmptyTrash", LLFolderType::FT_TRASH));
     registrar.add("Inventory.EmptyLostAndFound", boost::bind(&LLInventoryModel::emptyFolderType, &gInventory, "ConfirmEmptyLostAndFound", LLFolderType::FT_LOST_AND_FOUND));
     registrar.add("Inventory.DoCreate", [this](LLUICtrl*, const LLSD& data)
@@ -110,6 +111,7 @@ LLContextMenu* LLInventoryGalleryContextMenu::createMenu()
     registrar.add("Inventory.Share", boost::bind(&LLAvatarActions::shareWithAvatars, uuids, gFloaterView->getParentFloater(mGallery)));
 
     enable_registrar.add("Inventory.CanSetUploadLocation", boost::bind(&LLInventoryGalleryContextMenu::canSetUploadLocation, this, _2));
+    enable_registrar.add("Inventory.CanSetFavoriteFolder", boost::bind(&LLInventoryGalleryContextMenu::canSetFavoriteFolder, this));
 
     enable_registrar.add("Inventory.EnvironmentEnabled", [](LLUICtrl*, const LLSD&)
                          {
@@ -504,6 +506,25 @@ bool LLInventoryGalleryContextMenu::canSetUploadLocation(const LLSD& userdata)
     return true;
 }
 
+void LLInventoryGalleryContextMenu::setFavoriteFolder()
+{
+    gSavedPerAccountSettings.setString("FavoriteFolder", mUUIDs.front().asString());
+}
+
+bool LLInventoryGalleryContextMenu::canSetFavoriteFolder()
+{
+    if (mUUIDs.size() != 1)
+    {
+        return false;
+    }
+    LLInventoryCategory* cat = gInventory.getCategory(mUUIDs.front());
+    if (!cat)
+    {
+        return false;
+    }
+    return true;
+}
+
 bool is_inbox_folder(LLUUID item_id)
 {
     const LLUUID inbox_id = gInventory.findCategoryUUIDForType(LLFolderType::FT_INBOX);
@@ -769,6 +790,8 @@ void LLInventoryGalleryContextMenu::updateMenuItemsVisibility(LLContextMenu* men
                 items.push_back(std::string("upload_def"));
             }
 
+            items.push_back(std::string("Set favorite folder"));
+
             if(is_outfits && !isRootFolder())
             {
                 items.push_back(std::string("New Outfit"));
@@ -843,6 +866,8 @@ void LLInventoryGalleryContextMenu::updateMenuItemsVisibility(LLContextMenu* men
             {
                 disabled_items.push_back(std::string("Copy"));
             }
+
+            disabled_items.push_back(std::string("Set favorite folder"));
         }
         if((obj->getType() == LLAssetType::AT_SETTINGS)
            || ((obj->getType() <= LLAssetType::AT_GESTURE)

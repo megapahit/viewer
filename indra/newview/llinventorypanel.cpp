@@ -185,6 +185,7 @@ LLInventoryPanel::LLInventoryPanel(const LLInventoryPanel::Params& p) :
     mCommitCallbackRegistrar.add("Inventory.BeginIMSession", boost::bind(&LLInventoryPanel::beginIMSession, this));
     mCommitCallbackRegistrar.add("Inventory.Share",  boost::bind(&LLAvatarActions::shareWithAvatars, this));
     mCommitCallbackRegistrar.add("Inventory.FileUploadLocation", boost::bind(&LLInventoryPanel::fileUploadLocation, this, _2));
+    mCommitCallbackRegistrar.add("Inventory.SetFavoriteFolder", boost::bind(&LLInventoryPanel::setFavoriteFolder, this));
     mCommitCallbackRegistrar.add("Inventory.OpenNewFolderWindow", boost::bind(&LLInventoryPanel::openSingleViewInventory, this, LLUUID()));
 }
 
@@ -1755,6 +1756,11 @@ void LLInventoryPanel::fileUploadLocation(const LLSD& userdata)
     {
         gSavedPerAccountSettings.setString("PBRUploadFolder", LLFolderBridge::sSelf.get()->getUUID().asString());
     }
+}
+
+void LLInventoryPanel::setFavoriteFolder()
+{
+    gSavedPerAccountSettings.setString("FavoriteFolder", LLFolderBridge::sSelf.get()->getUUID().asString());
 }
 
 void LLInventoryPanel::openSingleViewInventory(LLUUID folder_id)

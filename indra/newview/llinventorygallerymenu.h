@@ -49,6 +49,9 @@ protected:
     void fileUploadLocation(const LLSD& userdata);
     bool canSetUploadLocation(const LLSD& userdata);
 
+    void setFavoriteFolder();
+    bool canSetFavoriteFolder();
+
     static void onRename(const LLSD& notification, const LLSD& response);
 
 private:

@@ -39,6 +39,7 @@
 #include "llfloaterreg.h"
 #include "llfloatersidepanelcontainer.h"
 #include "llinventorypanel.h"
+#include "llsidepanelinventory.h"
 #include "llnotifications.h"
 #include "llnotificationsutil.h"
 #include "llviewereventrecorder.h"
@@ -6913,6 +6914,59 @@ void handle_give_money_dialog()
     }
 }
 
+LLFloaterSidePanelContainer* get_favorite_inventory_folder()
+{
+    LLUUID folder_id = LLUUID(gSavedPerAccountSettings.getString("FavoriteFolder"));
+    if (!folder_id.isNull())
+    {
+        LLFloaterReg::const_instance_list_t& inst_list = LLFloaterReg::getFloaterList("inventory");
+        for (LLFloaterReg::const_instance_list_t::const_iterator iter = inst_list.begin(); iter != inst_list.end();)
+        {
+            LLFloaterSidePanelContainer* inventory_container = dynamic_cast<LLFloaterSidePanelContainer*>(*iter++);
+            if (inventory_container)
+            {
+                LLSidepanelInventory* sidepanel_inventory = dynamic_cast<LLSidepanelInventory*>(inventory_container->findChild<LLPanel>("main_panel", true));
+                if (sidepanel_inventory)
+                {
+                    LLPanelMainInventory* main_inventory = sidepanel_inventory->getMainInventoryPanel();
+                    if (main_inventory && main_inventory->isSingleFolderMode()
+                        && (main_inventory->getCurrentSFVRoot() == folder_id))
+                    {
+                        return inventory_container;
+                    }
+                }
+            }
+        }
+    }
+
+    return NULL;
+}
+
+void toggle_favorite_inventory_folder()
+{
+    LLUUID folder_id = LLUUID(gSavedPerAccountSettings.getString("FavoriteFolder"));
+    if ((folder_id.isNull()) || (!gInventory.getCategory(folder_id)))
+    {
+        LLNotificationsUtil::add("MissingFavoriteFolder");
+        return;
+    }
+
+    LLFloaterSidePanelContainer* inventory_container = get_favorite_inventory_folder();
+    if (inventory_container)
+    {
+        inventory_container->closeFloater();
+    }
+    else
+    {
+        LLPanelMainInventory::newFolderWindow(folder_id);
+    }
+}
+
+bool favorite_inventory_folder_visible()
+{
+    return (get_favorite_inventory_folder() != NULL);
+}
+
 bool enable_pay_avatar()
 {
     LLViewerObject* obj = LLSelectMgr::getInstance()->getSelection()->getPrimaryObject();
@@ -10242,6 +10296,9 @@ void initialize_menus()
     commit.add("PayObject", boost::bind(&handle_give_money_dialog));
 
     commit.add("Inventory.NewWindow", boost::bind(&LLPanelMainInventory::newWindow));
+
+    commit.add("Inventory.OpenFavoriteFolder", boost::bind(&toggle_favorite_inventory_folder));
+    enable.add("Inventory.IsFavoriteFolderOpen", boost::bind(&favorite_inventory_folder_visible));
 
     enable.add("EnablePayObject", boost::bind(&enable_pay_object));
     enable.add("EnablePayAvatar", boost::bind(&enable_pay_avatar));

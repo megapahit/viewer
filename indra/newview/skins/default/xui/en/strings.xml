@@ -4212,6 +4212,7 @@ name="Command_360_Capture_Label">360 snapshot</string>
   <string name="Command_Speak_Label">Speak</string>
   <string name="Command_View_Label">Camera controls</string>
   <string name="Command_Voice_Label">Voice settings</string>
+  <string name="Command_FavoriteFolder_Label">Favorite folder</string>
 
   <string
 name="Command_360_Capture_Tooltip">Capture a 360 equirectangular image</string>
@@ -4245,6 +4246,7 @@ name="Command_360_Capture_Tooltip">Capture a 360 equirectangular image</string>
   <string name="Command_Speak_Tooltip">Speak with people nearby using your microphone</string>
   <string name="Command_View_Tooltip">Changing camera angle</string>
   <string name="Command_Voice_Tooltip">Volume controls for calls and people near you in world</string>
+  <string name="Command_FavoriteFolder_Tooltip">Open your favorite inventory folder</string>
 
   <string name="Toolbar_Bottom_Tooltip">currently in your bottom toolbar</string>
   <string name="Toolbar_Left_Tooltip"  >currently in your left toolbar</string>

@@ -715,6 +715,16 @@
        function="Inventory.CanSetUploadLocation" />
     </menu_item_call>
   </menu>
+  <menu_item_call
+   label="Use as favorite folder"
+   layout="topleft"
+   name="Set favorite folder">
+    <menu_item_call.on_click
+     function="Inventory.SetFavoriteFolder"
+     parameter="favorite" />
+    <menu_item_call.on_visible
+     function="Inventory.CanSetFavoriteFolder" />
+  </menu_item_call>
 	<menu_item_separator
 	 layout="topleft"
 	 name="Marketplace Separator" />

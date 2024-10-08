@@ -12583,4 +12583,16 @@ are wearing now.
        yestext="OK"/>
   </notification>
 
+  <notification
+   icon="alertmodal.tga"
+   name="MissingFavoriteFolder"
+   type="alertmodal">
+Favorite folder is missing.
+
+Select the "use as favorite folder" from a folder's menu to set it as the favorite folder.
+     <tag>fail</tag>
+     <usetemplate
+       name="okbutton"
+       yestext="OK"/>
+  </notification>
 </notifications>
