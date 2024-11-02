@@ -169,8 +169,7 @@ mHelpImpl(NULL)
 
     LLFontGL::sShadowColor = LLUIColorTable::instance().getColor("ColorDropShadow");
 
-    LLUICtrl::CommitCallbackRegistry::Registrar& reg = LLUICtrl::CommitCallbackRegistry::defaultRegistrar();
-
+    LLUICtrl::CommitRegistrarHelper reg(LLUICtrl::CommitCallbackRegistry::defaultRegistrar());
     // Callbacks for associating controls with floater visibility:
     reg.add("Floater.Toggle", [](LLUICtrl* ctrl, const LLSD& param) -> void { LLFloaterReg::toggleInstance(param.asStringRef()); });
     reg.add("Floater.ToggleOrBringToFront", [](LLUICtrl* ctrl, const LLSD& param) -> void { LLFloaterReg::toggleInstanceOrBringToFront(param.asStringRef()); });
@@ -231,11 +230,6 @@ void LLUI::getMousePositionScreen(S32 *x, S32 *y)
     LLCoordGL cursor_pos_gl(cursor_pos_window.convert());
     *x = ll_round((F32)cursor_pos_gl.mX / getScaleFactor().mV[VX]);
     *y = ll_round((F32)cursor_pos_gl.mY / getScaleFactor().mV[VY]);
-#if defined(LL_SDL)
-    *x = *x * LLView::getWindow()->getSystemUISize();
-    *y = *y * LLView::getWindow()->getSystemUISize();
-#endif
-
 }
 
 void LLUI::setMousePositionLocal(const LLView* viewp, S32 x, S32 y)

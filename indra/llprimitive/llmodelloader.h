@@ -156,12 +156,12 @@ public:
     bool loadFromSLM(const std::string& filename);
 
     void loadModelCallback();
-    void loadTextures() ; // called in the main thread.
+    void loadTextures(); // called in the main thread.
     void setLoadState(U32 state);
 
     void stretch_extents(const LLModel* model, const LLMatrix4& mat);
 
-    S32 mNumOfFetchingTextures ; // updated in the main thread
+    S32 mNumOfFetchingTextures; // updated in the main thread
     bool areTexturesReady() { return !mNumOfFetchingTextures; } // called in the main thread.
 
     bool verifyCount( int expected, int result );

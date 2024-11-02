@@ -129,6 +129,7 @@ public:
     virtual void navigateToFolder(bool new_window = false, bool change_mode = false) {}
     virtual bool isItemRenameable() const;
     virtual bool renameItem(const std::string& new_name);
+    virtual bool isFavorite() const { return false; }
     virtual bool isItemMovable() const;
     virtual bool isItemRemovable(bool check_worn = true) const;
     virtual bool removeItem();
@@ -306,17 +307,28 @@ bool LLTaskInvFVBridge::isItemRenameable() const
 
 bool LLTaskInvFVBridge::renameItem(const std::string& new_name)
 {
-    if (LLViewerObject* object = gObjectList.findObject(mPanel->getTaskUUID()))
+    LLViewerObject* object = gObjectList.findObject(mPanel->getTaskUUID());
+    if (!object)
     {
-        if (LLViewerInventoryItem* item = (LLViewerInventoryItem*)object->getInventoryObject(mUUID))
-        {
-            if (gAgent.allowOperation(PERM_MODIFY, item->getPermissions(), GP_OBJECT_MANIPULATE, GOD_LIKE))
-            {
-                LLPointer<LLViewerInventoryItem> new_item = new LLViewerInventoryItem(item);
-                new_item->rename(new_name);
-                object->updateInventory(new_item, TASK_INVENTORY_ITEM_KEY, false);
-            }
-        }
+        return false;
+    }
+    if (!object->permModify())
+    {
+        LLNotificationsUtil::add("CantModifyContentInNoModTask");
+        return false;
+    }
+
+    LLViewerInventoryItem* item = NULL;
+    item = (LLViewerInventoryItem*)object->getInventoryObject(mUUID);
+    if (item && (gAgent.allowOperation(PERM_MODIFY, item->getPermissions(),
+        GP_OBJECT_MANIPULATE, GOD_LIKE)))
+    {
+        LLPointer<LLViewerInventoryItem> new_item = new LLViewerInventoryItem(item);
+        new_item->rename(new_name);
+        object->updateInventory(
+            new_item,
+            TASK_INVENTORY_ITEM_KEY,
+            false);
     }
 
     return true;
@@ -1332,14 +1344,16 @@ LLPanelObjectInventory::LLPanelObjectInventory(const LLPanelObjectInventory::Par
     mShowRootFolder(p.show_root_folder)
 {
     // Setup context menu callbacks
-    mCommitCallbackRegistrar.add("Inventory.DoToSelected", boost::bind(&LLPanelObjectInventory::doToSelected, this, _2));
-    mCommitCallbackRegistrar.add("Inventory.EmptyTrash", boost::bind(&LLInventoryModel::emptyFolderType, &gInventory, "ConfirmEmptyTrash", LLFolderType::FT_TRASH));
-    mCommitCallbackRegistrar.add("Inventory.EmptyLostAndFound", boost::bind(&LLInventoryModel::emptyFolderType, &gInventory, "ConfirmEmptyLostAndFound", LLFolderType::FT_LOST_AND_FOUND));
-    mCommitCallbackRegistrar.add("Inventory.DoCreate", boost::bind(&do_nothing));
-    mCommitCallbackRegistrar.add("Inventory.AttachObject", boost::bind(&do_nothing));
-    mCommitCallbackRegistrar.add("Inventory.BeginIMSession", boost::bind(&do_nothing));
-    mCommitCallbackRegistrar.add("Inventory.Share",  boost::bind(&LLAvatarActions::shareWithAvatars, this));
-    mCommitCallbackRegistrar.add("Inventory.FileUploadLocation", boost::bind(&do_nothing));
+    mCommitCallbackRegistrar.add("Inventory.DoToSelected", { boost::bind(&LLPanelObjectInventory::doToSelected, this, _2), cb_info::UNTRUSTED_BLOCK });
+    mCommitCallbackRegistrar.add("Inventory.EmptyTrash",
+        { boost::bind(&LLInventoryModel::emptyFolderType, &gInventory, "ConfirmEmptyTrash", LLFolderType::FT_TRASH), cb_info::UNTRUSTED_BLOCK });
+    mCommitCallbackRegistrar.add("Inventory.EmptyLostAndFound",
+        { boost::bind(&LLInventoryModel::emptyFolderType, &gInventory, "ConfirmEmptyLostAndFound", LLFolderType::FT_LOST_AND_FOUND), cb_info::UNTRUSTED_BLOCK });
+    mCommitCallbackRegistrar.add("Inventory.DoCreate", { boost::bind(&do_nothing) });
+    mCommitCallbackRegistrar.add("Inventory.AttachObject", { boost::bind(&do_nothing) });
+    mCommitCallbackRegistrar.add("Inventory.BeginIMSession", { boost::bind(&do_nothing) });
+    mCommitCallbackRegistrar.add("Inventory.Share",  { boost::bind(&LLAvatarActions::shareWithAvatars, this), cb_info::UNTRUSTED_BLOCK });
+    mCommitCallbackRegistrar.add("Inventory.FileUploadLocation", { boost::bind(&do_nothing) });
 }
 
 // Destroys the object
@@ -1364,7 +1378,23 @@ bool LLPanelObjectInventory::postBuild()
 
 void LLPanelObjectInventory::doToSelected(const LLSD& userdata)
 {
-    LLInventoryAction::doToSelected(&gInventory, mFolders, userdata.asString());
+    std::string action = userdata.asString();
+    if ("rename" == action || "delete" == action)
+    {
+        LLViewerObject* objectp = gObjectList.findObject(mTaskUUID);
+        if (objectp && !objectp->permModify())
+        {
+            LLNotificationsUtil::add("CantModifyContentInNoModTask");
+        }
+        else
+        {
+            LLInventoryAction::doToSelected(&gInventory, mFolders, action);
+        }
+    }
+    else
+    {
+        LLInventoryAction::doToSelected(&gInventory, mFolders, action);
+    }
 }
 
 void LLPanelObjectInventory::clearContents()

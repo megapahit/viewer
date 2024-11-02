@@ -169,6 +169,8 @@ void MediaPluginBase::sendStatus()
 
 #if LL_LINUX || __FreeBSD__
 
+#include <dlfcn.h>
+
 size_t SymbolGrabber::registerSymbol( SymbolToGrab aSymbol )
 {
     gSymbolsToGrab.emplace_back(aSymbol);
@@ -177,25 +179,22 @@ size_t SymbolGrabber::registerSymbol( SymbolToGrab aSymbol )
 
 bool SymbolGrabber::grabSymbols(std::vector< std::string > const &aDSONames)
 {
-    std::cerr << "SYMBOLS: " << gSymbolsToGrab.size() << std::endl;
-
     if (sSymsGrabbed)
         return true;
 
-    //attempt to load the shared libraries
-    apr_pool_create(&sSymDSOMemoryPool, nullptr);
-
     for( std::vector< std::string >::const_iterator itr = aDSONames.begin(); itr != aDSONames.end(); ++itr )
     {
-        apr_dso_handle_t *pDSO(NULL);
-        std::string strDSO{ *itr };
-        if( APR_SUCCESS == apr_dso_load( &pDSO, strDSO.c_str(), sSymDSOMemoryPool ))
-            sLoadedLibraries.push_back( pDSO );
+        auto pDSO = dlopen( itr->c_str(), RTLD_NOW );
 
-        for( auto i = 0; i < gSymbolsToGrab.size(); ++i )
+        if( pDSO )
         {
-            if( !*gSymbolsToGrab[i].mPPFunc )
-                apr_dso_sym( gSymbolsToGrab[i].mPPFunc, pDSO, gSymbolsToGrab[i].mName );
+            sLoadedLibraries.push_back(pDSO);
+
+            for (auto i = 0; i < gSymbolsToGrab.size(); ++i)
+            {
+                if (!*gSymbolsToGrab[i].mPPFunc)
+                    *gSymbolsToGrab[i].mPPFunc = dlsym(pDSO, gSymbolsToGrab[i].mName);
+            }
         }
     }
 
@@ -270,13 +269,13 @@ pid_t getParentPid( pid_t aPid )
     {
         std::string line;
         line.resize( 1024, 0 );
-        in.getline( &line[0], line.length() );	
+        in.getline( &line[0], line.length() );
 
         auto i = line.find( "PPid:"  );
-        
+
         if( i == std::string::npos )
             continue;
-        
+
         char const *pIn = line.c_str() + 5; // Skip over pid;
         while( *pIn != 0 && isspace( *pIn ) )
                ++pIn;

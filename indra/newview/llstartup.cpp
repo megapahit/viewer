@@ -185,7 +185,6 @@
 #include "llnamelistctrl.h"
 #include "llnamebox.h"
 #include "llnameeditor.h"
-#include "llpostprocess.h"
 #include "llagentlanguage.h"
 #include "llwearable.h"
 #include "llinventorybridge.h"
@@ -209,6 +208,7 @@
 #include "threadpool.h"
 #include "llperfstats.h"
 
+#include "rlvhandler.h"
 
 #if LL_WINDOWS
 #include "lldxhardware.h"
@@ -410,10 +410,10 @@ bool idle_startup()
         static bool first_call = true;
         if (first_call)
         {
+            first_call = false;
             // Other phases get handled when startup state changes,
             // need to capture the initial state as well.
             LLStartUp::getPhases().startPhase(LLStartUp::getStartupStateString());
-            first_call = false;
         }
 
         gViewerWindow->showCursor();
@@ -903,6 +903,8 @@ bool idle_startup()
             return false;
         }
 
+        RlvHandler::setEnabled(gSavedSettings.get<bool>(Rlv::Settings::Main));
+
         // reset the values that could have come in from a slurl
         // DEV-42215: Make sure they're not empty -- gUserCredential
         // might already have been set from gSavedSettings, and it's too bad
@@ -1317,10 +1319,6 @@ bool idle_startup()
         display_startup();
 
         LLDrawable::initClass();
-        display_startup();
-
-        // init the shader managers
-        LLPostProcess::initClass();
         display_startup();
 
         LLAvatarAppearance::initClass("avatar_lad.xml","avatar_skeleton.xml");

@@ -78,7 +78,7 @@
 
 // Increment this if the inventory contents change in a non-backwards-compatible way.
 // For viewer 2, the addition of link items makes a pre-viewer-2 cache incorrect.
-const S32 LLInventoryModel::sCurrentInvCacheVersion = 3;
+const S32 LLInventoryModel::sCurrentInvCacheVersion = 4;
 bool LLInventoryModel::sFirstTimeInViewer2 = true;
 
 S32 LLInventoryModel::sPendingSystemFolders = 0;
@@ -1282,6 +1282,10 @@ void LLInventoryModel::collectDescendentsIf(const LLUUID& id,
     {
         for (auto& cat : *cat_array)
         {
+            if (add.exceedsLimit())
+            {
+                break;
+            }
             if(add(cat,NULL))
             {
                 cats.push_back(cat);
@@ -1297,6 +1301,10 @@ void LLInventoryModel::collectDescendentsIf(const LLUUID& id,
     {
         for (auto& item : *item_array)
         {
+            if (add.exceedsLimit())
+            {
+                break;
+            }
             if(add(NULL, item))
             {
                 items.push_back(item);
@@ -2765,8 +2773,9 @@ bool LLInventoryModel::loadSkeleton(
                     cached_ids.insert(tcat->getUUID());
 
                     // At the moment download does not provide a thumbnail
-                    // uuid, use the one from cache
+                    // uuid or favorite, use values from cache
                     tcat->setThumbnailUUID(cat->getThumbnailUUID());
+                    tcat->setFavorite(cat->getIsFavorite());
                 }
             }
 
@@ -4823,6 +4832,17 @@ std::string LLInventoryModel::getFullPath(const LLInventoryObject *obj) const
     std::string result = "/" + boost::algorithm::join(path_elts, delim);
     return result;
 }
+
+/*
+const LLInventoryObject* LLInventoryModel::findByFullPath(const std::string& path)
+{
+    vector<std::string> path_elts;
+    boost::algorithm::split(path_elts, path, boost::is_any_of("/"));
+    for(path_elts, auto e)
+    {
+    }
+}
+*/
 
 ///----------------------------------------------------------------------------
 /// Local function definitions

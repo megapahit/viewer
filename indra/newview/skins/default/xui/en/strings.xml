@@ -60,6 +60,7 @@ Disk cache: [DISK_CACHE_INFO]
 HiDPI display mode: [HIDPI]
 	</string>
 	<string name="AboutLibs">
+RestrainedLove API: [RLV_VERSION]
 J2C Decoder Version: [J2C_VERSION]
 Audio Driver Version: [AUDIO_DRIVER_VERSION]
 [LIBCEF_VERSION]
@@ -71,7 +72,7 @@ Voice Server Version: [VOICE_VERSION]
   <string name="LocalTime">[month, datetime, local] [day, datetime, local] [year, datetime, local] [hour, datetime, local]:[min, datetime, local]:[second,datetime, local]</string>
 	<string name="ErrorFetchingServerReleaseNotesURL">Error fetching server release notes URL.</string>
 	<string name="BuildConfiguration">Build Configuration</string>
-
+	
 	<!--  progress -->
 	<string name="ProgressRestoring">Restoring...</string>
 	<string name="ProgressChangingResolution">Changing resolution...</string>
@@ -114,10 +115,10 @@ Voice Server Version: [VOICE_VERSION]
 	<string name="LoginFailedHeader">Login failed.</string>
 	<string name="Quit">Quit</string>
 	<string name="create_account_url">http://join.secondlife.com/?sourceid=[sourceid]</string>
-
+	
 	<string name="AgniGridLabel">Second Life Main Grid (Agni)</string>
 	<string name="AditiGridLabel">Second Life Beta Test Grid (Aditi)</string>
-
+	
 	<string name="ViewerDownloadURL">http://secondlife.com/download</string>
 	<string name="LoginFailedViewerNotPermitted">
 The viewer you are using can no longer access Second Life. Please visit the following page to download a new viewer:
@@ -209,7 +210,7 @@ If you feel this is an error, please contact support@secondlife.com</string>
 	<string name="YouHaveBeenDisconnected">You have been disconnected from the region you were in.</string>
 	<string name="SentToInvalidRegion">You were sent to an invalid region.</string>
 	<string name="TestingDisconnect">Testing viewer disconnect</string>
-
+  
 	<!-- SLShare: User Friendly Filter Names Translation -->
     <string name="BlackAndWhite">Black &amp; White</string>
     <string name="Colors1970">1970&apos;s Colors</string>
@@ -222,7 +223,7 @@ If you feel this is an error, please contact support@secondlife.com</string>
     <string name="LensFlare">Lens Flare</string>
     <string name="Miniature">Miniature</string>
     <string name="Toycamera">Toy Camera</string>
-
+	
     <!-- Tooltip -->
 	<string name="TooltipPerson">Person</string><!-- Object under mouse pointer is an avatar -->
 	<string name="TooltipNoName">(no name)</string> <!-- No name on an object -->
@@ -259,10 +260,10 @@ If you feel this is an error, please contact support@secondlife.com</string>
 	<string name="TooltipOutboxMixedStock">All items in a stock folder must have the same type and permission</string>
 	<string name="TooltipOutfitNotInInventory">You can only put items or outfits from your personal inventory into "My outfits"</string>
 	<string name="TooltipCantCreateOutfit">One or more items can't be used inside "My outfits"</string>
-
+	
 	<string name="TooltipDragOntoOwnChild">You can't move a folder into its child</string>
 	<string name="TooltipDragOntoSelf">You can't move a folder into itself</string>
-
+	
 	<!-- tooltips for Urls -->
 	<string name="TooltipHttpUrl">Click to view this web page</string>
 	<string name="TooltipSLURL">Click to view this location's information</string>
@@ -370,7 +371,7 @@ are allowed.
 	<string name="AssetUploadServerDifficulties">The server is experiencing unexpected difficulties.</string>
 	<string name="AssetUploadServerUnavaliable">Service not available or upload timeout was reached.</string>
 	<string name="AssetUploadRequestInvalid">
-Error in upload request.  Please visit
+Error in upload request.  Please visit 
 http://secondlife.com/support for help fixing this problem.
 </string>
 
@@ -534,6 +535,8 @@ http://secondlife.com/support for help fixing this problem.
 	<string name="ChangeYourDefaultAnimations">Change your default animations</string>
 	<string name="ForceSitAvatar">Force your avatar to sit</string>
 	<string name="ChangeEnvSettings">Change your environment settings</string>
+	<string name="ScriptBy" value="Script by "/>
+	<string name="ScriptStr" value="Script: "/>
 
 	<string name="NotConnected">Not Connected</string>
 	<string name="AgentNameSubst">(You)</string> <!-- Substitution for agent name -->
@@ -2320,7 +2323,8 @@ For AI Character: Get the closest navigable point to the point provided.
 
 	<!-- inventory -->
 	<string name="InventoryNoMatchingItems">Didn't find what you're looking for? Try [secondlife:///app/search/all/[SEARCH_TERM] Search].</string>
-	<string name="InventoryNoMatchingRecentItems">Didn't find what you're looking for? Try [secondlife:///app/inventory/filters Show filters].</string>
+	<string name="InventoryNoMatchingRecentItems">Didn't find what you're looking for? Try [secondlife:///app/inventory/filters Show filters].</string>	
+  <string name="InventoryNoMatchingFavorites">You haven't marked any items as favorites.</string>
 	<string name="PlacesNoMatchingItems">To add a place to your landmarks, click the star to the right of the location name.</string>
 	<string name="FavoritesNoMatchingItems">To add a place to your favorites, click the star to the right of the location name, then save the landmark to "Favorites bar".</string>
 	<string name="MarketplaceNoListing">You have no listings yet.</string>
@@ -2503,7 +2507,7 @@ If you continue to receive this message, please contact Second Life support for 
   <string name="InvFolder Materials">Materials</string>
 
   <!-- are used for Friends and Friends/All folders in Inventory "Calling cards" folder. See EXT-694-->
-	<string name="InvFolder Friends">Friends</string>
+	<string name="InvFolder Friends">Friends</string>	
 	<string name="InvFolder All">All</string>
 
 	<string name="no_attachments">No attachments worn</string>
@@ -2672,7 +2676,7 @@ If you continue to receive this message, please contact Second Life support for 
 	<string name="UploadFailed">File upload failed: </string>
 	<string name="ObjectOutOfRange">Script (object out of range)</string>
 	<string name="ScriptWasDeleted">Script (deleted from inventory)</string>
-
+	
 	<!-- god tools -->
 	<string name="GodToolsObjectOwnedBy">Object [OBJECT] owned by [OWNER]</string>
 
@@ -3719,6 +3723,10 @@ Please reinstall viewer from  https://secondlife.com/support/downloads/ and cont
   <string name="inventory_folder_offered-im">
     Inventory folder '[ITEM_NAME]' offered
   </string>
+  <string name="bot_warning">
+  You are chatting with a bot, [NAME]. Do not share any personal information.
+Learn more at https://second.life/scripted-agents.
+  </string>
   <string name="share_alert">
     Drag items from inventory here
   </string>
@@ -3851,7 +3859,7 @@ Please reinstall viewer from  https://secondlife.com/support/downloads/ and cont
 
   <string name="uploading_costs">Uploading costs L$ [AMOUNT]</string>
   <string name="this_costs">This costs L$ [AMOUNT]</string>
-
+  
   <string name="buying_selected_land">This land costs</string>
   <string name="this_object_costs">This item costs</string>
   <string name="giving">You want to give</string>
@@ -3932,7 +3940,7 @@ Abuse Report</string>
   <string name="New Daycycle">New Daycycle</string>
   <string name="New Water">New Water</string>
   <string name="New Sky">New Sky</string>
-
+  
 
   <string name="/bow">/bow</string>
   <string name="/clap">/clap</string>
@@ -4014,7 +4022,7 @@ Please check http://status.secondlifegrid.net to see if there is a known problem
   <string name="Accounting">Accounting</string>
   <string name="Notices">Notices</string>
   <string name="Chat">Chat</string>
-
+  
   <!-- SL Membership -->
   <string name="BaseMembership">Base</string>
   <string name="PremiumMembership">Premium</string>
@@ -4029,6 +4037,10 @@ Please check http://status.secondlifegrid.net to see if there is a known problem
   <string name="DeleteItem">Delete selected item?</string>
 
   <string name="EmptyOutfitText">There are no items in this outfit</string>
+  <string name="OutfitNotFound" value="Couldn't find outfit "/>
+  <string name="OutfitNotAdded" value="Can't add to COF outfit "/>
+  <string name="OutfitNotReplaced" value="Can't replace COF with outfit "/>
+  <string name="SystemFolderNotWorn" value="Can't wear system folder "/>
 
  <!-- External editor status codes -->
  <string name="ExternalEditorNotSet">Select an editor by setting the environment variable LL_SCRIPT_EDITOR or the ExternalEditor setting.
@@ -4180,7 +4192,7 @@ Try enclosing path to the editor with double quotes.
 
   <!-- commands -->
 
-  <string
+  <string 
 name="Command_360_Capture_Label">360 snapshot</string>
   <string name="Command_AboutLand_Label">About land</string>
   <string name="Command_Appearance_Label">Outfits</string>
@@ -4215,7 +4227,7 @@ name="Command_360_Capture_Label">360 snapshot</string>
   <string name="Command_FavoriteFolder_Label">Favorite folder</string>
 	<string name="Command_ResyncAnimations_Label">Resync animations</string>
 
-  <string
+  <string 
 name="Command_360_Capture_Tooltip">Capture a 360 equirectangular image</string>
   <string name="Command_AboutLand_Tooltip">Information about the land you're visiting</string>
   <string name="Command_Appearance_Tooltip">Change your avatar</string>
@@ -4282,7 +4294,7 @@ name="Command_360_Capture_Tooltip">Capture a 360 equirectangular image</string>
 
   <!-- Spell check settings floater -->
   <string name="UserDictionary">[User]</string>
-
+  
   <!-- Experience Tools strings -->
   <string name="experience_tools_experience">Experience</string>
   <string name="ExperienceNameNull">(no experience)</string>
@@ -4318,7 +4330,7 @@ name="Command_360_Capture_Tooltip">Capture a 360 equirectangular image</string>
 
   <!-- PBR Materials -->
   <string name="Material Texture Name Header">Textures present this material: </string>
-
+  
   <!-- Conversation log messages -->
   <string name="logging_calls_disabled_log_empty">
     Conversations are not being logged. To begin keeping a log, choose "Save: Log only" or "Save: Log and transcripts" under Preferences > Chat.
@@ -4341,7 +4353,7 @@ name="Command_360_Capture_Tooltip">Capture a 360 equirectangular image</string>
   <string name="Default">Default</string>
   <string name="none_paren_cap">(None)</string>
   <string name="no_limit">No limit</string>
-
+  
   <string name="Mav_Details_MAV_FOUND_DEGENERATE_TRIANGLES">
       The physics shape contains triangles which are too small. Try simplifying the physics model.
   </string>
@@ -4396,5 +4408,31 @@ and report the problem.
   <string name="NotAvailableOnPlatform">Not available on this platform</string>
   <string name="NowPlaying">Now Playing</string>
   <string name="GridInfoTitle">GRID INFO</string>
+  <!-- RLVa -->
+  <string name="RlvConsoleDisable">RLVa is disabled</string>
+  <string name="RlvConsoleInvalidCmd">Invalid command</string>
+  <string name="RlvConsoleExecuted">INFO</string>
+  <string name="RlvConsoleFailed">ERR</string>
+  <string name="RlvConsoleRetained">RET</string>
+  <string name="RlvDebugExecuted">executed</string>
+  <string name="RlvDebugFailed">failed</string>
+  <string name="RlvDebugRetained">retained</string>
+  <string name="RlvReturnCodeUnset">unset</string>
+  <string name="RlvReturnCodeDuplicate">duplicate</string>
+  <string name="RlvReturnCodeDelayed">delayed</string>
+  <string name="RlvReturnCodeDeprecated">deprecated</string>
+  <string name="RlvReturnCodeSyntax">thingy error</string>
+  <string name="RlvReturnCodeOption">invalid option</string>
+  <string name="RlvReturnCodeParam">invalid param</string>
+  <string name="RlvReturnCodeLock">locked command</string>
+  <string name="RlvReturnCodeDisabled">disabled command</string>
+  <string name="RlvReturnCodeUnknown">unknown command</string>
+  <string name="RlvReturnCodeNoSharedRoot">missing #RLV</string>
+  <string name="RlvReturnCodeDeprecatedAndDisabled">deprecated and disabled</string>
+  <string name="RlvReturnCodeNoBehaviour">no active behaviours</string>
+  <string name="RlvReturnCodeUnheldBehaviour">base behaviour not held</string>
+  <string name="RlvReturnCodeBlocked">blocked object</string>
+  <string name="RlvReturnCodeThrottled">throttled</string>
+  <string name="RlvReturnCodeNoProcessor">no command processor found</string>
 
 </strings>

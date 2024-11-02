@@ -32,8 +32,11 @@ using Lock  = LLCoros::LockType;
 LL::WorkQueueBase::WorkQueueBase(const std::string& name):
     super(makeName(name))
 {
-    // TODO: register for "LLApp" events so we can implicitly close() on
-    // viewer shutdown.
+    // Register for status change events so we'll implicitly close() on viewer
+    // shutdown.
+    mStopListener = LLCoros::getStopListener(
+        "WorkQueue:" + getKey(),
+        [this](const LLSD&){ close(); });
 }
 
 void LL::WorkQueueBase::runUntilClose()
@@ -124,9 +127,7 @@ void LL::WorkQueueBase::error(const std::string& msg)
 
 void LL::WorkQueueBase::checkCoroutine(const std::string& method)
 {
-    // By convention, the default coroutine on each thread has an empty name
-    // string. See also LLCoros::logname().
-    if (LLCoros::getName().empty())
+    if (LLCoros::on_main_coro())
     {
         LLTHROW(Error("Do not call " + method + " from a thread's default coroutine"));
     }

@@ -69,7 +69,6 @@
 頻寬：[NET_BANDWITH]千位元/秒
 細節層次率：[LOD_FACTOR]
 呈像品質：[RENDER_QUALITY]
-進階照明模型：[GPU_SHADERS]
 材質記憶體：[TEXTURE_MEMORY]MB
 	</string>
 	<string name="AboutOSXHiDPI">
@@ -4572,6 +4571,10 @@ http://secondlife.com/support 求助解決問題。
 	</string>
 	<string name="inventory_folder_offered-im">
 		收納區資料夾&apos;[ITEM_NAME]&apos;已向人提供
+	</string>
+	<string name="bot_warning">
+您正在与人工智能机器人 [NAME] 聊天。请勿分享任何个人信息。
+了解更多：https://second.life/scripted-agents。
 	</string>
 	<string name="share_alert">
 		將收納區物品拖曳到這裡

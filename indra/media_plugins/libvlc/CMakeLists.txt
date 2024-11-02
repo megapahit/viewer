@@ -51,6 +51,7 @@ if (DARWIN)
     POST_BUILD COMMAND ${CMAKE_INSTALL_NAME_TOOL}
         -change "/opt/local/lib/libpng16.16.dylib" "@loader_path/../../Frameworks/libpng16.16.dylib"
         -change "/opt/local/lib/libjpeg.8.dylib" "@loader_path/../../Frameworks/libjpeg.8.dylib"
+        -change "/opt/local/lib/libSDL2-2.0.0.dylib" "@loader_path/../../Frameworks/libSDL2-2.0.0.dylib"
         -change "/opt/local/lib/libfreetype.6.dylib" "@loader_path/../../Frameworks/libfreetype.6.dylib"
         -change "/opt/local/lib/libaprutil-1.0.dylib" "@loader_path/../../Frameworks/libaprutil-1.0.dylib"
         -change "/opt/local/lib/libiconv.2.dylib" "@loader_path/../../Frameworks/libiconv.2.dylib"

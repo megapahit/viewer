@@ -157,7 +157,7 @@ public:
     {
         LLUICtrl::CommitCallbackRegistry::ScopedRegistrar registrar;
 
-        registrar.add("Wearable.Create", boost::bind(onCreate, _2));
+        registrar.add("Wearable.Create", { boost::bind(onCreate, _2), LLUICtrl::cb_info::UNTRUSTED_BLOCK });
 
         llassert(LLMenuGL::sMenuContainer != NULL);
         LLToggleableMenu* menu = LLUICtrlFactory::getInstance()->createFromFile<LLToggleableMenu>(
@@ -226,7 +226,7 @@ public:
         LLHandle<LLView> flat_list_handle = flat_list->getHandle();
         LLHandle<LLPanel> inventory_panel_handle = inventory_panel->getHandle();
 
-        registrar.add("AddWearable.Gear.Sort", boost::bind(onSort, flat_list_handle, inventory_panel_handle, _2));
+        registrar.add("AddWearable.Gear.Sort", { boost::bind(onSort, flat_list_handle, inventory_panel_handle, _2) });
         enable_registrar.add("AddWearable.Gear.Check", boost::bind(onCheck, flat_list_handle, inventory_panel_handle, _2));
         enable_registrar.add("AddWearable.Gear.Visible", boost::bind(onVisible, inventory_panel_handle, _2));
 
@@ -404,7 +404,9 @@ LLPanelOutfitEdit::LLPanelOutfitEdit()
     mWearableListManager(NULL),
     mPlusBtn(NULL),
     mWearablesGearMenuBtn(NULL),
-    mGearMenuBtn(NULL)
+    mGearMenuBtn(NULL),
+    mStatus(NULL),
+    mCurrentOutfitName(NULL)
 {
     mSavedFolderState = new LLSaveFolderState();
     mSavedFolderState->setApply(false);
@@ -1307,7 +1309,7 @@ void LLPanelOutfitEdit::showFilteredWearablesListView(LLWearableType::EType type
     showWearablesListView();
 
     //e_list_view_item_type implicitly contains LLWearableType::EType starting from LVIT_SHAPE
-    applyListViewFilter(static_cast<EListViewItemType>(LVIT_SHAPE + type));
+    applyListViewFilter(EListViewItemType(LVIT_SHAPE + EListViewItemType(type)));
     mWearableItemsList->setMenuWearableType(type);
 }
 

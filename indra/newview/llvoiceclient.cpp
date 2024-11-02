@@ -439,6 +439,16 @@ void LLVoiceClient::setRenderDevice(const std::string& name)
 #endif
 }
 
+bool LLVoiceClient::isCaptureNoDevice()
+{
+    return LLWebRTCVoiceClient::getInstance()->isCaptureNoDevice();
+}
+
+bool LLVoiceClient::isRenderNoDevice()
+{
+    return LLWebRTCVoiceClient::getInstance()->isRenderNoDevice();
+}
+
 const LLVoiceDeviceList& LLVoiceClient::getCaptureDevices()
 {
 #if !__FreeBSD__
@@ -447,7 +457,6 @@ const LLVoiceDeviceList& LLVoiceClient::getCaptureDevices()
     return LLVivoxVoiceClient::getInstance()->getCaptureDevices();
 #endif
 }
-
 
 const LLVoiceDeviceList& LLVoiceClient::getRenderDevices()
 {

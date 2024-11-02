@@ -638,7 +638,8 @@ public:
     {
         getCPUIDInfo();
         uint64_t frequency = getSysctlInt64("hw.cpufrequency");
-        if (!frequency) {
+        if (!frequency)
+        {
             auto tbfrequency = getSysctlInt64("hw.tbfrequency");
             struct clockinfo clockrate;
             auto clockrate_len = sizeof(clockrate);

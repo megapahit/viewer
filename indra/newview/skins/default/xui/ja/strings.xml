@@ -66,7 +66,6 @@ SLURL：&lt;nolink&gt;[SLURL]&lt;/nolink&gt;
 帯域幅：[NET_BANDWITH]kbit／秒
 ＬＯＤ係数：[LOD_FACTOR]
 描画の質：[RENDER_QUALITY]
-高度な光源モデル：[GPU_SHADERS]
 テクスチャメモリ：[TEXTURE_MEMORY]㎆
 	</string>
 	<string name="AboutOSXHiDPI">
@@ -6149,6 +6148,10 @@ www.secondlife.com から最新バージョンをダウンロードしてくだ�
 	</string>
 	<string name="inventory_folder_offered-im">
 		フォルダ「[ITEM_NAME]」がインベントリに送られてきました。
+	</string>
+	<string name="bot_warning">
+[NAME]とチャットしています。個人情報を共有しないでください。
+詳細は https://second.life/scripted-agents をご覧ください。
 	</string>
 	<string name="share_alert">
 		インベントリからここにアイテムをドラッグします。

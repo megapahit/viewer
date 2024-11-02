@@ -13,11 +13,14 @@ include(Copy3rdPartyLibs)
 endif ()
 include(ZLIBNG)
 include(Tracy)
+include(Lualibs)
 
 
 set(llcommon_SOURCE_FILES
     apply.cpp
     commoncontrol.cpp
+    coro_scheduler.cpp
+    hbxxh.cpp
     indra_constants.cpp
     lazyeventapi.cpp
     llapp.cpp
@@ -55,8 +58,8 @@ set(llcommon_SOURCE_FILES
     llframetimer.cpp
     llheartbeat.cpp
     llheteromap.cpp
-    llinitparam.cpp
     llinitdestroyclass.cpp
+    llinitparam.cpp
     llinstancetracker.cpp
     llkeybind.cpp
     llleap.cpp
@@ -66,15 +69,16 @@ set(llcommon_SOURCE_FILES
     llmd5.cpp
     llmemory.cpp
     llmemorystream.cpp
-    llmetrics.cpp
     llmetricperformancetester.cpp
+    llmetrics.cpp
     llmortician.cpp
     llmutex.cpp
-    llptrto.cpp 
+    llpointer.cpp
     llpredicate.cpp
     llprocess.cpp
     llprocessor.cpp
     llprocinfo.cpp
+    llptrto.cpp 
     llqueuedthread.cpp
     llrand.cpp
     llrefcount.cpp
@@ -104,9 +108,14 @@ set(llcommon_SOURCE_FILES
     lluriparser.cpp
     lluuid.cpp
     llworkerthread.cpp
-    hbxxh.cpp
-    u64.cpp
+    lockstatic.cpp
+    lua_function.cpp
+    lualistener.cpp
+    resultset.cpp
+    scriptcommand.cpp
     threadpool.cpp
+    throttle.cpp
+    u64.cpp
     workqueue.cpp
     StackWalker.cpp
     )
@@ -119,10 +128,12 @@ set(llcommon_HEADER_FILES
     chrono.h
     classic_callback.h
     commoncontrol.h
+    coro_scheduler.h
     ctype_workaround.h
     fix_macros.h
     fsyspath.h
     function_types.h
+    hbxxh.h
     indra_constants.h
     lazyeventapi.h
     linden_common.h
@@ -141,6 +152,7 @@ set(llcommon_HEADER_FILES
     llcommonutils.h
     llcond.h
     llcoros.h
+    llcoromutex.h
     llcrc.h
     llcriticaldamp.h
     lldate.h
@@ -157,10 +169,9 @@ set(llcommon_HEADER_FILES
     lleventapi.h
     lleventcoro.h
     lleventdispatcher.h
+    lleventemitter.h
     lleventfilter.h
     llevents.h
-    lleventtimer.h
-    lleventemitter.h
     llexception.h
     llfasttimer.h
     llfile.h
@@ -177,6 +188,7 @@ set(llcommon_HEADER_FILES
     llinitparam.h
     llinstancetracker.h
     llinstancetrackersubclass.h
+    llinttracker.h
     llkeybind.h
     llkeythrottle.h
     llleap.h
@@ -188,14 +200,12 @@ set(llcommon_HEADER_FILES
     llmd5.h
     llmemory.h
     llmemorystream.h
-    llmetrics.h
     llmetricperformancetester.h
+    llmetrics.h
     llmortician.h
     llmutex.h
     llnametable.h
     llpointer.h
-    llprofiler.h
-    llprofilercategories.h
     llpounceable.h
     llpredicate.h
     llpreprocessor.h
@@ -203,6 +213,8 @@ set(llcommon_HEADER_FILES
     llprocess.h
     llprocessor.h
     llprocinfo.h
+    llprofiler.h
+    llprofilercategories.h
     llptrto.h
     llqueuedthread.h
     llrand.h
@@ -220,14 +232,14 @@ set(llcommon_HEADER_FILES
     llsimplehash.h
     llsingleton.h
     llstacktrace.h
+    llstaticstringtable.h
+    llstatsaccumulator.h
     llstl.h
     llstreamqueue.h
     llstreamtools.h
     llstrider.h
     llstring.h
     llstringtable.h
-    llstaticstringtable.h
-    llstatsaccumulator.h
     llsys.h
     lltempredirect.h
     llthread.h
@@ -246,15 +258,18 @@ set(llcommon_HEADER_FILES
     lluuid.h
     llwin32headers.h
     llworkerthread.h
-    hbxxh.h
-    is_approx_equal_fraction.h
     lockstatic.h
-    mutex.h
+    lua_function.h
+    lualistener.h
+    resultset.h
+    scriptcommand.h
     stdtypes.h
     stringize.h
+    tempset.h
     threadpool.h
     threadpool_fwd.h
     threadsafeschedule.h
+    throttle.h
     timer.h
     tuple.h
     u64.h
@@ -283,6 +298,7 @@ target_link_libraries(
         ll::boost
         ll::oslibraries
         ll::tracy
+        ll::lualibs
     )
 
 target_include_directories(llcommon INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -315,6 +331,12 @@ else ()
             llevent.cpp
             llfasttimer.cpp
             PROPERTIES COMPILE_FLAGS -Wno-nonnull)
+        set_source_files_properties(
+            llsdserialize.cpp
+            llsingleton.cpp
+            llstreamtools.cpp
+            lluri.cpp
+            PROPERTIES COMPILE_FLAGS -Wno-restrict)
     elseif (LINUX AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         set_source_files_properties(llsys.cpp PROPERTIES
             COMPILE_FLAGS -Wno-unused-but-set-variable)

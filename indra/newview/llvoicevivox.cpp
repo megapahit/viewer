@@ -2784,6 +2784,7 @@ void LLVivoxVoiceClient::setCaptureDevice(const std::string& name)
         }
     }
 }
+
 void LLVivoxVoiceClient::setDevicesListUpdated(bool state)
 {
     mDevicesListUpdated = state;
@@ -6646,13 +6647,13 @@ void LLVivoxVoiceClient::expireVoiceFonts()
         }
     }
 
-    LLSD args;
-    args["URL"] = LLTrans::getString("voice_morphing_url");
-    args["PREMIUM_URL"] = LLTrans::getString("premium_voice_morphing_url");
-
     // Give a notification if any voice fonts have expired.
     if (have_expired)
     {
+        LLSD args;
+        args["URL"] = LLTrans::getString("voice_morphing_url");
+        args["PREMIUM_URL"] = LLTrans::getString("premium_voice_morphing_url");
+
         if (expired_in_use)
         {
             LLNotificationsUtil::add("VoiceEffectsExpiredInUse", args);

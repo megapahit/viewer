@@ -31,6 +31,7 @@
 #include "llwindowwin32.h"
 
 // LLWindow library includes
+#include "llgamecontrol.h"
 #include "llkeyboardwin32.h"
 #include "lldragdropwin32.h"
 #include "llpreeditor.h"
@@ -344,8 +345,13 @@ struct LLWindowWin32::LLWindowWin32Thread : public LL::ThreadPool
     void run() override;
     void close() override;
 
-    // closes queue, wakes thread, waits until thread closes
-    void wakeAndDestroy();
+    // Detroys handles and window
+    // Either post to or call from window thread
+    void destroyWindow();
+
+    // Closes queue, wakes thread, waits until thread closes.
+    // Call from main thread
+    bool wakeAndDestroy();
 
     void glReady()
     {
@@ -402,6 +408,8 @@ struct LLWindowWin32::LLWindowWin32Thread : public LL::ThreadPool
     // until after some graphics setup. See SL-20177. -Cosmic,2023-09-18
     bool mGLReady = false;
     bool mGotGLBuffer = false;
+    bool mShuttingDown = false;
+    LLAtomicBool mDeleteOnExit = false;
 };
 
 
@@ -845,6 +853,7 @@ LLWindowWin32::~LLWindowWin32()
     }
 
     delete mDragDrop;
+    mDragDrop = NULL;
 
     delete [] mWindowTitle;
     mWindowTitle = NULL;
@@ -856,6 +865,7 @@ LLWindowWin32::~LLWindowWin32()
     mWindowClassName = NULL;
 
     delete mWindowThread;
+    mWindowThread = NULL;
 }
 
 void LLWindowWin32::show()
@@ -974,7 +984,11 @@ void LLWindowWin32::close()
     mhDC = NULL;
     mWindowHandle = NULL;
 
-    mWindowThread->wakeAndDestroy();
+    if (mWindowThread->wakeAndDestroy())
+    {
+        // thread will delete itselfs once done
+        mWindowThread = NULL;
+    }
 }
 
 bool LLWindowWin32::isValid()
@@ -982,17 +996,17 @@ bool LLWindowWin32::isValid()
     return (mWindowHandle != NULL);
 }
 
-bool LLWindowWin32::getVisible()
+bool LLWindowWin32::getVisible() const
 {
     return (mWindowHandle && IsWindowVisible(mWindowHandle));
 }
 
-bool LLWindowWin32::getMinimized()
+bool LLWindowWin32::getMinimized() const
 {
     return (mWindowHandle && IsIconic(mWindowHandle));
 }
 
-bool LLWindowWin32::getMaximized()
+bool LLWindowWin32::getMaximized() const
 {
     return (mWindowHandle && IsZoomed(mWindowHandle));
 }
@@ -1017,26 +1031,21 @@ bool LLWindowWin32::maximize()
     return true;
 }
 
-bool LLWindowWin32::getFullscreen()
-{
-    return mFullscreen;
-}
-
-bool LLWindowWin32::getPosition(LLCoordScreen *position)
+bool LLWindowWin32::getPosition(LLCoordScreen *position) const
 {
     position->mX = mRect.left;
     position->mY = mRect.top;
     return true;
 }
 
-bool LLWindowWin32::getSize(LLCoordScreen *size)
+bool LLWindowWin32::getSize(LLCoordScreen *size) const
 {
     size->mX = mRect.right - mRect.left;
     size->mY = mRect.bottom - mRect.top;
     return true;
 }
 
-bool LLWindowWin32::getSize(LLCoordWindow *size)
+bool LLWindowWin32::getSize(LLCoordWindow *size) const
 {
     size->mX = mClientRect.right - mClientRect.left;
     size->mY = mClientRect.bottom - mClientRect.top;
@@ -1974,7 +1983,7 @@ bool LLWindowWin32::getCursorPosition(LLCoordWindow *position)
     return true;
 }
 
-bool LLWindowWin32::getCursorDelta(LLCoordCommon* delta)
+bool LLWindowWin32::getCursorDelta(LLCoordCommon* delta) const
 {
     if (delta == nullptr)
     {
@@ -2162,7 +2171,7 @@ void LLWindowWin32::delayInputProcessing()
 }
 
 
-void LLWindowWin32::gatherInput()
+void LLWindowWin32::gatherInput(bool app_has_focus)
 {
     ASSERT_MAIN_THREAD();
     LL_PROFILE_ZONE_SCOPED_CATEGORY_WIN32;
@@ -2242,6 +2251,8 @@ void LLWindowWin32::gatherInput()
     mInputProcessingPaused = false;
 
     updateCursor();
+
+    LLGameControl::processEvents(app_has_focus);
 }
 
 static LLTrace::BlockTimerStatHandle FTM_KEYHANDLER("Handle Keyboard");
@@ -3097,10 +3108,17 @@ LRESULT CALLBACK LLWindowWin32::mainWindowProc(HWND h_wnd, UINT u_msg, WPARAM w_
         break;
         }
     }
-    else
+    else // (NULL == window_imp)
     {
-        // (NULL == window_imp)
-        LL_DEBUGS("Window") << "No window implementation to handle message with, message code: " << U32(u_msg) << LL_ENDL;
+        if (u_msg == WM_DESTROY)
+        {
+            PostQuitMessage(0);  // Posts WM_QUIT with an exit code of 0
+            return 0;
+        }
+        else
+        {
+            LL_DEBUGS("Window") << "No window implementation to handle message with, message code: " << U32(u_msg) << LL_ENDL;
+        }
     }
 
     // pass unhandled messages down to Windows
@@ -3112,7 +3130,7 @@ LRESULT CALLBACK LLWindowWin32::mainWindowProc(HWND h_wnd, UINT u_msg, WPARAM w_
     return ret;
 }
 
-bool LLWindowWin32::convertCoords(LLCoordGL from, LLCoordWindow *to)
+bool LLWindowWin32::convertCoords(LLCoordGL from, LLCoordWindow *to) const
 {
     S32     client_height;
     RECT    client_rect;
@@ -3132,7 +3150,7 @@ bool LLWindowWin32::convertCoords(LLCoordGL from, LLCoordWindow *to)
     return true;
 }
 
-bool LLWindowWin32::convertCoords(LLCoordWindow from, LLCoordGL* to)
+bool LLWindowWin32::convertCoords(LLCoordWindow from, LLCoordGL* to) const
 {
     S32     client_height;
     RECT    client_rect;
@@ -3151,7 +3169,7 @@ bool LLWindowWin32::convertCoords(LLCoordWindow from, LLCoordGL* to)
     return true;
 }
 
-bool LLWindowWin32::convertCoords(LLCoordScreen from, LLCoordWindow* to)
+bool LLWindowWin32::convertCoords(LLCoordScreen from, LLCoordWindow* to) const
 {
     POINT mouse_point;
 
@@ -3168,7 +3186,7 @@ bool LLWindowWin32::convertCoords(LLCoordScreen from, LLCoordWindow* to)
     return result;
 }
 
-bool LLWindowWin32::convertCoords(LLCoordWindow from, LLCoordScreen *to)
+bool LLWindowWin32::convertCoords(LLCoordWindow from, LLCoordScreen *to) const
 {
     POINT mouse_point;
 
@@ -3185,7 +3203,7 @@ bool LLWindowWin32::convertCoords(LLCoordWindow from, LLCoordScreen *to)
     return result;
 }
 
-bool LLWindowWin32::convertCoords(LLCoordScreen from, LLCoordGL *to)
+bool LLWindowWin32::convertCoords(LLCoordScreen from, LLCoordGL *to) const
 {
     LLCoordWindow window_coord;
 
@@ -3199,7 +3217,7 @@ bool LLWindowWin32::convertCoords(LLCoordScreen from, LLCoordGL *to)
     return true;
 }
 
-bool LLWindowWin32::convertCoords(LLCoordGL from, LLCoordScreen *to)
+bool LLWindowWin32::convertCoords(LLCoordGL from, LLCoordScreen *to) const
 {
     LLCoordWindow window_coord;
 
@@ -3318,7 +3336,7 @@ void LLWindowWin32::setMouseClipping( bool b )
     }
 }
 
-bool LLWindowWin32::getClientRectInScreenSpace( RECT* rectp )
+bool LLWindowWin32::getClientRectInScreenSpace( RECT* rectp ) const
 {
     bool success = false;
 
@@ -3362,7 +3380,7 @@ void LLWindowWin32::flashIcon(F32 seconds)
         });
 }
 
-F32 LLWindowWin32::getGamma()
+F32 LLWindowWin32::getGamma() const
 {
     return mCurrentGamma;
 }
@@ -3424,7 +3442,7 @@ void LLWindowWin32::setFSAASamples(const U32 fsaa_samples)
     mFSAASamples = fsaa_samples;
 }
 
-U32 LLWindowWin32::getFSAASamples()
+U32 LLWindowWin32::getFSAASamples() const
 {
     return mFSAASamples;
 }
@@ -3733,6 +3751,23 @@ S32 OSMessageBoxWin32(const std::string& text, const std::string& caption, U32 t
     return retval;
 }
 
+void shell_open(const std::string &file, bool async)
+{
+    std::wstring url_utf16 = ll_convert(file);
+
+    // let the OS decide what to use to open the URL
+    SHELLEXECUTEINFO sei = {sizeof(sei)};
+    // NOTE: this assumes that SL will stick around long enough to complete the DDE message exchange
+    // necessary for ShellExecuteEx to complete
+    if (async)
+    {
+        sei.fMask = SEE_MASK_ASYNCOK;
+    }
+    sei.nShow  = SW_SHOWNORMAL;
+    sei.lpVerb = L"open";
+    sei.lpFile = url_utf16.c_str();
+    ShellExecuteEx(&sei);
+}
 
 void LLWindowWin32::spawnWebBrowser(const std::string& escaped_url, bool async)
 {
@@ -3758,29 +3793,19 @@ void LLWindowWin32::spawnWebBrowser(const std::string& escaped_url, bool async)
     // replaced ShellExecute code with ShellExecuteEx since ShellExecute doesn't work
     // reliablly on Vista.
 
-    // this is madness.. no, this is..
-    LLWString url_wstring = utf8str_to_wstring( escaped_url );
-    llutf16string url_utf16 = wstring_to_utf16str( url_wstring );
+    shell_open(escaped_url, async);
+}
 
-    // let the OS decide what to use to open the URL
-    SHELLEXECUTEINFO sei = { sizeof( sei ) };
-    // NOTE: this assumes that SL will stick around long enough to complete the DDE message exchange
-    // necessary for ShellExecuteEx to complete
-    if (async)
-    {
-        sei.fMask = SEE_MASK_ASYNCOK;
-    }
-    sei.nShow = SW_SHOWNORMAL;
-    sei.lpVerb = L"open";
-    sei.lpFile = url_utf16.c_str();
-    ShellExecuteEx( &sei );
+void LLWindowWin32::openFolder(const std::string &path)
+{
+    shell_open(path, false);
 }
 
 /*
     Make the raw keyboard data available - used to poke through to LLQtWebKit so
     that Qt/Webkit has access to the virtual keycodes etc. that it needs
 */
-LLSD LLWindowWin32::getNativeKeyData()
+LLSD LLWindowWin32::getNativeKeyData() const
 {
     LLSD result = LLSD::emptyMap();
 
@@ -4571,14 +4596,14 @@ inline LLWindowWin32::LLWindowWin32Thread::LLWindowWin32Thread()
 
 void LLWindowWin32::LLWindowWin32Thread::close()
 {
-    if (!mQueue->isClosed())
+    LL::ThreadPool::close();
+    if (!mShuttingDown)
     {
         LL_WARNS() << "Closing window thread without using destroy_window_handler" << LL_ENDL;
-        LL::ThreadPool::close();
-
         // Workaround for SL-18721 in case window closes too early and abruptly
         LLSplashScreen::show();
         LLSplashScreen::update("..."); // will be updated later
+        mShuttingDown = true;
     }
 }
 
@@ -4780,15 +4805,53 @@ void LLWindowWin32::LLWindowWin32Thread::run()
         }
 #endif
     }
+
+    destroyWindow();
+
+    if (mDeleteOnExit)
+    {
+        delete this;
+    }
 }
 
-void LLWindowWin32::LLWindowWin32Thread::wakeAndDestroy()
+void LLWindowWin32::LLWindowWin32Thread::destroyWindow()
+{
+    if (mWindowHandleThrd != NULL && IsWindow(mWindowHandleThrd))
+    {
+        if (mhDCThrd)
+        {
+            if (!ReleaseDC(mWindowHandleThrd, mhDCThrd))
+            {
+                LL_WARNS("Window") << "Release of ghDC failed!" << LL_ENDL;
+            }
+            mhDCThrd = NULL;
+        }
+
+        // This causes WM_DESTROY to be sent *immediately*
+        if (!destroy_window_handler(mWindowHandleThrd))
+        {
+            LL_WARNS("Window") << "Failed to destroy Window! " << std::hex << GetLastError() << LL_ENDL;
+        }
+    }
+    else
+    {
+        // Something killed the window while we were busy destroying gl or handle somehow got broken
+        LL_WARNS("Window") << "Failed to destroy Window, invalid handle!" << LL_ENDL;
+    }
+    mWindowHandleThrd = NULL;
+    mhDCThrd = NULL;
+    mGLReady = false;
+}
+
+bool LLWindowWin32::LLWindowWin32Thread::wakeAndDestroy()
 {
     if (mQueue->isClosed())
     {
-        LL_WARNS() << "Tried to close Queue. Win32 thread Queue already closed." << LL_ENDL;
-        return;
+        LL_WARNS() << "Tried to close Queue. Win32 thread Queue already closed." <<LL_ENDL;
+        return false;
     }
+
+    mShuttingDown = true;
 
     // Make sure we don't leave a blank toolbar button.
     // Also hiding window now prevents user from suspending it
@@ -4797,34 +4860,14 @@ void LLWindowWin32::LLWindowWin32Thread::wakeAndDestroy()
 
     // Schedule destruction
     HWND old_handle = mWindowHandleThrd;
-    post([this]()
-         {
-             if (IsWindow(mWindowHandleThrd))
-             {
-                 if (mhDCThrd)
-                 {
-                     if (!ReleaseDC(mWindowHandleThrd, mhDCThrd))
-                     {
-                         LL_WARNS("Window") << "Release of ghDC failed!" << LL_ENDL;
-                     }
-                     mhDCThrd = NULL;
-                 }
+    mDeleteOnExit = true;
+    SetWindowLongPtr(old_handle, GWLP_USERDATA, NULL);
 
-                 // This causes WM_DESTROY to be sent *immediately*
-                 if (!destroy_window_handler(mWindowHandleThrd))
-                 {
-                     LL_WARNS("Window") << "Failed to destroy Window! " << std::hex << GetLastError() << LL_ENDL;
-                 }
-             }
-             else
-             {
-                 // Something killed the window while we were busy destroying gl or handle somehow got broken
-                 LL_WARNS("Window") << "Failed to destroy Window, invalid handle!" << LL_ENDL;
-             }
-             mWindowHandleThrd = NULL;
-             mhDCThrd = NULL;
-             mGLReady = false;
-         });
+    // Let thread finish on its own and don't block main thread.
+    for (auto& pair : mThreads)
+    {
+        pair.second.detach();
+    }
 
     LL_DEBUGS("Window") << "Closing window's pool queue" << LL_ENDL;
     mQueue->close();
@@ -4840,48 +4883,8 @@ void LLWindowWin32::LLWindowWin32Thread::wakeAndDestroy()
         PostMessage(old_handle, WM_DUMMY_, wparam, 0x1337);
     }
 
-    // There are cases where window will refuse to close,
-    // can't wait forever on join, check state instead
-    LLTimer timeout;
-    timeout.setTimerExpirySec(2.0);
-    while (!getQueue().done() && !timeout.hasExpired() && mWindowHandleThrd)
-    {
-        ms_sleep(100);
-    }
-
-    if (getQueue().done() || mWindowHandleThrd == NULL)
-    {
-        // Window is closed, started closing or is cleaning up
-        // now wait for our single thread to die.
-        if (mWindowHandleThrd)
-        {
-            LL_INFOS("Window") << "Window is closing, waiting on pool's thread to join, time since post: " << timeout.getElapsedSeconds() << "s" << LL_ENDL;
-        }
-        else
-        {
-            LL_DEBUGS("Window") << "Waiting on pool's thread, time since post: " << timeout.getElapsedSeconds() << "s" << LL_ENDL;
-        }
-        for (auto& pair : mThreads)
-        {
-            pair.second.join();
-        }
-    }
-    else
-    {
-        // Something suspended window thread, can't afford to wait forever
-        // so kill thread instead
-        // Ex: This can happen if user starts dragging window arround (if it
-        // was visible) or a modal notification pops up
-        LL_WARNS("Window") << "Window is frozen, couldn't perform clean exit" << LL_ENDL;
-
-        for (auto& pair : mThreads)
-        {
-            // very unsafe
-            TerminateThread(pair.second.native_handle(), 0);
-            pair.second.detach();
-        }
-    }
     LL_DEBUGS("Window") << "thread pool shutdown complete" << LL_ENDL;
+    return true;
 }
 
 void LLWindowWin32::post(const std::function<void()>& func)

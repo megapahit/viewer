@@ -32,7 +32,7 @@ target_link_libraries( llxml
         llmath
         llcommon
         ll::expat
-        ll::SDL
+        ll::SDL2
     )
 target_include_directories( llxml  INTERFACE   ${CMAKE_CURRENT_SOURCE_DIR})
 

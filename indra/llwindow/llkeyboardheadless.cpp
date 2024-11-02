@@ -31,12 +31,18 @@
 LLKeyboardHeadless::LLKeyboardHeadless()
 { }
 
+bool LLKeyboardHeadless::handleKeyUp(const LLKeyboard::NATIVE_KEY_TYPE key, MASK mask)
+{
+    return false;
+}
+
+bool LLKeyboardHeadless::handleKeyDown(const LLKeyboard::NATIVE_KEY_TYPE key, MASK mask)
+{
+    return false;
+}
+
 void LLKeyboardHeadless::resetMaskKeys()
 { }
-
-
-
-
 
 MASK LLKeyboardHeadless::currentMask(bool for_mouse_event)
 { return MASK_NONE; }
@@ -61,6 +67,7 @@ void LLKeyboardHeadless::scanKeyboard()
             mCallbacks->handleScanKey(key, mKeyDown[key], mKeyUp[key], mKeyLevel[key]);
         }
     }
+    mCurScanKey = KEY_NONE;
 
     // Reset edges for next frame
     for (S32 key = 0; key < KEY_COUNT; key++)

@@ -51,6 +51,7 @@ void check_framebuffer_status()
 }
 
 bool LLRenderTarget::sUseFBO = false;
+bool LLRenderTarget::sClearOnInvalidate = false;
 U32 LLRenderTarget::sCurFBO = 0;
 
 
@@ -476,6 +477,13 @@ void LLRenderTarget::clear(U32 mask_in)
     }
 }
 
+void LLRenderTarget::invalidate(U32 mask_in)
+{
+    LL_PROFILE_ZONE_SCOPED_CATEGORY_DISPLAY;
+    if (!sClearOnInvalidate) { return; }
+    clear(mask_in);
+}
+
 U32 LLRenderTarget::getTexture(U32 attachment) const
 {
     if (attachment >= mTex.size())
@@ -590,7 +598,6 @@ void LLRenderTarget::swapFBORefs(LLRenderTarget& other)
     llassert(!other.isBoundInStack());
 
     // Must be same type
-    llassert(sUseFBO == other.sUseFBO);
     llassert(mResX == other.mResX);
     llassert(mResY == other.mResY);
     llassert(mInternalFormat == other.mInternalFormat);

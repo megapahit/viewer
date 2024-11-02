@@ -1692,6 +1692,8 @@ bool LLIMModel::logToFile(const std::string& file_name, const std::string& from,
     }
     else
     {
+        // will check KeepConversationLogTranscripts on its own
+        LLConversationLog::instance().cache();
         return false;
     }
 }
@@ -3145,9 +3147,16 @@ void LLIMMgr::addMessage(
     const LLUUID& region_id,
     const LLVector3& position,
     bool is_region_msg,
-    U32 timestamp)      // May be zero
+    U32 timestamp,  // May be zero
+    LLUUID display_id,
+    std::string_view display_name)
 {
     LLUUID other_participant_id = target_id;
+    std::string message_display_name = (display_name.empty()) ? from : std::string(display_name);
+    if (display_id.isNull() && (display_name.empty()))
+    {
+        display_id = other_participant_id;
+    }
 
     LLUUID new_session_id = session_id;
     if (new_session_id.isNull())
@@ -3243,7 +3252,7 @@ void LLIMMgr::addMessage(
             }
 
             //Play sound for new conversations
-            if (!skip_message & !gAgent.isDoNotDisturb() && (gSavedSettings.getBOOL("PlaySoundNewConversation")))
+            if (!skip_message && !gAgent.isDoNotDisturb() && (gSavedSettings.getBOOL("PlaySoundNewConversation")))
             {
                 make_ui_sound("UISndNewIncomingIMSession");
             }
@@ -3257,7 +3266,7 @@ void LLIMMgr::addMessage(
 
     if (!LLMuteList::getInstance()->isMuted(other_participant_id, LLMute::flagTextChat) && !skip_message)
     {
-        LLIMModel::instance().addMessage(new_session_id, from, other_participant_id, msg, true, is_region_msg, timestamp);
+        LLIMModel::instance().addMessage(new_session_id, message_display_name, display_id, msg, true, is_region_msg, timestamp);
     }
 
     // Open conversation floater if offline messages are present
@@ -3553,6 +3562,7 @@ void LLIMMgr::inviteToSession(
             && voice_invite && "VoiceInviteQuestionDefault" == question_type)
         {
             LL_INFOS("IMVIEW") << "Rejecting voice call from initiating muted resident " << caller_name << LL_ENDL;
+            payload["voice_channel_info"] = voice_channel_info;
             LLIncomingCallDialog::processCallResponse(1, payload);
             return;
         }
@@ -3601,6 +3611,7 @@ void LLIMMgr::inviteToSession(
                 send_do_not_disturb_message(gMessageSystem, caller_id, session_id);
             }
             // silently decline the call
+            payload["voice_channel_info"] = voice_channel_info;
             LLIncomingCallDialog::processCallResponse(1, payload);
             return;
         }

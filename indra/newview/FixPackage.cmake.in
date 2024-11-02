@@ -90,6 +90,11 @@ file(CREATE_LINK
     SYMBOLIC
     )
 file(CREATE_LINK
+    "../../../../Frameworks/libSDL2-2.0.0.dylib"
+    "${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libSDL2-2.0.0.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
     "../../../../Frameworks/libfreetype.6.dylib"
     "${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libfreetype.6.dylib"
     SYMBOLIC
@@ -279,6 +284,7 @@ execute_process(
         Frameworks/Chromium\ Embedded\ Framework.framework/Libraries/libGLESv2.dylib
         Frameworks/Chromium\ Embedded\ Framework.framework/Libraries/libvk_swiftshader.dylib
         Frameworks/Chromium\ Embedded\ Framework.framework
+        Frameworks/libSDL2-2.0.0.dylib
         Frameworks/libalut.0.dylib
         Frameworks/libapr-1.0.dylib
         Frameworks/libaprutil-1.0.dylib

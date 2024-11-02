@@ -40,6 +40,7 @@ macro (use_prebuilt_binary _binary)
         --install-dir=${AUTOBUILD_INSTALL_DIR}
         ${_binary} ")
         endif(DEBUG_PREBUILT)
+        message(STATUS "Installing ${_binary}...")
         if(USESYSTEMLIBS)
             execute_process(COMMAND xmllint
                 --xpath
@@ -74,6 +75,8 @@ macro (use_prebuilt_binary _binary)
         else(USESYSTEMLIBS)
         execute_process(COMMAND "${AUTOBUILD_EXECUTABLE}"
                 install
+                -A${ADDRESS_SIZE}
+                --skip-source-environment
                 --install-dir=${AUTOBUILD_INSTALL_DIR}
                 ${_binary}
                 WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"

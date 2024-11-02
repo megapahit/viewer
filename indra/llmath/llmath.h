@@ -75,7 +75,7 @@ constexpr F32   DEG_TO_RAD  = 0.017453292519943295769236907684886f;
 constexpr F32   RAD_TO_DEG  = 57.295779513082320876798154814105f;
 constexpr F32   F_APPROXIMATELY_ZERO = 0.00001f;
 constexpr F32   F_LN10      = 2.3025850929940456840179914546844f;
-constexpr F32   OO_LN10     = 0.43429448190325182765112891891661;
+constexpr F32   OO_LN10     = 0.43429448190325182765112891891661f;
 constexpr F32   F_LN2       = 0.69314718056f;
 constexpr F32   OO_LN2      = 1.4426950408889634073599246810019f;
 
@@ -358,10 +358,7 @@ inline F32 snap_to_sig_figs(F32 foo, S32 sig_figs)
     return new_foo;
 }
 
-inline F32 lerp(F32 a, F32 b, F32 u)
-{
-    return a + ((b - a) * u);
-}
+using std::lerp;
 
 inline F32 lerp2d(F32 x00, F32 x01, F32 x10, F32 x11, F32 u, F32 v)
 {
@@ -486,7 +483,7 @@ inline U32 get_next_power_two(U32 val, U32 max_power_two)
 //get the gaussian value given the linear distance from axis x and guassian value o
 inline F32 llgaussian(F32 x, F32 o)
 {
-    return 1.f/(F_SQRT_TWO_PI*o)*powf(F_E, -(x*x)/(2*o*o));
+    return 1.f/(F_SQRT_TWO_PI*o)*powf(F_E, -(x*x)/(2.f*o*o));
 }
 
 //helper function for removing outliers

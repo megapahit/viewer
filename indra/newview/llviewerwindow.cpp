@@ -66,6 +66,7 @@
 #include "llchatentry.h"
 #include "indra_constants.h"
 #include "llassetstorage.h"
+#include "lldate.h"
 #include "llerrorcontrol.h"
 #include "llfontgl.h"
 #include "llmousehandler.h"
@@ -195,7 +196,6 @@
 #include "llviewerjoystick.h"
 #include "llviewermenufile.h" // LLFilePickerReplyThread
 #include "llviewernetwork.h"
-#include "llpostprocess.h"
 #include "llfloaterimnearbychat.h"
 #include "llagentui.h"
 #include "llwearablelist.h"
@@ -1331,7 +1331,7 @@ LLWindowCallbacks::DragNDropResult LLViewerWindow::handleDragNDrop( LLWindow *wi
                                 // Check the whitelist, if there's media (otherwise just show it)
                                 if (te->getMediaData() == NULL || te->getMediaData()->checkCandidateUrl(url))
                                 {
-                                    if ( obj != mDragHoveredObject)
+                                    if (obj != mDragHoveredObject)
                                     {
                                         // Highlight the dragged object
                                         LLSelectMgr::getInstance()->unhighlightObjectOnly(mDragHoveredObject);
@@ -1425,10 +1425,16 @@ void LLViewerWindow::handleMouseMove(LLWindow *window,  LLCoordGL pos, MASK mask
 
     mWindow->showCursorFromMouseMove();
 
-    if (gAwayTimer.getElapsedTimeF32() > LLAgent::MIN_AFK_TIME
-        && !gDisconnected)
+    if (!gDisconnected)
     {
-        gAgent.clearAFK();
+        if (gAwayTimer.getElapsedTimeF32() > LLAgent::MIN_AFK_TIME)
+        {
+            gAgent.clearAFK();
+        }
+        else
+        {
+            gAwayTriggerTimer.reset();
+        }
     }
 }
 
@@ -1544,6 +1550,10 @@ bool LLViewerWindow::handleTranslatedKeyDown(KEY key,  MASK mask, bool repeated)
     if (gAwayTimer.getElapsedTimeF32() > LLAgent::MIN_AFK_TIME)
     {
         gAgent.clearAFK();
+    }
+    else
+    {
+        gAwayTriggerTimer.reset();
     }
 
     // *NOTE: We want to interpret KEY_RETURN later when it arrives as
@@ -3005,7 +3015,8 @@ bool LLViewerWindow::handleKey(KEY key, MASK mask)
     {
         if ((focusedFloaterName == "nearby_chat") || (focusedFloaterName == "im_container") || (focusedFloaterName == "impanel"))
         {
-            if (gSavedSettings.getBOOL("ArrowKeysAlwaysMove"))
+            LLCachedControl<bool> key_move(gSavedSettings, "ArrowKeysAlwaysMove");
+            if (key_move())
             {
                 // let Control-Up and Control-Down through for chat line history,
                 if (!(key == KEY_UP && mask == MASK_CONTROL)
@@ -3019,10 +3030,9 @@ bool LLViewerWindow::handleKey(KEY key, MASK mask)
                     case KEY_RIGHT:
                     case KEY_UP:
                     case KEY_DOWN:
-                    case KEY_PAGE_UP:
-                    case KEY_PAGE_DOWN:
-                    case KEY_HOME:
-                    case KEY_END:
+                    case KEY_PAGE_UP: //jump
+                    case KEY_PAGE_DOWN: // down
+                    case KEY_HOME: // toggle fly
                         // when chatbar is empty or ArrowKeysAlwaysMove set,
                         // pass arrow keys on to avatar...
                         return false;
@@ -3783,19 +3793,21 @@ void LLViewerWindow::updateUI()
 
 void LLViewerWindow::updateLayout()
 {
-    LLTool* tool = LLToolMgr::getInstance()->getCurrentTool();
+    LLToolMgr* tool_mgr = LLToolMgr::getInstance();
+    LLTool* tool = tool_mgr->getCurrentTool();
+    LLCachedControl<bool> freeze_time(gSavedSettings, "FreezeTime");
     if (gFloaterTools != NULL
         && tool != NULL
         && tool != gToolNull
         && tool != LLToolCompInspect::getInstance()
         && tool != LLToolDragAndDrop::getInstance()
-        && !gSavedSettings.getBOOL("FreezeTime"))
+        && !freeze_time())
     {
         // Suppress the toolbox view if our source tool was the pie tool,
         // and we've overridden to something else.
         bool suppress_toolbox =
-            (LLToolMgr::getInstance()->getBaseTool() == LLToolPie::getInstance()) &&
-            (LLToolMgr::getInstance()->getCurrentTool() != LLToolPie::getInstance());
+            (tool_mgr->getBaseTool() == LLToolPie::getInstance()) &&
+            (tool_mgr->getCurrentTool() != LLToolPie::getInstance());
 
         LLMouseHandler *captor = gFocusMgr.getMouseCapture();
         // With the null, inspect, or drag and drop tool, don't muck
@@ -3805,7 +3817,7 @@ void LLViewerWindow::updateLayout()
             ||  (tool != LLToolPie::getInstance()                       // not default tool
                 && tool != LLToolCompGun::getInstance()                 // not coming out of mouselook
                 && !suppress_toolbox                                    // not override in third person
-                && LLToolMgr::getInstance()->getCurrentToolset()->isShowFloaterTools()
+                && tool_mgr->getCurrentToolset()->isShowFloaterTools()
                 && (!captor || dynamic_cast<LLView*>(captor) != NULL)))                     // not dragging
         {
             // Force floater tools to be visible (unless minimized)
@@ -4262,15 +4274,15 @@ void LLViewerWindow::pickAsync( S32 x,
                                 bool pick_unselectable,
                                 bool pick_reflection_probes)
 {
+    static LLCachedControl<bool> select_invisible_objects(gSavedSettings, "SelectInvisibleObjects");
     // "Show Debug Alpha" means no object actually transparent
     bool in_build_mode = LLFloaterReg::instanceVisible("build");
-    if (LLDrawPoolAlpha::sShowDebugAlpha
-        || (in_build_mode && gSavedSettings.getBOOL("SelectInvisibleObjects")))
+    if (LLDrawPoolAlpha::sShowDebugAlpha || (in_build_mode && select_invisible_objects))
     {
         pick_transparent = true;
     }
 
-    LLPickInfo pick_info(LLCoordGL(x, y_from_bot), mask, pick_transparent, pick_rigged, false, pick_reflection_probes, pick_unselectable, true, callback);
+    LLPickInfo pick_info(LLCoordGL(x, y_from_bot), mask, pick_transparent, pick_rigged, false, pick_reflection_probes, true, pick_unselectable, callback);
     schedulePick(pick_info);
 }
 
@@ -4293,7 +4305,6 @@ void LLViewerWindow::schedulePick(LLPickInfo& pick_info)
     // until the pick triggered in handleMouseDown has been processed, for example
     mWindow->delayInputProcessing();
 }
-
 
 void LLViewerWindow::performPick()
 {
@@ -4328,8 +4339,9 @@ void LLViewerWindow::returnEmptyPicks()
 // Performs the GL object/land pick.
 LLPickInfo LLViewerWindow::pickImmediate(S32 x, S32 y_from_bot, bool pick_transparent, bool pick_rigged, bool pick_particle, bool pick_unselectable, bool pick_reflection_probe)
 {
+    static LLCachedControl<bool> select_invisible_objects(gSavedSettings, "SelectInvisibleObjects");
     bool in_build_mode = LLFloaterReg::instanceVisible("build");
-    if ((in_build_mode && gSavedSettings.getBOOL("SelectInvisibleObjects")) || LLDrawPoolAlpha::sShowDebugAlpha)
+    if ((in_build_mode && select_invisible_objects) || LLDrawPoolAlpha::sShowDebugAlpha)
     {
         // build mode allows interaction with all transparent objects
         // "Show Debug Alpha" means no object actually transparent
@@ -4337,7 +4349,7 @@ LLPickInfo LLViewerWindow::pickImmediate(S32 x, S32 y_from_bot, bool pick_transp
     }
 
     // shortcut queueing in mPicks and just update mLastPick in place
-    MASK    key_mask = gKeyboard->currentMask(true);
+    MASK key_mask = gKeyboard->currentMask(true);
     mLastPick = LLPickInfo(LLCoordGL(x, y_from_bot), key_mask, pick_transparent, pick_rigged, pick_particle, pick_reflection_probe, true, false, NULL);
     mLastPick.fetchResults();
 
@@ -4799,22 +4811,19 @@ void LLViewerWindow::saveImageLocal(LLImageFormatted *image, const snapshot_save
     }
 
     // Look for an unused file name
-    bool is_snapshot_name_loc_set = isSnapshotLocSet();
+    auto is_snapshot_name_loc_set = isSnapshotLocSet();
     std::string filepath;
-    S32 i = 1;
-    S32 err = 0;
-    std::string extension("." + image->getExtension());
+    auto i = 1;
+    auto err = 0;
+    auto extension("." + image->getExtension());
+    auto now = LLDate::now();
     do
     {
         filepath = sSnapshotDir;
         filepath += gDirUtilp->getDirDelimiter();
         filepath += sSnapshotBaseName;
-
-        if (is_snapshot_name_loc_set)
-        {
-            filepath += llformat("_%.3d",i);
-        }
-
+        filepath += now.toLocalDateString("_%Y-%m-%d_%H%M%S");
+        filepath += llformat("%.2d", i);
         filepath += extension;
 
         llstat stat_info;
@@ -4858,7 +4867,7 @@ bool LLViewerWindow::saveSnapshot(const std::string& filepath, S32 image_width, 
     LL_INFOS() << "Saving snapshot to: " << filepath << LL_ENDL;
 
     LLPointer<LLImageRaw> raw = new LLImageRaw;
-    bool success = rawSnapshot(raw, image_width, image_height, true, false, show_ui, show_hud, do_rebuild);
+    bool success = rawSnapshot(raw, image_width, image_height, true, false, show_ui, show_hud, do_rebuild, 0, type);
 
     if (success)
     {
@@ -5767,11 +5776,6 @@ void LLViewerWindow::stopGL()
 
         gBox.cleanupGL();
 
-        if(gPostProcess)
-        {
-            gPostProcess->invalidate();
-        }
-
         gTextureList.destroyGL();
         stop_glerror();
 
@@ -6057,14 +6061,14 @@ LLPickInfo::LLPickInfo(const LLCoordGL& mouse_pos,
     bool pick_rigged,
     bool pick_particle,
     bool pick_reflection_probe,
-    bool pick_uv_coords,
+    bool pick_surface_info,
     bool pick_unselectable,
     void (*pick_callback)(const LLPickInfo& pick_info))
     : mMousePt(mouse_pos),
     mKeyMask(keyboard_mask),
     mPickCallback(pick_callback),
     mPickType(PICK_INVALID),
-    mWantSurfaceInfo(pick_uv_coords),
+    mWantSurfaceInfo(pick_surface_info),
     mObjectFace(-1),
     mUVCoords(-1.f, -1.f),
     mSTCoords(-1.f, -1.f),

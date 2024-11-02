@@ -46,7 +46,9 @@ class LLLogin::Impl
 {
 public:
     Impl():
-        mPump("login", true) // Create the module's event pump with a tweaked (unique) name.
+        // Create the module's event pump, and do not tweak the name. Multiple
+        // parties depend on this LLEventPump having exactly the name "login".
+        mPump("login", false)
     {
         mValidAuthResponse["status"]        = LLSD();
         mValidAuthResponse["errorcode"]     = LLSD();
@@ -127,8 +129,7 @@ void LLLogin::Impl::connect(const std::string& uri, const LLSD& login_params)
 
     // Launch a coroutine with our login_() method. Run the coroutine until
     // its first wait; at that point, return here.
-    std::string coroname =
-        LLCoros::instance().launch("LLLogin::Impl::login_", [=]() { loginCoro(uri, login_params); });
+    std::string coroname = LLCoros::instance().launch("LLLogin::Impl::login_", [=, this]() { loginCoro(uri, login_params); });
 
     LL_DEBUGS("LLLogin") << " connected with uri '" << uri << "', login_params " << login_params << LL_ENDL;
 }

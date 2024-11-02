@@ -76,14 +76,14 @@ LLFloaterIMContainer::LLFloaterIMContainer(const LLSD& seed, const Params& param
     mConversationEventQueue()
 {
     mEnableCallbackRegistrar.add("IMFloaterContainer.Check", boost::bind(&LLFloaterIMContainer::isActionChecked, this, _2));
-    mCommitCallbackRegistrar.add("IMFloaterContainer.Action", boost::bind(&LLFloaterIMContainer::onCustomAction,  this, _2));
+    mCommitCallbackRegistrar.add("IMFloaterContainer.Action", { boost::bind(&LLFloaterIMContainer::onCustomAction,  this, _2) });
 
     mEnableCallbackRegistrar.add("Avatar.CheckItem",  boost::bind(&LLFloaterIMContainer::checkContextMenuItem,  this, _2));
     mEnableCallbackRegistrar.add("Avatar.EnableItem", boost::bind(&LLFloaterIMContainer::enableContextMenuItem, this, _2));
     mEnableCallbackRegistrar.add("Avatar.VisibleItem", boost::bind(&LLFloaterIMContainer::visibleContextMenuItem,   this, _2));
-    mCommitCallbackRegistrar.add("Avatar.DoToSelected", boost::bind(&LLFloaterIMContainer::doToSelected, this, _2));
+    mCommitCallbackRegistrar.add("Avatar.DoToSelected", { boost::bind(&LLFloaterIMContainer::doToSelected, this, _2) });
 
-    mCommitCallbackRegistrar.add("Group.DoToSelected", boost::bind(&LLFloaterIMContainer::doToSelectedGroup, this, _2));
+    mCommitCallbackRegistrar.add("Group.DoToSelected", { boost::bind(&LLFloaterIMContainer::doToSelectedGroup, this, _2) });
 
     // Firstly add our self to IMSession observers, so we catch session events
     LLIMMgr::getInstance()->addSessionObserver(this);
@@ -1592,15 +1592,15 @@ bool LLFloaterIMContainer::enableContextMenuItem(const std::string& item, uuid_v
     }
     else if ("can_call" == item)
     {
+        if (is_single_select)
+        {
+            return LLAvatarActions::canCallTo(single_id);
+        }
         return LLAvatarActions::canCall();
     }
     else if ("can_open_voice_conversation" == item)
     {
-        return is_single_select && LLAvatarActions::canCall();
-    }
-    else if ("can_open_voice_conversation" == item)
-    {
-        return is_single_select && LLAvatarActions::canCall();
+        return is_single_select && LLAvatarActions::canCallTo(single_id);
     }
     else if ("can_zoom_in" == item)
     {

@@ -10,6 +10,7 @@ include(LLCommon)
 include(LLCoreHttp)
 if (LL_TESTS)
 include(LLAddBuildTest)
+include(Tut)
 endif ()
 include(Python)
 
