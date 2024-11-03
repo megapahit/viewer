@@ -79,7 +79,6 @@
 #include "llfloaterpreference.h"
 #include "llfloaterreporter.h"
 #include "llfloatersearch.h"
-#include "fsfloatersearch.h"
 #include "llfloaterscriptdebug.h"
 #include "llfloatersnapshot.h"
 #include "llfloatertools.h"

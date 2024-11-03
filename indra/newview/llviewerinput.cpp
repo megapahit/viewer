@@ -49,9 +49,6 @@
 #include "llinitparam.h"
 #include "llselectmgr.h"
 
-#include "llfloaterwebcontent.h"
-#include "fsfloatersearch.h"
-
 //
 // Constants
 //
@@ -649,12 +646,6 @@ bool start_chat( EKeystate s )
 
 bool start_gesture( EKeystate s )
 {
-    LLFloater* focused_floater = gFloaterView->getFocusedFloater();
-    if (focused_floater && (dynamic_cast<LLFloaterWebContent*>(focused_floater) || dynamic_cast<FSFloaterSearch*>(focused_floater)))
-    {
-        return true;
-    }
-
     LLUICtrl* focus_ctrlp = dynamic_cast<LLUICtrl*>(gFocusMgr.getKeyboardFocus());
     if (KEYSTATE_UP == s &&
         ! (focus_ctrlp && focus_ctrlp->acceptsTextInput()))

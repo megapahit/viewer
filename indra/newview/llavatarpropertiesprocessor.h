@@ -52,9 +52,6 @@ enum EAvatarProcessorType
 {
     APT_PROPERTIES_LEGACY, // APT_PROPERTIES via udp request (Truncates data!!!)
     APT_PROPERTIES,        // APT_PROPERTIES via http request
-    APT_NOTES,
-    APT_GROUPS,
-    APT_PICKS,
     APT_PICK_INFO,
     APT_TEXTURES,
     APT_CLASSIFIEDS,
@@ -108,24 +105,6 @@ struct LLAvatarData
     typedef std::pair<LLUUID, std::string> pick_data_t;
     typedef std::list< pick_data_t> picks_list_t;
     picks_list_t picks_list;
-    BOOL        allow_publish;
-    LLAvatarData() = default;
-    LLAvatarData(const LLAvatarLegacyData& legacy_data)
-    {
-        agent_id = legacy_data.agent_id;
-        avatar_id = legacy_data.avatar_id;
-        image_id = legacy_data.image_id;
-        fl_image_id = legacy_data.fl_image_id;
-        partner_id = legacy_data.partner_id;
-        about_text = legacy_data.about_text;
-        fl_about_text = legacy_data.fl_about_text;
-        born_on = legacy_data.born_on;
-        profile_url = legacy_data.profile_url;
-        caption_index = legacy_data.caption_index;
-        caption_text = legacy_data.caption_text;
-        customer_type = legacy_data.customer_type;
-        flags = legacy_data.flags;
-    }
 };
 
 struct LLAvatarData::LLGroupData
@@ -159,45 +138,6 @@ struct LLPickData
 
     //used only in write (update) requests
     LLUUID session_id;
-};
-
-struct LLAvatarPicks
-{
-    LLUUID agent_id;
-    LLUUID target_id; //target id
-
-    typedef std::pair<LLUUID,std::string> pick_data_t;
-    typedef std::list< pick_data_t> picks_list_t;
-    picks_list_t picks_list;
-};
-
-struct LLAvatarNotes
-{
-    LLUUID agent_id;
-    LLUUID target_id; //target id
-    std::string notes;
-};
-
-struct LLAvatarGroups
-{
-    LLUUID agent_id;
-    LLUUID avatar_id; //target id
-    BOOL list_in_profile;
-
-    struct LLGroupData;
-    typedef std::list<LLGroupData> group_list_t;
-
-    group_list_t group_list;
-
-    struct LLGroupData
-    {
-        U64 group_powers;
-        BOOL accept_notices;
-        std::string group_title;
-        LLUUID group_id;
-        std::string group_name;
-        LLUUID group_insignia_id;
-    };
 };
 
 struct LLAvatarClassifieds

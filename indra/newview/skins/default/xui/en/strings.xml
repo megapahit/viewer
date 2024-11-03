@@ -2946,14 +2946,12 @@ Expected .wav, .tga, .bmp, .jpg, .jpeg, or .anim
 	<string name="Linden Location">Linden Location</string>
 	<string name="Adult">Adult</string>
 	<string name="Arts&amp;Culture">Arts &amp; Culture</string>
-	<string name="Arts and Culture">Arts &amp; Culture</string>
 	<string name="Business">Business</string>
 	<string name="Educational">Educational</string>
 	<string name="Gaming">Gaming</string>
 	<string name="Hangout">Hangout</string>
 	<string name="Newcomer Friendly">Newcomer Friendly</string>
 	<string name="Parks&amp;Nature">Parks &amp; Nature</string>
-	<string name="Parks and Nature">Parks &amp; Nature</string>
 	<string name="Residential">Residential</string>
 	<!--<string name="Shopping">Shopping</string>	-->
 	<string name="Stage">Stage</string>
@@ -4393,21 +4391,6 @@ and report the problem.
 [https://community.secondlife.com/knowledgebase/english/error-messages-r520/#Section__3 Knowledge Base]
   </string>
 
-  <!-- megapahit strings -->
-  <string name="not_found">&apos;[TEXT]&apos; not found</string>
-  <string name="no_results">No results</string>
-  <string name="searching">Searching...</string>
-  <string name="all_categories">All Categories</string>
-  <string name="search_banned">Some terms in your search query were excluded due to content restrictions as clarified in the Community Standards.</string>
-  <string name="search_short">Your search terms were too short so no search was performed.</string>
-  <string name="search_disabled">Legacy Search has been disabled in this region.</string>
-  <string name="NotifyIncomingMessage">Incoming message from [NAME]...</string>
-  <string name="NearbyChatTitleChannel">Nearby chat (on channel [CHANNEL])</string>
-  <string name="AvatarTyping">Typing</string>
-  <string name="UnknownAvatar">Unknown Avatar</string>
-  <string name="NotAvailableOnPlatform">Not available on this platform</string>
-  <string name="NowPlaying">Now Playing</string>
-  <string name="GridInfoTitle">GRID INFO</string>
   <!-- RLVa -->
   <string name="RlvConsoleDisable">RLVa is disabled</string>
   <string name="RlvConsoleInvalidCmd">Invalid command</string>

@@ -27,31 +27,12 @@
 #ifndef LL_LLEVENTNOTIFIER_H
 #define LL_LLEVENTNOTIFIER_H
 
-#include <utility>
 #include "llframetimer.h"
 #include "v3dmath.h"
 
 class LLEventNotification;
 class LLMessageSystem;
 
-typedef struct event_st{
-    U32 eventId = 0;
-    F64 eventEpoch = 0.0;
-    std::string eventDateStr;
-    std::string eventName;
-    std::string creator;
-    std::string category;
-    std::string desc;
-    U32 duration = 0;
-    U32 cover = 0;
-    U32 amount = 0;
-    std::string simName;
-    LLVector3d globalPos;
-    U32 flags = 0;
-    event_st(U32 id, F64 epoch, std::string date_str, std::string name)
-        : eventId(id), eventEpoch(epoch), eventDateStr(std::move(date_str)), eventName(std::move(name)){}
-    event_st() = default;
-} LLEventStruct;
 
 class LLEventNotifier
 {
@@ -60,7 +41,6 @@ public:
     virtual ~LLEventNotifier();
 
     void update();  // Notify the user of the event if it's coming up
-    bool add(const LLEventStruct& event);
     bool add(U32 eventId, F64 eventEpoch, const std::string& eventDateStr, const std::string &eventName);
     void add(U32 eventId);
 
@@ -76,13 +56,6 @@ public:
 
     static void processEventInfoReply(LLMessageSystem *msg, void **);
 
-    typedef boost::signals2::signal<bool(LLEventStruct event)> new_event_signal_t;
-    new_event_signal_t mNewEventSignal;
-    boost::signals2::connection setNewEventCallback(const new_event_signal_t::slot_type& cb)
-    {
-        return mNewEventSignal.connect(cb);
-    };
-
 protected:
     en_map  mEventNotifications;
     LLFrameTimer    mNotificationTimer;
@@ -92,7 +65,7 @@ protected:
 class LLEventNotification
 {
 public:
-    LLEventNotification(U32 eventId, F64 eventEpoch, std::string eventDateStr, std::string eventName);
+    LLEventNotification(U32 eventId, F64 eventEpoch, const std::string& eventDateStr, const std::string &eventName);
 
 
     U32                 getEventID() const              { return mEventID; }

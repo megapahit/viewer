@@ -214,9 +214,6 @@
 #include "lldxhardware.h"
 #endif
 
-#include "fsfloatersearch.h"
-
-
 //
 // exported globals
 //
@@ -2789,14 +2786,6 @@ void register_viewer_callbacks(LLMessageSystem* msg)
     msg->setHandlerFunc("GroupNoticesListReply", LLPanelGroupNotices::processGroupNoticesListReply);
 
     msg->setHandlerFunc("AvatarPickerReply", LLFloaterAvatarPicker::processAvatarPickerReply);
-
-        // directory search
-    msg->setHandlerFuncFast(_PREHASH_DirPeopleReply, FSPanelSearchPeople::processSearchReply);
-    msg->setHandlerFuncFast(_PREHASH_DirPlacesReply, FSPanelSearchPlaces::processSearchReply);
-    msg->setHandlerFuncFast(_PREHASH_DirGroupsReply, FSPanelSearchGroups::processSearchReply);
-    msg->setHandlerFuncFast(_PREHASH_DirEventsReply, FSPanelSearchEvents::processSearchReply);
-    msg->setHandlerFuncFast(_PREHASH_DirLandReply,   FSPanelSearchLand::processSearchReply);
-    msg->setHandlerFuncFast(_PREHASH_DirClassifiedReply,  FSPanelSearchClassifieds::processSearchReply);
 
     msg->setHandlerFunc("MapBlockReply", LLWorldMapMessage::processMapBlockReply);
     msg->setHandlerFunc("MapItemReply", LLWorldMapMessage::processMapItemReply);

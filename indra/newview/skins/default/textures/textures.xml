@@ -911,27 +911,5 @@ with the same filename but different name
   <texture name="Single_Folder_Up" file_name="icons/single_folder_up.png" preload="true"/>
   <texture name="Icon_Color_Palette" file_name="icons/Icon_Color_Palette.png" preload="false"/>
   <texture name="Icon_Font_Size" file_name="icons/Icon_Font_Size.png" preload="false"/>
-
-  <texture name="Icon_Place" file_name="megapahit/icon_place.png" preload="false" />
-  <texture name="Icon_Auction" file_name="megapahit/icon_land_auction.png" preload="false" />
-  <texture name="Icon_For_Sale" file_name="megapahit/icon_land_forsale.png" preload="false" />
-  <texture name="Icon_Group" file_name="megapahit/icon_group.png" preload="false" />
-  <texture name="Icon_Legacy_Event_PG" file_name="icons/Parcel_PG_Dark.png" preload="false" />
-  <texture name="Icon_Legacy_Event_Mature" file_name="icons/Parcel_M_Dark.png" preload="false" />
-  <texture name="Icon_Legacy_Event_Adult" file_name="icons/Parcel_R_Dark.png" preload="false" />
-
-  <texture name="ProgressLarge_1" file_name="icons/ProgressLarge_1.png" preload="true" />
-  <texture name="ProgressLarge_2" file_name="icons/ProgressLarge_2.png" preload="true" />
-  <texture name="ProgressLarge_3" file_name="icons/ProgressLarge_3.png" preload="true" />
-  <texture name="ProgressLarge_4" file_name="icons/ProgressLarge_4.png" preload="true" />
-  <texture name="ProgressLarge_5" file_name="icons/ProgressLarge_5.png" preload="true" />
-  <texture name="ProgressLarge_6" file_name="icons/ProgressLarge_6.png" preload="true" />
-  <texture name="ProgressLarge_7" file_name="icons/ProgressLarge_7.png" preload="true" />
-  <texture name="ProgressLarge_8" file_name="icons/ProgressLarge_8.png" preload="true" />
-  <texture name="ProgressLarge_9" file_name="icons/ProgressLarge_9.png" preload="true" />
-  <texture name="ProgressLarge_10" file_name="icons/ProgressLarge_10.png" preload="true" />
-  <texture name="ProgressLarge_11" file_name="icons/ProgressLarge_11.png" preload="true" />
-  <texture name="ProgressLarge_12" file_name="icons/ProgressLarge_12.png" preload="true" />
-
   <texture name="Icon_Pointer" file_name="icons/Icon_Pointer.png" preload="false"/>
 </textures>
