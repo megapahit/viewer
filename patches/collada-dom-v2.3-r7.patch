@@ -48,17 +48,18 @@ index b1c1993..cdcba63 100644
 +# install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/modules DESTINATION ${COLLADA_DOM_INCLUDE_INSTALL_DIR} PATTERN ".svn" EXCLUDE PATTERN ".~" EXCLUDE)
 +# install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/dae.h ${CMAKE_CURRENT_SOURCE_DIR}/include/dae.h DESTINATION ${COLLADA_DOM_INCLUDE_INSTALL_DIR})
 diff --git a/src/1.4/CMakeLists.txt b/src/1.4/CMakeLists.txt
-index 17fbaea..86d2d1d 100644
+index 17fbaea..6310829 100644
 --- a/src/1.4/CMakeLists.txt
 +++ b/src/1.4/CMakeLists.txt
-@@ -1,10 +1,32 @@
+@@ -1,10 +1,33 @@
  file(GLOB dom_files ${CMAKE_CURRENT_SOURCE_DIR}/dom/*.cpp)
 -include_directories(${COLLADA14_INCLUDE_DIR})
 -add_library(collada14dom SHARED ${COLLADA_BASE_SOURCES} ${dom_files})
 +add_library(collada14dom STATIC ${COLLADA_BASE_SOURCES} ${dom_files})
 +if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 +  target_compile_options(collada14dom PRIVATE
-+	"-Wno-error=unused-result" "-Wno-cast-user-defined" "-Wno-nonnull"
++	"-Wno-error=unused-result" "-Wno-cast-user-defined"
++	"-Wno-nonnull" "-Wno-unused-function"
 +  )
 +elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 +  target_compile_options(collada14dom PRIVATE
@@ -104,6 +105,52 @@ index e061a01..fb73a70 100644
    VERSION ${COLLADA_DOM_VERSION})
 -install(TARGETS collada15dom DESTINATION lib${LIB_SUFFIX})
 +install(TARGETS collada15dom DESTINATION ${COLLADA_DOM_LIBS_INSTALL_DIR})
+diff --git a/src/dae/daeMetaElement.cpp b/src/dae/daeMetaElement.cpp
+index 55a57f5..1719e13 100644
+--- a/src/dae/daeMetaElement.cpp
++++ b/src/dae/daeMetaElement.cpp
+@@ -107,8 +107,8 @@ daeMetaElement::addContentsOrder(daeInt offset)
+ 	meaa->setOffset(offset);
+ 	meaa->setContainer( this);
+ 
+-    if (_metaContentsOrder)
+-        delete _metaContentsOrder;
++	if (_metaContentsOrder)
++		delete _metaContentsOrder;
+ 
+ 	_metaContentsOrder = meaa;
+ }
+@@ -121,8 +121,8 @@ void daeMetaElement::addCMDataArray(daeInt offset, daeUInt numChoices)
+ 	meaa->setOffset(offset);
+ 	meaa->setContainer( this);
+ 
+-    if (_metaCMData)
+-        delete _metaCMData;
++	if (_metaCMData)
++		delete _metaCMData;
+ 
+ 	_metaCMData = meaa;
+ 
+@@ -169,14 +169,16 @@ daeMetaElement::appendAttribute(daeMetaAttribute* attr)
+ 	if (attr == NULL)
+ 		return;
+ 
+-	if (strcmp(attr->getName(),"_value") == 0) {
++	daeStringRef str_val("_value");
++	daeStringRef str_id("id");
++
++	if (attr->getName() == str_val) {
+ 		_metaValue = attr;
+ 	}
+ 	else
+ 		_metaAttributes.append(attr);
+ 
+-	if ((attr->getName() != NULL) &&
+-		(strcmp(attr->getName(),"id") == 0)) {
++	if (attr->getName() == str_id) {
+ 		_metaID = attr;
+ 		_isTrackableForQueries = true;
+ 	}
 diff --git a/src/dae/daeUtils.cpp b/src/dae/daeUtils.cpp
 index 682692c..0e61ef1 100644
 --- a/src/dae/daeUtils.cpp
