@@ -760,7 +760,7 @@ void FSFloaterSearch::onBtnTeleport()
 {
     if (!mParcelGlobal.isExactlyZero())
     {
-        gAgent.teleportViaLocationLookAt(mParcelGlobal);
+        gAgent.teleportViaLocation(mParcelGlobal);
         LLFloaterWorldMap::getInstance()->trackLocation(mParcelGlobal);
         /// <FS:CR> What should we do when when we teleport? The default (1) is to close the floater,
         /// the user may elect to minimize the floater (2), or to do nothing (any other setting)
