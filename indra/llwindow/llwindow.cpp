@@ -33,7 +33,7 @@
 #include "llwindowmacosx.h"
 #elif LL_MESA_HEADLESS
 #include "llwindowmesaheadless.h"
-#elif LL_LINUX
+#elif LL_LINUX || __FreeBSD__
 #include "llwindowsdl.h"
 #endif
 
@@ -79,7 +79,7 @@ S32 OSMessageBox(const std::string& text, const std::string& caption, U32 type)
     result = OSMessageBoxMacOSX(text, caption, type);
 #elif LL_MESA_HEADLESS // !!! *FIX: (?)
     return OSBTN_OK;
-#elif LL_LINUX
+#elif LL_LINUX || __FreeBSD__
     result = OSMessageBoxSDL(text, caption, type);
 #else
 #error("OSMessageBox not implemented for this platform!")
@@ -264,7 +264,7 @@ std::vector<std::string> LLWindow::getDynamicFallbackFontList()
     return LLWindowWin32::getDynamicFallbackFontList();
 #elif LL_DARWIN
     return LLWindowMacOSX::getDynamicFallbackFontList();
-#elif LL_LINUX
+#elif LL_LINUX || __FreeBSD__
     return LLWindowSDL::getDynamicFallbackFontList();
 #else
     return std::vector<std::string>();
@@ -347,7 +347,7 @@ LLSplashScreen *LLSplashScreen::create()
     return new LLSplashScreenWin32;
 #elif LL_DARWIN
     return new LLSplashScreenMacOSX;
-#elif LL_MESA_HEADLESS || LL_LINUX  // !!! *FIX: (?)
+#elif LL_MESA_HEADLESS || LL_LINUX || __FreeBSD__  // !!! *FIX: (?)
     return 0;
 #else
 #error("LLSplashScreen not implemented on this platform!")
@@ -433,7 +433,7 @@ LLWindow* LLWindowManager::createWindow(
         new_window = new LLWindowMesaHeadless(callbacks,
             title, name, x, y, width, height, flags,
             fullscreen, clearBg, enable_vsync, use_gl, ignore_pixel_depth);
-#elif LL_LINUX
+#elif LL_LINUX || __FreeBSD__
         new_window = new LLWindowSDL(callbacks,
             title, name, x, y, width, height, flags,
             fullscreen, clearBg, enable_vsync, use_gl, ignore_pixel_depth, fsaa_samples);

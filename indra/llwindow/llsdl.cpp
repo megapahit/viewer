@@ -51,7 +51,7 @@ void init_sdl()
                << int(r_sdl_version.major) << "."
                << int(r_sdl_version.minor) << "."
                << int(r_sdl_version.patch) << LL_ENDL;
-#ifdef LL_LINUX
+#if LL_LINUX || __FreeBSD__
     // For linux we SDL_INIT_VIDEO and _AUDIO
     std::initializer_list<std::tuple< char const*, char const * > > hintList =
             {
