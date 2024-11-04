@@ -2031,6 +2031,21 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         gltf/animation.cpp
         gltf/primitive.cpp
         PROPERTIES COMPILE_FLAGS -Wno-unused-function)
+    set_source_files_properties(
+        llaisapi.cpp
+        llconversationmodel.cpp
+        llconversationlog.cpp
+        lleventnotifier.cpp
+        llfloateravatarrendersettings.cpp
+        llfloatereditextdaycycle.cpp
+        llfloaternewfeaturenotification.cpp
+        llfloaterpathfindinglinksets.cpp
+        llinventoryfunctions.cpp
+        llinventorymodel.cpp
+        llpanelenvironment.cpp
+        llpanelgroupnotices.cpp
+        llvoavatar.cpp
+        PROPERTIES COMPILE_FLAGS -Wno-restrict)
 endif ()
 
 message("Copying fonts")

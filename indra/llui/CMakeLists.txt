@@ -273,6 +273,16 @@ target_link_libraries(llui
         ll::SDL2
     )
 
+if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
+    set_source_files_properties(
+        llcheckboxctrl.cpp
+        llresmgr.cpp
+        PROPERTIES COMPILE_FLAGS -Wno-restrict)
+    set_source_files_properties(
+        llflatlistview.cpp
+        PROPERTIES COMPILE_FLAGS -Wno-use-after-free)
+endif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
+
 include(LibraryInstall)
 
 # Add tests
