@@ -1,13 +1,13 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index b1c1993..cdcba63 100644
+index b1c1993..91313e7 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -1,14 +1,25 @@
 -include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 -set(COLLADA14_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/1.4)
 -set(COLLADA15_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/1.5)
-+project(colladadom)
 +cmake_minimum_required(VERSION 3.17)
++project(colladadom)
 +
 +include(FindPkgConfig)
 +
@@ -48,7 +48,7 @@ index b1c1993..cdcba63 100644
 +# install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/modules DESTINATION ${COLLADA_DOM_INCLUDE_INSTALL_DIR} PATTERN ".svn" EXCLUDE PATTERN ".~" EXCLUDE)
 +# install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/dae.h ${CMAKE_CURRENT_SOURCE_DIR}/include/dae.h DESTINATION ${COLLADA_DOM_INCLUDE_INSTALL_DIR})
 diff --git a/src/1.4/CMakeLists.txt b/src/1.4/CMakeLists.txt
-index 17fbaea..6310829 100644
+index 17fbaea..be98127 100644
 --- a/src/1.4/CMakeLists.txt
 +++ b/src/1.4/CMakeLists.txt
 @@ -1,10 +1,33 @@
@@ -58,8 +58,8 @@ index 17fbaea..6310829 100644
 +add_library(collada14dom STATIC ${COLLADA_BASE_SOURCES} ${dom_files})
 +if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 +  target_compile_options(collada14dom PRIVATE
-+	"-Wno-error=unused-result" "-Wno-cast-user-defined"
-+	"-Wno-nonnull" "-Wno-unused-function"
++	"-Wno-error=unused-result" "-Wno-error=overloaded-virtual="
++	"-Wno-cast-user-defined" "-Wno-nonnull" "-Wno-unused-function"
 +  )
 +elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 +  target_compile_options(collada14dom PRIVATE
