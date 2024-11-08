@@ -727,7 +727,7 @@ bool LLConversationSort::operator()(const LLConversationItem* const& a, const LL
             if ((type_a == LLConversationItem::CONV_SESSION_NEARBY) || (type_b == LLConversationItem::CONV_SESSION_NEARBY))
             {
                 // If one is the nearby session, put nearby session *always* last
-                return (type_b == LLConversationItem::CONV_SESSION_NEARBY);
+                return (!(type_b == LLConversationItem::CONV_SESSION_NEARBY));
             }
             else if (sort_order == LLConversationFilter::SO_SESSION_TYPE)
             {
