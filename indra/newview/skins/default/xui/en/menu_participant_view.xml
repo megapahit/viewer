@@ -61,6 +61,19 @@
     </menu_item_check>
     <menu_item_separator
      layout="topleft" />
+    <menu_item_check
+     label="Put nearby session always first"
+     layout="topleft"
+     name="put_nearby_session_first">
+        <on_click
+         function="IMFloaterContainer.Action"
+         parameter="put_nearby_session_first" />
+        <on_check
+         function="IMFloaterContainer.Check"
+         parameter="put_nearby_session_first" />
+    </menu_item_check>
+    <menu_item_separator
+     layout="topleft" />
     <menu_item_call
          label="Chat preferences..."
          name="chat_preferences">

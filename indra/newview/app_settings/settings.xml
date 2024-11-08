@@ -46,6 +46,17 @@
     <key>Value</key>
     <integer>1</integer>
   </map>
+    <key>IMNearbySessionFirst</key>
+    <map>
+      <key>Comment</key>
+      <string>Put nearby session always first(last).</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>0</integer>
+    </map>
     <key>IMShowTime</key>
     <map>
       <key>Comment</key>
