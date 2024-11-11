@@ -39,8 +39,7 @@
 #include "llfindlocale.h"
 
 #include <exception>
-
-#if LL_GLIB
+#ifdef LL_GLIB
 #include <gio/gio.h>
 #endif
 #include <netinet/in.h>
@@ -117,6 +116,11 @@ static void exceptionTerminateHandler()
 
 int main( int argc, char **argv )
 {
+    // Call Tracy first thing to have it allocate memory
+    // https://github.com/wolfpld/tracy/issues/196
+    LL_PROFILER_FRAME_END;
+    LL_PROFILER_SET_THREAD_NAME("App");
+
     gArgC = argc;
     gArgV = argv;
 

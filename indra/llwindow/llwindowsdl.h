@@ -257,6 +257,8 @@ private:
         uint64_t mLastFrameEvent = 0;
     } mWaylandData;
 
+    bool mWaylandLoaded = false;
+
     bool isWaylandWindowNotDrawing() const;
 
     void setupWaylandFrameCallback();

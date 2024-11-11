@@ -34,11 +34,11 @@ add_compile_definitions( ADDRESS_SIZE=${ADDRESS_SIZE})
 add_compile_definitions(BOOST_BIND_GLOBAL_PLACEHOLDERS)
 
 if(CMAKE_OSX_ARCHITECTURES MATCHES arm64)
-add_compile_definitions(GLM_FORCE_DEFAULT_ALIGNED_GENTYPES=1 GLM_FORCE_NEON=1)
+add_compile_definitions(GLM_FORCE_DEFAULT_ALIGNED_GENTYPES=1 GLM_FORCE_NEON=1 GLM_ENABLE_EXPERIMENTAL=1)
 else(CMAKE_OSX_ARCHITECTURES MATCHES arm64)
 # Force enable SSE2 instructions in GLM per the manual
 # https://github.com/g-truc/glm/blob/master/manual.md#section2_10
-add_compile_definitions(GLM_FORCE_DEFAULT_ALIGNED_GENTYPES=1 GLM_FORCE_SSE2=1)
+add_compile_definitions(GLM_FORCE_DEFAULT_ALIGNED_GENTYPES=1 GLM_FORCE_SSE2=1 GLM_ENABLE_EXPERIMENTAL=1)
 endif(CMAKE_OSX_ARCHITECTURES MATCHES arm64)
 
 # Configure crash reporting
@@ -51,6 +51,11 @@ endif()
 
 if(NON_RELEASE_CRASH_REPORTING)
   add_compile_definitions( LL_SEND_CRASH_REPORTS=1)
+endif()
+
+set(USE_LTO OFF CACHE BOOL "Enable Link Time Optimization")
+if(USE_LTO)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 endif()
 
 # Don't bother with a MinSizeRel or Debug builds.
@@ -106,7 +111,7 @@ if (NOT CMAKE_CXX_COMPILER_ID MATCHES GNU AND WINDOWS)
 
   #ND: When using something like buildcache (https://github.com/mbitsnbites/buildcache)
   # to make those wrappers work /Zi must be changed to /Z7, as /Zi due to it's nature is not compatible with caching
-  if( ${CMAKE_CXX_COMPILER_LAUNCHER} MATCHES ".*cache.*")
+  if(${CMAKE_CXX_COMPILER_LAUNCHER} MATCHES ".*cache.*")
     add_compile_options( /Z7 )
     string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
