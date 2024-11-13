@@ -34,7 +34,7 @@ if (USE_FMODSTUDIO)
       file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/lib/release)
       if (DARWIN)
         execute_process(
-          COMMAND hdiutil attach -noverify fmodstudioapi20223mac-installer.dmg
+          COMMAND hdiutil attach -noverify fmodstudioapi20225mac-installer.dmg
           WORKING_DIRECTORY $ENV{HOME}/Downloads
           )
         file(
@@ -64,7 +64,7 @@ if (USE_FMODSTUDIO)
         file(WRITE ${PREBUILD_TRACKING_DIR}/fmodstudio_installed "${fmodstudio_installed}")
       else (DARWIN)
         file(ARCHIVE_EXTRACT
-          INPUT $ENV{HOME}/Downloads/fmodstudioapi20223linux.tar.gz
+          INPUT $ENV{HOME}/Downloads/fmodstudioapi20225linux.tar.gz
           DESTINATION ${CMAKE_BINARY_DIR}
           )
         file(
