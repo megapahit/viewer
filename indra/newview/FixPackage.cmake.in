@@ -195,9 +195,9 @@ execute_process(
     COMMAND lipo libcollada14dom.2.3-r4.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libcollada14dom.2.3-r4.dylib
-    COMMAND lipo libexpat.1.9.3.dylib
+    COMMAND lipo libexpat.1.10.0.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libexpat.1.9.3.dylib
+        -output libexpat.1.10.0.dylib
     COMMAND lipo libfreetype.6.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libfreetype.6.dylib
@@ -301,7 +301,7 @@ execute_process(
         Frameworks/libbrotlidec.1.1.0.dylib
         Frameworks/libbz2.1.0.8.dylib
         Frameworks/libcollada14dom.2.3-r4.dylib
-        Frameworks/libexpat.1.9.3.dylib
+        Frameworks/libexpat.1.10.0.dylib
         Frameworks/libfreetype.6.dylib
         Frameworks/libhunspell-1.7.0.dylib
         Frameworks/libiconv.2.dylib

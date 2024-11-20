@@ -69,21 +69,21 @@ if (USE_FMODSTUDIO)
           )
         file(
           COPY
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/inc/fmod.h
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/inc/fmod.hpp
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/inc/fmod_codec.h
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/inc/fmod_common.h
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/inc/fmod_dsp.h
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/inc/fmod_dsp_effects.h
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/inc/fmod_errors.h
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/inc/fmod_output.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/inc/fmod.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/inc/fmod.hpp
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/inc/fmod_codec.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/inc/fmod_common.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/inc/fmod_dsp.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/inc/fmod_dsp_effects.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/inc/fmod_errors.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/inc/fmod_output.h
           DESTINATION ${LIBS_PREBUILT_DIR}/include/fmodstudio
           )
         file(
           COPY
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so.13
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so.13.23
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so.13
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so.13.25
           DESTINATION ${LIBS_PREBUILT_DIR}/lib/release
           FOLLOW_SYMLINK_CHAIN
           )
