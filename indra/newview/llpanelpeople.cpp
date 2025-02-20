@@ -1126,6 +1126,12 @@ void LLPanelPeople::onAvatarListDoubleClicked(LLUICtrl* ctrl)
 #if 0 // SJB: Useful for testing, but not currently functional or to spec
     LLAvatarActions::showProfile(clicked_id);
 #else // spec says open IM window
+    if (item->getParentUICtrl()->getParentUICtrl() == mNearbyList
+        && gSavedSettings.getBOOL("DoubleClickZoomIn"))
+    {
+        handle_zoom_to_object(clicked_id);
+        return;
+    }
     LLAvatarActions::startIM(clicked_id);
 #endif
 }

@@ -313,12 +313,14 @@ std::string LLLogChat::timestamp2LogString(U32 timestamp, bool withdate)
     if (use_24h)
     {
         timeStr += "[" + LLTrans::getString("TimeHour") + "]:["
-            + LLTrans::getString("TimeMin") + "]";
+            + LLTrans::getString("TimeMin") + "]:["
+            + LLTrans::getString("TimeSec") + "]";
     }
     else
     {
         timeStr += "[" + LLTrans::getString("TimeHour12") + "]:["
-            + LLTrans::getString("TimeMin") + "] ["
+            + LLTrans::getString("TimeMin") + "]:["
+            + LLTrans::getString("TimeSec") + "] ["
             + LLTrans::getString("TimeAMPM") + "]";
     }
 

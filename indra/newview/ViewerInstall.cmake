@@ -59,6 +59,11 @@ if (DARWIN)
         DESTINATION app_settings
         )
 
+    install(DIRECTORY
+        ${AUTOBUILD_INSTALL_DIR}/dictionaries
+        DESTINATION app_settings
+        )
+
     if (NDOF)
         install(FILES
             "${AUTOBUILD_INSTALL_DIR}/lib/release/libndofdev.dylib"
@@ -101,7 +106,7 @@ if (LINUX)
             install(FILES
                 ${AUTOBUILD_INSTALL_DIR}/lib/release/libfmod.so
                 ${AUTOBUILD_INSTALL_DIR}/lib/release/libfmod.so.13
-                ${AUTOBUILD_INSTALL_DIR}/lib/release/libfmod.so.13.23
+                ${AUTOBUILD_INSTALL_DIR}/lib/release/libfmod.so.13.25
             DESTINATION ${_LIB})
         endif (USE_FMODSTUDIO)
 endif (LINUX)
@@ -143,6 +148,11 @@ endif (IS_ARTWORK_PRESENT)
 install(FILES ${SCRIPTS_DIR}/messages/message_template.msg
         ${SCRIPTS_DIR}/../etc/message.xml
         ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
+        DESTINATION share/${VIEWER_BINARY_NAME}/app_settings
+        )
+
+    install(DIRECTORY
+        ${AUTOBUILD_INSTALL_DIR}/dictionaries
         DESTINATION share/${VIEWER_BINARY_NAME}/app_settings
         )
 

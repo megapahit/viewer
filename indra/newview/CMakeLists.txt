@@ -34,6 +34,7 @@ include(LLPrimitive)
 include(LLWindow)
 include(SDL2)
 include(NDOF)
+include(NFDE)
 include(NVAPI)
 include(OPENAL)
 include(OpenGL)
@@ -1457,11 +1458,24 @@ if (DARWIN)
   LIST(APPEND viewer_SOURCE_FILES llfilepicker_mac.mm)
   LIST(APPEND viewer_HEADER_FILES llfilepicker_mac.h)
 
+  set_source_files_properties(
+    llappviewermacosx-objc.mm
+    PROPERTIES
+    SKIP_PRECOMPILE_HEADERS TRUE
+  )
+
+  set_source_files_properties(
+    llfilepicker_mac.mm
+    PROPERTIES
+    SKIP_PRECOMPILE_HEADERS TRUE
+  )
+
   # This should be compiled with the viewer.
   LIST(APPEND viewer_SOURCE_FILES llappdelegate-objc.mm)
   set_source_files_properties(
     llappdelegate-objc.mm
     PROPERTIES
+    SKIP_PRECOMPILE_HEADERS TRUE
     COMPILE_DEFINITIONS "${VIEWER_CHANNEL_VERSION_DEFINES}"
     # BugsplatMac is a module, imported with @import. That language feature
     # demands these -f switches.
@@ -1693,6 +1707,7 @@ set(viewer_APPSETTINGS_FILES
     packages-info.txt
     featuretable.txt
     featuretable_mac.txt
+    featuretable_linux.txt
     )
 
 if (USESYSTEMLIBS)
@@ -1758,6 +1773,10 @@ list(APPEND EVENT_HOST_SCRIPTS ${EVENT_HOST_SCRIPT_GLOB_LIST})
 set(PACKAGE ON CACHE BOOL
     "Add a package target that builds an installer package.")
 
+if(USE_PRECOMPILED_HEADERS)
+  target_precompile_headers( ${VIEWER_BINARY_NAME} PRIVATE llviewerprecompiledheaders.h )
+endif(USE_PRECOMPILED_HEADERS)
+
 if (WINDOWS)
     set_target_properties(${VIEWER_BINARY_NAME}
         PROPERTIES
@@ -1767,10 +1786,6 @@ if (WINDOWS)
         LINK_FLAGS_RELEASE "/FORCE:MULTIPLE /MAP\"secondlife-bin.MAP\" /OPT:REF /LARGEADDRESSAWARE"
         )
     target_compile_options(${VIEWER_BINARY_NAME} PRIVATE /bigobj)
-
-    if(USE_PRECOMPILED_HEADERS)
-       target_precompile_headers( ${VIEWER_BINARY_NAME} PRIVATE llviewerprecompiledheaders.h )
-    endif(USE_PRECOMPILED_HEADERS)
 
     # If adding a file to viewer_manifest.py in the WindowsManifest.construct() method, be sure to add the dependency
     # here.
@@ -1969,6 +1984,7 @@ target_link_libraries(${VIEWER_BINARY_NAME}
         ll::ndof
         ll::tracy
         ll::openxr
+        ll::nfde
         )
 
 if (NOT CMAKE_SYSTEM_NAME MATCHES FreeBSD)
@@ -2004,6 +2020,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     set_source_files_properties(
         llface.cpp
+        llfloaterregioninfo.cpp
         llhttpretrypolicy.cpp
         llmodelpreview.cpp
         llpanelface.cpp
@@ -2011,8 +2028,10 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         PROPERTIES COMPILE_FLAGS -Wno-maybe-uninitialized)
     set_source_files_properties(llfasttimerview.cpp PROPERTIES
         COMPILE_FLAGS -Wno-nonnull)
-    set_source_files_properties(llinventorygallerymenu.cpp PROPERTIES
-        COMPILE_FLAGS -Wno-uninitialized)
+    set_source_files_properties(
+        llinventorygallerymenu.cpp
+        llxmlrpclistener.cpp
+        PROPERTIES COMPILE_FLAGS -Wno-uninitialized)
     set_source_files_properties(llviewerstats.cpp PROPERTIES
         COMPILE_FLAGS -Wno-unused-value)
     set_source_files_properties(llurl.cpp PROPERTIES COMPILE_FLAGS
@@ -2045,7 +2064,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         llpanelenvironment.cpp
         llpanelgroupnotices.cpp
         llvoavatar.cpp
-        PROPERTIES COMPILE_FLAGS -Wno-restrict)
+        PROPERTIES COMPILE_FLAGS "-Wno-restrict -Wno-stringop-overflow -Wno-array-bounds")
 endif ()
 
 message("Copying fonts")

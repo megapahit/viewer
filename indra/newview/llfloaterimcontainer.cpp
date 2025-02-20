@@ -1059,6 +1059,10 @@ void LLFloaterIMContainer::onCustomAction(const LLSD& userdata)
     {
         setSortOrderParticipants(LLConversationFilter::SO_DISTANCE);
     }
+    if ("put_nearby_session_first" == command)
+    {
+        gSavedSettings.setBOOL("IMNearbySessionFirst", !gSavedSettings.getBOOL("IMNearbySessionFirst"));
+    }
     if ("chat_preferences" == command)
     {
         LLFloaterPreference * floater_prefp = LLFloaterReg::showTypedInstance<LLFloaterPreference>("preferences");
@@ -1108,6 +1112,10 @@ bool LLFloaterIMContainer::isActionChecked(const LLSD& userdata)
     if ("sort_participants_by_distance" == command)
     {
         return (order.getSortOrderParticipants() == LLConversationFilter::SO_DISTANCE);
+    }
+    if ("put_nearby_session_first" == command)
+    {
+        return gSavedSettings.getBOOL("IMNearbySessionFirst");
     }
     if ("Translating.Enabled" == command)
     {

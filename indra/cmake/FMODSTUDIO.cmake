@@ -34,7 +34,7 @@ if (USE_FMODSTUDIO)
       file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/lib/release)
       if (DARWIN)
         execute_process(
-          COMMAND hdiutil attach -noverify fmodstudioapi20223mac-installer.dmg
+          COMMAND hdiutil attach -noverify fmodstudioapi20225mac-installer.dmg
           WORKING_DIRECTORY $ENV{HOME}/Downloads
           )
         file(
@@ -64,26 +64,26 @@ if (USE_FMODSTUDIO)
         file(WRITE ${PREBUILD_TRACKING_DIR}/fmodstudio_installed "${fmodstudio_installed}")
       else (DARWIN)
         file(ARCHIVE_EXTRACT
-          INPUT $ENV{HOME}/Downloads/fmodstudioapi20223linux.tar.gz
+          INPUT $ENV{HOME}/Downloads/fmodstudioapi20225linux.tar.gz
           DESTINATION ${CMAKE_BINARY_DIR}
           )
         file(
           COPY
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/inc/fmod.h
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/inc/fmod.hpp
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/inc/fmod_codec.h
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/inc/fmod_common.h
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/inc/fmod_dsp.h
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/inc/fmod_dsp_effects.h
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/inc/fmod_errors.h
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/inc/fmod_output.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/inc/fmod.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/inc/fmod.hpp
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/inc/fmod_codec.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/inc/fmod_common.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/inc/fmod_dsp.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/inc/fmod_dsp_effects.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/inc/fmod_errors.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/inc/fmod_output.h
           DESTINATION ${LIBS_PREBUILT_DIR}/include/fmodstudio
           )
         file(
           COPY
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so.13
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20223linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so.13.23
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so.13
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20225linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so.13.25
           DESTINATION ${LIBS_PREBUILT_DIR}/lib/release
           FOLLOW_SYMLINK_CHAIN
           )
