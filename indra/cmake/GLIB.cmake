@@ -6,7 +6,7 @@ add_library( ll::glib INTERFACE IMPORTED )
 add_library( ll::glib_headers INTERFACE IMPORTED )
 add_library( ll::gio INTERFACE IMPORTED )
 
-if( LINUX )
+if( LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD )
   find_package(PkgConfig REQUIRED)
   pkg_search_module(GLIB REQUIRED glib-2.0)
   pkg_search_module(GIO REQUIRED gio-2.0)
