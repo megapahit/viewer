@@ -1,0 +1,641 @@
+diff --git a/.github/workflows/build.yaml b/.github/workflows/build.yaml
+index d1833f4..ba137f9 100644
+--- a/.github/workflows/build.yaml
++++ b/.github/workflows/build.yaml
+@@ -8,10 +8,10 @@ jobs:
+   build:
+     strategy:
+       matrix:
+-        os: [windows-2022, macos-12, ubuntu-22.04]
++        os: [windows-2022, macos-15, ubuntu-22.04]
+     runs-on: ${{ matrix.os }}
+     steps:
+-      - uses: secondlife/action-autobuild@v4
++      - uses: secondlife/action-autobuild@v5
+   release:
+     needs: build
+     runs-on: [ubuntu-latest]
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b1c1993..91313e7 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,14 +1,25 @@
+-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+-set(COLLADA14_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/1.4)
+-set(COLLADA15_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/1.5)
++cmake_minimum_required(VERSION 3.17)
++project(colladadom)
++
++include(FindPkgConfig)
++
++find_package(Boost REQUIRED CONFIG)
++pkg_check_modules(LIBXML2 libxml-2.0)
++pkg_check_modules(MINIZIP minizip)
++pkg_check_modules(ZLIB zlib)
++
++set(COLLADA_DOM_SOVERSION "0")
++set(COLLADA_DOM_VERSION "2.3")
++
+ file(GLOB dae_files ${CMAKE_CURRENT_SOURCE_DIR}/src/dae/*.cpp)
+ file(GLOB libxmlplugin_files ${CMAKE_CURRENT_SOURCE_DIR}/src/modules/LIBXMLPlugin/*.cpp)
+ file(GLOB stddatabase_files ${CMAKE_CURRENT_SOURCE_DIR}/src/modules/STLDatabase/*.cpp)
+ file(GLOB stderrplugin_files ${CMAKE_CURRENT_SOURCE_DIR}/src/modules/stdErrPlugin/*.cpp)
+ 
+ set(COLLADA_BASE_SOURCES ${dae_files} ${libxmlplugin_files} ${stddatabase_files} ${stderrplugin_files})
+-set(COLLADA_LIBS minizip ${ZLIB_LIBRARIES} ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY})
+-set(COLLADA_COMPILE_FLAGS "${EXTRA_COMPILE_FLAGS} ${Boost_CFLAGS} -DDOM_INCLUDE_LIBXML")
++set(COLLADA_LIBS ${LIBXML2_LIBRARIES} ${MINIZIP_LIBRARIES} ${ZLIB_LIBRARIES} ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_REGEX_LIBRARY})
++list(JOIN MINIZIP_CFLAGS " " VAR_MINIZIP_CFLAGS)
++set(COLLADA_COMPILE_FLAGS "${EXTRA_COMPILE_FLAGS} ${VAR_MINIZIP_CFLAGS} ${Boost_CFLAGS} -DDOM_INCLUDE_LIBXML")
+ 
+ if( OPT_COLLADA15 )
+   add_subdirectory(src/1.5)
+@@ -17,8 +28,8 @@ if( OPT_COLLADA14 )
+   add_subdirectory(src/1.4)
+ endif()
+ 
+-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/1.4 DESTINATION ${COLLADA_DOM_INCLUDE_INSTALL_DIR} PATTERN ".svn" EXCLUDE PATTERN ".~" EXCLUDE)
+-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/1.5 DESTINATION ${COLLADA_DOM_INCLUDE_INSTALL_DIR} PATTERN ".svn" EXCLUDE PATTERN ".~" EXCLUDE)
+-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/dae DESTINATION ${COLLADA_DOM_INCLUDE_INSTALL_DIR} PATTERN ".svn" EXCLUDE PATTERN ".~" EXCLUDE)
+-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/modules DESTINATION ${COLLADA_DOM_INCLUDE_INSTALL_DIR} PATTERN ".svn" EXCLUDE PATTERN ".~" EXCLUDE)
+-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/dae.h ${CMAKE_CURRENT_SOURCE_DIR}/include/dae.h DESTINATION ${COLLADA_DOM_INCLUDE_INSTALL_DIR})
++# install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/1.4 DESTINATION ${COLLADA_DOM_INCLUDE_INSTALL_DIR} PATTERN ".svn" EXCLUDE PATTERN ".~" EXCLUDE)
++# install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/1.5 DESTINATION ${COLLADA_DOM_INCLUDE_INSTALL_DIR} PATTERN ".svn" EXCLUDE PATTERN ".~" EXCLUDE)
++# install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/dae DESTINATION ${COLLADA_DOM_INCLUDE_INSTALL_DIR} PATTERN ".svn" EXCLUDE PATTERN ".~" EXCLUDE)
++# install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/modules DESTINATION ${COLLADA_DOM_INCLUDE_INSTALL_DIR} PATTERN ".svn" EXCLUDE PATTERN ".~" EXCLUDE)
++# install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/dae.h ${CMAKE_CURRENT_SOURCE_DIR}/include/dae.h DESTINATION ${COLLADA_DOM_INCLUDE_INSTALL_DIR})
+diff --git a/Makefile b/Makefile
+index f317973..441caf1 100755
+--- a/Makefile
++++ b/Makefile
+@@ -59,7 +59,7 @@ ifneq ($(shell uname -p | grep -i powerpc),)
+ nativeArch := ppc
+ endif
+ 
+-# arch: x86 (or i386), x64 (or x86_64), ppc, ppc64
++# arch: x86 (or i386), x64 (or x86_64), ppc, ppc64, arm64
+ arch ?= i386
+ 
+ # project: 'dom', 'domTest', or 'all'
+@@ -103,7 +103,7 @@ $(error Invalid setting os=$(os))
+ endif
+ 
+ archs := $(sort $(subst i386,x86,$(arch)))
+-ifneq ($(filter-out x86 ppc x86_64,$(archs)),)
++ifneq ($(filter-out x86 ppc x86_64 arm64,$(archs)),)
+ $(error Invalid setting arch=$(arch))
+ endif
+ 
+diff --git a/autobuild.xml b/autobuild.xml
+index 21a28c7..96436a9 100755
+--- a/autobuild.xml
++++ b/autobuild.xml
+@@ -21,11 +21,11 @@
+             <key>archive</key>
+             <map>
+               <key>hash</key>
+-              <string>6bf5f4afddf87d48c069d781b5ef2d44d6ddf2d5</string>
++              <string>a4553df5b8fde2e9cd54ebb94c6efb8eb5fe3c38</string>
+               <key>hash_algorithm</key>
+               <string>sha1</string>
+               <key>url</key>
+-              <string>https://github.com/secondlife/3p-boost/releases/download/v1.86.0-e2bee1e/boost-1.86-darwin64-10475904468.tar.zst</string>
++              <string>https://github.com/secondlife/3p-boost/releases/download/v1.86.0-be1a669/boost-1.86-darwin64-13246092114.tar.zst</string>
+             </map>
+             <key>name</key>
+             <string>darwin64</string>
+@@ -35,11 +35,11 @@
+             <key>archive</key>
+             <map>
+               <key>hash</key>
+-              <string>3c0ba2a87e78d76c81da95fa87579bf4964242e1</string>
++              <string>4a2a19dc5cb555e157ad894ba917f5a83a35b20d</string>
+               <key>hash_algorithm</key>
+               <string>sha1</string>
+               <key>url</key>
+-              <string>https://github.com/secondlife/3p-boost/releases/download/v1.86.0-e2bee1e/boost-1.86-linux64-10475904468.tar.zst</string>
++              <string>https://github.com/secondlife/3p-boost/releases/download/v1.86.0-be1a669/boost-1.86-linux64-13246092114.tar.zst</string>
+             </map>
+             <key>name</key>
+             <string>linux64</string>
+@@ -49,11 +49,11 @@
+             <key>archive</key>
+             <map>
+               <key>hash</key>
+-              <string>d1dd5d629b254d1b361c5a0fa210b5f3283e8a20</string>
++              <string>8a1fa9366bfe49009286e4805d7aaedb7c3df82e</string>
+               <key>hash_algorithm</key>
+               <string>sha1</string>
+               <key>url</key>
+-              <string>https://github.com/secondlife/3p-boost/releases/download/v1.86.0-e2bee1e/boost-1.86-windows64-10475904468.tar.zst</string>
++              <string>https://github.com/secondlife/3p-boost/releases/download/v1.86.0-be1a669/boost-1.86-windows64-13246092114.tar.zst</string>
+             </map>
+             <key>name</key>
+             <string>windows64</string>
+@@ -81,11 +81,11 @@
+             <key>archive</key>
+             <map>
+               <key>hash</key>
+-              <string>b2bf9adc84841b6fcf48d4c00787b221607cdea3</string>
++              <string>372c92936d940b1cfb5ba34310691d4bb435c161</string>
+               <key>hash_algorithm</key>
+               <string>sha1</string>
+               <key>url</key>
+-              <string>https://github.com/secondlife/3p-libxml2/releases/download/v2.13.3-r1/libxml2-2.13.3-r1-darwin64-10329675166.tar.zst</string>
++              <string>https://github.com/secondlife/3p-libxml2/releases/download/v2.13.5-r2/libxml2-2.13.5-r2-darwin64-13246071272.tar.zst</string>
+             </map>
+             <key>name</key>
+             <string>darwin64</string>
+@@ -95,11 +95,11 @@
+             <key>archive</key>
+             <map>
+               <key>hash</key>
+-              <string>6ab8108ea0a42e0bd462568c495e5ce5c4cdc0ff</string>
++              <string>ba6fbc34112b1acab1c8615dcd13de983f3678d3</string>
+               <key>hash_algorithm</key>
+               <string>sha1</string>
+               <key>url</key>
+-              <string>https://github.com/secondlife/3p-libxml2/releases/download/v2.13.3-r1/libxml2-2.13.3-r1-linux64-10329675166.tar.zst</string>
++              <string>https://github.com/secondlife/3p-libxml2/releases/download/v2.13.5-r2/libxml2-2.13.5-r2-linux64-13246071272.tar.zst</string>
+             </map>
+             <key>name</key>
+             <string>linux64</string>
+@@ -109,18 +109,18 @@
+             <key>archive</key>
+             <map>
+               <key>hash</key>
+-              <string>5181bd267de3ad4466227f91c7e2cbed7e8b85d9</string>
++              <string>71968c4b621636e8ae0c5680e631f4aa67561944</string>
+               <key>hash_algorithm</key>
+               <string>sha1</string>
+               <key>url</key>
+-              <string>https://github.com/secondlife/3p-libxml2/releases/download/v2.13.3-r1/libxml2-2.13.3-r1-windows64-10329675166.tar.zst</string>
++              <string>https://github.com/secondlife/3p-libxml2/releases/download/v2.13.5-r2/libxml2-2.13.5-r2-windows64-13246071272.tar.zst</string>
+             </map>
+             <key>name</key>
+             <string>windows64</string>
+           </map>
+         </map>
+         <key>version</key>
+-        <string>2.13.3-r1</string>
++        <string>2.13.5-r2</string>
+       </map>
+       <key>minizip-ng</key>
+       <map>
+@@ -143,11 +143,11 @@
+             <key>archive</key>
+             <map>
+               <key>hash</key>
+-              <string>6bedaa9d770ef0ae6147f49a26fc3209fde9cb80</string>
++              <string>b628d088e1f368a0cd51a6b66292aaf9a025e2d4</string>
+               <key>hash_algorithm</key>
+               <string>sha1</string>
+               <key>url</key>
+-              <string>https://github.com/secondlife/3p-minizip-ng/releases/download/v4.0.7-r1/minizip_ng-4.0.7-r1-darwin64-10324657515.tar.zst</string>
++              <string>https://github.com/secondlife/3p-minizip-ng/releases/download/v4.0.7-r3/minizip_ng-4.0.7-r3-darwin64-13246046977.tar.zst</string>
+             </map>
+             <key>name</key>
+             <string>darwin64</string>
+@@ -157,11 +157,11 @@
+             <key>archive</key>
+             <map>
+               <key>hash</key>
+-              <string>ce2c91b8c4f89af252ce1b6a96af6985fe54f509</string>
++              <string>492ce9175b730d43df63821c4481685e035af623</string>
+               <key>hash_algorithm</key>
+               <string>sha1</string>
+               <key>url</key>
+-              <string>https://github.com/secondlife/3p-minizip-ng/releases/download/v4.0.7-r1/minizip_ng-4.0.7-r1-linux64-10324657515.tar.zst</string>
++              <string>https://github.com/secondlife/3p-minizip-ng/releases/download/v4.0.7-r3/minizip_ng-4.0.7-r3-linux64-13246046977.tar.zst</string>
+             </map>
+             <key>name</key>
+             <string>linux64</string>
+@@ -171,18 +171,18 @@
+             <key>archive</key>
+             <map>
+               <key>hash</key>
+-              <string>9cee9d85f9a7c6fb051125775f0122a926da5cc9</string>
++              <string>58773e707ff3490822b7b8217d7729ade2186632</string>
+               <key>hash_algorithm</key>
+               <string>sha1</string>
+               <key>url</key>
+-              <string>https://github.com/secondlife/3p-minizip-ng/releases/download/v4.0.7-r1/minizip_ng-4.0.7-r1-windows64-10324657515.tar.zst</string>
++              <string>https://github.com/secondlife/3p-minizip-ng/releases/download/v4.0.7-r3/minizip_ng-4.0.7-r3-windows64-13246046977.tar.zst</string>
+             </map>
+             <key>name</key>
+             <string>windows64</string>
+           </map>
+         </map>
+         <key>version</key>
+-        <string>4.0.7-r1</string>
++        <string>4.0.7-r3</string>
+       </map>
+       <key>zlib-ng</key>
+       <map>
+@@ -205,11 +205,11 @@
+             <key>archive</key>
+             <map>
+               <key>hash</key>
+-              <string>3a6593c71c59ace76d1349483759fcde4b719a76</string>
++              <string>e363e3b889c52fda7601d7aeaa9832307034651e</string>
+               <key>hash_algorithm</key>
+               <string>sha1</string>
+               <key>url</key>
+-              <string>https://github.com/secondlife/3p-zlib-ng/releases/download/v2.2.1-r2/zlib_ng-2.2.1-r2-darwin64-10324415171.tar.zst</string>
++              <string>https://github.com/secondlife/3p-zlib-ng/releases/download/v2.2.3-r1/zlib_ng-2.2.3-dev0.g8aa13e3.d20250206-darwin64-13183604450.tar.zst</string>
+             </map>
+             <key>name</key>
+             <string>darwin64</string>
+@@ -219,11 +219,11 @@
+             <key>archive</key>
+             <map>
+               <key>hash</key>
+-              <string>fbadeb0b8c771cb06c0055c9fab6d40c6764dacd</string>
++              <string>3cdd52f7fb3691789d50f0b40ed6f5642321ff32</string>
+               <key>hash_algorithm</key>
+               <string>sha1</string>
+               <key>url</key>
+-              <string>https://github.com/secondlife/3p-zlib-ng/releases/download/v2.2.1-r2/zlib_ng-2.2.1-r2-linux64-10324415171.tar.zst</string>
++              <string>https://github.com/secondlife/3p-zlib-ng/releases/download/v2.2.3-r1/zlib_ng-2.2.3-dev0.g8aa13e3.d20250206-linux64-13183604450.tar.zst</string>
+             </map>
+             <key>name</key>
+             <string>linux64</string>
+@@ -233,18 +233,18 @@
+             <key>archive</key>
+             <map>
+               <key>hash</key>
+-              <string>0094031715662be626f5106ff6c814f4fc3dacfa</string>
++              <string>e802a28139328bb2421ad39e13d996d350d8106d</string>
+               <key>hash_algorithm</key>
+               <string>sha1</string>
+               <key>url</key>
+-              <string>https://github.com/secondlife/3p-zlib-ng/releases/download/v2.2.1-r2/zlib_ng-2.2.1-r2-windows64-10324415171.tar.zst</string>
++              <string>https://github.com/secondlife/3p-zlib-ng/releases/download/v2.2.3-r1/zlib_ng-2.2.3-dev0.g8aa13e3.d20250206-windows64-13183604450.tar.zst</string>
+             </map>
+             <key>name</key>
+             <string>windows64</string>
+           </map>
+         </map>
+         <key>version</key>
+-        <string>2.2.1-r2</string>
++        <string>2.2.3-dev0.g8aa13e3.d20250206</string>
+       </map>
+     </map>
+     <key>package_description</key>
+diff --git a/build-cmd.sh b/build-cmd.sh
+index ee706ed..df5fa53 100755
+--- a/build-cmd.sh
++++ b/build-cmd.sh
+@@ -96,7 +96,7 @@ case "$AUTOBUILD_PLATFORM" in
+                 then
+                     "build/$versub/domTest.exe" -all
+                 else
+-                    # 64 bit exe ends up in different location to 32 bit hard coded 
++                    # 64 bit exe ends up in different location to 32 bit hard coded
+                     # path to data directory - source code suggests it looks in a dir
+                     # called domTestData first so we make one
+                     mkdir -p "$projdir/x64/Release/domTestData"
+@@ -111,7 +111,7 @@ case "$AUTOBUILD_PLATFORM" in
+         libname="libcollada${collada_shortver}dom${dom_shortver}-s.lib"
+         if [ "$AUTOBUILD_ADDRSIZE" = 32 ]
+             then cp -a "build/$versub/$libname" "$stage"/lib/release/
+-            else cp -a "$projdir/x64/Release/$libname" "$stage"/lib/release/ 
++            else cp -a "$projdir/x64/Release/$libname" "$stage"/lib/release/
+         fi
+     ;;
+ 
+@@ -126,15 +126,13 @@ case "$AUTOBUILD_PLATFORM" in
+         # repo                  root                run_tests               suffix
+         export MACOSX_DEPLOYMENT_TARGET="$LL_BUILD_DARWIN_DEPLOY_TARGET"
+ 
+-        opts="${TARGET_OPTS:--arch $AUTOBUILD_CONFIGURE_ARCH $LL_BUILD_RELEASE}"
++        opts="${TARGET_OPTS:--arch arm64 -arch x86_64 $LL_BUILD_RELEASE}"
+ 
+         nproc=$(sysctl -n hw.physicalcpu)
+ 
+         libdir="$top/stage"
+         mkdir -p "$libdir"/lib/release
+ 
+-        make clean arch="$AUTOBUILD_CONFIGURE_ARCH" # Hide 'arch' env var
+-
+         # Without the -Wno-etc flag, incredible spam is produced
+         make \
+             conf=release \
+@@ -142,7 +140,7 @@ case "$AUTOBUILD_PLATFORM" in
+             CFLAGS="$opts" \
+             CXXFLAGS="$opts -Wno-unused-local-typedef" \
+             LDFLAGS="-Wl,-headerpad_max_install_names" \
+-            arch="$AUTOBUILD_CONFIGURE_ARCH" \
++            arch="x86_64 arm64" \
+             printCommands=yes \
+             printMessages=yes
+ 
+diff --git a/include/dae/daeArray.h b/include/dae/daeArray.h
+index 81e0fa7..941257e 100644
+--- a/include/dae/daeArray.h
++++ b/include/dae/daeArray.h
+@@ -415,7 +415,7 @@ public:
+ 	 * @param other A reference to the other array.
+ 	 * @return true if the arrays are equal, false otherwise.
+ 	 */
+-	bool operator==(const daeTArray<T>& other) {
++	bool operator==(const daeTArray<T>& other) const {
+ 		if (getCount() != other.getCount())
+ 			return false;
+ 		for (size_t i = 0; i < getCount(); i++)
+diff --git a/make/common.mk b/make/common.mk
+index ea87d36..6105abc 100644
+--- a/make/common.mk
++++ b/make/common.mk
+@@ -15,12 +15,14 @@ ifeq ($(conf),debug)
+ ccFlags += -g -D_DEBUG
+ debugSuffix := -d
+ else
+-ccFlags += -O2 -DNDEBUG
++ccFlags += -O3 -DNDEBUG
+ debugSuffix :=
+ endif
+ 
+ ifeq ($(arch),x86_64)
+ archsupport := -x64
++else ifeq ($(arch),arm64)
++archsupport := -a64
+ else
+ archsupport :=
+ endif
+diff --git a/make/rules.mk b/make/rules.mk
+index eb55234..1b976a8 100644
+--- a/make/rules.mk
++++ b/make/rules.mk
+@@ -41,7 +41,7 @@ ifneq ($(obj),)
+ # any values we use in rule commands. This is the reason for all the target-specific variables.
+ $(obj): cc := $(cc)
+ $(obj): ccFlags := $(ccFlags)
+-$(obj): ccFlagsNoArch := $(filter-out -arch ppc ppc64 i386 x86_64,$(ccFlags))
++$(obj): ccFlagsNoArch := $(filter-out -arch ppc ppc64 i386 x86_64 arm64,$(ccFlags))
+ $(obj): includeOpts := $(includeOpts)
+ 
+ # Call createObjRule with a source file path
+diff --git a/make/rulesC.mk b/make/rulesC.mk
+index 15b1e6a..023814d 100644
+--- a/make/rulesC.mk
++++ b/make/rulesC.mk
+@@ -52,7 +52,7 @@ ifneq ($(obj),)
+ #$(obj): cc := $(cc)
+ $(obj): cc := $(CC)
+ $(obj): ccFlags := $(ccFlags)
+-$(obj): ccFlagsNoArch := $(filter-out -arch ppc ppc64 i386 x86_64,$(ccFlags))
++$(obj): ccFlagsNoArch := $(filter-out -arch ppc ppc64 i386 x86_64 arm64,$(ccFlags))
+ $(obj): includeOpts := $(includeOpts)
+ 
+ # Call createObjRule with a source file path
+diff --git a/projects/vc142-1.4/dom-static.vcxproj b/projects/vc142-1.4/dom-static.vcxproj
+index 555ca4c..b87c231 100644
+--- a/projects/vc142-1.4/dom-static.vcxproj
++++ b/projects/vc142-1.4/dom-static.vcxproj
+@@ -122,13 +122,11 @@
+       <AdditionalIncludeDirectories>..\..\include;..\..\include\1.4;..\..\stage\packages\include;..\..\stage\packages\include\libxml2;..\..\stage\packages\include\minizip-ng;..\..\stage\packages\include\zlib-ng;..\..\external-libs\tinyxml;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+       <PreprocessorDefinitions>WIN32;NDEBUG;_CRT_SECURE_NO_DEPRECATE;DOM_INCLUDE_LIBXML;LIBXML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+-      <DisableLanguageExtensions>false</DisableLanguageExtensions>
+       <PrecompiledHeader>
+       </PrecompiledHeader>
+       <WarningLevel>Level3</WarningLevel>
+       <DebugInformationFormat>OldStyle</DebugInformationFormat>
+-      <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
+-      <LanguageStandard>stdcpp17</LanguageStandard>
++      <LanguageStandard>stdcpp20</LanguageStandard>
+       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+     </ClCompile>
+     <Lib>
+@@ -143,13 +141,11 @@
+       <AdditionalIncludeDirectories>..\..\include;..\..\include\1.4;..\..\stage\packages\include;..\..\stage\packages\include\libxml2;..\..\stage\packages\include\minizip-ng;..\..\stage\packages\include\zlib-ng;..\..\external-libs\tinyxml;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+       <PreprocessorDefinitions>WIN32;NDEBUG;_CRT_SECURE_NO_DEPRECATE;DOM_INCLUDE_LIBXML;LIBXML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+-      <DisableLanguageExtensions>false</DisableLanguageExtensions>
+       <PrecompiledHeader>
+       </PrecompiledHeader>
+       <WarningLevel>Level3</WarningLevel>
+       <DebugInformationFormat>OldStyle</DebugInformationFormat>
+-      <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
+-      <LanguageStandard>stdcpp17</LanguageStandard>
++      <LanguageStandard>stdcpp20</LanguageStandard>
+       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+     </ClCompile>
+     <Lib>
+diff --git a/projects/vc142-1.4/dom.vcxproj b/projects/vc142-1.4/dom.vcxproj
+index 04b0a11..0c57fd4 100644
+--- a/projects/vc142-1.4/dom.vcxproj
++++ b/projects/vc142-1.4/dom.vcxproj
+@@ -149,15 +149,14 @@
+     <ClCompile>
+       <AdditionalIncludeDirectories>..\..\include;..\..\include\1.4;..\..\stage\packages\include;..\..\stage\packages\include\libxml2;..\..\stage\packages\include\minizip-ng;..\..\stage\packages\include\zlib-ng;..\..\external-libs\tinyxml;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+-      <DisableLanguageExtensions>false</DisableLanguageExtensions>
+       <PreprocessorDefinitions>WIN32;NDEBUG;_CRT_SECURE_NO_DEPRECATE;DOM_DYNAMIC;DOM_EXPORT;DOM_INCLUDE_LIBXML;LIBXML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+       <PrecompiledHeader>
+       </PrecompiledHeader>
+       <WarningLevel>Level3</WarningLevel>
+       <WholeProgramOptimization>true</WholeProgramOptimization>
+-      <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
+       <MultiProcessorCompilation>true</MultiProcessorCompilation>
++      <LanguageStandard>stdcpp20</LanguageStandard>
+     </ClCompile>
+     <Link>
+       <AdditionalDependencies>libxml2.lib;Bcrypt.lib;zlib.lib;wsock32.lib;minizip.lib;libboost_regex-mt-x32.lib;libboost_filesystem-mt-x32.lib;libboost_system-mt-x32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+@@ -180,15 +179,14 @@
+     <ClCompile>
+       <AdditionalIncludeDirectories>..\..\include;..\..\include\1.4;..\..\stage\packages\include;..\..\stage\packages\include\libxml2;..\..\stage\packages\include\minizip-ng;..\..\stage\packages\include\zlib-ng;..\..\external-libs\tinyxml;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+-      <DisableLanguageExtensions>false</DisableLanguageExtensions>
+       <PreprocessorDefinitions>WIN32;NDEBUG;_CRT_SECURE_NO_DEPRECATE;DOM_DYNAMIC;DOM_EXPORT;DOM_INCLUDE_LIBXML;LIBXML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+       <PrecompiledHeader>
+       </PrecompiledHeader>
+       <WarningLevel>Level3</WarningLevel>
+       <WholeProgramOptimization>true</WholeProgramOptimization>
+-      <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
+       <MultiProcessorCompilation>true</MultiProcessorCompilation>
++      <LanguageStandard>stdcpp20</LanguageStandard>
+     </ClCompile>
+     <Link>
+       <AdditionalDependencies>libxml2.lib;Bcrypt.lib;zlib.lib;wsock32.lib;minizip.lib;libboost_regex-mt-x64.lib;libboost_filesystem-mt-x64.lib;libboost_system-mt-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+diff --git a/projects/vc142-1.4/domTest.vcxproj b/projects/vc142-1.4/domTest.vcxproj
+index 5daeaa3..362ca6f 100644
+--- a/projects/vc142-1.4/domTest.vcxproj
++++ b/projects/vc142-1.4/domTest.vcxproj
+@@ -133,15 +133,14 @@
+     <ClCompile>
+       <AdditionalIncludeDirectories>..\..\include;..\..\include\1.4;..\..\stage\packages\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+-      <DisableLanguageExtensions>false</DisableLanguageExtensions>
+       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;DOM_DYNAMIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+       <PrecompiledHeader>
+       </PrecompiledHeader>
+       <WarningLevel>Level3</WarningLevel>
+       <WholeProgramOptimization>true</WholeProgramOptimization>
+-      <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
+       <MultiProcessorCompilation>true</MultiProcessorCompilation>
++      <LanguageStandard>stdcpp20</LanguageStandard>
+     </ClCompile>
+     <Link>
+       <AdditionalDependencies>libcollada14dom23.lib;libboost_filesystem-mt-x32.lib;libboost_system-mt-x32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+@@ -161,15 +160,14 @@
+     <ClCompile>
+       <AdditionalIncludeDirectories>..\..\include;..\..\include\1.4;..\..\stage\packages\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+-      <DisableLanguageExtensions>false</DisableLanguageExtensions>
+       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;DOM_DYNAMIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+       <PrecompiledHeader>
+       </PrecompiledHeader>
+       <WarningLevel>Level3</WarningLevel>
+       <WholeProgramOptimization>true</WholeProgramOptimization>
+-      <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
+       <MultiProcessorCompilation>true</MultiProcessorCompilation>
++      <LanguageStandard>stdcpp20</LanguageStandard>
+     </ClCompile>
+     <Link>
+       <AdditionalDependencies>libcollada14dom23.lib;libboost_filesystem-mt-x64.lib;libboost_system-mt-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+diff --git a/src/1.4/CMakeLists.txt b/src/1.4/CMakeLists.txt
+index 17fbaea..d0d5939 100644
+--- a/src/1.4/CMakeLists.txt
++++ b/src/1.4/CMakeLists.txt
+@@ -1,10 +1,31 @@
+ file(GLOB dom_files ${CMAKE_CURRENT_SOURCE_DIR}/dom/*.cpp)
+-include_directories(${COLLADA14_INCLUDE_DIR})
+-add_library(collada14dom SHARED ${COLLADA_BASE_SOURCES} ${dom_files})
++add_library(collada14dom STATIC ${COLLADA_BASE_SOURCES} ${dom_files})
++if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
++  target_compile_options(collada14dom PRIVATE
++          "-pedantic" "-Wno-error=unused-result")
++elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
++  target_compile_options(collada14dom PRIVATE
++          "-Wno-error=unused-result"
++  )
++endif()
++target_include_directories(collada14dom PRIVATE
++	${colladadom_SOURCE_DIR}/include
++	${colladadom_SOURCE_DIR}/include/1.4
++	${Boost_INCLUDE_DIRS}
++	${LIBXML2_INCLUDE_DIRS}
++	${MINIZIP_INCLUDE_DIRS}
++	${ZLIB_INCLUDE_DIRS}
++)
++target_link_directories(collada14dom INTERFACE
++	${Boost_LIBRARY_DIRS}
++	${LIBXML2_LIBRARY_DIRS}
++	${MINIZIP_LIBRARY_DIRS}
++	${ZLIB_LIBRARY_DIRS}
++)
+ target_link_libraries(collada14dom ${COLLADA_LIBS})
+ set_target_properties(collada14dom PROPERTIES
+   COMPILE_FLAGS "${COLLADA_COMPILE_FLAGS}"
+   CLEAN_DIRECT_OUTPUT 1
+   SOVERSION ${COLLADA_DOM_SOVERSION}
+   VERSION ${COLLADA_DOM_VERSION})
+-install(TARGETS collada14dom DESTINATION lib${LIB_SUFFIX})
++# install(TARGETS collada14dom DESTINATION ${COLLADA_DOM_LIBS_INSTALL_DIR})
+diff --git a/src/1.5/CMakeLists.txt b/src/1.5/CMakeLists.txt
+index e061a01..fb73a70 100644
+--- a/src/1.5/CMakeLists.txt
++++ b/src/1.5/CMakeLists.txt
+@@ -1,10 +1,10 @@
+ file(GLOB dom_files ${CMAKE_CURRENT_SOURCE_DIR}/dom/*.cpp)
+ include_directories(${COLLADA15_INCLUDE_DIR})
+-add_library(collada15dom SHARED ${COLLADA_BASE_SOURCES} ${dom_files})
++add_library(collada15dom STATIC ${COLLADA_BASE_SOURCES} ${dom_files})
+ target_link_libraries(collada15dom ${COLLADA_LIBS})
+ set_target_properties(collada15dom PROPERTIES
+   COMPILE_FLAGS "${COLLADA_COMPILE_FLAGS}"
+   CLEAN_DIRECT_OUTPUT 1
+   SOVERSION ${COLLADA_DOM_SOVERSION}
+   VERSION ${COLLADA_DOM_VERSION})
+-install(TARGETS collada15dom DESTINATION lib${LIB_SUFFIX})
++install(TARGETS collada15dom DESTINATION ${COLLADA_DOM_LIBS_INSTALL_DIR})
+diff --git a/src/dae/daeMetaElement.cpp b/src/dae/daeMetaElement.cpp
+index 55a57f5..5dc4657 100644
+--- a/src/dae/daeMetaElement.cpp
++++ b/src/dae/daeMetaElement.cpp
+@@ -107,8 +107,8 @@ daeMetaElement::addContentsOrder(daeInt offset)
+ 	meaa->setOffset(offset);
+ 	meaa->setContainer( this);
+ 
+-    if (_metaContentsOrder)
+-        delete _metaContentsOrder;
++	if (_metaContentsOrder)
++		delete _metaContentsOrder;
+ 
+ 	_metaContentsOrder = meaa;
+ }
+@@ -121,8 +121,8 @@ void daeMetaElement::addCMDataArray(daeInt offset, daeUInt numChoices)
+ 	meaa->setOffset(offset);
+ 	meaa->setContainer( this);
+ 
+-    if (_metaCMData)
+-        delete _metaCMData;
++	if (_metaCMData)
++		delete _metaCMData;
+ 
+ 	_metaCMData = meaa;
+ 
+@@ -175,7 +175,7 @@ daeMetaElement::appendAttribute(daeMetaAttribute* attr)
+ 	else
+ 		_metaAttributes.append(attr);
+ 
+-	if ((attr->getName() != NULL) &&
++	if ((daeString(attr->getName()) != NULL) &&
+ 		(strcmp(attr->getName(),"id") == 0)) {
+ 		_metaID = attr;
+ 		_isTrackableForQueries = true;
+diff --git a/src/dae/daeUtils.cpp b/src/dae/daeUtils.cpp
+index 682692c..71b1f12 100644
+--- a/src/dae/daeUtils.cpp
++++ b/src/dae/daeUtils.cpp
+@@ -19,6 +19,8 @@
+ 
+ #ifndef NO_BOOST
+ #include <boost/filesystem.hpp> // THIS WAS NOT COMMENTED.
++#include <boost/uuid/uuid_generators.hpp>
++#include <boost/uuid/uuid_io.hpp>
+ #endif
+ 
+ #include <cstdio> // for tmpnam
+@@ -118,7 +120,7 @@ list<string> cdom::makeStringList(const char* s, ...) {
+ 	va_end(args);
+ 	return result;
+ }
+-#endif 0
++#endif // 0
+ 
+ string cdom::getCurrentDir() {
+ #ifdef __CELLOS_LV2__
+@@ -154,7 +156,7 @@ char cdom::getFileSeparator() {
+ const string& cdom::getSystemTmpDir() {
+ #ifdef WIN32
+     static string tmpDir = string(getenv("TMP")) + getFileSeparator();
+-#elif defined(__linux__) || defined(__linux)
++#elif defined(__linux__) || defined(__linux) || defined(__FreeBSD__)
+     static string tmpDir = "/tmp/";
+ #elif defined __APPLE_CC__
+ static string tmpDir = string(getenv("TMPDIR"));
+@@ -169,11 +171,16 @@ static string tmpDir = string(getenv("TMPDIR"));
+ string cdom::getRandomFileName() {
+     std::string randomSegment;
+     // have to createa a buffer in order to make it multi-thread safe
++#ifdef NO_BOOST
+     std::string tmpbuffer; tmpbuffer.resize(L_tmpnam*2+1);
+     std::string tmp(tmpnam(&tmpbuffer[0]));
++#else
++    boost::uuids::uuid uuid = boost::uuids::random_generator()();
++    std::string tmp(boost::uuids::to_string(uuid));
++#endif
+ #ifdef WIN32
+     randomSegment = tmp.substr(tmp.find_last_of('\\')+1);
+-#elif defined(__linux__) || defined(__linux)
++#elif defined(__linux__) || defined(__linux) || defined(__FreeBSD__)
+     randomSegment = tmp.substr(tmp.find_last_of('/')+1);
+ #elif defined __APPLE_CC__
+ 	randomSegment = tmp.substr(tmp.find_last_of('/')+1);

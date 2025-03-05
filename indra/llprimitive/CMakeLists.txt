@@ -12,16 +12,18 @@ include(GLM)
 include(TinyGLTF)
 
 if(LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD )
+  set_property(DIRECTORY APPEND
+    PROPERTY CMAKE_CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/../patches/collada-dom-v2.3-r8.patch)
   prepare_thirdparty(
-	  "https://github.com/secondlife/3p-colladadom/archive/refs/tags/v2.3-r7.tar.gz"
-	  "colladadom-v2.3-r7.tar.gz"
-	  "3p-colladadom-2.3-r7"
-	  "collada-dom-v2.3-r7.patch"
-	  "0d7a13531eb0de8c617b48af90c3b5b22c2a0b566069d1a0c36f9602dbfeb9ebab1516556e6dda34645d63354c3c6539375d7e5b8c0b36baba11312d18a3c705"
+    "https://github.com/secondlife/3p-colladadom/archive/refs/tags/v2.3-r8.tar.gz"
+    "colladadom-v2.3-r8.tar.gz"
+    "3p-colladadom-2.3-r8"
+    "collada-dom-v2.3-r8.patch"
+    "b36dce3b7be4b49f3c8e4d6c9dbf3529f7ed1f28e64ee45be0e77805f06376b95079798616529302d771ab2b76bf06d2f894ca11e6f7f3097c3f7a05a78c474f"
   )
   set(OPT_COLLADA14 TRUE)
   add_subdirectory(
-	  "${CMAKE_SOURCE_DIR}/../../3p-colladadom-2.3-r7" "colladadom")
+	  "${CMAKE_SOURCE_DIR}/../../3p-colladadom-2.3-r8" "colladadom")
   target_include_directories(
 	  ll::colladadom INTERFACE
 	  ${colladadom_SOURCE_DIR}/include
