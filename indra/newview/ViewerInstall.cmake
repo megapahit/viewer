@@ -112,7 +112,7 @@ if (LINUX)
             install(FILES
                 ${AUTOBUILD_INSTALL_DIR}/lib/release/libfmod.so
                 ${AUTOBUILD_INSTALL_DIR}/lib/release/libfmod.so.13
-                ${AUTOBUILD_INSTALL_DIR}/lib/release/libfmod.so.13.27
+                ${AUTOBUILD_INSTALL_DIR}/lib/release/libfmod.so.13.28
             DESTINATION ${_LIB})
         endif (USE_FMODSTUDIO)
 endif (LINUX)
