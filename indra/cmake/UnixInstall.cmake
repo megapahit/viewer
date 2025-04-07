@@ -16,7 +16,7 @@ if (INSTALL)
 
   if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
     set(_LIB lib/${ARCH}-linux-gnu)
-  elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed))
+  elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed) OR (${LINUX_DISTRO} MATCHES gentoo))
     set(_LIB lib${ADDRESS_SIZE})
   else ()
     set(_LIB lib)

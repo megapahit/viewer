@@ -23,7 +23,7 @@ if(LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD )
   )
   set(OPT_COLLADA14 TRUE)
   add_subdirectory(
-	  "${CMAKE_SOURCE_DIR}/../../3p-colladadom-2.3-r8" "colladadom")
+	  "${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8" "colladadom")
   target_include_directories(
 	  ll::colladadom INTERFACE
 	  ${colladadom_SOURCE_DIR}/include

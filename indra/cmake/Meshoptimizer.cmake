@@ -14,7 +14,7 @@ elseif (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu) OR CM
   return ()
 endif (NOT USESYSTEMLIBS)
 
-if (LINUX OR NOT USESYSTEMLIBS)
+if (LINUX AND NOT (${LINUX_DISTRO} MATCHES gentoo) OR NOT USESYSTEMLIBS)
 use_prebuilt_binary(meshoptimizer)
 elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/meshoptimizer_installed OR NOT ${meshoptimizer_installed} EQUAL 0)
   if (NOT EXISTS ${CMAKE_BINARY_DIR}/meshoptimizer-0.21.tar.gz)
@@ -45,7 +45,7 @@ elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRA
       )
     file(WRITE ${PREBUILD_TRACKING_DIR}/meshoptimizer_installed "${meshoptimizer_installed}")
   endif (${MESHOPTIMIZER_RESULT})
-endif (LINUX OR NOT USESYSTEMLIBS)
+endif (LINUX AND NOT (${LINUX_DISTRO} MATCHES gentoo) OR NOT USESYSTEMLIBS)
 
 if (NOT USESYSTEMLIBS AND WINDOWS)
   target_link_libraries( ll::meshoptimizer INTERFACE meshoptimizer.lib)

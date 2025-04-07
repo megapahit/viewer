@@ -5,6 +5,6 @@ Exec=megapahit
 Icon=megapahit
 Terminal=false
 Type=Application
-Categories=Application;Network;
+Categories=Network;
 StartupNotify=true
 X-Desktop-File-Install-Version=3.0"

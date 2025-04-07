@@ -104,12 +104,12 @@ $ megapahit
 
 ### Gentoo
 ```
-$ sudo su -
-# emerge cmake pkgconf freealut apr-util boost fltk glm hunspell minizip-ng nanosvg nghttp2 media-video/pipewire libsdl2 uriparser vlc libvorbis dev-libs/xxhash
+$ su -
+# eselect repository add megapahit git git://megapahit.org/ebuild.git
+# emaint sync -r megapahit
+# emerge megapahit
 # exit
-$ export LL_BUILD="-O3 -std=c++20 -fPIC -DLL_LINUX=1"
-$ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSESYSTEMLIBS:BOOL=ON -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=OFF -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=OFF ../indra
-$ make -j`nproc`
+$ megapahit
 ```
 
 ### Windows
