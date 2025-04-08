@@ -103,7 +103,7 @@ endif (${LINUX_DISTRO} MATCHES arch)
 if (LINUX)
         if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
                 set(_LIB lib/${ARCH}-linux-gnu)
-        elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed))
+        elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed) OR (${LINUX_DISTRO} MATCHES gentoo))
                 set(_LIB lib${ADDRESS_SIZE})
         else ()
                 set(_LIB lib)
@@ -112,7 +112,7 @@ if (LINUX)
             install(FILES
                 ${AUTOBUILD_INSTALL_DIR}/lib/release/libfmod.so
                 ${AUTOBUILD_INSTALL_DIR}/lib/release/libfmod.so.13
-                ${AUTOBUILD_INSTALL_DIR}/lib/release/libfmod.so.13.27
+                ${AUTOBUILD_INSTALL_DIR}/lib/release/libfmod.so.13.28
             DESTINATION ${_LIB})
         endif (USE_FMODSTUDIO)
 endif (LINUX)

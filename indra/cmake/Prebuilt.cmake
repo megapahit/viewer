@@ -123,10 +123,10 @@ find_package(Patch)
 
 # Download the third party software archive and patch it.
 macro(prepare_thirdparty url filename dirname patch hash)
-  file(DOWNLOAD ${url} ${filename} EXPECTED_HASH SHA512=${hash})
+  file(DOWNLOAD ${url} ${filename})
   file(ARCHIVE_EXTRACT INPUT ${filename}
-	  DESTINATION ${CMAKE_SOURCE_DIR}/../..)
+	  DESTINATION ${CMAKE_BINARY_DIR})
   execute_process(COMMAND ${Patch_EXECUTABLE} "-p1" "-i"
 	  ${CMAKE_SOURCE_DIR}/../patches/${patch}
-	  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/../../${dirname})
+	  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/${dirname})
 endmacro()

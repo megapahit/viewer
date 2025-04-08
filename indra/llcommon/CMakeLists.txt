@@ -300,7 +300,7 @@ if (CMAKE_OSX_ARCHITECTURES MATCHES arm64)
     file(WRITE ${PREBUILD_TRACKING_DIR}/sse2neon_installed "0")
   endif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/sse2neon_installed OR NOT ${sse2neon_installed} EQUAL 0)
   target_include_directories(llcommon PUBLIC ${LIBS_PREBUILT_DIR}/include/sse2neon)
-elseif (LINUX)
+elseif (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu) OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed))
   target_include_directories(llcommon PUBLIC ${LIBS_PREBUILT_DIR}/include)
 endif (CMAKE_OSX_ARCHITECTURES MATCHES arm64)
 

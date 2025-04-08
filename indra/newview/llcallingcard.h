@@ -30,6 +30,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <queue>
 #include <vector>
 #include "lluserrelations.h"
 #include "lluuid.h"
