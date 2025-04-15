@@ -29,9 +29,10 @@ developer-to-developer or support.
   roadmap. Github issues are useful for collaboration between viewer forks
   and the official upstream and when engineering-specific and technical
   collaboration is beneficial. 
-- The [in-world group][] and [Discord][] exist for many topics including content creation,
+- The [in-world group][] exists for many topics including content creation,
   scripting, social topics and more, and are useful for announcements and
   discussion between viewer maintainers. 
+- Our [Discord][] is available for real-time discussion.
 
 
 ## Reporting bugs and requesting features
