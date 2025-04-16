@@ -87,18 +87,6 @@ $ make install
 $ open newview/Megapahit.app
 ```
 
-### Ubuntu
-
-```
-$ sudo apt install cmake pkg-config libxml2-utils libaprutil1-dev libboost-fiber-dev libboost-json-dev libboost-program-options-dev libboost-regex-dev libboost-url-dev libexpat1-dev libfltk1.3-dev libfontconfig-dev libfreetype-dev libglu1-mesa-dev libhunspell-dev libjpeg-dev libmeshoptimizer-dev libminizip-dev libnanosvg-dev libnghttp2-dev libpipewire-0.3-dev libpng-dev libsdl2-dev liburiparser-dev libvlc-dev libvlccore-dev libvorbis-dev libxft-dev libxml2-dev libxxhash-dev
-$ export LL_BUILD="-O3 -std=c++20 -fPIC -DLL_LINUX=1"
-$ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSESYSTEMLIBS:BOOL=ON -DUSE_OPENAL:BOOL=OFF -DUSE_FMODSTUDIO:BOOL=ON -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=ON -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON ../indra
-$ make -j`nproc`
-$ cpack -G DEB
-$ sudo apt install ./megapahit-`cat newview/viewer_version.txt`-Linux.deb
-$ megapahit
-```
-
 ### openSUSE Tumbleweed
 
 ```
@@ -109,6 +97,18 @@ $ make -j`nproc`
 $ cpack -G RPM
 $ rpm --addsign megapahit-`cat newview/viewer_version.txt`-Linux.rpm (Set up pgp public key first)
 $ sudo rpm -i megapahit-`cat newview/viewer_version.txt`-Linux.rpm
+$ megapahit
+```
+
+### Ubuntu
+
+```
+$ sudo apt install cmake pkg-config libxml2-utils libaprutil1-dev libboost-fiber-dev libboost-json-dev libboost-program-options-dev libboost-regex-dev libboost-url-dev libexpat1-dev libfltk1.3-dev libfontconfig-dev libfreetype-dev libglu1-mesa-dev libhunspell-dev libjpeg-dev libmeshoptimizer-dev libminizip-dev libnanosvg-dev libnghttp2-dev libpipewire-0.3-dev libpng-dev libsdl2-dev liburiparser-dev libvlc-dev libvlccore-dev libvorbis-dev libxft-dev libxml2-dev libxxhash-dev
+$ export LL_BUILD="-O3 -std=c++20 -fPIC -DLL_LINUX=1"
+$ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSESYSTEMLIBS:BOOL=ON -DUSE_OPENAL:BOOL=OFF -DUSE_FMODSTUDIO:BOOL=ON -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=ON -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON ../indra
+$ make -j`nproc`
+$ cpack -G DEB
+$ sudo apt install ./megapahit-`cat newview/viewer_version.txt`-Linux.deb
 $ megapahit
 ```
 
