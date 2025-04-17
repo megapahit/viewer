@@ -20,16 +20,30 @@ elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRA
     INPUT ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248.tar.gz
     DESTINATION ${CMAKE_BINARY_DIR}
     )
-  try_compile(OPENJPEG_RESULT
-    PROJECT OPENJPEG
-    SOURCE_DIR ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg
-    BINARY_DIR ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg
-    TARGET openjp2
-    CMAKE_FLAGS
-      -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
-      -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=ON
-    OUTPUT_VARIABLE openjpeg_installed
-    )
+  if (DARWIN)
+    try_compile(OPENJPEG_RESULT
+      PROJECT OPENJPEG
+      SOURCE_DIR ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg
+      BINARY_DIR ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg
+      TARGET openjp2
+      CMAKE_FLAGS
+        -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
+        -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=ON
+        -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
+      OUTPUT_VARIABLE openjpeg_installed
+      )
+  else ()
+    try_compile(OPENJPEG_RESULT
+      PROJECT OPENJPEG
+      SOURCE_DIR ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg
+      BINARY_DIR ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg
+      TARGET openjp2
+      CMAKE_FLAGS
+        -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
+        -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=ON
+      OUTPUT_VARIABLE openjpeg_installed
+      )
+  endif (DARWIN)
   if (${OPENJPEG_RESULT})
     file(
       COPY

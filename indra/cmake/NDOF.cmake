@@ -24,7 +24,9 @@ if (NDOF)
         SOURCE_DIR ${CMAKE_BINARY_DIR}/3p-libndofdev-0.1.8e9edc7/libndofdev
         BINARY_DIR ${CMAKE_BINARY_DIR}/3p-libndofdev-0.1.8e9edc7/libndofdev
         TARGET ndofdev
-        CMAKE_FLAGS -DCMAKE_C_FLAGS:STRING=-DTARGET_OS_MAC\ -Wno-int-conversion
+        CMAKE_FLAGS
+          -DCMAKE_C_FLAGS:STRING=-DTARGET_OS_MAC\ -Wno-int-conversion
+          -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
         OUTPUT_VARIABLE libndofdev_installed
         )
       if (${LIBNDOFDEV_RESULT})

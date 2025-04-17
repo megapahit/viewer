@@ -27,13 +27,25 @@ elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRA
     INPUT ${CMAKE_BINARY_DIR}/meshoptimizer-0.21.tar.gz
     DESTINATION ${CMAKE_BINARY_DIR}
     )
-  try_compile(MESHOPTIMIZER_RESULT
-    PROJECT meshoptimizer
-    SOURCE_DIR ${CMAKE_BINARY_DIR}/meshoptimizer-0.21
-    BINARY_DIR ${CMAKE_BINARY_DIR}/meshoptimizer-0.21
-    TARGET meshoptimizer
-    OUTPUT_VARIABLE meshoptimizer_installed
+  if (DARWIN)
+    try_compile(MESHOPTIMIZER_RESULT
+      PROJECT meshoptimizer
+      SOURCE_DIR ${CMAKE_BINARY_DIR}/meshoptimizer-0.21
+      BINARY_DIR ${CMAKE_BINARY_DIR}/meshoptimizer-0.21
+      TARGET meshoptimizer
+      CMAKE_FLAGS
+        -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
+      OUTPUT_VARIABLE meshoptimizer_installed
     )
+  else ()
+    try_compile(MESHOPTIMIZER_RESULT
+      PROJECT meshoptimizer
+      SOURCE_DIR ${CMAKE_BINARY_DIR}/meshoptimizer-0.21
+      BINARY_DIR ${CMAKE_BINARY_DIR}/meshoptimizer-0.21
+      TARGET meshoptimizer
+      OUTPUT_VARIABLE meshoptimizer_installed
+    )
+  endif (DARWIN)
   if (${MESHOPTIMIZER_RESULT})
     file(
       COPY ${CMAKE_BINARY_DIR}/meshoptimizer-0.21/src/meshoptimizer.h
