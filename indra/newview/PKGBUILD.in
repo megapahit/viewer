@@ -6,7 +6,7 @@ pkgdesc="${VIEWER_PACKAGE_COMMENT}"
 arch=('${CMAKE_SYSTEM_PROCESSOR}')
 url="https://${VIEWER_PACKAGE_DOMAIN_NAME}"
 license=('LGPL-2.1')
-depends=(apr-util boost-libs fltk glu hunspell libnghttp2 sdl2 uriparser vlc libvorbis)
+depends=(apr-util boost-libs fltk glu hunspell libnghttp2 sdl2 vlc libvorbis)
 
 package() {
 	cd "$startdir"
