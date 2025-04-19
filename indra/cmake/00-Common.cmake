@@ -33,13 +33,13 @@ add_compile_definitions( ADDRESS_SIZE=${ADDRESS_SIZE})
 # -- which we do. Without one or the other, we get a ton of Boost warnings.
 add_compile_definitions(BOOST_BIND_GLOBAL_PLACEHOLDERS)
 
-if(CMAKE_OSX_ARCHITECTURES MATCHES arm64)
+if(CMAKE_OSX_ARCHITECTURES MATCHES arm64 OR CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
 add_compile_definitions(GLM_FORCE_DEFAULT_ALIGNED_GENTYPES=1 GLM_FORCE_NEON=1 GLM_ENABLE_EXPERIMENTAL=1)
-else(CMAKE_OSX_ARCHITECTURES MATCHES arm64)
+else()
 # Force enable SSE2 instructions in GLM per the manual
 # https://github.com/g-truc/glm/blob/master/manual.md#section2_10
 add_compile_definitions(GLM_FORCE_DEFAULT_ALIGNED_GENTYPES=1 GLM_FORCE_SSE2=1 GLM_ENABLE_EXPERIMENTAL=1)
-endif(CMAKE_OSX_ARCHITECTURES MATCHES arm64)
+endif()
 
 # Configure crash reporting
 set(RELEASE_CRASH_REPORTING OFF CACHE BOOL "Enable use of crash reporting in release builds")
@@ -162,10 +162,15 @@ if (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
       -fno-math-errno
       -fno-strict-aliasing
       -fsigned-char
-      -msse2
-      -mfpmath=sse
       -pthread
   )
+
+  if (CMAKE_SYSTEM_NAME MATCHES x86_64)
+    add_compile_options(
+        -msse2
+        -mfpmath=sse
+    )
+  endif ()
 
   if (NOT BUILD_SHARED_LIBS)
     add_compile_options(-fvisibility=hidden)
@@ -188,6 +193,12 @@ if (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
       -Wno-dangling-pointer
   )
 
+  if (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+    set(GCC_WARNINGS
+        ${GCC_WARNINGS}
+        -Wno-cpp
+    )
+  endif ()
   add_link_options(
           -Wl,--no-keep-memory
           -Wl,--build-id

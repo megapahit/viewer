@@ -8,7 +8,7 @@ add_library( ll::openssl INTERFACE IMPORTED )
 if (NOT USESYSTEMLIBS)
 use_system_binary(openssl)
 endif (NOT USESYSTEMLIBS)
-if (DARWIN OR LINUX OR NOT USESYSTEMLIBS)
+if (LINUX AND CMAKE_SYSTEM_PROCESSOR MATCHES x86_64 OR DARWIN OR NOT USESYSTEMLIBS)
 use_prebuilt_binary(openssl)
   if (DARWIN)
     execute_process(
@@ -42,7 +42,7 @@ use_prebuilt_binary(openssl)
         )
     endif (NOT ${ssl_archs} STREQUAL ${CMAKE_OSX_ARCHITECTURES})
   endif (DARWIN)
-elseif (CMAKE_SYSTEM_NAME MATCHES FreeBSD AND (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/openssl_installed OR NOT ${openssl_installed} EQUAL 0))
+elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/openssl_installed OR NOT ${openssl_installed} EQUAL 0)
   if (NOT EXISTS ${CMAKE_BINARY_DIR}/OpenSSL_1_1_1w.tar.gz)
     file(DOWNLOAD
       https://github.com/openssl/openssl/archive/refs/tags/OpenSSL_1_1_1w.tar.gz
@@ -177,7 +177,7 @@ elseif (CMAKE_SYSTEM_NAME MATCHES FreeBSD AND (${PREBUILD_TRACKING_DIR}/sentinel
     DESTINATION ${LIBS_PREBUILT_DIR}/lib/release
     )
   file(WRITE ${PREBUILD_TRACKING_DIR}/openssl_installed "${openssl_installed}")
-endif (DARWIN OR LINUX OR NOT USESYSTEMLIBS)
+endif (LINUX AND CMAKE_SYSTEM_PROCESSOR MATCHES x86_64 OR DARWIN OR NOT USESYSTEMLIBS)
 if (WINDOWS AND NOT USESYSTEMLIBS)
   target_link_libraries(ll::openssl INTERFACE ${ARCH_PREBUILT_DIRS_RELEASE}/libssl.lib ${ARCH_PREBUILT_DIRS_RELEASE}/libcrypto.lib Crypt32.lib)
 elseif (LINUX)

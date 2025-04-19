@@ -288,7 +288,7 @@ target_link_libraries(
 target_include_directories(llcommon INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(llcommon PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-if (CMAKE_OSX_ARCHITECTURES MATCHES arm64)
+if (CMAKE_OSX_ARCHITECTURES MATCHES arm64 OR CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
   if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/sse2neon_installed OR NOT ${sse2neon_installed} EQUAL 0)
     file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/include/sse2neon)
     if (NOT EXISTS ${LIBS_PREBUILT_DIR}/include/sse2neon/sse2neon.h)
@@ -302,7 +302,7 @@ if (CMAKE_OSX_ARCHITECTURES MATCHES arm64)
   target_include_directories(llcommon PUBLIC ${LIBS_PREBUILT_DIR}/include/sse2neon)
 elseif (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu) OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed))
   target_include_directories(llcommon PUBLIC ${LIBS_PREBUILT_DIR}/include)
-endif (CMAKE_OSX_ARCHITECTURES MATCHES arm64)
+endif (CMAKE_OSX_ARCHITECTURES MATCHES arm64 OR CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
 
 if (USE_AUTOBUILD_3P OR USE_CONAN)
 add_dependencies(llcommon stage_third_party_libs)

@@ -8,6 +8,8 @@ add_library( ll::openxr INTERFACE IMPORTED )
 if(USE_CONAN )
   target_link_libraries( ll::openxr INTERFACE CONAN_PKG::openxr )
   return()
+elseif (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+  return()
 endif()
 
 use_prebuilt_binary(openxr)

@@ -79,14 +79,25 @@ if (USE_FMODSTUDIO)
             ${CMAKE_BINARY_DIR}/fmodstudioapi20228linux/api/core/inc/fmod_output.h
           DESTINATION ${LIBS_PREBUILT_DIR}/include/fmodstudio
           )
-        file(
-          COPY
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20228linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20228linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so.13
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20228linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so.13.28
-          DESTINATION ${LIBS_PREBUILT_DIR}/lib/release
-          FOLLOW_SYMLINK_CHAIN
-          )
+        if (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+          file(
+            COPY
+              ${CMAKE_BINARY_DIR}/fmodstudioapi20228linux/api/core/lib/arm64/libfmod.so
+              ${CMAKE_BINARY_DIR}/fmodstudioapi20228linux/api/core/lib/arm64/libfmod.so.13
+              ${CMAKE_BINARY_DIR}/fmodstudioapi20228linux/api/core/lib/arm64/libfmod.so.13.28
+            DESTINATION ${LIBS_PREBUILT_DIR}/lib/release
+            FOLLOW_SYMLINK_CHAIN
+            )
+        else ()
+          file(
+            COPY
+              ${CMAKE_BINARY_DIR}/fmodstudioapi20228linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so
+              ${CMAKE_BINARY_DIR}/fmodstudioapi20228linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so.13
+              ${CMAKE_BINARY_DIR}/fmodstudioapi20228linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so.13.28
+            DESTINATION ${LIBS_PREBUILT_DIR}/lib/release
+            FOLLOW_SYMLINK_CHAIN
+            )
+        endif (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
         file(WRITE ${PREBUILD_TRACKING_DIR}/fmodstudio_installed "0")
       endif (DARWIN)
     else (USESYSTEMLIBS AND (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/fmodstudio_installed OR NOT ${fmodstudio_installed} EQUAL 0))

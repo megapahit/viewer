@@ -978,7 +978,6 @@ private:
             }
             fclose(cpuinfo_fp);
         }
-# if LL_X86
 
         F64 mhzFromSys = getCPUMaxMHZ();
         F64 mhzFromProc {};
@@ -993,6 +992,7 @@ private:
             setInfo(eFrequency,(F64)(mhzFromProc));
         }
 
+# if LL_X86
         LLPI_SET_INFO_STRING(eBrandName, "model name");
         LLPI_SET_INFO_STRING(eVendor, "vendor_id");
 
