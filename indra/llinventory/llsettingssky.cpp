@@ -1933,6 +1933,7 @@ LLUUID LLSettingsSky::getCloudNoiseTextureId() const
 void LLSettingsSky::setCloudNoiseTextureId(const LLUUID &id)
 {
     mCloudTextureId = id;
+    setDirtyFlag(true);
     setLLSDDirty();
 }
 
@@ -1977,6 +1978,7 @@ LLVector2 LLSettingsSky::getCloudScrollRate() const
 void LLSettingsSky::setCloudScrollRate(const LLVector2 &val)
 {
     mScrollRate = val;
+    setDirtyFlag(true);
     setLLSDDirty();
 }
 
@@ -2135,6 +2137,7 @@ LLUUID LLSettingsSky::getMoonTextureId() const
 void LLSettingsSky::setMoonTextureId(LLUUID id)
 {
     mMoonTextureId = id;
+    setDirtyFlag(true);
     setLLSDDirty();
 }
 
@@ -2219,6 +2222,7 @@ LLUUID LLSettingsSky::getSunTextureId() const
 void LLSettingsSky::setSunTextureId(LLUUID id)
 {
     mSunTextureId = id;
+    setDirtyFlag(true);
     setLLSDDirty();
 }
 

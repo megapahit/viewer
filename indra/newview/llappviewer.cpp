@@ -4585,6 +4585,7 @@ void LLAppViewer::saveFinalSnapshot()
                                     false,
                                     gSavedSettings.getBOOL("RenderHUDInSnapshot"),
                                     true,
+                                    false,
                                     LLSnapshotModel::SNAPSHOT_TYPE_COLOR,
                                     LLSnapshotModel::SNAPSHOT_FORMAT_PNG);
         mSavedFinalSnapshot = true;
@@ -5298,6 +5299,8 @@ void LLAppViewer::sendLogoutRequest()
         msg->addUUIDFast(_PREHASH_AgentID, gAgent.getID() );
         msg->addUUIDFast(_PREHASH_SessionID, gAgent.getSessionID());
         gAgent.sendReliableMessage();
+
+        LL_INFOS("Agent") << "Logging out as agent: " << gAgent.getID() << " Session: " << gAgent.getSessionID() << LL_ENDL;
 
         gLogoutTimer.reset();
         gLogoutMaxTime = LOGOUT_REQUEST_TIME;
