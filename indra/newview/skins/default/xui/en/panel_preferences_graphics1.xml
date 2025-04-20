@@ -423,7 +423,7 @@
     layout="topleft"
     left="10"
     name="PrefSaveButton"
-    top="310"
+    top="332"
     width="200">
     <button.commit_callback
       function="Pref.PrefSave"
@@ -465,7 +465,7 @@
     layout="topleft"
     left="10"
     name="Defaults"
-    top_delta="65"
+    top_delta="42"
     width="210">
     <button.commit_callback
       function="Pref.HardwareDefaults" />
