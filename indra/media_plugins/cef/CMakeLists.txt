@@ -49,7 +49,7 @@ if (LINUX)
     linux/volume_catcher_pipewire.cpp 
   )
 
-  if (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES fedora) OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed))
+  if (NOT (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu)))
     message( "Building with Linux volume catcher for PulseAudio only and cancelling PipeWire" )
     list(REMOVE_ITEM LINUX_VOLUME_CATCHER linux/volume_catcher_pipewire.cpp)
   endif ()
@@ -76,7 +76,7 @@ add_library(media_plugin_cef
     ${media_plugin_cef_SOURCE_FILES}
     )
 
-if (NOT (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES fedora) OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed)))
+if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
     target_compile_definitions(media_plugin_cef PRIVATE USE_VOLUME_CATCHER_PW=1)
 endif ()
 
