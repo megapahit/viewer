@@ -38,6 +38,12 @@ elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRA
     INPUT ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r1.tar.gz
     DESTINATION ${CMAKE_BINARY_DIR}
     )
+  if (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64 AND (${LINUX_DISTRO} MATCHES fedora))
+    execute_process(
+      COMMAND sed -i netrc.c -e "s/defined(HAVE_GETPWUID_R)/0/g" netrc.c
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r1/curl/lib
+      )
+  endif ()
   file(
     COPY
       ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r1/curl/include/curl/curl.h
@@ -76,6 +82,7 @@ elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRA
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r1/curl
     RESULT_VARIABLE curl_installed
     )
+  unset(ENV{CFLAGS})
   file(
     COPY ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r1/curl/lib/.libs/libcurl.a
     DESTINATION ${LIBS_PREBUILT_DIR}/lib/release
