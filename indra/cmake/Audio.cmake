@@ -5,7 +5,7 @@ include(Prebuilt)
 include_guard()
 add_library( ll::vorbis INTERFACE IMPORTED )
 
-if (NOT (USE_AUTOBUILD_3P OR USE_CONAN))
+if (USESYSTEMLIBS)
   include(FindPkgConfig)
   pkg_check_modules(Vorbis REQUIRED ogg vorbis vorbisenc vorbisfile)
   target_include_directories(ll::vorbis SYSTEM INTERFACE ${Vorbis_INCLUDE_DIRS})

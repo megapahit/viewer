@@ -19,7 +19,7 @@ endif()
 if (USE_OPENAL)
   add_library( ll::openal INTERFACE IMPORTED )
 
-  if (NOT (USE_AUTOBUILD_3P OR USE_CONAN))
+  if (USESYSTEMLIBS)
     target_compile_definitions( ll::openal INTERFACE LL_OPENAL=1)
     include(FindPkgConfig)
     pkg_check_modules(Openal REQUIRED freealut)

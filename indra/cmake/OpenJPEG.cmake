@@ -20,44 +20,37 @@ elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRA
     INPUT ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248.tar.gz
     DESTINATION ${CMAKE_BINARY_DIR}
     )
-  if (DARWIN)
-    try_compile(OPENJPEG_RESULT
-      PROJECT OPENJPEG
-      SOURCE_DIR ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg
-      BINARY_DIR ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg
-      TARGET openjp2
-      CMAKE_FLAGS
-        -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
-        -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=ON
-        -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
-      OUTPUT_VARIABLE openjpeg_installed
-      )
-  else ()
-    try_compile(OPENJPEG_RESULT
-      PROJECT OPENJPEG
-      SOURCE_DIR ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg
-      BINARY_DIR ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg
-      TARGET openjp2
-      CMAKE_FLAGS
-        -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
-        -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=ON
-      OUTPUT_VARIABLE openjpeg_installed
-      )
-  endif (DARWIN)
+  try_compile(OPENJPEG_RESULT
+    PROJECT OPENJPEG
+    SOURCE_DIR ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg
+    BINARY_DIR ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg
+    TARGET openjp2
+    CMAKE_FLAGS
+      -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+      -DCMAKE_OSX_ARCHITECTURES:STRING=${CMAKE_OSX_ARCHITECTURES}
+      -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
+      -DCMAKE_INSTALL_PREFIX:PATH=${LIBS_PREBUILT_DIR}
+      -DCMAKE_INSTALL_LIBDIR:PATH=${ARCH_PREBUILT_DIRS_RELEASE}
+      -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=ON
+      -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
+      -DBUILD_CODEC:BOOL=OFF
+    )
   if (${OPENJPEG_RESULT})
+    execute_process(
+      COMMAND ${CMAKE_MAKE_PROGRAM} install
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg
+      OUTPUT_VARIABLE openjpeg_installed
+      )
+    file(RENAME
+      ${LIBS_PREBUILT_DIR}/include/openjpeg-2.5
+      ${LIBS_PREBUILT_DIR}/include/openjpeg
+      )
     file(
       COPY
         ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg/src/lib/openjp2/cio.h
         ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg/src/lib/openjp2/event.h
-        ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg/src/lib/openjp2/openjpeg.h
-        ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg/src/lib/openjp2/opj_config.h
         ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg/src/lib/openjp2/opj_config_private.h
-        ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg/src/lib/openjp2/opj_stdint.h
       DESTINATION ${LIBS_PREBUILT_DIR}/include/openjpeg
-      )
-    file(
-      COPY ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248/openjpeg/bin/libopenjp2.a
-      DESTINATION ${LIBS_PREBUILT_DIR}/lib/release
       )
     file(WRITE ${PREBUILD_TRACKING_DIR}/openjpeg_installed "${openjpeg_installed}")
   endif (${OPENJPEG_RESULT})

@@ -6,7 +6,7 @@ set (XXHASH_CMAKE_INCLUDED TRUE)
 
 include(Prebuilt)
 
-if (NOT (USE_AUTOBUILD_3P OR USE_CONAN))
+if (USESYSTEMLIBS)
   include(FindPkgConfig)
   pkg_check_modules(Xxhash REQUIRED libxxhash)
   return ()

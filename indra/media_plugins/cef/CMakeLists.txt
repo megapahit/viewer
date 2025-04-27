@@ -140,15 +140,15 @@ if (INSTALL)
     if (DARWIN)
         set(_LIB llplugin)
         install(
-            DIRECTORY "${AUTOBUILD_INSTALL_DIR}/lib/release/Chromium Embedded Framework.framework"
+            DIRECTORY "${ARCH_PREBUILT_DIRS_RELEASE}/Chromium Embedded Framework.framework"
             DESTINATION ../Frameworks
             )
         install(
             DIRECTORY
-                "${AUTOBUILD_INSTALL_DIR}/lib/release/DullahanHelper.app"
-                "${AUTOBUILD_INSTALL_DIR}/lib/release/DullahanHelper (GPU).app"
-                "${AUTOBUILD_INSTALL_DIR}/lib/release/DullahanHelper (Plugin).app"
-                "${AUTOBUILD_INSTALL_DIR}/lib/release/DullahanHelper (Renderer).app"
+                "${ARCH_PREBUILT_DIRS_RELEASE}/DullahanHelper.app"
+                "${ARCH_PREBUILT_DIRS_RELEASE}/DullahanHelper (GPU).app"
+                "${ARCH_PREBUILT_DIRS_RELEASE}/DullahanHelper (Plugin).app"
+                "${ARCH_PREBUILT_DIRS_RELEASE}/DullahanHelper (Renderer).app"
             DESTINATION SLPlugin.app/Contents/Frameworks
             )
     elseif (LINUX)
@@ -178,7 +178,7 @@ if (INSTALL)
         endif (${LINUX_DISTRO} MATCHES arch)
         install(
             FILES
-                ${AUTOBUILD_INSTALL_DIR}/lib/release/libcef.so
+                ${ARCH_PREBUILT_DIRS_RELEASE}/libcef.so
                 ${AUTOBUILD_INSTALL_DIR}/bin/release/snapshot_blob.bin
                 ${AUTOBUILD_INSTALL_DIR}/bin/release/v8_context_snapshot.bin
                 ${AUTOBUILD_INSTALL_DIR}/resources/chrome_100_percent.pak
