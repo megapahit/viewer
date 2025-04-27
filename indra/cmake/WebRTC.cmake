@@ -65,13 +65,13 @@ elseif (NOT (WINDOWS OR CMAKE_SYSTEM_NAME MATCHES FreeBSD))
         endforeach()
         file(RENAME
             ${LIBS_PREBUILT_DIR}/lib/libwebrtc.a
-            ${LIBS_PREBUILT_DIR}/lib/release/libwebrtc.a
+            ${ARCH_PREBUILT_DIRS_RELEASE}/libwebrtc.a
             )
         if (CMAKE_OSX_ARCHITECTURES MATCHES arm64)
-            file(REMOVE_RECURSE ${LIBS_PREBUILT_DIR}/lib/release/WebRTC.framework)
+            file(REMOVE_RECURSE ${ARCH_PREBUILT_DIRS_RELEASE}/WebRTC.framework)
             file(RENAME
                 ${LIBS_PREBUILT_DIR}/Frameworks/WebRTC.xcframework/${WEBRTC_PLATFORM}/WebRTC.framework
-                ${LIBS_PREBUILT_DIR}/lib/release/WebRTC.framework
+                ${ARCH_PREBUILT_DIRS_RELEASE}/WebRTC.framework
                 )
             file(REMOVE_RECURSE ${LIBS_PREBUILT_DIR}/Frameworks)
         endif (CMAKE_OSX_ARCHITECTURES MATCHES arm64)

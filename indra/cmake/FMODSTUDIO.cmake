@@ -31,7 +31,7 @@ if (USE_FMODSTUDIO)
     # as accessing the private LL location will fail if you don't have the credential
     include(Prebuilt)
     if (USESYSTEMLIBS AND (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/fmodstudio_installed OR NOT ${fmodstudio_installed} EQUAL 0))
-      file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/lib/release)
+      file(MAKE_DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE})
       if (DARWIN)
         execute_process(
           COMMAND hdiutil attach -noverify fmodstudioapi20228mac-installer.dmg
@@ -53,7 +53,7 @@ if (USE_FMODSTUDIO)
           COMMAND lipo
             lib/libfmod.dylib
             -thin ${CMAKE_OSX_ARCHITECTURES}
-            -output ${LIBS_PREBUILT_DIR}/lib/release/libfmod.dylib
+            -output ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.dylib
           WORKING_DIRECTORY /Volumes/FMOD\ Programmers\ API\ Mac/FMOD\ Programmers\ API/api/core
           )
         execute_process(
@@ -85,7 +85,7 @@ if (USE_FMODSTUDIO)
               ${CMAKE_BINARY_DIR}/fmodstudioapi20228linux/api/core/lib/arm64/libfmod.so
               ${CMAKE_BINARY_DIR}/fmodstudioapi20228linux/api/core/lib/arm64/libfmod.so.13
               ${CMAKE_BINARY_DIR}/fmodstudioapi20228linux/api/core/lib/arm64/libfmod.so.13.28
-            DESTINATION ${LIBS_PREBUILT_DIR}/lib/release
+            DESTINATION ${ARCH_PREBUILT_DIRS_RELEASE}
             FOLLOW_SYMLINK_CHAIN
             )
         else ()
@@ -94,7 +94,7 @@ if (USE_FMODSTUDIO)
               ${CMAKE_BINARY_DIR}/fmodstudioapi20228linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so
               ${CMAKE_BINARY_DIR}/fmodstudioapi20228linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so.13
               ${CMAKE_BINARY_DIR}/fmodstudioapi20228linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so.13.28
-            DESTINATION ${LIBS_PREBUILT_DIR}/lib/release
+            DESTINATION ${ARCH_PREBUILT_DIRS_RELEASE}
             FOLLOW_SYMLINK_CHAIN
             )
         endif (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
