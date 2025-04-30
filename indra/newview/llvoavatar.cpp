@@ -6418,6 +6418,16 @@ LLJoint *LLVOAvatar::getJoint( S32 joint_num )
     return pJoint;
 }
 
+void LLVOAvatar::initAllJoints()
+{
+    getJointAliases();
+    for (auto& alias : mJointAliasMap)
+    {
+        mJointMap[alias.first] = mRoot->findJoint(alias.second);
+    }
+    // ignore mScreen and mRoot
+}
+
 //-----------------------------------------------------------------------------
 // getRiggedMeshID
 //
