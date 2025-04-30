@@ -2169,11 +2169,11 @@ if (LINUX)
           CACHE STRING "Debian package section.")
         if (${LINUX_DISTRO} MATCHES debian)
           set(CPACK_DEBIAN_PACKAGE_DEPENDS
-            "libalut0, libaprutil1, libboost-fiber1.81.0, libboost-filesystem1.81.0, libboost-program-options1.81.0, libboost-regex1.81.0, libboost-thread1.81.0, libboost-url1.81.0, libexpat1, libfltk1.3, libglu1-mesa, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1, libnghttp2-14, libsdl2-2.0-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
+            "libalut0, libaprutil1, libboost-fiber1.81.0, libboost-filesystem1.81.0, libboost-program-options1.81.0, libboost-regex1.81.0, libboost-thread1.81.0, libboost-url1.81.0, libexpat1, libfltk1.3, libgles-dev, libglu1-mesa, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1, libnghttp2-14, libsdl2-2.0-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
           CACHE STRING "Debian package dependencies.")
         elseif (${LINUX_DISTRO} MATCHES ubuntu)
           set(CPACK_DEBIAN_PACKAGE_DEPENDS
-            "libaprutil1t64, libboost-fiber1.83.0, libboost-filesystem1.83.0, libboost-program-options1.83.0, libboost-regex1.83.0, libboost-thread1.83.0, libboost-url1.83.0, libexpat1, libfltk1.3t64, libglu1-mesa, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1, libnghttp2-14, libsdl2-2.0-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
+            "libaprutil1t64, libboost-fiber1.83.0, libboost-filesystem1.83.0, libboost-program-options1.83.0, libboost-regex1.83.0, libboost-thread1.83.0, libboost-url1.83.0, libexpat1, libfltk1.3t64, libgles-dev, libglu1-mesa, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1, libnghttp2-14, libsdl2-2.0-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
           CACHE STRING "Debian package dependencies.")
         endif (${LINUX_DISTRO} MATCHES debian)
       elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed))

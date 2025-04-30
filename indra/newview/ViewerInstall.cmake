@@ -66,7 +66,7 @@ if (DARWIN)
 
     if (NDOF)
         install(FILES
-            "${AUTOBUILD_INSTALL_DIR}/lib/release/libndofdev.dylib"
+            "${ARCH_PREBUILT_DIRS_RELEASE}/libndofdev.dylib"
             DESTINATION .
             )
     endif ()
@@ -110,9 +110,9 @@ if (LINUX)
         endif ()
         if (USE_FMODSTUDIO)
             install(FILES
-                ${AUTOBUILD_INSTALL_DIR}/lib/release/libfmod.so
-                ${AUTOBUILD_INSTALL_DIR}/lib/release/libfmod.so.13
-                ${AUTOBUILD_INSTALL_DIR}/lib/release/libfmod.so.13.28
+                ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so
+                ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so.13
+                ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so.13.28
             DESTINATION ${_LIB})
         endif (USE_FMODSTUDIO)
 endif (LINUX)

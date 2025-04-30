@@ -21,7 +21,7 @@ $ cd build-`uname -s|tr '[:upper:]' '[:lower:]'`-`uname -m`
 ```
 $ sudo pacman -S cmake base-devel python apr-util boost fltk glm glu hunspell minizip nanosvg libnghttp2 libpipewire sdl2 vlc libvorbis xxhash
 $ export LL_BUILD="-O3 -std=c++20 -fPIC -DLL_LINUX=1"
-$ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSESYSTEMLIBS:BOOL=ON -DUSE_OPENAL:BOOL=OFF -DUSE_FMODSTUDIO:BOOL=ON -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=OFF -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON -DCMAKE_INSTALL_PREFIX:PATH=/usr ../indra
+$ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSESYSTEMLIBS:BOOL=ON -DUSE_OPENAL:BOOL=OFF -DUSE_FMODSTUDIO:BOOL=ON -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=ON -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON -DCMAKE_INSTALL_PREFIX:PATH=/usr ../indra
 $ make -j`nproc`
 $ makepkg -R
 $ sudo pacman -U megapahit-`cat newview/viewer_version.txt|sed 's/\(.*\)\./\1-/'`-`uname -m`.pkg.tar.zst

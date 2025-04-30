@@ -48,82 +48,45 @@ if( USESYSTEMLIBS )
         INPUT ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8.tar.gz
         DESTINATION ${CMAKE_BINARY_DIR}
         )
-      file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/include/collada/1.4)
+      execute_process(
+        COMMAND sed -i "" -e "s/SHARED/STATIC/g" CMakeLists.txt
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/src/1.4
+        )
       if( DARWIN )
-        try_compile(COLLADADOM_RESULT
-          PROJECT colladadom
-          SOURCE_DIR ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8
-          BINARY_DIR ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8
-          TARGET collada14dom
-          CMAKE_FLAGS
-            -DCMAKE_CXX_STANDARD:STRING=17
-            -DCMAKE_CXX_FLAGS:STRING=-I${Minizip_INCLUDE_DIRS}
-            "-DCMAKE_SHARED_LINKER_FLAGS:STRING=-L${Minizip_LIBRARY_DIRS} -L${Minizip_LIBRARY_DIRS}exec/boost/1.87/lib"
-            -DCMAKE_OSX_ARCHITECTURES:STRING=${CMAKE_OSX_ARCHITECTURES}
-            -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
-            -DZLIB_LIBRARIES:STRING=${Libxml2_LIBRARIES}
-            -DBoost_FILESYSTEM_LIBRARY:STRING=boost_filesystem-mt
-            -DBoost_SYSTEM_LIBRARY:STRING=boost_system-mt
-            -DEXTRA_COMPILE_FLAGS:STRING=-I${Libxml2_INCLUDE_DIRS}
-            -DBoost_CFLAGS:STRING=-I${Libxml2_LIBRARY_DIRS}exec/boost/1.87/include
-            -DOPT_COLLADA14:BOOL=ON
-            -DCOLLADA_DOM_INCLUDE_INSTALL_DIR:FILEPATH=${LIBS_PREBUILT_DIR}/include/collada
-            -DCOLLADA_DOM_SOVERSION:STRING=0
-            -DCOLLADA_DOM_VERSION:STRING=2.3-r8
-          OUTPUT_VARIABLE colladadom_installed
-          )
-        if( ${COLLADADOM_RESULT} )
-          file(
-            COPY
-              ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/src/1.4/libcollada14dom.2.3-r8.dylib
-              ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/src/1.4/libcollada14dom.0.dylib
-              ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/src/1.4/libcollada14dom.dylib
-            DESTINATION ${LIBS_PREBUILT_DIR}/lib/release
-            FOLLOW_SYMLINK_CHAIN
-            )
-        endif( ${COLLADADOM_RESULT} )
-      else( DARWIN )
-        execute_process(
-          COMMAND sed -i "" -e "s/SHARED/STATIC/g" 1.4/CMakeLists.txt
-          WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/src
-          )
-        try_compile(COLLADADOM_RESULT
-          PROJECT colladadom
-          SOURCE_DIR ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8
-          BINARY_DIR ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8
-          TARGET collada14dom
-          CMAKE_FLAGS
-            -DCMAKE_CXX_STANDARD:STRING=17
-            -DCMAKE_CXX_FLAGS:STRING=-I${Minizip_INCLUDE_DIRS}
-            -DCMAKE_SHARED_LINKER_FLAGS:STRING=-L${Minizip_LIBRARY_DIRS}
-            -DZLIB_LIBRARIES:STRING=${Libxml2_LIBRARIES}
-            -DBoost_FILESYSTEM_LIBRARY:STRING=boost_filesystem
-            -DBoost_SYSTEM_LIBRARY:STRING=boost_system
-            -DEXTRA_COMPILE_FLAGS:STRING=-I${Libxml2_INCLUDE_DIRS}
-            -DOPT_COLLADA14:BOOL=ON
-            -DCOLLADA_DOM_INCLUDE_INSTALL_DIR:FILEPATH=${LIBS_PREBUILT_DIR}/include/collada
-            -DCOLLADA_DOM_SOVERSION:STRING=0
-            -DCOLLADA_DOM_VERSION:STRING=2.3-r8
-          OUTPUT_VARIABLE colladadom_installed
-          )
-        if( ${COLLADADOM_RESULT} )
-          file(
-            COPY ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/src/1.4/libcollada14dom.a
-            DESTINATION ${LIBS_PREBUILT_DIR}/lib/release
-            )
-        endif( ${COLLADADOM_RESULT} )
-      endif( DARWIN )
+        set(BOOST_CFLAGS -I${Libxml2_LIBRARY_DIRS}exec/boost/1.87/include)
+        set(BOOST_LIBS -L${Minizip_LIBRARY_DIRS}exec/boost/1.87/lib)
+        set(BOOST_LIBRARY_SUFFIX -mt)
+      endif()
+      try_compile(COLLADADOM_RESULT
+        PROJECT colladadom
+        SOURCE_DIR ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8
+        BINARY_DIR ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8
+        TARGET collada14dom
+        CMAKE_FLAGS
+          -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+          -DCMAKE_OSX_ARCHITECTURES:STRING=${CMAKE_OSX_ARCHITECTURES}
+          -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
+          -DCMAKE_INSTALL_PREFIX:PATH=${LIBS_PREBUILT_DIR}
+          -DCMAKE_CXX_STANDARD:STRING=17
+          -DCMAKE_CXX_FLAGS:STRING=-I${Minizip_INCLUDE_DIRS}
+          -DBoost_CFLAGS:STRING=${BOOST_CFLAGS}
+          -DEXTRA_COMPILE_FLAGS:STRING=-I${Libxml2_INCLUDE_DIRS}
+          "-DCMAKE_SHARED_LINKER_FLAGS:STRING=-L${Minizip_LIBRARY_DIRS} ${BOOST_LIBS}"
+          -DBoost_FILESYSTEM_LIBRARY:STRING=boost_filesystem${BOOST_LIBRARY_SUFFIX}
+          -DBoost_SYSTEM_LIBRARY:STRING=boost_system${BOOST_LIBRARY_SUFFIX}
+          -DZLIB_LIBRARIES:STRING=${Libxml2_LIBRARIES}
+          -DOPT_COLLADA14:BOOL=ON
+          -DCOLLADA_DOM_INCLUDE_INSTALL_DIR:PATH=${LIBS_PREBUILT_DIR}/include/collada
+        )
       if( ${COLLADADOM_RESULT} )
-        file(REMOVE_RECURSE ${LIBS_PREBUILT_DIR}/include/collada/1.4)
-        file(
-          COPY
-            ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/include/1.4
-            ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/include/1.5
-            ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/include/dae
-            ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/include/dae.h
-            ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/include/dom.h
-            ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/include/modules
-          DESTINATION ${LIBS_PREBUILT_DIR}/include/collada
+        execute_process(
+          COMMAND ${CMAKE_MAKE_PROGRAM} install
+          WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8
+          OUTPUT_VARIABLE colladadom_installed
+          )
+        file(RENAME
+          ${ARCH_PREBUILT_DIRS}/libcollada14dom.a
+          ${ARCH_PREBUILT_DIRS_RELEASE}/libcollada14dom.a
           )
         file(WRITE ${PREBUILD_TRACKING_DIR}/colladadom_installed "${colladadom_installed}")
       endif( ${COLLADADOM_RESULT} )

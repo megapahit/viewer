@@ -27,33 +27,24 @@ elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRA
     INPUT ${CMAKE_BINARY_DIR}/meshoptimizer-0.21.tar.gz
     DESTINATION ${CMAKE_BINARY_DIR}
     )
-  if (DARWIN)
-    try_compile(MESHOPTIMIZER_RESULT
-      PROJECT meshoptimizer
-      SOURCE_DIR ${CMAKE_BINARY_DIR}/meshoptimizer-0.21
-      BINARY_DIR ${CMAKE_BINARY_DIR}/meshoptimizer-0.21
-      TARGET meshoptimizer
-      CMAKE_FLAGS
-        -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
-      OUTPUT_VARIABLE meshoptimizer_installed
-    )
-  else ()
-    try_compile(MESHOPTIMIZER_RESULT
-      PROJECT meshoptimizer
-      SOURCE_DIR ${CMAKE_BINARY_DIR}/meshoptimizer-0.21
-      BINARY_DIR ${CMAKE_BINARY_DIR}/meshoptimizer-0.21
-      TARGET meshoptimizer
-      OUTPUT_VARIABLE meshoptimizer_installed
-    )
-  endif (DARWIN)
+  try_compile(MESHOPTIMIZER_RESULT
+    PROJECT meshoptimizer
+    SOURCE_DIR ${CMAKE_BINARY_DIR}/meshoptimizer-0.21
+    BINARY_DIR ${CMAKE_BINARY_DIR}/meshoptimizer-0.21
+    TARGET meshoptimizer
+    CMAKE_FLAGS
+      -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+      -DCMAKE_OSX_ARCHITECTURES:STRING=${CMAKE_OSX_ARCHITECTURES}
+      -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
+      -DCMAKE_INSTALL_PREFIX:PATH=${LIBS_PREBUILT_DIR}
+      -DCMAKE_INSTALL_LIBDIR:PATH=${ARCH_PREBUILT_DIRS_RELEASE}
+      -DCMAKE_INSTALL_INCLUDEDIR:PATH=${LIBS_PREBUILT_DIR}/include/meshoptimizer
+  )
   if (${MESHOPTIMIZER_RESULT})
-    file(
-      COPY ${CMAKE_BINARY_DIR}/meshoptimizer-0.21/src/meshoptimizer.h
-      DESTINATION ${LIBS_PREBUILT_DIR}/include/meshoptimizer
-      )
-    file(
-      COPY ${CMAKE_BINARY_DIR}/meshoptimizer-0.21/libmeshoptimizer.a
-      DESTINATION ${LIBS_PREBUILT_DIR}/lib/release
+    execute_process(
+      COMMAND ${CMAKE_MAKE_PROGRAM} install
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/meshoptimizer-0.21
+      OUTPUT_VARIABLE meshoptimizer_installed
       )
     file(WRITE ${PREBUILD_TRACKING_DIR}/meshoptimizer_installed "${meshoptimizer_installed}")
   endif (${MESHOPTIMIZER_RESULT})

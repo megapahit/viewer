@@ -253,6 +253,10 @@ if (DARWIN)
     list(APPEND GCC_WARNINGS -Wno-unused-but-set-variable -Wno-unused-variable )
   endif()
 
+  if (CMAKE_OSX_ARCHITECTURES MATCHES arm64)
+    list(APPEND GCC_WARNINGS "-Wno-#warnings" )
+  endif()
+
   add_compile_options(${GCC_WARNINGS})
   add_compile_options(-m${ADDRESS_SIZE})
 endif ()

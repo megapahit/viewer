@@ -25,8 +25,10 @@ if (NDOF)
         BINARY_DIR ${CMAKE_BINARY_DIR}/3p-libndofdev-0.1.8e9edc7/libndofdev
         TARGET ndofdev
         CMAKE_FLAGS
-          -DCMAKE_C_FLAGS:STRING=-DTARGET_OS_MAC\ -Wno-int-conversion
+          -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+          -DCMAKE_OSX_ARCHITECTURES:STRING=${CMAKE_OSX_ARCHITECTURES}
           -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}
+          -DCMAKE_C_FLAGS:STRING=-DTARGET_OS_MAC\ -Wno-int-conversion
         OUTPUT_VARIABLE libndofdev_installed
         )
       if (${LIBNDOFDEV_RESULT})
@@ -36,7 +38,7 @@ if (NDOF)
           )
         file(
           COPY ${CMAKE_BINARY_DIR}/3p-libndofdev-0.1.8e9edc7/libndofdev/src/libndofdev.dylib
-          DESTINATION ${LIBS_PREBUILT_DIR}/lib/release
+          DESTINATION ${ARCH_PREBUILT_DIRS_RELEASE}
           )
         file(WRITE ${PREBUILD_TRACKING_DIR}/libndofdev_installed "${libndofdev_installed}")
       endif (${LIBNDOFDEV_RESULT})
