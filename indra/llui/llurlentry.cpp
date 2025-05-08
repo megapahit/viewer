@@ -630,6 +630,11 @@ LLUUID  LLUrlEntryAgent::getID(const std::string &string) const
     return LLUUID(getIDStringFromUrl(string));
 }
 
+bool LLUrlEntryAgent::isAgentID(const std::string& url) const
+{
+    return sAgentID == getID(url);
+}
+
 std::string LLUrlEntryAgent::getTooltip(const std::string &string) const
 {
     // return a tooltip corresponding to the URL type instead of the generic one
@@ -789,6 +794,8 @@ LLStyle::EUnderlineLink LLUrlEntryAgentMention::getUnderline(const std::string& 
 LLStyle::Params LLUrlEntryAgentMention::getStyle(const std::string& url) const
 {
     LLStyle::Params style_params = LLUrlEntryAgent::getStyle(url);
+    style_params.color = LLUIColorTable::instance().getColor("ChatMentionFont");
+    style_params.readonly_color = LLUIColorTable::instance().getColor("ChatMentionFont");
     style_params.font.style = "NORMAL";
     style_params.draw_highlight_bg = true;
 

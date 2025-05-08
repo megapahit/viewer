@@ -12622,4 +12622,13 @@ Select the "use as favorite folder" from a folder's menu to set it as the favori
       notext="Cancel"
       yestext="Continue"/>
   </notification>
+
+  <notification
+   icon="notify.tga"
+   name="WaterExclusionNoMaterial"
+   persist="true"
+   type="notify">
+    Unable to apply material to the water exclusion surface.
+    <tag>fail</tag>
+  </notification>
 </notifications>
