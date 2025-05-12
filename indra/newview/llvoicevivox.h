@@ -43,7 +43,7 @@ class LLVivoxProtocolParser;
 #include "llmutelist.h"
 #include <queue>
 
-#ifdef LL_USESYSTEMLIBS
+#if 1
 # include "expat.h"
 #else
 # include "expat/expat.h"
