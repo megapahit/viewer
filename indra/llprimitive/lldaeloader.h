@@ -29,7 +29,7 @@
 
 #include "llmodelloader.h"
 
-#ifndef LL_USESYSTEMLIBS
+#if 0
 class DAE;
 class daeElement;
 class domProfile_COMMON;
