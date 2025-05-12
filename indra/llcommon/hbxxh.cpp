@@ -34,11 +34,7 @@
 // in your build, in which case the latter would be used instead. For ARM64
 // builds, this would also automatically enable NEON vectorization.
 #define XXH_INLINE_ALL
-#if LL_USESYSTEMLIBS
 #include <xxhash.h>
-#else
-#include "xxhash/xxhash.h"
-#endif
 
 #include "hbxxh.h"
 
