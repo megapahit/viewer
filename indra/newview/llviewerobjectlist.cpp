@@ -68,7 +68,7 @@
 #include "u64.h"
 #include "llviewertexturelist.h"
 #include "lldatapacker.h"
-#ifdef LL_USESYSTEMLIBS
+#if 1
 #include <zlib.h>
 #else
 #include "zlib-ng/zlib.h"
