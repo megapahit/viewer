@@ -32,7 +32,7 @@
 #include "llimage.h"
 
 extern "C" {
-#ifdef LL_USESYSTEMLIBS
+#if 1
 # include <jpeglib.h>
 # include <jerror.h>
 #else
