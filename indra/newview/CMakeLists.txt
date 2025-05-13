@@ -2126,27 +2126,27 @@ if (PACKAGE)
 endif ()
 
 if (LINUX)
-    add_custom_command(
-      TARGET ${VIEWER_BINARY_NAME} POST_BUILD
-      COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-      ARGS -e '/Linden Lab.*/d' ${CMAKE_HOME_DIRECTORY}/../doc/contributions.txt > ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-      COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-      ARGS -i ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt -e '/following residents.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-      COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-      ARGS -i ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt -e '/along with.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-      COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-      ARGS -i ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt -e '/^$$/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-      COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-      ARGS -i ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt -e '/\t.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-      COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-      ARGS -i ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt -e '/^    .*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-      COMMAND sort
-      ARGS -R contributions.txt -o ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-      COMMAND paste
-      ARGS -s -d, ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt > ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
-      COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-      ARGS -i ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt -e 's/,/, /g' ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
-      )
+  add_custom_command(
+    TARGET ${VIEWER_BINARY_NAME} POST_BUILD
+    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
+    ARGS -e '/Linden Lab.*/d' ${CMAKE_HOME_DIRECTORY}/../doc/contributions.txt > ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
+    ARGS -i '/following residents.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
+    ARGS -i '/along with.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
+    ARGS -i '/^$$/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
+    ARGS -i '/\t.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
+    ARGS -i '/^    .*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sort
+    ARGS -R contributions.txt -o ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND paste
+    ARGS -s -d, ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt > ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
+    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
+    ARGS -i 's/,/, /g' ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
+    )
   if (PACKAGE)
     if (${LINUX_DISTRO} MATCHES arch)
       configure_file(
