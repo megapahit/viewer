@@ -1495,7 +1495,8 @@ if (NOT DARWIN)
       PROPERTIES
       COMPILE_DEFINITIONS "${VIEWER_CHANNEL_VERSION_DEFINES}"
       )
-  if (NOT CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
+    #LIST(APPEND viewer_SOURCE_FILES llappviewerlinux_api_dbus.cpp)
+  if (NOT CMAKE_CXX_COMPILER_ID MATCHES AppleClang)
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--as-needed")
   endif ()
 
@@ -2038,13 +2039,13 @@ set(ARTWORK_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE PATH
 
 set_source_files_properties(llinventorygallery.cpp PROPERTIES COMPILE_FLAGS
     -Wno-unused-but-set-variable)
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+if (CMAKE_CXX_COMPILER_ID MATCHES Clang)
     set_source_files_properties(llappviewerlinux.cpp PROPERTIES
         COMPILE_FLAGS -Wno-dangling-gsl
     )
     set_source_files_properties(llviewerstats.cpp PROPERTIES
         COMPILE_FLAGS -Wno-unused-value)
-elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     set_source_files_properties(
         llface.cpp
         llhttpretrypolicy.cpp

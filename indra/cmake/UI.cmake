@@ -5,7 +5,7 @@ include(GLIB)
 
 add_library( ll::uilibraries INTERFACE IMPORTED )
 
-if (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+if (LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
   target_compile_definitions(ll::uilibraries INTERFACE LL_FLTK=1 LL_X11=1 )
 
   if( USE_CONAN )
