@@ -19,7 +19,7 @@ elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRA
       https://github.com/zeux/meshoptimizer/archive/refs/tags/v0.21.tar.gz
       ${CMAKE_BINARY_DIR}/meshoptimizer-0.21.tar.gz
       )
-  endif (NOT EXISTS ${CMAKE_BINARY_DIR}/meshoptimizer-0.21.tar.gz)
+  endif ()
   file(ARCHIVE_EXTRACT
     INPUT ${CMAKE_BINARY_DIR}/meshoptimizer-0.21.tar.gz
     DESTINATION ${CMAKE_BINARY_DIR}
@@ -44,7 +44,7 @@ elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRA
       OUTPUT_VARIABLE meshoptimizer_installed
       )
     file(WRITE ${PREBUILD_TRACKING_DIR}/meshoptimizer_installed "${meshoptimizer_installed}")
-  endif (${MESHOPTIMIZER_RESULT})
+  endif ()
 endif ()
 
 if (WINDOWS)

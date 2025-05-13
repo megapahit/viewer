@@ -293,11 +293,11 @@ if (CMAKE_OSX_ARCHITECTURES MATCHES arm64 OR CMAKE_SYSTEM_PROCESSOR MATCHES aarc
         https://raw.githubusercontent.com/DLTcollab/sse2neon/master/sse2neon.h
         ${LIBS_PREBUILT_DIR}/include/sse2neon/sse2neon.h
         )
-    endif (NOT EXISTS ${LIBS_PREBUILT_DIR}/include/sse2neon/sse2neon.h)
+    endif ()
     file(WRITE ${PREBUILD_TRACKING_DIR}/sse2neon_installed "0")
-  endif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/sse2neon_installed OR NOT ${sse2neon_installed} EQUAL 0)
+  endif ()
   target_include_directories(llcommon PUBLIC ${LIBS_PREBUILT_DIR}/include/sse2neon)
-endif (CMAKE_OSX_ARCHITECTURES MATCHES arm64 OR CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+endif ()
 
 if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu) OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed))
   target_include_directories(llcommon PUBLIC ${LIBS_PREBUILT_DIR}/include)

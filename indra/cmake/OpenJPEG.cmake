@@ -13,7 +13,7 @@ elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRA
       https://github.com/secondlife/3p-openjpeg/archive/refs/tags/v2.5.0.ea12248.tar.gz
       ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248.tar.gz
       )
-  endif (NOT EXISTS ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248.tar.gz)
+  endif ()
   file(ARCHIVE_EXTRACT
     INPUT ${CMAKE_BINARY_DIR}/3p-openjpeg-2.5.0.ea12248.tar.gz
     DESTINATION ${CMAKE_BINARY_DIR}
@@ -51,7 +51,7 @@ elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRA
       DESTINATION ${LIBS_PREBUILT_DIR}/include/openjpeg
       )
     file(WRITE ${PREBUILD_TRACKING_DIR}/openjpeg_installed "${openjpeg_installed}")
-  endif (${OPENJPEG_RESULT})
+  endif ()
 endif ()
 
 target_link_libraries(ll::openjpeg INTERFACE openjp2 )

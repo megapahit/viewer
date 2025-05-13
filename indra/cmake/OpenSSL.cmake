@@ -23,7 +23,7 @@ use_prebuilt_binary(openssl)
           -output libcrypto.a
         WORKING_DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE}
         )
-    endif (NOT ${crypto_archs} STREQUAL ${CMAKE_OSX_ARCHITECTURES})
+    endif ()
     execute_process(
       COMMAND lipo -archs libssl.a
       WORKING_DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE}
@@ -38,8 +38,8 @@ use_prebuilt_binary(openssl)
           -output libssl.a
         WORKING_DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE}
         )
-    endif (NOT ${ssl_archs} STREQUAL ${CMAKE_OSX_ARCHITECTURES})
-  endif (DARWIN)
+    endif ()
+  endif ()
 elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/openssl_installed OR NOT ${openssl_installed} EQUAL 0)
   if (NOT EXISTS ${CMAKE_BINARY_DIR}/OpenSSL_1_1_1w.tar.gz)
     file(DOWNLOAD

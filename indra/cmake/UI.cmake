@@ -27,7 +27,7 @@ if (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
           ll::gio
   )
 
-endif (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+endif ()
 if( WINDOWS )
   target_link_libraries( ll::uilibraries INTERFACE
           opengl32

@@ -61,7 +61,7 @@ add_subdirectory(${LIBS_OPEN_PREFIX}llrender)
 add_subdirectory(${LIBS_OPEN_PREFIX}llfilesystem)
 if (NOT CMAKE_SYSTEM_NAME MATCHES FreeBSD)
 add_subdirectory(${LIBS_OPEN_PREFIX}llwebrtc)
-endif (NOT CMAKE_SYSTEM_NAME MATCHES FreeBSD)
+endif ()
 add_subdirectory(${LIBS_OPEN_PREFIX}llwindow)
 add_subdirectory(${LIBS_OPEN_PREFIX}llxml)
 

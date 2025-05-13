@@ -50,7 +50,7 @@ include(LLPrimitive)
 if (ENABLE_MEDIA_PLUGINS)
     include(LibVLCPlugin)
     include(CEFPlugin)
-endif (ENABLE_MEDIA_PLUGINS)
+endif ()
 
 if (NOT HAVOK_TPV)
    # When using HAVOK_TPV, the library is precompiled, so no need for this
@@ -745,7 +745,7 @@ set(viewer_SOURCE_FILES
 
 if (CMAKE_SYSTEM_NAME MATCHES FreeBSD)
     list(REMOVE_ITEM viewer_SOURCE_FILES llvoicewebrtc.cpp)
-endif (CMAKE_SYSTEM_NAME MATCHES FreeBSD)
+endif ()
 
 set(VIEWER_BINARY_NAME "secondlife-bin" CACHE STRING
     "The name of the viewer executable to create.")
@@ -2016,14 +2016,14 @@ target_link_libraries(${VIEWER_BINARY_NAME}
 
 if (NOT CMAKE_SYSTEM_NAME MATCHES FreeBSD)
    target_link_libraries(${VIEWER_BINARY_NAME} llwebrtc )
-endif (NOT CMAKE_SYSTEM_NAME MATCHES FreeBSD)
+endif ()
 
 if (ENABLE_MEDIA_PLUGINS)
    target_link_libraries(${VIEWER_BINARY_NAME} ll::libvlc )
    if (DARWIN OR LINUX)
       target_link_libraries(${VIEWER_BINARY_NAME} ll::cef )
-   endif (DARWIN OR LINUX)
-endif (ENABLE_MEDIA_PLUGINS)
+   endif ()
+endif ()
 
 if( TARGET ll::intel_memops )
    target_link_libraries(${VIEWER_BINARY_NAME} ll::intel_memops )
@@ -2324,7 +2324,7 @@ if (LINUX)
     set(CPACK_FREEBSD_PACKAGE_DEPS
       "audio/freealut;graphics/libGLU;textproc/hunspell;misc/meshoptimizer;archivers/minizip;www/libnghttp2;multimedia/vlc;audio/libvorbis"
       CACHE STRING "FreeBSD package dependencies.")
-  endif (CMAKE_SYSTEM_NAME MATCHES FreeBSD AND PACKAGE)
+  endif ()
 endif (LINUX)
 
 if (DARWIN)
@@ -2401,9 +2401,9 @@ if (DARWIN)
     )
   endif ()
 
- if (ENABLE_MEDIA_PLUGINS)
+  if (ENABLE_MEDIA_PLUGINS)
   add_dependencies(${VIEWER_BINARY_NAME} SLPlugin media_plugin_libvlc media_plugin_cef)
- endif ()
+  endif ()
 
   if (ENABLE_SIGNING)
       set(SIGNING_SETTING "--signature=${SIGNING_IDENTITY}")

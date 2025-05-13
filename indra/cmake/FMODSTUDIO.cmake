@@ -62,7 +62,7 @@ if (USE_FMODSTUDIO)
           RESULT_VARIABLE fmodstudio_installed
           )
         file(WRITE ${PREBUILD_TRACKING_DIR}/fmodstudio_installed "${fmodstudio_installed}")
-      else (DARWIN)
+      else ()
         file(ARCHIVE_EXTRACT
           INPUT $ENV{HOME}/Downloads/fmodstudioapi20228linux.tar.gz
           DESTINATION ${CMAKE_BINARY_DIR}
@@ -97,9 +97,9 @@ if (USE_FMODSTUDIO)
             DESTINATION ${ARCH_PREBUILT_DIRS_RELEASE}
             FOLLOW_SYMLINK_CHAIN
             )
-        endif (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+        endif ()
         file(WRITE ${PREBUILD_TRACKING_DIR}/fmodstudio_installed "0")
-      endif (DARWIN)
+      endif ()
     endif ()
 
     #use_prebuilt_binary(fmodstudio)

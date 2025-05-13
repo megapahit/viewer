@@ -1,12 +1,12 @@
 # -*- cmake -*-
 include(Prebuilt)
 
-if (NOT (WINDOWS OR DARWIN))
+if (NOT (DARWIN OR WINDOWS))
   add_library( ll::fontconfig INTERFACE IMPORTED )
 
   find_package(Fontconfig REQUIRED)
   target_link_libraries( ll::fontconfig INTERFACE  Fontconfig::Fontconfig )
-endif (NOT (WINDOWS OR DARWIN))
+endif ()
 
 if (FALSE)
 if( NOT USE_CONAN )

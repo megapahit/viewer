@@ -40,7 +40,7 @@ if (NDOF)
           DESTINATION ${ARCH_PREBUILT_DIRS_RELEASE}
           )
         file(WRITE ${PREBUILD_TRACKING_DIR}/libndofdev_installed "${libndofdev_installed}")
-      endif (${LIBNDOFDEV_RESULT})
+      endif ()
     endif ()
   elseif (LINUX)
     use_prebuilt_binary(open-libndofdev)
