@@ -2284,6 +2284,7 @@ if (LINUX)
   endif (PACKAGE)
   endif (FALSE)
 
+else (LINUX)
   add_custom_command(
     TARGET ${VIEWER_BINARY_NAME} POST_BUILD
     COMMAND sed
@@ -2325,6 +2326,7 @@ if (LINUX)
       "audio/freealut;graphics/libGLU;textproc/hunspell;misc/meshoptimizer;archivers/minizip;www/libnghttp2;multimedia/vlc;audio/libvorbis"
       CACHE STRING "FreeBSD package dependencies.")
   endif ()
+
 endif (LINUX)
 
 if (DARWIN)
