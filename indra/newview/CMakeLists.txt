@@ -2120,15 +2120,9 @@ if (PACKAGE)
     CACHE STRING "Viewer binary name.")
   set(CPACK_PACKAGE_VERSION ${VIEWER_VERSION_MAJOR}.${VIEWER_VERSION_MINOR}.${VIEWER_VERSION_PATCH}.${VIEWER_VERSION_REVISION}
     CACHE STRING "Viewer major.minor.patch.revision versions.")
-  set(VIEWER_PACKAGE_COMMENT
-    "A fork of the Second Life viewer"
-    )
-  set(VIEWER_PACKAGE_DESCRIPTION
-    "An entrance to virtual empires in only megabytes. A shelter for the metaverse refugees, especially those from less supported operating systems."
-    )
-  set(VIEWER_PACKAGE_DOMAIN_NAME
-    ${VIEWER_BINARY_NAME}.net
-    )
+  set(VIEWER_PACKAGE_COMMENT "A fork of the Second Life viewer")
+  set(VIEWER_PACKAGE_DESCRIPTION "An entrance to virtual empires in only megabytes. A shelter for the metaverse refugees, especially those from less supported operating systems.")
+  set(VIEWER_PACKAGE_DOMAIN_NAME ${VIEWER_BINARY_NAME}.net)
 endif ()
 
 if (LINUX)
@@ -2153,60 +2147,52 @@ if (LINUX)
       COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
       ARGS -i ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt -e 's/,/, /g' ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
       )
-    if (PACKAGE)
-      if (${LINUX_DISTRO} MATCHES debian OR ${LINUX_DISTRO} MATCHES ubuntu)
-        set(CPACK_BINARY_DEB ON CACHE BOOL "Able to package Debian DEB.")
-        set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE
-          amd64
-          CACHE STRING "Debian package architecture.")
-        set(CPACK_DEBIAN_PACKAGE_DESCRIPTION ${VIEWER_PACKAGE_COMMENT}
-          CACHE STRING "Debian package description.")
-        set(CPACK_DEBIAN_PACKAGE_MAINTAINER
-          $ENV{USER}@${VIEWER_PACKAGE_DOMAIN_NAME}
-          CACHE STRING "Debian package maintainer.")
-        set(CPACK_DEBIAN_PACKAGE_SECTION net
-          CACHE STRING "Debian package section.")
-        if (${LINUX_DISTRO} MATCHES debian)
-          set(CPACK_DEBIAN_PACKAGE_DEPENDS
-            "libalut0, libaprutil1, libboost-fiber1.81.0, libboost-filesystem1.81.0, libboost-program-options1.81.0, libboost-regex1.81.0, libboost-thread1.81.0, libboost-url1.81.0, libexpat1, libfltk1.3, libgles-dev, libglu1-mesa, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1, libnghttp2-14, libsdl2-2.0-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
-          CACHE STRING "Debian package dependencies.")
-        elseif (${LINUX_DISTRO} MATCHES ubuntu)
-          set(CPACK_DEBIAN_PACKAGE_DEPENDS
-            "libaprutil1t64, libboost-fiber1.83.0, libboost-filesystem1.83.0, libboost-program-options1.83.0, libboost-regex1.83.0, libboost-thread1.83.0, libboost-url1.83.0, libexpat1, libfltk1.3t64, libgles-dev, libglu1-mesa, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1, libnghttp2-14, libsdl2-2.0-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
-          CACHE STRING "Debian package dependencies.")
-        endif (${LINUX_DISTRO} MATCHES debian)
-      elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed))
-        set(CPACK_BINARY_RPM ON CACHE BOOL "Able to package Fedora RPM.")
-        set(CPACK_RPM_PACKAGE_SUMMARY ${VIEWER_PACKAGE_COMMENT}
-          CACHE STRING "RPM package summary.")
-        set(CPACK_RPM_PACKAGE_ARCHITECTURE
-          ${CMAKE_SYSTEM_PROCESSOR}
-          CACHE STRING "RPM package architecture.")
-        set(CPACK_RPM_PACKAGE_LICENSE LGPL-2.1-only
-          CACHE STRING "RPM package license.")
-        set(CPACK_RPM_PACKAGE_VENDOR ${VIEWER_CHANNEL}
-          CACHE STRING "RPM package vendor.")
-        set(CPACK_RPM_PACKAGE_URL
-          https://${VIEWER_PACKAGE_DOMAIN_NAME}
-          CACHE STRING "RPM package URL.")
-        set(CPACK_RPM_PACKAGE_DESCRIPTION ${VIEWER_PACKAGE_DESCRIPTION}
-          CACHE STRING "RPM package description.")
-        if (${LINUX_DISTRO} MATCHES fedora)
-          set(CPACK_RPM_PACKAGE_REQUIRES
-            "apr-util, boost-fiber, boost-program-options, boost-regex, boost-thread, boost-url, expat, fltk, mesa-libGLU, hunspell, libnghttp2, SDL2, vlc-libs, vlc-plugins-base, libvorbis"
-            CACHE STRING "RPM package requirements.")
-        elseif (${LINUX_DISTRO} MATCHES opensuse-tumbleweed)
-          set(CPACK_RPM_PACKAGE_REQUIRES
-            "libapr-util1-0, libboost_fiber1_87_0, libboost_program_options1_87_0, libboost_regex1_87_0, libboost_thread1_87_0, libboost_url1_87_0, libboost_url1_87_0-x86-64-v3, expat, libfltk1_3, libGLU1, libhunspell-1_7-0, libnghttp2-14, libSDL2-2_0-0, libvlc5, vlc-codecs, libvorbis0"
-            CACHE STRING "RPM package requirements.")
-        endif (${LINUX_DISTRO} MATCHES fedora)
-      elseif (${LINUX_DISTRO} MATCHES arch)
-        configure_file(
-          ${CMAKE_CURRENT_SOURCE_DIR}/PKGBUILD.in
-          ${CMAKE_BINARY_DIR}/PKGBUILD
-          )
-      endif (${LINUX_DISTRO} MATCHES debian OR ${LINUX_DISTRO} MATCHES ubuntu)
-    endif (PACKAGE)
+  if (PACKAGE)
+    if (${LINUX_DISTRO} MATCHES arch)
+      configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/PKGBUILD.in
+        ${CMAKE_BINARY_DIR}/PKGBUILD
+        )
+    elseif (${LINUX_DISTRO} MATCHES debian OR ${LINUX_DISTRO} MATCHES ubuntu)
+      set(CPACK_BINARY_DEB ON CACHE BOOL "Able to package Debian DEB.")
+      set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE amd64
+        CACHE STRING "Debian package architecture.")
+      set(CPACK_DEBIAN_PACKAGE_DESCRIPTION ${VIEWER_PACKAGE_COMMENT}
+        CACHE STRING "Debian package description.")
+      set(CPACK_DEBIAN_PACKAGE_MAINTAINER $ENV{USER}@${VIEWER_PACKAGE_DOMAIN_NAME}
+        CACHE STRING "Debian package maintainer.")
+      set(CPACK_DEBIAN_PACKAGE_SECTION net
+        CACHE STRING "Debian package section.")
+      if (${LINUX_DISTRO} MATCHES debian)
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS "libalut0, libaprutil1, libboost-fiber1.81.0, libboost-filesystem1.81.0, libboost-program-options1.81.0, libboost-regex1.81.0, libboost-thread1.81.0, libboost-url1.81.0, libexpat1, libfltk1.3, libgles-dev, libglu1-mesa, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1, libnghttp2-14, libsdl2-2.0-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
+        CACHE STRING "Debian package dependencies.")
+      else ()
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS "libaprutil1t64, libboost-fiber1.83.0, libboost-filesystem1.83.0, libboost-program-options1.83.0, libboost-regex1.83.0, libboost-thread1.83.0, libboost-url1.83.0, libexpat1, libfltk1.3t64, libgles-dev, libglu1-mesa, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1, libnghttp2-14, libsdl2-2.0-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
+        CACHE STRING "Debian package dependencies.")
+      endif ()
+    elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed))
+      set(CPACK_BINARY_RPM ON CACHE BOOL "Able to package Fedora RPM.")
+      set(CPACK_RPM_PACKAGE_SUMMARY ${VIEWER_PACKAGE_COMMENT}
+        CACHE STRING "RPM package summary.")
+      set(CPACK_RPM_PACKAGE_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR}
+        CACHE STRING "RPM package architecture.")
+      set(CPACK_RPM_PACKAGE_LICENSE LGPL-2.1-only
+        CACHE STRING "RPM package license.")
+      set(CPACK_RPM_PACKAGE_VENDOR ${VIEWER_CHANNEL}
+        CACHE STRING "RPM package vendor.")
+      set(CPACK_RPM_PACKAGE_URL https://${VIEWER_PACKAGE_DOMAIN_NAME}
+        CACHE STRING "RPM package URL.")
+      set(CPACK_RPM_PACKAGE_DESCRIPTION ${VIEWER_PACKAGE_DESCRIPTION}
+        CACHE STRING "RPM package description.")
+      if (${LINUX_DISTRO} MATCHES fedora)
+        set(CPACK_RPM_PACKAGE_REQUIRES "apr-util, boost-fiber, boost-program-options, boost-regex, boost-thread, boost-url, expat, fltk, mesa-libGLU, hunspell, libnghttp2, SDL2, vlc-libs, vlc-plugins-base, libvorbis"
+          CACHE STRING "RPM package requirements.")
+      else ()
+        set(CPACK_RPM_PACKAGE_REQUIRES "libapr-util1-0, libboost_fiber1_87_0, libboost_program_options1_87_0, libboost_regex1_87_0, libboost_thread1_87_0, libboost_url1_87_0, libboost_url1_87_0-x86-64-v3, expat, libfltk1_3, libGLU1, libhunspell-1_7-0, libnghttp2-14, libSDL2-2_0-0, libvlc5, vlc-codecs, libvorbis0"
+          CACHE STRING "RPM package requirements.")
+      endif ()
+    endif ()
+  endif (PACKAGE)
 
   if (FALSE)
   set(product SecondLife-${ARCH}-${VIEWER_SHORT_VERSION}.${VIEWER_VERSION_REVISION})
@@ -2313,18 +2299,15 @@ else (LINUX)
       CACHE STRING "FreeBSD package comment.")
     set(CPACK_FREEBSD_PACKAGE_DESCRIPTION ${VIEWER_PACKAGE_DESCRIPTION}
       CACHE STRING "FreeBSD package description.")
-    set(CPACK_FREEBSD_PACKAGE_WWW
-      https://${VIEWER_PACKAGE_DOMAIN_NAME}
+    set(CPACK_FREEBSD_PACKAGE_WWW https://${VIEWER_PACKAGE_DOMAIN_NAME}
       CACHE STRING "FreeBSD package WWW.")
     set(CPACK_FREEBSD_PACKAGE_LICENSE LGPL21
       CACHE STRING "FreeBSD package license.")
-    set(CPACK_FREEBSD_PACKAGE_MAINTAINER
-      $ENV{USER}@${VIEWER_PACKAGE_DOMAIN_NAME}
+    set(CPACK_FREEBSD_PACKAGE_MAINTAINER $ENV{USER}@${VIEWER_PACKAGE_DOMAIN_NAME}
       CACHE STRING "FreeBSD package maintainer.")
     set(CPACK_FREEBSD_PACKAGE_ORIGIN net/${VIEWER_BINARY_NAME}
       CACHE STRING "FreeBSD package origin.")
-    set(CPACK_FREEBSD_PACKAGE_DEPS
-      "audio/freealut;graphics/libGLU;textproc/hunspell;misc/meshoptimizer;archivers/minizip;www/libnghttp2;multimedia/vlc;audio/libvorbis"
+    set(CPACK_FREEBSD_PACKAGE_DEPS "audio/freealut;graphics/libGLU;textproc/hunspell;misc/meshoptimizer;archivers/minizip;www/libnghttp2;multimedia/vlc;audio/libvorbis"
       CACHE STRING "FreeBSD package dependencies.")
   endif ()
 
@@ -2418,15 +2401,12 @@ if (DARWIN)
     set(CPACK_DMG_VOLUME_NAME "${product} Installer"
       CACHE STRING "Disk image volume name.")
     set(CPACK_DMG_FORMAT UDRW CACHE STRING "Disk image format.")
-      set(CPACK_DMG_DS_STORE
-        ${CMAKE_CURRENT_SOURCE_DIR}/installers/darwin/release-dmg/_DS_Store
-        CACHE STRING "Disk image .DS_Store file.")
-      set(CPACK_DMG_DS_STORE_SETUP_SCRIPT
-        ${CMAKE_CURRENT_SOURCE_DIR}/installers/darwin/dmg-cleanup.applescript
-        CACHE STRING "Disk image AppleScript file.")
-      set(CPACK_DMG_BACKGROUND_IMAGE
-        ${CMAKE_CURRENT_SOURCE_DIR}/installers/darwin/release-dmg/background.jpg
-        CACHE STRING "Disk image background image.")
+    set(CPACK_DMG_DS_STORE ${CMAKE_CURRENT_SOURCE_DIR}/installers/darwin/release-dmg/_DS_Store
+      CACHE STRING "Disk image .DS_Store file.")
+    set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/installers/darwin/dmg-cleanup.applescript
+      CACHE STRING "Disk image AppleScript file.")
+    set(CPACK_DMG_BACKGROUND_IMAGE ${CMAKE_CURRENT_SOURCE_DIR}/installers/darwin/release-dmg/background.jpg
+      CACHE STRING "Disk image background image.")
     set(CPACK_BUNDLE_NAME ${product} CACHE STRING "Bundle name.")
     set(CPACK_BUNDLE_PLIST ${VIEWER_APP_BUNDLE}/Contents/Info.plist
       CACHE STRING "Bundle Property List file.")
