@@ -40,38 +40,37 @@ macro (use_prebuilt_binary _binary)
         --install-dir=${AUTOBUILD_INSTALL_DIR}
         ${_binary} ")
         endif(DEBUG_PREBUILT)
-        if(USESYSTEMLIBS)
+        execute_process(COMMAND xmllint
+            --xpath
+            "//map/map/map/map/map/map/string[contains(text(),'${_binary}')][contains(text(),'common')]/text()" autobuild.xml
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/..
+            OUTPUT_VARIABLE package_url
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+        if ("${package_url}" STREQUAL "")
+            string(TOLOWER ${CMAKE_SYSTEM_NAME} system_name)
+            if (${system_name} MATCHES freebsd)
+                set(system_name "linux")
+            endif (${system_name} MATCHES freebsd)
             execute_process(COMMAND xmllint
                 --xpath
-                "//map/map/map/map/map/map/string[contains(text(),'${_binary}')][contains(text(),'common')]/text()" autobuild.xml
+                "//map/map/map/map/map/map/string[contains(text(),'${_binary}')][contains(text(),'${system_name}')]/text()" autobuild.xml
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/..
                 OUTPUT_VARIABLE package_url
                 OUTPUT_STRIP_TRAILING_WHITESPACE
                 )
-            if ("${package_url}" STREQUAL "")
-                string(TOLOWER ${CMAKE_SYSTEM_NAME} system_name)
-                if (${system_name} MATCHES freebsd)
-                    set(system_name "linux")
-                endif (${system_name} MATCHES freebsd)
-                execute_process(COMMAND xmllint
-                    --xpath
-                    "//map/map/map/map/map/map/string[contains(text(),'${_binary}')][contains(text(),'${system_name}')]/text()" autobuild.xml
-                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/..
-                    OUTPUT_VARIABLE package_url
-                    OUTPUT_STRIP_TRAILING_WHITESPACE
-                    )
-            endif ("${package_url}" STREQUAL "")
-            string(REGEX REPLACE "^https?://(megapahit.net/downloads|github.com/secondlife|automated-builds-secondlife-com.s3.amazonaws.com/ct2).*/" "" package_name ${package_url})
-            file(DOWNLOAD
-                ${package_url}
-                ${CMAKE_BINARY_DIR}/${package_name}
-                )
-            file(ARCHIVE_EXTRACT
-                INPUT ${CMAKE_BINARY_DIR}/${package_name}
-                DESTINATION ${AUTOBUILD_INSTALL_DIR}
-                )
-            set(${_binary}_installed 0)
-        else(USESYSTEMLIBS)
+        endif ("${package_url}" STREQUAL "")
+        string(REGEX REPLACE "^https?://(megapahit.net/downloads|github.com/secondlife|automated-builds-secondlife-com.s3.amazonaws.com/ct2).*/" "" package_name ${package_url})
+        file(DOWNLOAD
+            ${package_url}
+            ${CMAKE_BINARY_DIR}/${package_name}
+            )
+        file(ARCHIVE_EXTRACT
+            INPUT ${CMAKE_BINARY_DIR}/${package_name}
+            DESTINATION ${AUTOBUILD_INSTALL_DIR}
+            )
+        set(${_binary}_installed 0)
+        if(FALSE)
         execute_process(COMMAND "${AUTOBUILD_EXECUTABLE}"
                 install
                 --install-dir=${AUTOBUILD_INSTALL_DIR}
@@ -79,7 +78,7 @@ macro (use_prebuilt_binary _binary)
                 WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
                 RESULT_VARIABLE ${_binary}_installed
                 )
-        endif(USESYSTEMLIBS)
+        endif()
         file(WRITE ${PREBUILD_TRACKING_DIR}/${_binary}_installed "${${_binary}_installed}")
     endif(${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/${_binary}_installed OR NOT ${${_binary}_installed} EQUAL 0)
 
@@ -92,6 +91,22 @@ endmacro (use_prebuilt_binary _binary)
 
 #Sadly we need a macro here, otherwise the return() will not properly work
 macro ( use_system_binary package )
+  include(FindPkgConfig)
+  pkg_check_modules(${package} ${package})
+  if( ${package}_FOUND )
+    target_link_directories( ll::${package} INTERFACE ${${package}_LIBRARY_DIRS} )
+  else()
+    pkg_check_modules(${package} lib${package})
+    if( ${package}_FOUND )
+      target_link_directories( ll::${package} INTERFACE ${${package}_LIBRARY_DIRS} )
+    else()
+      find_package( ${package} REQUIRED )
+    endif()
+  endif()
+  target_include_directories( ll::${package} SYSTEM INTERFACE ${${package}_INCLUDE_DIRS} )
+  target_link_libraries( ll::${package} INTERFACE ${${package}_LIBRARIES} )
+  return()
+
   if( USE_CONAN )
     target_link_libraries( ll::${package} INTERFACE CONAN_PKG::${package} )
     foreach( extra_pkg "${ARGN}" )
@@ -99,22 +114,6 @@ macro ( use_system_binary package )
         target_link_libraries( ll::${package} INTERFACE CONAN_PKG::${extra_pkg} )
       endif()
     endforeach()
-    return()
-  elseif( NOT USE_AUTOBUILD_3P )
-    include(FindPkgConfig)
-    pkg_check_modules(${package} ${package})
-    if( ${package}_FOUND )
-      target_link_directories( ll::${package} INTERFACE ${${package}_LIBRARY_DIRS} )
-    else()
-      pkg_check_modules(${package} lib${package})
-      if( ${package}_FOUND )
-        target_link_directories( ll::${package} INTERFACE ${${package}_LIBRARY_DIRS} )
-      else()
-        find_package( ${package} REQUIRED )
-      endif()
-    endif()
-    target_include_directories( ll::${package} SYSTEM INTERFACE ${${package}_INCLUDE_DIRS} )
-    target_link_libraries( ll::${package} INTERFACE ${${package}_LIBRARIES} )
     return()
   endif()
 endmacro()

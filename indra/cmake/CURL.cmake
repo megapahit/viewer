@@ -5,10 +5,8 @@ include(Linking)
 include_guard()
 add_library( ll::libcurl INTERFACE IMPORTED )
 
-if (NOT USESYSTEMLIBS)
-use_system_binary(libcurl)
-endif (NOT USESYSTEMLIBS)
-if (LINUX AND CMAKE_SYSTEM_PROCESSOR MATCHES x86_64 OR DARWIN OR NOT USESYSTEMLIBS)
+#use_system_binary(libcurl)
+if (LINUX AND CMAKE_SYSTEM_PROCESSOR MATCHES x86_64 OR DARWIN)
 use_prebuilt_binary(curl)
   if (DARWIN)
     execute_process(
@@ -86,8 +84,8 @@ elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRA
     ${ARCH_PREBUILT_DIRS}/libssl.a
     )
   file(WRITE ${PREBUILD_TRACKING_DIR}/curl_installed "${curl_installed}")
-endif (LINUX AND CMAKE_SYSTEM_PROCESSOR MATCHES x86_64 OR DARWIN OR NOT USESYSTEMLIBS)
-if (WINDOWS AND NOT USESYSTEMLIBS)
+endif ()
+if (WINDOWS)
   target_link_libraries(ll::libcurl INTERFACE
     ${ARCH_PREBUILT_DIRS_RELEASE}/libcurl.lib
     ll::openssl

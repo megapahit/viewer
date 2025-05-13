@@ -8,9 +8,8 @@ add_library( ll::ndof INTERFACE IMPORTED )
 
 if (NDOF)
   if (WINDOWS OR DARWIN)
-    if (NOT USESYSTEMLIBS)
-    use_prebuilt_binary(libndofdev)
-    elseif (DARWIN AND (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/libndofdev_installed OR NOT ${libndofdev_installed} EQUAL 0))
+    #use_prebuilt_binary(libndofdev)
+    if (DARWIN AND (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/libndofdev_installed OR NOT ${libndofdev_installed} EQUAL 0))
       file(DOWNLOAD
         https://github.com/secondlife/3p-libndofdev/archive/refs/tags/v0.1.8e9edc7.tar.gz
         ${CMAKE_BINARY_DIR}/3p-libndofdev-0.1.8e9edc7.tar.gz
@@ -42,7 +41,7 @@ if (NDOF)
           )
         file(WRITE ${PREBUILD_TRACKING_DIR}/libndofdev_installed "${libndofdev_installed}")
       endif (${LIBNDOFDEV_RESULT})
-    endif (NOT USESYSTEMLIBS)
+    endif ()
   elseif (LINUX)
     use_prebuilt_binary(open-libndofdev)
   endif (WINDOWS OR DARWIN)

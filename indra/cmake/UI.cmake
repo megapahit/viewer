@@ -6,9 +6,6 @@ include(GLIB)
 add_library( ll::uilibraries INTERFACE IMPORTED )
 
 if (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-  if (NOT USESYSTEMLIBS)
-  use_prebuilt_binary(fltk)
-  endif ()
   target_compile_definitions(ll::uilibraries INTERFACE LL_FLTK=1 LL_X11=1 )
 
   if( USE_CONAN )
@@ -48,7 +45,7 @@ if( WINDOWS )
           )
 endif()
 
-if (NOT USESYSTEMLIBS)
+if (FALSE)
 target_include_directories( ll::uilibraries SYSTEM INTERFACE
         ${LIBS_PREBUILT_DIR}/include
         )

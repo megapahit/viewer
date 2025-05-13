@@ -8,9 +8,6 @@ include(bugsplat)
 include(Linking)
 include(Boost)
 include(LLSharedLibs)
-if (NOT USESYSTEMLIBS)
-include(Copy3rdPartyLibs)
-endif ()
 include(ZLIBNG)
 include(Tracy)
 
@@ -306,23 +303,19 @@ if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu) OR (${LIN
   target_include_directories(llcommon PUBLIC ${LIBS_PREBUILT_DIR}/include)
 endif ()
 
-if (NOT USESYSTEMLIBS)
-add_dependencies(llcommon stage_third_party_libs)
-else ()
-    target_compile_options(${PROJECT_NAME} PUBLIC -Wno-deprecated-declarations)
-    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        set_source_files_properties(
-            llapp.cpp
-            llsdutil.cpp
-            PROPERTIES COMPILE_FLAGS -Wno-stringop-truncation)
-        set_source_files_properties(
-            llevent.cpp
-            llfasttimer.cpp
-            PROPERTIES COMPILE_FLAGS -Wno-nonnull)
-    elseif (LINUX AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set_source_files_properties(llsys.cpp PROPERTIES
-            COMPILE_FLAGS -Wno-unused-but-set-variable)
-    endif()
+target_compile_options(${PROJECT_NAME} PUBLIC -Wno-deprecated-declarations)
+if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
+  set_source_files_properties(
+    llapp.cpp
+    llsdutil.cpp
+    PROPERTIES COMPILE_FLAGS -Wno-stringop-truncation)
+  set_source_files_properties(
+    llevent.cpp
+    llfasttimer.cpp
+    PROPERTIES COMPILE_FLAGS -Wno-nonnull)
+elseif (LINUX AND CMAKE_CXX_COMPILER_ID MATCHES Clang)
+  set_source_files_properties(llsys.cpp PROPERTIES
+    COMPILE_FLAGS -Wno-unused-but-set-variable)
 endif ()
 
 include(LibraryInstall)

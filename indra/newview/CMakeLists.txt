@@ -9,15 +9,11 @@ include(Linking)
 
 include(Boost)
 include(bugsplat)
-if (NOT USESYSTEMLIBS)
-include(BuildPackagesInfo)
-endif ()
+#include(BuildPackagesInfo)
 include(BuildVersion)
 include(CMakeCopyIfDifferent)
 include(CubemapToEquirectangularJS)
-if (NOT USESYSTEMLIBS)
-include(DBusGlib)
-endif ()
+#include(DBusGlib)
 include(DragDrop)
 include(EXPAT)
 include(Hunspell)
@@ -45,11 +41,9 @@ include(ThreeJS)
 include(Tracy)
 include(UI)
 include(ViewerMiscLibs)
-if (NOT USESYSTEMLIBS)
-include(ViewerManager)
-endif ()
+#include(ViewerManager)
 include(VisualLeakDetector)
-include(VulkanGltf)
+#include(VulkanGltf)
 include(ZLIBNG)
 include(LLPrimitive)
 
@@ -1494,7 +1488,7 @@ if (DARWIN)
   list(APPEND viewer_SOURCE_FILES ${viewer_RESOURCE_FILES})
 endif (DARWIN)
 
-if (USESYSTEMLIBS AND NOT DARWIN)
+if (NOT DARWIN)
     LIST(APPEND viewer_SOURCE_FILES llappviewerlinux.cpp)
     set_source_files_properties(
       llappviewerlinux.cpp
@@ -1505,7 +1499,7 @@ if (USESYSTEMLIBS AND NOT DARWIN)
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--as-needed")
   endif ()
 
-endif (USESYSTEMLIBS AND NOT DARWIN)
+endif ()
 
 if (WINDOWS)
 
@@ -1687,14 +1681,10 @@ set(viewer_APPSETTINGS_FILES
     app_settings/viewerart.xml
     ${CMAKE_SOURCE_DIR}/../etc/message.xml
     ${CMAKE_SOURCE_DIR}/../scripts/messages/message_template.msg
-    packages-info.txt
+    #packages-info.txt
     featuretable.txt
     featuretable_mac.txt
     )
-
-if (USESYSTEMLIBS)
-    list(REMOVE_ITEM viewer_APPSETTINGS_FILES packages-info.txt)
-endif ()
 
 source_group("App Settings" FILES ${viewer_APPSETTINGS_FILES})
 
@@ -2124,7 +2114,7 @@ foreach(elem ${country_codes})
    configure_file(${emoji_mapping_src_file} ${emoji_mapping_dst_file} COPYONLY)
 endforeach()
 
-if (PACKAGE AND USESYSTEMLIBS)
+if (PACKAGE)
   set(CPACK_PACKAGE_NAME ${VIEWER_BINARY_NAME}
     CACHE STRING "Viewer binary name.")
   set(CPACK_PACKAGE_VERSION ${VIEWER_VERSION_MAJOR}.${VIEWER_VERSION_MINOR}.${VIEWER_VERSION_PATCH}.${VIEWER_VERSION_REVISION}
@@ -2138,10 +2128,9 @@ if (PACKAGE AND USESYSTEMLIBS)
   set(VIEWER_PACKAGE_DOMAIN_NAME
     ${VIEWER_BINARY_NAME}.net
     )
-endif (PACKAGE AND USESYSTEMLIBS)
+endif ()
 
 if (LINUX)
-  if (USESYSTEMLIBS)
     add_custom_command(
       TARGET ${VIEWER_BINARY_NAME} POST_BUILD
       COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
@@ -2217,7 +2206,8 @@ if (LINUX)
           )
       endif (${LINUX_DISTRO} MATCHES debian OR ${LINUX_DISTRO} MATCHES ubuntu)
     endif (PACKAGE)
-  else (USESYSTEMLIBS)
+
+  if (FALSE)
   set(product SecondLife-${ARCH}-${VIEWER_SHORT_VERSION}.${VIEWER_VERSION_REVISION})
 
   # These are the generated targets that are copied to package/
@@ -2292,8 +2282,8 @@ if (LINUX)
     add_dependencies(llpackage copy_l_viewer_manifest)
     check_message_template(llpackage)
   endif (PACKAGE)
-  endif (USESYSTEMLIBS)
-elseif (USESYSTEMLIBS)
+  endif (FALSE)
+
   add_custom_command(
     TARGET ${VIEWER_BINARY_NAME} POST_BUILD
     COMMAND sed
@@ -2379,12 +2369,12 @@ if (DARWIN)
      "${VIEWER_APP_BUNDLE}/Contents/Info.plist"
     )
 
- if (USESYSTEMLIBS)
   configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/English.lproj/InfoPlist.strings
     ${CMAKE_CURRENT_BINARY_DIR}/InfoPlist.strings
     )
- else (USESYSTEMLIBS)
+
+  if (FALSE)
   add_custom_command(
     TARGET ${VIEWER_BINARY_NAME} POST_BUILD
     COMMAND ${PYTHON_EXECUTABLE}
@@ -2409,7 +2399,7 @@ if (DARWIN)
       ${VIEWER_BINARY_NAME}
       ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
     )
- endif (USESYSTEMLIBS)
+  endif ()
 
  if (ENABLE_MEDIA_PLUGINS)
   add_dependencies(${VIEWER_BINARY_NAME} SLPlugin media_plugin_libvlc media_plugin_cef)
@@ -2422,10 +2412,9 @@ if (DARWIN)
   endif (ENABLE_SIGNING)
 
   if (PACKAGE)
-    if (USESYSTEMLIBS)
-      set(CPACK_DMG_VOLUME_NAME "${product} Installer"
-        CACHE STRING "Disk image volume name.")
-      set(CPACK_DMG_FORMAT UDRW CACHE STRING "Disk image format.")
+    set(CPACK_DMG_VOLUME_NAME "${product} Installer"
+      CACHE STRING "Disk image volume name.")
+    set(CPACK_DMG_FORMAT UDRW CACHE STRING "Disk image format.")
       set(CPACK_DMG_DS_STORE
         ${CMAKE_CURRENT_SOURCE_DIR}/installers/darwin/release-dmg/_DS_Store
         CACHE STRING "Disk image .DS_Store file.")
@@ -2435,13 +2424,13 @@ if (DARWIN)
       set(CPACK_DMG_BACKGROUND_IMAGE
         ${CMAKE_CURRENT_SOURCE_DIR}/installers/darwin/release-dmg/background.jpg
         CACHE STRING "Disk image background image.")
-      set(CPACK_BUNDLE_NAME ${product} CACHE STRING "Bundle name.")
-      set(CPACK_BUNDLE_PLIST ${VIEWER_APP_BUNDLE}/Contents/Info.plist
-        CACHE STRING "Bundle Property List file.")
-      set(CPACK_BUNDLE_ICON ${CMAKE_CURRENT_SOURCE_DIR}/secondlife.icns
-        CACHE STRING "Bundle icon file.")
+    set(CPACK_BUNDLE_NAME ${product} CACHE STRING "Bundle name.")
+    set(CPACK_BUNDLE_PLIST ${VIEWER_APP_BUNDLE}/Contents/Info.plist
+      CACHE STRING "Bundle Property List file.")
+    set(CPACK_BUNDLE_ICON ${CMAKE_CURRENT_SOURCE_DIR}/secondlife.icns
+      CACHE STRING "Bundle icon file.")
 
-    else (USESYSTEMLIBS)
+    if (FALSE)
       add_custom_target(llpackage ALL DEPENDS ${VIEWER_BINARY_NAME})
 
       add_custom_command(
@@ -2467,16 +2456,16 @@ if (DARWIN)
         DEPENDS
           ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
       )
-    endif (USESYSTEMLIBS)
+    endif ()
   endif (PACKAGE)
 endif (DARWIN)
 
 if (INSTALL)
   include(${CMAKE_CURRENT_SOURCE_DIR}/ViewerInstall.cmake)
 endif (INSTALL)
-if (PACKAGE AND USESYSTEMLIBS)
+if (PACKAGE)
   include(CPack)
-endif (PACKAGE AND USESYSTEMLIBS)
+endif ()
 
 if (PACKAGE AND (RELEASE_CRASH_REPORTING OR NON_RELEASE_CRASH_REPORTING) AND VIEWER_SYMBOL_FILE)
   if (USE_BUGSPLAT)
