@@ -2185,10 +2185,10 @@ if (LINUX)
       set(CPACK_RPM_PACKAGE_DESCRIPTION ${VIEWER_PACKAGE_DESCRIPTION}
         CACHE STRING "RPM package description.")
       if (${LINUX_DISTRO} MATCHES fedora)
-        set(CPACK_RPM_PACKAGE_REQUIRES "apr-util, boost-fiber, boost-program-options, boost-regex, boost-thread, boost-url, expat, fltk, mesa-libGLU, hunspell, libnghttp2, SDL2, vlc-libs, vlc-plugins-base, libvorbis"
+        set(CPACK_RPM_PACKAGE_REQUIRES "apr-util, boost-fiber, boost-program-options, boost-regex, boost-thread, boost-url, expat, fltk, mesa-libGLU, hunspell, libnghttp2, openjpeg2, SDL2, vlc-libs, vlc-plugins-base, libvorbis"
           CACHE STRING "RPM package requirements.")
       else ()
-        set(CPACK_RPM_PACKAGE_REQUIRES "libapr-util1-0, libboost_fiber1_87_0, libboost_program_options1_87_0, libboost_regex1_87_0, libboost_thread1_87_0, libboost_url1_87_0, libboost_url1_87_0-x86-64-v3, expat, libfltk1_3, libGLU1, libhunspell-1_7-0, libnghttp2-14, libSDL2-2_0-0, libvlc5, vlc-codecs, libvorbis0"
+        set(CPACK_RPM_PACKAGE_REQUIRES "libapr-util1-0, libboost_fiber1_87_0, libboost_program_options1_87_0, libboost_regex1_87_0, libboost_thread1_87_0, libboost_url1_87_0, libboost_url1_87_0-x86-64-v3, expat, libfltk1_3, libGLU1, libhunspell-1_7-0, libnghttp2-14, openjpeg2, libSDL2-2_0-0, libvlc5, vlc-codecs, libvorbis0"
           CACHE STRING "RPM package requirements.")
       endif ()
     endif ()
@@ -2307,7 +2307,7 @@ else (LINUX)
       CACHE STRING "FreeBSD package maintainer.")
     set(CPACK_FREEBSD_PACKAGE_ORIGIN net/${VIEWER_BINARY_NAME}
       CACHE STRING "FreeBSD package origin.")
-    set(CPACK_FREEBSD_PACKAGE_DEPS "audio/freealut;graphics/libGLU;textproc/hunspell;misc/meshoptimizer;archivers/minizip;www/libnghttp2;multimedia/vlc;audio/libvorbis"
+    set(CPACK_FREEBSD_PACKAGE_DEPS "audio/freealut;graphics/libGLU;textproc/hunspell;misc/meshoptimizer;archivers/minizip;www/libnghttp2;graphics/openjpeg;multimedia/vlc;audio/libvorbis"
       CACHE STRING "FreeBSD package dependencies.")
   endif ()
 
