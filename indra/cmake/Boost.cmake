@@ -4,33 +4,34 @@ include(Prebuilt)
 include_guard()
 
 add_library( ll::boost INTERFACE IMPORTED )
+
+if (DARWIN)
+  set(sfx -mt)
+  target_include_directories( ll::boost SYSTEM INTERFACE /opt/local/libexec/boost/1.87/include)
+  target_link_directories( ll::boost INTERFACE /opt/local/libexec/boost/1.87/lib)
+elseif (WINDOWS)
+  set(sfx -mt)
+  target_include_directories( ll::boost SYSTEM INTERFACE /opt/local/x86_64-w64-mingw32/include)
+  target_link_directories( ll::boost INTERFACE /opt/local/x86_64-w64-mingw32/lib)
+else ()
+  find_package( Boost REQUIRED )
+endif ()
+target_link_libraries( ll::boost INTERFACE
+  boost_context${sfx}
+  boost_fiber${sfx}
+  boost_filesystem${sfx}
+  boost_program_options${sfx}
+  boost_regex${sfx}
+  boost_system${sfx}
+  boost_thread${sfx}
+  boost_url${sfx}
+  )
+target_compile_definitions( ll::boost INTERFACE BOOST_BIND_GLOBAL_PLACEHOLDERS )
+return()
+
 if( USE_CONAN )
   target_link_libraries( ll::boost INTERFACE CONAN_PKG::boost )
   target_compile_definitions( ll::boost INTERFACE BOOST_ALLOW_DEPRECATED_HEADERS BOOST_BIND_GLOBAL_PLACEHOLDERS )
-  return()
-elseif( NOT USE_AUTOBUILD_3P )
-  if (WINDOWS)
-    set(sfx -mt)
-    target_include_directories( ll::boost SYSTEM INTERFACE /opt/local/x86_64-w64-mingw32/include)
-    target_link_directories( ll::boost INTERFACE /opt/local/x86_64-w64-mingw32/lib)
-  elseif (DARWIN)
-    set(sfx -mt)
-    target_include_directories( ll::boost SYSTEM INTERFACE /opt/local/libexec/boost/1.87/include)
-    target_link_directories( ll::boost INTERFACE /opt/local/libexec/boost/1.87/lib)
-  else (WINDOWS)
-    find_package( Boost REQUIRED )
-  endif (WINDOWS)
-  target_link_libraries( ll::boost INTERFACE
-    boost_context${sfx}
-    boost_fiber${sfx}
-    boost_filesystem${sfx}
-    boost_program_options${sfx}
-    boost_regex${sfx}
-    boost_system${sfx}
-    boost_thread${sfx}
-    boost_url${sfx}
-    )
-  target_compile_definitions( ll::boost INTERFACE BOOST_BIND_GLOBAL_PLACEHOLDERS )
   return()
 endif()
 

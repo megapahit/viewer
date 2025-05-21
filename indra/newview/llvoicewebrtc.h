@@ -43,7 +43,7 @@ class LLWebRTCProtocolParser;
 #include <queue>
 #include "boost/json.hpp"
 
-#ifdef LL_USESYSTEMLIBS
+#if 1
 # include "expat.h"
 #else
 # include "expat/expat.h"

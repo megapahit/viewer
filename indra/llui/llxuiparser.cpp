@@ -30,7 +30,7 @@
 
 #include "llxmlnode.h"
 #include "llfasttimer.h"
-#ifdef LL_USESYSTEMLIBS
+#if 1
 #include <expat.h>
 #else
 #include "expat/expat.h"

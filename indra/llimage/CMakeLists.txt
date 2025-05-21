@@ -67,15 +67,13 @@ target_link_libraries(llimage
         ll::libjpeg
     )
 
-if (USESYSTEMLIBS)
-	if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-		set_source_files_properties(llimageworker.cpp PROPERTIES COMPILE_FLAGS -Wno-int-in-bool-context)
-		set_source_files_properties(
-			llimage.cpp
-			llimagefilter.cpp
-			PROPERTIES COMPILE_FLAGS -Wno-stringop-overflow)
-	endif()
-endif ()
+if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
+    set_source_files_properties(llimageworker.cpp PROPERTIES COMPILE_FLAGS -Wno-int-in-bool-context)
+    set_source_files_properties(
+        llimage.cpp
+        llimagefilter.cpp
+        PROPERTIES COMPILE_FLAGS -Wno-stringop-overflow)
+endif()
 
 include(LibraryInstall)
 

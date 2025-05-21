@@ -5,10 +5,7 @@ include(GLIB)
 
 add_library( ll::uilibraries INTERFACE IMPORTED )
 
-if (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-  if (NOT USESYSTEMLIBS)
-  use_prebuilt_binary(fltk)
-  endif ()
+if (LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
   target_compile_definitions(ll::uilibraries INTERFACE LL_FLTK=1 LL_X11=1 )
 
   if( USE_CONAN )
@@ -30,7 +27,7 @@ if (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
           ll::gio
   )
 
-endif (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+endif ()
 if( WINDOWS )
   target_link_libraries( ll::uilibraries INTERFACE
           opengl32
@@ -48,7 +45,7 @@ if( WINDOWS )
           )
 endif()
 
-if (NOT USESYSTEMLIBS)
+if (FALSE)
 target_include_directories( ll::uilibraries SYSTEM INTERFACE
         ${LIBS_PREBUILT_DIR}/include
         )

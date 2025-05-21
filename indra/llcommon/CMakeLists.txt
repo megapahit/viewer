@@ -8,9 +8,6 @@ include(bugsplat)
 include(Linking)
 include(Boost)
 include(LLSharedLibs)
-if (NOT USESYSTEMLIBS)
-include(Copy3rdPartyLibs)
-endif ()
 include(ZLIBNG)
 include(Tracy)
 
@@ -296,33 +293,29 @@ if (CMAKE_OSX_ARCHITECTURES MATCHES arm64 OR CMAKE_SYSTEM_PROCESSOR MATCHES aarc
         https://raw.githubusercontent.com/DLTcollab/sse2neon/master/sse2neon.h
         ${LIBS_PREBUILT_DIR}/include/sse2neon/sse2neon.h
         )
-    endif (NOT EXISTS ${LIBS_PREBUILT_DIR}/include/sse2neon/sse2neon.h)
+    endif ()
     file(WRITE ${PREBUILD_TRACKING_DIR}/sse2neon_installed "0")
-  endif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/sse2neon_installed OR NOT ${sse2neon_installed} EQUAL 0)
+  endif ()
   target_include_directories(llcommon PUBLIC ${LIBS_PREBUILT_DIR}/include/sse2neon)
-endif (CMAKE_OSX_ARCHITECTURES MATCHES arm64 OR CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+endif ()
 
 if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu) OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed))
   target_include_directories(llcommon PUBLIC ${LIBS_PREBUILT_DIR}/include)
 endif ()
 
-if (NOT USESYSTEMLIBS)
-add_dependencies(llcommon stage_third_party_libs)
-else ()
-    target_compile_options(${PROJECT_NAME} PUBLIC -Wno-deprecated-declarations)
-    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        set_source_files_properties(
-            llapp.cpp
-            llsdutil.cpp
-            PROPERTIES COMPILE_FLAGS -Wno-stringop-truncation)
-        set_source_files_properties(
-            llevent.cpp
-            llfasttimer.cpp
-            PROPERTIES COMPILE_FLAGS -Wno-nonnull)
-    elseif (LINUX AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set_source_files_properties(llsys.cpp PROPERTIES
-            COMPILE_FLAGS -Wno-unused-but-set-variable)
-    endif()
+target_compile_options(${PROJECT_NAME} PUBLIC -Wno-deprecated-declarations)
+if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
+  set_source_files_properties(
+    llapp.cpp
+    llsdutil.cpp
+    PROPERTIES COMPILE_FLAGS -Wno-stringop-truncation)
+  set_source_files_properties(
+    llevent.cpp
+    llfasttimer.cpp
+    PROPERTIES COMPILE_FLAGS -Wno-nonnull)
+elseif (LINUX AND CMAKE_CXX_COMPILER_ID MATCHES Clang)
+  set_source_files_properties(llsys.cpp PROPERTIES
+    COMPILE_FLAGS -Wno-unused-but-set-variable)
 endif ()
 
 include(LibraryInstall)

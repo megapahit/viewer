@@ -37,7 +37,7 @@
 #include <boost/iostreams/device/array.hpp>
 #include <boost/iostreams/stream.hpp>
 
-#ifdef LL_USESYSTEMLIBS
+#if 1
 # include <zlib.h>
 #else
 # include "zlib-ng/zlib.h"  // for davep's dirty little zip functions

@@ -1,23 +1,23 @@
 # -*- cmake -*-
 include(Prebuilt)
 
-if (NOT (WINDOWS OR DARWIN))
+if (NOT (DARWIN OR WINDOWS))
   add_library( ll::fontconfig INTERFACE IMPORTED )
 
   find_package(Fontconfig REQUIRED)
   target_link_libraries( ll::fontconfig INTERFACE  Fontconfig::Fontconfig )
-endif (NOT (WINDOWS OR DARWIN))
+endif ()
 
-if( USE_AUTOBUILD_3P )
+if (FALSE)
+if( NOT USE_CONAN )
   use_prebuilt_binary(libhunspell)
 endif()
 
-if (NOT USESYSTEMLIBS)
 use_prebuilt_binary(slvoice)
-endif (NOT USESYSTEMLIBS)
+endif (FALSE)
 
-if ((${LINUX_DISTRO} MATCHES debian OR WINDOWS OR DARWIN) OR NOT USESYSTEMLIBS)
+if (${LINUX_DISTRO} MATCHES debian OR DARWIN OR WINDOWS)
 use_prebuilt_binary(nanosvg)
-endif ((${LINUX_DISTRO} MATCHES debian OR WINDOWS OR DARWIN) OR NOT USESYSTEMLIBS)
+endif ()
 use_prebuilt_binary(viewer-fonts)
 use_prebuilt_binary(emoji_shortcodes)

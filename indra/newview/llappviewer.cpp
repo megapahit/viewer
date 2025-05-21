@@ -255,6 +255,9 @@ using namespace LL;
 #include "llviewereventrecorder.h"
 
 #include <chrono>
+#include "rlvactions.h"
+#include "rlvcommon.h"
+#include "rlvhandler.h"
 
 // *FIX: These extern globals should be cleaned up.
 // The globals either represent state/config/resource-storage of either
@@ -1709,6 +1712,9 @@ bool LLAppViewer::cleanup()
 
     //ditch LLVOAvatarSelf instance
     gAgentAvatarp = NULL;
+
+    // Sanity check to catch cases where someone forgot to do an RlvActions::isRlvEnabled() check
+    LL_ERRS_IF(!RlvHandler::isEnabled() && RlvHandler::instanceExists()) << "RLV handler instance exists even though RLVa is disabled" << LL_ENDL;
 
     LLNotifications::instance().clear();
 
@@ -3371,6 +3377,7 @@ LLSD LLAppViewer::getViewerInfo() const
     }
 #endif
 
+    info["RLV_VERSION"] = RlvActions::isRlvEnabled() ? Rlv::Strings::getVersionAbout() : "(disabled)";
     info["OPENGL_VERSION"] = ll_safe_string((const char*)(glGetString(GL_VERSION)));
 
     // Settings

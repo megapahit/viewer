@@ -35,7 +35,7 @@
 
 #include <boost/align/aligned_allocator.hpp>
 
-#ifndef LL_USESYSTEMLIBS
+#if 0
 class daeElement;
 class domMesh;
 #endif
