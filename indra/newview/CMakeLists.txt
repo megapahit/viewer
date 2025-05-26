@@ -1468,7 +1468,7 @@ if (DARWIN)
     # pointer variables. As of 2019-06-26, the BugsplatMac version we're using
     # does not yet do so in its own header files. This -W flag prevents fatal
     # warnings.
-    COMPILE_FLAGS "-fmodules -fcxx-modules -Wno-nullability-completeness"
+    COMPILE_FLAGS "-fmodules -fcxx-modules -Wno-nullability-completeness -std=c++17"
     )
 
   # Add resource files to the project.
