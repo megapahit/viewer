@@ -120,8 +120,11 @@ $ megapahit
 
 ### Windows
 ```
-$ pacman -S mingw-w64-clang-aarch64-cmake mingw-w64-clang-aarch64-pkgconf mingw-w64-clang-aarch64-freealut mingw-w64-clang-aarch64-apr-util mingw-w64-clang-aarch64-boost mingw-w64-clang-aarch64-fltk mingw-w64-clang-aarch64-glm mingw-w64-clang-aarch64-hunspell mingw-w64-clang-aarch64-minizip mingw-w64-clang-aarch64-nghttp2 mingw-w64-clang-aarch64-SDL2 mingw-w64-clang-aarch64-vlc mingw-w64-clang-aarch64-libvorbis mingw-w64-clang-aarch64-xxhash
-$ export LL_BUILD="-O3 -std=c++20 -fPIC -DLL_WINDOWS=1"
+$ vcpkg install pkgconf python3 freealut apr-util boost freetype glm hunspell libjpeg-turbo meshoptimizer minizip nghttp2 openjpeg libvorbis libxml2[tools] xxhash
+$ export LL_BUILD="/MD /O2 /Ob2 /std:c++20 /Zc:wchar_t- /Zi /GR /DLL_RELEASE=1 /DLL_RELEASE_FOR_DOWNLOAD=1 /DNDEBUG /D_SECURE_STL=0 /D_HAS_ITERATOR_DEBUGGING=0 /DWIN32 /D_WINDOWS /DLL_WINDOWS=1 /DUNICODE /D_UNICODE /DWINVER=0x0602 /D_WIN32_WINNT=0x0602"
+$ export PATH="/c/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin:$VCPKG_ROOT/downloads/tools/msys2/21caed2f81ec917b/mingw64/bin:$VCPKG_ROOT/installed/`uname -m|sed 's/86_//'`-windows/tools/libxml2:$PATH"
+$ export PKG_CONFIG_LIBDIR="$VCPKG_ROOT/installed/`uname -m|sed 's/86_//'`-windows/lib/pkgconfig"
+$ export PYTHON="$VCPKG_ROOT/installed/`uname -m|sed 's/86_//'`-windows/tools/python3/python.exe"
 $ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=OFF -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=OFF -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=OFF -DPACKAGE:BOOL=OFF ../indra
 ```
 

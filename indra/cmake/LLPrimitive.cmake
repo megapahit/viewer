@@ -18,19 +18,11 @@ if( USE_CONAN )
     "${CONAN_INCLUDE_DIRS_COLLADADOM}/collada-dom/1.4/" )
 endif()
 
-if( WINDOWS )
-  include(FindPkgConfig)
-  pkg_check_modules(Colladadom REQUIRED collada-dom-141)
-  target_compile_definitions( ll::colladadom INTERFACE COLLADA_DOM_SUPPORT141 )
-  target_include_directories( ll::colladadom SYSTEM INTERFACE ${Colladadom_INCLUDE_DIRS} )
-  target_link_directories( ll::colladadom INTERFACE ${Colladadom_LIBRARY_DIRS} )
-  target_link_libraries( ll::colladadom INTERFACE ${Colladadom_LIBRARIES} )
-  return()
-elseif( LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD )
+if( LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD )
   # Build of the collada-dom for Linux and FreeBSD is done in
   # indra/llprimitive/CMakeLists.txt
   return()
-else()
+elseif ( WINDOWS )
   include(FindPkgConfig)
   pkg_check_modules(Minizip REQUIRED minizip)
   pkg_check_modules(Libxml2 REQUIRED libxml-2.0)
@@ -47,15 +39,24 @@ else()
       INPUT ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8.tar.gz
       DESTINATION ${CMAKE_BINARY_DIR}
       )
-    execute_process(
-      COMMAND sed -i "" -e "s/SHARED/STATIC/g" CMakeLists.txt
-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/src/1.4
-      )
+    if ( WINDOWS )
+      execute_process(
+        COMMAND sed -i "s/SHARED/STATIC/g" CMakeLists.txt
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/src/1.4
+        )
+      set(BOOST_LIBRARY_SUFFIX -vc143-mt-x64-1_88)
+    else ()
+      execute_process(
+        COMMAND sed -i "" -e "s/SHARED/STATIC/g" CMakeLists.txt
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/src/1.4
+        )
+    endif ()
     if( DARWIN )
       set(BOOST_CFLAGS -I${Libxml2_LIBRARY_DIRS}exec/boost/1.87/include)
       set(BOOST_LIBS -L${Minizip_LIBRARY_DIRS}exec/boost/1.87/lib)
       set(BOOST_LIBRARY_SUFFIX -mt)
     endif()
+    file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/include/collada/1.4)
     try_compile(COLLADADOM_RESULT
       PROJECT colladadom
       SOURCE_DIR ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8
@@ -92,10 +93,12 @@ else()
   endif()
 endif()
 
-if( FALSE )
-use_system_binary( colladadom )
+#use_system_binary( colladadom )
 
+if (WINDOWS)
 use_prebuilt_binary(colladadom)
+endif ()
+if( FALSE )
 use_prebuilt_binary(minizip-ng) # needed for colladadom
 use_prebuilt_binary(libxml2)
 

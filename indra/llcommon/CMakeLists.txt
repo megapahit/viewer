@@ -303,7 +303,10 @@ if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu) OR (${LIN
   target_include_directories(llcommon PUBLIC ${LIBS_PREBUILT_DIR}/include)
 endif ()
 
-target_compile_options(${PROJECT_NAME} PUBLIC -Wno-deprecated-declarations)
+if (NOT WINDOWS)
+  target_compile_options(${PROJECT_NAME} PUBLIC -Wno-deprecated-declarations)
+endif ()
+
 if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
   set_source_files_properties(
     llapp.cpp

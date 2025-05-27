@@ -1760,6 +1760,8 @@ if (WINDOWS)
         )
     target_compile_options(${VIEWER_BINARY_NAME} PRIVATE /bigobj)
 
+    if (FALSE)
+
     # If adding a file to viewer_manifest.py in the WindowsManifest.construct() method, be sure to add the dependency
     # here.
     # *NOTE:Mani - This is a crappy hack to have important dependencies for the viewer_manifest copy action
@@ -1886,6 +1888,8 @@ if (WINDOWS)
     if (EXISTS ${CMAKE_SOURCE_DIR}/copy_win_scripts)
       add_dependencies(${VIEWER_BINARY_NAME} copy_win_scripts)
     endif (EXISTS ${CMAKE_SOURCE_DIR}/copy_win_scripts)
+
+    endif (FALSE)
 
     add_dependencies(${VIEWER_BINARY_NAME} SLPlugin)
 

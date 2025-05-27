@@ -6,7 +6,7 @@ include_guard()
 add_library( ll::openssl INTERFACE IMPORTED )
 
 #use_system_binary(openssl)
-if (LINUX AND CMAKE_SYSTEM_PROCESSOR MATCHES x86_64 OR DARWIN)
+if (LINUX AND CMAKE_SYSTEM_PROCESSOR MATCHES x86_64 OR DARWIN OR WINDOWS)
 use_prebuilt_binary(openssl)
   if (DARWIN)
     execute_process(

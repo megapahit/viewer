@@ -39,7 +39,7 @@
 #include <stdint.h>
 #endif
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__i386__) || defined(__x86_64__) || _M_X64
 #include <xmmintrin.h>
 #include <emmintrin.h>
 #else

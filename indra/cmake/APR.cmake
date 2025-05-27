@@ -5,11 +5,18 @@ include_guard()
 
 add_library( ll::apr INTERFACE IMPORTED )
 
-include(FindPkgConfig)
-pkg_check_modules(Apr REQUIRED apr-1 apr-util-1)
-target_include_directories(ll::apr SYSTEM INTERFACE ${Apr_INCLUDE_DIRS})
-target_link_directories(ll::apr INTERFACE ${Apr_LIBRARY_DIRS})
-target_link_libraries(ll::apr INTERFACE ${Apr_LIBRARIES})
+if (WINDOWS)
+  target_include_directories(ll::apr SYSTEM INTERFACE ${prefix_result}/../include)
+  target_link_directories(ll::apr INTERFACE ${prefix_result})
+  target_link_libraries(ll::apr INTERFACE apr-1 apr-util-1)
+else ()
+  include(FindPkgConfig)
+  pkg_check_modules(Apr REQUIRED apr-1 apr-util-1)
+  target_include_directories(ll::apr SYSTEM INTERFACE ${Apr_INCLUDE_DIRS})
+  target_link_directories(ll::apr INTERFACE ${Apr_LIBRARY_DIRS})
+  target_link_libraries(ll::apr INTERFACE ${Apr_LIBRARIES})
+endif ()
+
 return ()
 
 use_system_binary( apr apr-util )
