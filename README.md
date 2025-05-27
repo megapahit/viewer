@@ -55,14 +55,20 @@ $ megapahit
 ### FreeBSD
 ```
 $ sudo su -
-# portmaster devel/cmake devel/pkgconf audio/freealut devel/apr1 devel/boost-libs x11-toolkits/fltk math/glm textproc/hunspell misc/meshoptimizer archivers/minizip graphics/nanosvg graphics/openjpeg www/libnghttp2 devel/sdl20 multimedia/vlc audio/libvorbis devel/xxhash
+# portmaster devel/cmake devel/pkgconf audio/freealut devel/apr1 devel/boost-libs x11-toolkits/fltk math/glm textproc/hunspell misc/meshoptimizer archivers/minizip graphics/nanosvg www/libnghttp2 graphics/openjpeg devel/sdl20 multimedia/vlc audio/libvorbis devel/xxhash
 # exit
 $ setenv LL_BUILD "-O3 -std=c++20 -fPIC"
+$ setenv PYTHON /usr/local/bin/python3.11
 $ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=OFF -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON ../indra
 $ make -j`nproc`
+$ cd ..
+$ mv -i indra/newview/app_settings/windlight ..
+$ cd -
 $ sudo cpack -G FREEBSD
-$ sudo pkg add megapahit-`cat newview/viewer_version.txt`-FreeBSD.pkg
-$ sudo pkg set -yA 1 freealut apr1 fltk hunspell meshoptimizer minizip nanosvg openjpeg sdl20 vlc libvorbis
+$ sudo pkg add megapahit-`cat newview/viewer_version.txt`-`uname -s`.pkg
+$ cd ..
+$ mv -i ../windlight indra/newview/app_settings/
+$ sudo pkg set -yA 1 freealut apr1 boost-libs fltk hunspell meshoptimizer minizip libnghttp2 openjpeg sdl20 vlc libvorbis
 $ megapahit
 ```
 
