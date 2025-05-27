@@ -22,7 +22,7 @@ if( LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD )
   # Build of the collada-dom for Linux and FreeBSD is done in
   # indra/llprimitive/CMakeLists.txt
   return()
-elseif ( WINDOWS )
+elseif ( NOT WINDOWS )
   include(FindPkgConfig)
   pkg_check_modules(Minizip REQUIRED minizip)
   pkg_check_modules(Libxml2 REQUIRED libxml-2.0)
