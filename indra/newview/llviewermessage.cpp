@@ -118,6 +118,8 @@
 #include "llpanelplaceprofile.h"
 #include "llviewerregion.h"
 #include "llfloaterregionrestarting.h"
+#include "rlvactions.h"
+#include "rlvhandler.h"
 
 #include "llnotificationmanager.h" //
 #include "llexperiencecache.h"
@@ -2398,15 +2400,16 @@ void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
     }
 
     bool is_audible = (CHAT_AUDIBLE_FULLY == chat.mAudible);
+    bool show_script_chat_particles = chat.mSourceType == CHAT_SOURCE_OBJECT
+        && chat.mChatType != CHAT_TYPE_DEBUG_MSG
+        && gSavedSettings.getBOOL("EffectScriptChatParticles");
     chatter = gObjectList.findObject(from_id);
     if (chatter)
     {
         chat.mPosAgent = chatter->getPositionAgent();
 
         // Make swirly things only for talking objects. (not script debug messages, though)
-        if (chat.mSourceType == CHAT_SOURCE_OBJECT
-            && chat.mChatType != CHAT_TYPE_DEBUG_MSG
-            && gSavedSettings.getBOOL("EffectScriptChatParticles") )
+        if (show_script_chat_particles && (!RlvActions::isRlvEnabled() || CHAT_TYPE_OWNER != chat.mChatType) )
         {
             LLPointer<LLViewerPartSourceChat> psc = new LLViewerPartSourceChat(chatter->getPositionAgent());
             psc->setSourceObject(chatter);
@@ -2486,8 +2489,25 @@ void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
             case CHAT_TYPE_WHISPER:
                 chat.mText = LLTrans::getString("whisper") + " ";
                 break;
-            case CHAT_TYPE_DEBUG_MSG:
             case CHAT_TYPE_OWNER:
+                if (RlvActions::isRlvEnabled())
+                {
+                    if (RlvHandler::instance().handleSimulatorChat(mesg, chat, chatter))
+                    {
+                        break;
+                    }
+                    else if (show_script_chat_particles)
+                    {
+                        LLPointer<LLViewerPartSourceChat> psc = new LLViewerPartSourceChat(chatter->getPositionAgent());
+                        psc->setSourceObject(chatter);
+                        psc->setColor(color);
+                        //We set the particles to be owned by the object's owner,
+                        //just in case they should be muted by the mute list
+                        psc->setOwnerUUID(owner_id);
+                        LLViewerPartSim::getInstance()->addPartSource(psc);
+                    }
+                }
+            case CHAT_TYPE_DEBUG_MSG:
             case CHAT_TYPE_NORMAL:
             case CHAT_TYPE_DIRECT:
                 break;
@@ -2583,6 +2603,8 @@ void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
             msg_notify["session_id"] = LLUUID();
             msg_notify["from_id"] = chat.mFromID;
             msg_notify["source_type"] = chat.mSourceType;
+            // used to check if there is agent mention in the message
+            msg_notify["message"] = mesg;
             on_new_message(msg_notify);
         }
 
@@ -5055,6 +5077,7 @@ bool attempt_standard_notification(LLMessageSystem* msgsystem)
                                         false, //UI
                                         gSavedSettings.getBOOL("RenderHUDInSnapshot"),
                                         false,
+                                        false,
                                         LLSnapshotModel::SNAPSHOT_TYPE_COLOR,
                                         LLSnapshotModel::SNAPSHOT_FORMAT_PNG);
         }
@@ -5159,6 +5182,7 @@ static void process_special_alert_messages(const std::string & message)
                                     gViewerWindow->getWindowHeightRaw(),
                                     false,
                                     gSavedSettings.getBOOL("RenderHUDInSnapshot"),
+                                    false,
                                     false,
                                     LLSnapshotModel::SNAPSHOT_TYPE_COLOR,
                                     LLSnapshotModel::SNAPSHOT_FORMAT_PNG);

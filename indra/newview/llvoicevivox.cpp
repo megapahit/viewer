@@ -36,7 +36,7 @@
 #include "llbufferstream.h"
 #include "llfile.h"
 #include "llmenugl.h"
-#ifdef LL_USESYSTEMLIBS
+#if 1
 # include "expat.h"
 #else
 # include "expat/expat.h"

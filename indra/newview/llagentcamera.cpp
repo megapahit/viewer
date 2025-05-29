@@ -1503,6 +1503,7 @@ void LLAgentCamera::updateCamera()
         LLVector3 chest_scale = chest_joint->getScale();
 
         // shorten avatar skeleton to avoid foot interpenetration
+#if 0 // This offsets mouselook attachments, is disabled in other TPVs
         if (!gAgentAvatarp->mInAir)
         {
             LLVector3 chest_offset = LLVector3(0.f, 0.f, chest_joint->getPosition().mV[VZ]) * torso_joint->getWorldRotation();
@@ -1516,6 +1517,7 @@ void LLAgentCamera::updateCamera()
             chest_joint->setScale(LLVector3(1.f, 1.f, scale_factor));
             diff.mV[VZ] = 0.f;
         }
+#endif
 
         // SL-315
         gAgentAvatarp->mPelvisp->setPosition(gAgentAvatarp->mPelvisp->getPosition() + diff);
@@ -2658,7 +2660,7 @@ void LLAgentCamera::setCameraPosAndFocusGlobal(const LLVector3d& camera_pos, con
 
     if (mCameraAnimating)
     {
-        const F64 ANIM_METERS_PER_SECOND = 15.0;
+        const F64 ANIM_METERS_PER_SECOND = 20.0;
         const F64 MIN_ANIM_SECONDS = 0.5;
         const F64 MAX_ANIM_SECONDS = 3.0;
         F64 anim_duration = llmax( MIN_ANIM_SECONDS, sqrt(focus_delta_squared) / ANIM_METERS_PER_SECOND );

@@ -24,7 +24,6 @@ set(cmake_SOURCE_FILES
         FindAutobuild.cmake
         FMODSTUDIO.cmake
         FreeType.cmake
-        GLEXT.cmake
         GLH.cmake
         GLM.cmake
         Havok.cmake

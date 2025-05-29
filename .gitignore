@@ -23,7 +23,7 @@ LICENSES
 build-darwin-*
 build-freebsd-*
 build-linux-*
-build-mingw-*
+build-mingw64_nt*
 debian/files
 debian/secondlife-appearance-utility*
 debian/secondlife-viewer*

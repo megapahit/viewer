@@ -55,7 +55,6 @@ set(llwindow_LINK_LIBRARIES
         llfilesystem
         llxml
         ll::glm
-        ll::glext
         ll::uilibraries
         ll::SDL
         )
@@ -64,7 +63,7 @@ include_directories(${CMAKE_SOURCE_DIR}/llrender)
 
 # Libraries on which this library depends, needed for Linux builds
 # Sort by high-level to low-level
-if (USESYSTEMLIBS AND NOT DARWIN)
+if (NOT DARWIN)
   list(APPEND viewer_SOURCE_FILES
        llkeyboardsdl.cpp
        llwindowsdl.cpp
@@ -86,7 +85,7 @@ if (USESYSTEMLIBS AND NOT DARWIN)
         fontconfig          # For FCInit and other FC* functions.
         )
   endif (BUILD_HEADLESS)
-endif (USESYSTEMLIBS AND NOT DARWIN)
+endif ()
 
 if (DARWIN)
   list(APPEND llwindow_SOURCE_FILES
@@ -183,7 +182,6 @@ endif (SDL_FOUND)
   target_include_directories(llwindow INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 if (DARWIN)
-  include(CMakeFindFrameworks)
   find_library(CARBON_LIBRARY Carbon)
   target_link_libraries(llwindow ${CARBON_LIBRARY})
 endif (DARWIN)

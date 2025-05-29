@@ -9,15 +9,11 @@ include(Linking)
 
 include(Boost)
 include(bugsplat)
-if (NOT USESYSTEMLIBS)
-include(BuildPackagesInfo)
-endif ()
+#include(BuildPackagesInfo)
 include(BuildVersion)
 include(CMakeCopyIfDifferent)
 include(CubemapToEquirectangularJS)
-if (NOT USESYSTEMLIBS)
-include(DBusGlib)
-endif ()
+#include(DBusGlib)
 include(DragDrop)
 include(EXPAT)
 include(Hunspell)
@@ -45,18 +41,16 @@ include(ThreeJS)
 include(Tracy)
 include(UI)
 include(ViewerMiscLibs)
-if (NOT USESYSTEMLIBS)
-include(ViewerManager)
-endif ()
+#include(ViewerManager)
 include(VisualLeakDetector)
-include(VulkanGltf)
+#include(VulkanGltf)
 include(ZLIBNG)
 include(LLPrimitive)
 
 if (ENABLE_MEDIA_PLUGINS)
     include(LibVLCPlugin)
     include(CEFPlugin)
-endif (ENABLE_MEDIA_PLUGINS)
+endif ()
 
 if (NOT HAVOK_TPV)
    # When using HAVOK_TPV, the library is precompiled, so no need for this
@@ -103,6 +97,7 @@ set(viewer_SOURCE_FILES
     llagentwearables.cpp
     llanimstatelabels.cpp
     llappcorehttp.cpp
+    llappearancelistener.cpp
     llappearancemgr.cpp
     llappviewer.cpp
     llappviewerlistener.cpp
@@ -211,6 +206,7 @@ set(viewer_SOURCE_FILES
     llfloatercamera.cpp
     llfloatercamerapresets.cpp
     llfloaterchangeitemthumbnail.cpp
+    llfloaterchatmentionpicker.cpp
     llfloaterchatvoicevolume.cpp
     llfloaterclassified.cpp
     llfloatercolorpicker.cpp
@@ -744,11 +740,16 @@ set(viewer_SOURCE_FILES
     llxmlrpctransaction.cpp
     noise.cpp
     pipeline.cpp
+    rlvactions.cpp
+    rlvcommon.cpp
+    rlvfloaters.cpp
+    rlvhelper.cpp
+    rlvhandler.cpp
     )
 
 if (CMAKE_SYSTEM_NAME MATCHES FreeBSD)
     list(REMOVE_ITEM viewer_SOURCE_FILES llvoicewebrtc.cpp)
-endif (CMAKE_SYSTEM_NAME MATCHES FreeBSD)
+endif ()
 
 set(VIEWER_BINARY_NAME "secondlife-bin" CACHE STRING
     "The name of the viewer executable to create.")
@@ -780,6 +781,7 @@ set(viewer_HEADER_FILES
     llanimstatelabels.h
     llappcorehttp.h
     llappearance.h
+    llappearancelistener.h
     llappearancemgr.h
     llappviewer.h
     llappviewerlistener.h
@@ -887,6 +889,7 @@ set(viewer_HEADER_FILES
     llfloaterbuyland.h
     llfloatercamerapresets.h
     llfloaterchangeitemthumbnail.h
+    llfloaterchatmentionpicker.h
     llfloatercamera.h
     llfloaterchatvoicevolume.h
     llfloaterclassified.h
@@ -1414,6 +1417,12 @@ set(viewer_HEADER_FILES
     llxmlrpctransaction.h
     noise.h
     pipeline.h
+    rlvdefines.h
+    rlvactions.h
+    rlvcommon.h
+    rlvfloaters.h
+    rlvhelper.h
+    rlvhandler.h
     roles_constants.h
     VertexCache.h
     VorbisFramework.h
@@ -1467,7 +1476,7 @@ if (DARWIN)
     # pointer variables. As of 2019-06-26, the BugsplatMac version we're using
     # does not yet do so in its own header files. This -W flag prevents fatal
     # warnings.
-    COMPILE_FLAGS "-fmodules -fcxx-modules -Wno-nullability-completeness"
+    COMPILE_FLAGS "-fmodules -fcxx-modules -Wno-nullability-completeness -std=c++17"
     )
 
   # Add resource files to the project.
@@ -1487,18 +1496,19 @@ if (DARWIN)
   list(APPEND viewer_SOURCE_FILES ${viewer_RESOURCE_FILES})
 endif (DARWIN)
 
-if (USESYSTEMLIBS AND NOT DARWIN)
+if (NOT DARWIN)
     LIST(APPEND viewer_SOURCE_FILES llappviewerlinux.cpp)
     set_source_files_properties(
       llappviewerlinux.cpp
       PROPERTIES
       COMPILE_DEFINITIONS "${VIEWER_CHANNEL_VERSION_DEFINES}"
       )
-  if (NOT CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
+    #LIST(APPEND viewer_SOURCE_FILES llappviewerlinux_api_dbus.cpp)
+  if (NOT CMAKE_CXX_COMPILER_ID MATCHES AppleClang)
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--as-needed")
   endif ()
 
-endif (USESYSTEMLIBS AND NOT DARWIN)
+endif ()
 
 if (WINDOWS)
 
@@ -1680,14 +1690,10 @@ set(viewer_APPSETTINGS_FILES
     app_settings/viewerart.xml
     ${CMAKE_SOURCE_DIR}/../etc/message.xml
     ${CMAKE_SOURCE_DIR}/../scripts/messages/message_template.msg
-    packages-info.txt
+    #packages-info.txt
     featuretable.txt
     featuretable_mac.txt
     )
-
-if (USESYSTEMLIBS)
-    list(REMOVE_ITEM viewer_APPSETTINGS_FILES packages-info.txt)
-endif ()
 
 source_group("App Settings" FILES ${viewer_APPSETTINGS_FILES})
 
@@ -1761,6 +1767,8 @@ if (WINDOWS)
         LINK_FLAGS_RELEASE "/FORCE:MULTIPLE /MAP\"secondlife-bin.MAP\" /OPT:REF /LARGEADDRESSAWARE"
         )
     target_compile_options(${VIEWER_BINARY_NAME} PRIVATE /bigobj)
+
+    if (FALSE)
 
     # If adding a file to viewer_manifest.py in the WindowsManifest.construct() method, be sure to add the dependency
     # here.
@@ -1888,6 +1896,8 @@ if (WINDOWS)
     if (EXISTS ${CMAKE_SOURCE_DIR}/copy_win_scripts)
       add_dependencies(${VIEWER_BINARY_NAME} copy_win_scripts)
     endif (EXISTS ${CMAKE_SOURCE_DIR}/copy_win_scripts)
+
+    endif (FALSE)
 
     add_dependencies(${VIEWER_BINARY_NAME} SLPlugin)
 
@@ -2019,14 +2029,14 @@ target_link_libraries(${VIEWER_BINARY_NAME}
 
 if (NOT CMAKE_SYSTEM_NAME MATCHES FreeBSD)
    target_link_libraries(${VIEWER_BINARY_NAME} llwebrtc )
-endif (NOT CMAKE_SYSTEM_NAME MATCHES FreeBSD)
+endif ()
 
 if (ENABLE_MEDIA_PLUGINS)
    target_link_libraries(${VIEWER_BINARY_NAME} ll::libvlc )
    if (DARWIN OR LINUX)
       target_link_libraries(${VIEWER_BINARY_NAME} ll::cef )
-   endif (DARWIN OR LINUX)
-endif (ENABLE_MEDIA_PLUGINS)
+   endif ()
+endif ()
 
 if( TARGET ll::intel_memops )
    target_link_libraries(${VIEWER_BINARY_NAME} ll::intel_memops )
@@ -2041,13 +2051,13 @@ set(ARTWORK_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE PATH
 
 set_source_files_properties(llinventorygallery.cpp PROPERTIES COMPILE_FLAGS
     -Wno-unused-but-set-variable)
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+if (CMAKE_CXX_COMPILER_ID MATCHES Clang)
     set_source_files_properties(llappviewerlinux.cpp PROPERTIES
         COMPILE_FLAGS -Wno-dangling-gsl
     )
     set_source_files_properties(llviewerstats.cpp PROPERTIES
         COMPILE_FLAGS -Wno-unused-value)
-elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     set_source_files_properties(
         llface.cpp
         llhttpretrypolicy.cpp
@@ -2117,100 +2127,86 @@ foreach(elem ${country_codes})
    configure_file(${emoji_mapping_src_file} ${emoji_mapping_dst_file} COPYONLY)
 endforeach()
 
-if (PACKAGE AND USESYSTEMLIBS)
+if (PACKAGE)
   set(CPACK_PACKAGE_NAME ${VIEWER_BINARY_NAME}
     CACHE STRING "Viewer binary name.")
   set(CPACK_PACKAGE_VERSION ${VIEWER_VERSION_MAJOR}.${VIEWER_VERSION_MINOR}.${VIEWER_VERSION_PATCH}.${VIEWER_VERSION_REVISION}
     CACHE STRING "Viewer major.minor.patch.revision versions.")
-  set(VIEWER_PACKAGE_COMMENT
-    "A fork of the Second Life viewer"
-    )
-  set(VIEWER_PACKAGE_DESCRIPTION
-    "An entrance to virtual empires in only megabytes. A shelter for the metaverse refugees, especially those from less supported operating systems."
-    )
-  set(VIEWER_PACKAGE_DOMAIN_NAME
-    ${VIEWER_BINARY_NAME}.net
-    )
-endif (PACKAGE AND USESYSTEMLIBS)
+  set(VIEWER_PACKAGE_COMMENT "A fork of the Second Life viewer")
+  set(VIEWER_PACKAGE_DESCRIPTION "An entrance to virtual empires in only megabytes. A shelter for the metaverse refugees, especially those from less supported operating systems.")
+  set(VIEWER_PACKAGE_DOMAIN_NAME ${VIEWER_BINARY_NAME}.net)
+endif ()
 
 if (LINUX)
-  if (USESYSTEMLIBS)
-    add_custom_command(
-      TARGET ${VIEWER_BINARY_NAME} POST_BUILD
-      COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-      ARGS -e '/Linden Lab.*/d' ${CMAKE_HOME_DIRECTORY}/../doc/contributions.txt > ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-      COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-      ARGS -i ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt -e '/following residents.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-      COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-      ARGS -i ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt -e '/along with.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-      COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-      ARGS -i ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt -e '/^$$/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-      COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-      ARGS -i ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt -e '/\t.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-      COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-      ARGS -i ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt -e '/^    .*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-      COMMAND sort
-      ARGS -R contributions.txt -o ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-      COMMAND paste
-      ARGS -s -d, ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt > ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
-      COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-      ARGS -i ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt -e 's/,/, /g' ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
-      )
-    if (PACKAGE)
-      if (${LINUX_DISTRO} MATCHES debian OR ${LINUX_DISTRO} MATCHES ubuntu)
-        set(CPACK_BINARY_DEB ON CACHE BOOL "Able to package Debian DEB.")
-        set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE
-          amd64
-          CACHE STRING "Debian package architecture.")
-        set(CPACK_DEBIAN_PACKAGE_DESCRIPTION ${VIEWER_PACKAGE_COMMENT}
-          CACHE STRING "Debian package description.")
-        set(CPACK_DEBIAN_PACKAGE_MAINTAINER
-          $ENV{USER}@${VIEWER_PACKAGE_DOMAIN_NAME}
-          CACHE STRING "Debian package maintainer.")
-        set(CPACK_DEBIAN_PACKAGE_SECTION net
-          CACHE STRING "Debian package section.")
-        if (${LINUX_DISTRO} MATCHES debian)
-          set(CPACK_DEBIAN_PACKAGE_DEPENDS
-            "libalut0, libaprutil1, libboost-fiber1.81.0, libboost-filesystem1.81.0, libboost-program-options1.81.0, libboost-regex1.81.0, libboost-thread1.81.0, libboost-url1.81.0, libexpat1, libfltk1.3, libgles-dev, libglu1-mesa, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1, libnghttp2-14, libsdl2-2.0-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
-          CACHE STRING "Debian package dependencies.")
-        elseif (${LINUX_DISTRO} MATCHES ubuntu)
-          set(CPACK_DEBIAN_PACKAGE_DEPENDS
-            "libaprutil1t64, libboost-fiber1.83.0, libboost-filesystem1.83.0, libboost-program-options1.83.0, libboost-regex1.83.0, libboost-thread1.83.0, libboost-url1.83.0, libexpat1, libfltk1.3t64, libgles-dev, libglu1-mesa, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1, libnghttp2-14, libsdl2-2.0-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
-          CACHE STRING "Debian package dependencies.")
-        endif (${LINUX_DISTRO} MATCHES debian)
-      elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed))
-        set(CPACK_BINARY_RPM ON CACHE BOOL "Able to package Fedora RPM.")
-        set(CPACK_RPM_PACKAGE_SUMMARY ${VIEWER_PACKAGE_COMMENT}
-          CACHE STRING "RPM package summary.")
-        set(CPACK_RPM_PACKAGE_ARCHITECTURE
-          ${CMAKE_SYSTEM_PROCESSOR}
-          CACHE STRING "RPM package architecture.")
-        set(CPACK_RPM_PACKAGE_LICENSE LGPL-2.1-only
-          CACHE STRING "RPM package license.")
-        set(CPACK_RPM_PACKAGE_VENDOR ${VIEWER_CHANNEL}
-          CACHE STRING "RPM package vendor.")
-        set(CPACK_RPM_PACKAGE_URL
-          https://${VIEWER_PACKAGE_DOMAIN_NAME}
-          CACHE STRING "RPM package URL.")
-        set(CPACK_RPM_PACKAGE_DESCRIPTION ${VIEWER_PACKAGE_DESCRIPTION}
-          CACHE STRING "RPM package description.")
-        if (${LINUX_DISTRO} MATCHES fedora)
-          set(CPACK_RPM_PACKAGE_REQUIRES
-            "apr-util, boost-fiber, boost-program-options, boost-regex, boost-thread, boost-url, expat, fltk, mesa-libGLU, hunspell, libnghttp2, SDL2, vlc-libs, vlc-plugins-base, libvorbis"
-            CACHE STRING "RPM package requirements.")
-        elseif (${LINUX_DISTRO} MATCHES opensuse-tumbleweed)
-          set(CPACK_RPM_PACKAGE_REQUIRES
-            "libapr-util1-0, libboost_fiber1_87_0, libboost_program_options1_87_0, libboost_regex1_87_0, libboost_thread1_87_0, libboost_url1_87_0, libboost_url1_87_0-x86-64-v3, expat, libfltk1_3, libGLU1, libhunspell-1_7-0, libnghttp2-14, libSDL2-2_0-0, libvlc5, vlc-codecs, libvorbis0"
-            CACHE STRING "RPM package requirements.")
-        endif (${LINUX_DISTRO} MATCHES fedora)
-      elseif (${LINUX_DISTRO} MATCHES arch)
-        configure_file(
-          ${CMAKE_CURRENT_SOURCE_DIR}/PKGBUILD.in
-          ${CMAKE_BINARY_DIR}/PKGBUILD
-          )
-      endif (${LINUX_DISTRO} MATCHES debian OR ${LINUX_DISTRO} MATCHES ubuntu)
-    endif (PACKAGE)
-  else (USESYSTEMLIBS)
+  add_custom_command(
+    TARGET ${VIEWER_BINARY_NAME} POST_BUILD
+    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
+    ARGS -e '/Linden Lab.*/d' ${CMAKE_HOME_DIRECTORY}/../doc/contributions.txt > ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
+    ARGS -i '/following residents.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
+    ARGS -i '/along with.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
+    ARGS -i '/^$$/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
+    ARGS -i '/\t.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
+    ARGS -i '/^    .*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sort
+    ARGS -R contributions.txt -o ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND paste
+    ARGS -s -d, ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt > ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
+    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
+    ARGS -i 's/,/, /g' ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
+    )
+  if (PACKAGE)
+    if (${LINUX_DISTRO} MATCHES arch)
+      configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/PKGBUILD.in
+        ${CMAKE_BINARY_DIR}/PKGBUILD
+        )
+    elseif (${LINUX_DISTRO} MATCHES debian OR ${LINUX_DISTRO} MATCHES ubuntu)
+      set(CPACK_BINARY_DEB ON CACHE BOOL "Able to package Debian DEB.")
+      set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE amd64
+        CACHE STRING "Debian package architecture.")
+      set(CPACK_DEBIAN_PACKAGE_DESCRIPTION ${VIEWER_PACKAGE_COMMENT}
+        CACHE STRING "Debian package description.")
+      set(CPACK_DEBIAN_PACKAGE_MAINTAINER $ENV{USER}@${VIEWER_PACKAGE_DOMAIN_NAME}
+        CACHE STRING "Debian package maintainer.")
+      set(CPACK_DEBIAN_PACKAGE_SECTION net
+        CACHE STRING "Debian package section.")
+      if (${LINUX_DISTRO} MATCHES debian)
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS "libalut0, libaprutil1, libboost-fiber1.81.0, libboost-filesystem1.81.0, libboost-program-options1.81.0, libboost-regex1.81.0, libboost-thread1.81.0, libboost-url1.81.0, libexpat1, libfltk1.3, libgles-dev, libglu1-mesa, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1, libnghttp2-14, libsdl2-2.0-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
+        CACHE STRING "Debian package dependencies.")
+      else ()
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS "libaprutil1t64, libboost-fiber1.83.0, libboost-filesystem1.83.0, libboost-program-options1.83.0, libboost-regex1.83.0, libboost-thread1.83.0, libboost-url1.83.0, libexpat1, libfltk1.3t64, libgles-dev, libglu1-mesa, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1, libnghttp2-14, libsdl2-2.0-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
+        CACHE STRING "Debian package dependencies.")
+      endif ()
+    elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed))
+      set(CPACK_BINARY_RPM ON CACHE BOOL "Able to package Fedora RPM.")
+      set(CPACK_RPM_PACKAGE_SUMMARY ${VIEWER_PACKAGE_COMMENT}
+        CACHE STRING "RPM package summary.")
+      set(CPACK_RPM_PACKAGE_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR}
+        CACHE STRING "RPM package architecture.")
+      set(CPACK_RPM_PACKAGE_LICENSE LGPL-2.1-only
+        CACHE STRING "RPM package license.")
+      set(CPACK_RPM_PACKAGE_VENDOR ${VIEWER_CHANNEL}
+        CACHE STRING "RPM package vendor.")
+      set(CPACK_RPM_PACKAGE_URL https://${VIEWER_PACKAGE_DOMAIN_NAME}
+        CACHE STRING "RPM package URL.")
+      set(CPACK_RPM_PACKAGE_DESCRIPTION ${VIEWER_PACKAGE_DESCRIPTION}
+        CACHE STRING "RPM package description.")
+      if (${LINUX_DISTRO} MATCHES fedora)
+        set(CPACK_RPM_PACKAGE_REQUIRES "apr-util, boost-fiber, boost-program-options, boost-regex, boost-thread, boost-url, expat, fltk, mesa-libGLU, hunspell, libnghttp2, openjpeg2, SDL2, vlc-libs, vlc-plugins-base, libvorbis"
+          CACHE STRING "RPM package requirements.")
+      else ()
+        set(CPACK_RPM_PACKAGE_REQUIRES "libapr-util1-0, libboost_fiber1_87_0, libboost_program_options1_87_0, libboost_regex1_87_0, libboost_thread1_87_0, libboost_url1_87_0, libboost_url1_87_0-x86-64-v3, expat, libfltk1_3, libGLU1, libhunspell-1_7-0, libnghttp2-14, openjpeg2, libSDL2-2_0-0, libvlc5, vlc-codecs, libvorbis0"
+          CACHE STRING "RPM package requirements.")
+      endif ()
+    endif ()
+  endif (PACKAGE)
+
+  if (FALSE)
   set(product SecondLife-${ARCH}-${VIEWER_SHORT_VERSION}.${VIEWER_VERSION_REVISION})
 
   # These are the generated targets that are copied to package/
@@ -2285,8 +2281,9 @@ if (LINUX)
     add_dependencies(llpackage copy_l_viewer_manifest)
     check_message_template(llpackage)
   endif (PACKAGE)
-  endif (USESYSTEMLIBS)
-elseif (USESYSTEMLIBS)
+  endif (FALSE)
+
+else (LINUX)
   add_custom_command(
     TARGET ${VIEWER_BINARY_NAME} POST_BUILD
     COMMAND sed
@@ -2314,20 +2311,18 @@ elseif (USESYSTEMLIBS)
       CACHE STRING "FreeBSD package comment.")
     set(CPACK_FREEBSD_PACKAGE_DESCRIPTION ${VIEWER_PACKAGE_DESCRIPTION}
       CACHE STRING "FreeBSD package description.")
-    set(CPACK_FREEBSD_PACKAGE_WWW
-      https://${VIEWER_PACKAGE_DOMAIN_NAME}
+    set(CPACK_FREEBSD_PACKAGE_WWW https://${VIEWER_PACKAGE_DOMAIN_NAME}
       CACHE STRING "FreeBSD package WWW.")
     set(CPACK_FREEBSD_PACKAGE_LICENSE LGPL21
       CACHE STRING "FreeBSD package license.")
-    set(CPACK_FREEBSD_PACKAGE_MAINTAINER
-      $ENV{USER}@${VIEWER_PACKAGE_DOMAIN_NAME}
+    set(CPACK_FREEBSD_PACKAGE_MAINTAINER $ENV{USER}@${VIEWER_PACKAGE_DOMAIN_NAME}
       CACHE STRING "FreeBSD package maintainer.")
     set(CPACK_FREEBSD_PACKAGE_ORIGIN net/${VIEWER_BINARY_NAME}
       CACHE STRING "FreeBSD package origin.")
-    set(CPACK_FREEBSD_PACKAGE_DEPS
-      "audio/freealut;graphics/libGLU;textproc/hunspell;misc/meshoptimizer;archivers/minizip;www/libnghttp2;multimedia/vlc;audio/libvorbis"
+    set(CPACK_FREEBSD_PACKAGE_DEPS "audio/freealut;devel/apr;devel/boost-libs;x11-toolkits/fltk;textproc/hunspell;misc/meshoptimizer;archivers/minizip;www/libnghttp2;graphics/openjpeg;devel/sdl2;multimedia/vlc;audio/libvorbis"
       CACHE STRING "FreeBSD package dependencies.")
-  endif (CMAKE_SYSTEM_NAME MATCHES FreeBSD AND PACKAGE)
+  endif ()
+
 endif (LINUX)
 
 if (DARWIN)
@@ -2372,12 +2367,12 @@ if (DARWIN)
      "${VIEWER_APP_BUNDLE}/Contents/Info.plist"
     )
 
- if (USESYSTEMLIBS)
   configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/English.lproj/InfoPlist.strings
     ${CMAKE_CURRENT_BINARY_DIR}/InfoPlist.strings
     )
- else (USESYSTEMLIBS)
+
+  if (FALSE)
   add_custom_command(
     TARGET ${VIEWER_BINARY_NAME} POST_BUILD
     COMMAND ${PYTHON_EXECUTABLE}
@@ -2402,11 +2397,11 @@ if (DARWIN)
       ${VIEWER_BINARY_NAME}
       ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
     )
- endif (USESYSTEMLIBS)
+  endif ()
 
- if (ENABLE_MEDIA_PLUGINS)
+  if (ENABLE_MEDIA_PLUGINS)
   add_dependencies(${VIEWER_BINARY_NAME} SLPlugin media_plugin_libvlc media_plugin_cef)
- endif ()
+  endif ()
 
   if (ENABLE_SIGNING)
       set(SIGNING_SETTING "--signature=${SIGNING_IDENTITY}")
@@ -2415,26 +2410,22 @@ if (DARWIN)
   endif (ENABLE_SIGNING)
 
   if (PACKAGE)
-    if (USESYSTEMLIBS)
-      set(CPACK_DMG_VOLUME_NAME "${product} Installer"
-        CACHE STRING "Disk image volume name.")
-      set(CPACK_DMG_FORMAT UDRW CACHE STRING "Disk image format.")
-      set(CPACK_DMG_DS_STORE
-        ${CMAKE_CURRENT_SOURCE_DIR}/installers/darwin/release-dmg/_DS_Store
-        CACHE STRING "Disk image .DS_Store file.")
-      set(CPACK_DMG_DS_STORE_SETUP_SCRIPT
-        ${CMAKE_CURRENT_SOURCE_DIR}/installers/darwin/dmg-cleanup.applescript
-        CACHE STRING "Disk image AppleScript file.")
-      set(CPACK_DMG_BACKGROUND_IMAGE
-        ${CMAKE_CURRENT_SOURCE_DIR}/installers/darwin/release-dmg/background.jpg
-        CACHE STRING "Disk image background image.")
-      set(CPACK_BUNDLE_NAME ${product} CACHE STRING "Bundle name.")
-      set(CPACK_BUNDLE_PLIST ${VIEWER_APP_BUNDLE}/Contents/Info.plist
-        CACHE STRING "Bundle Property List file.")
-      set(CPACK_BUNDLE_ICON ${CMAKE_CURRENT_SOURCE_DIR}/secondlife.icns
-        CACHE STRING "Bundle icon file.")
+    set(CPACK_DMG_VOLUME_NAME "${product} Installer"
+      CACHE STRING "Disk image volume name.")
+    set(CPACK_DMG_FORMAT UDRW CACHE STRING "Disk image format.")
+    set(CPACK_DMG_DS_STORE ${CMAKE_CURRENT_SOURCE_DIR}/installers/darwin/release-dmg/_DS_Store
+      CACHE STRING "Disk image .DS_Store file.")
+    set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/installers/darwin/dmg-cleanup.applescript
+      CACHE STRING "Disk image AppleScript file.")
+    set(CPACK_DMG_BACKGROUND_IMAGE ${CMAKE_CURRENT_SOURCE_DIR}/installers/darwin/release-dmg/background.jpg
+      CACHE STRING "Disk image background image.")
+    set(CPACK_BUNDLE_NAME ${product} CACHE STRING "Bundle name.")
+    set(CPACK_BUNDLE_PLIST ${VIEWER_APP_BUNDLE}/Contents/Info.plist
+      CACHE STRING "Bundle Property List file.")
+    set(CPACK_BUNDLE_ICON ${CMAKE_CURRENT_SOURCE_DIR}/secondlife.icns
+      CACHE STRING "Bundle icon file.")
 
-    else (USESYSTEMLIBS)
+    if (FALSE)
       add_custom_target(llpackage ALL DEPENDS ${VIEWER_BINARY_NAME})
 
       add_custom_command(
@@ -2460,16 +2451,16 @@ if (DARWIN)
         DEPENDS
           ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
       )
-    endif (USESYSTEMLIBS)
+    endif ()
   endif (PACKAGE)
 endif (DARWIN)
 
 if (INSTALL)
   include(${CMAKE_CURRENT_SOURCE_DIR}/ViewerInstall.cmake)
 endif (INSTALL)
-if (PACKAGE AND USESYSTEMLIBS)
+if (PACKAGE)
   include(CPack)
-endif (PACKAGE AND USESYSTEMLIBS)
+endif ()
 
 if (PACKAGE AND (RELEASE_CRASH_REPORTING OR NON_RELEASE_CRASH_REPORTING) AND VIEWER_SYMBOL_FILE)
   if (USE_BUGSPLAT)

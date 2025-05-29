@@ -28,9 +28,9 @@
 #include "llimagej2coj.h"
 
 // this is defined so that we get static linking.
-#include <openjpeg/openjpeg.h>
-#include <openjpeg/event.h>
-#include <openjpeg/cio.h>
+#include <openjpeg-2.5/openjpeg.h>
+#include <openjpeg-2.5/event.h>
+#include <openjpeg-2.5/cio.h>
 
 #define MAX_ENCODED_DISCARD_LEVELS 5
 
@@ -617,6 +617,7 @@ public:
         for (S32 c = 0; c < numcomps; c++)
         {
             cmptparm[c].prec = 8;
+            cmptparm[c].bpp = 8;
             cmptparm[c].sgnd = 0;
             cmptparm[c].dx = parameters.subsampling_dx;
             cmptparm[c].dy = parameters.subsampling_dy;

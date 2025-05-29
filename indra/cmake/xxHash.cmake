@@ -6,10 +6,8 @@ set (XXHASH_CMAKE_INCLUDED TRUE)
 
 include(Prebuilt)
 
-if (USESYSTEMLIBS)
-  include(FindPkgConfig)
-  pkg_check_modules(Xxhash REQUIRED libxxhash)
-  return ()
-endif ()
+include(FindPkgConfig)
+pkg_check_modules(Xxhash REQUIRED libxxhash)
+return ()
 
 use_prebuilt_binary(xxhash)

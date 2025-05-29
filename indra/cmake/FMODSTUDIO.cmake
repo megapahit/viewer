@@ -30,7 +30,7 @@ if (USE_FMODSTUDIO)
     # Note: if you're not using INSTALL_PROPRIETARY, the package URL should be local (file:/// URL)
     # as accessing the private LL location will fail if you don't have the credential
     include(Prebuilt)
-    if (USESYSTEMLIBS AND (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/fmodstudio_installed OR NOT ${fmodstudio_installed} EQUAL 0))
+    if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/fmodstudio_installed OR NOT ${fmodstudio_installed} EQUAL 0)
       file(MAKE_DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE})
       if (DARWIN)
         execute_process(
@@ -62,7 +62,7 @@ if (USE_FMODSTUDIO)
           RESULT_VARIABLE fmodstudio_installed
           )
         file(WRITE ${PREBUILD_TRACKING_DIR}/fmodstudio_installed "${fmodstudio_installed}")
-      else (DARWIN)
+      else ()
         file(ARCHIVE_EXTRACT
           INPUT $ENV{HOME}/Downloads/fmodstudioapi20228linux.tar.gz
           DESTINATION ${CMAKE_BINARY_DIR}
@@ -97,12 +97,12 @@ if (USE_FMODSTUDIO)
             DESTINATION ${ARCH_PREBUILT_DIRS_RELEASE}
             FOLLOW_SYMLINK_CHAIN
             )
-        endif (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+        endif ()
         file(WRITE ${PREBUILD_TRACKING_DIR}/fmodstudio_installed "0")
-      endif (DARWIN)
-    else (USESYSTEMLIBS AND (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/fmodstudio_installed OR NOT ${fmodstudio_installed} EQUAL 0))
-    use_prebuilt_binary(fmodstudio)
-    endif (USESYSTEMLIBS AND (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/fmodstudio_installed OR NOT ${fmodstudio_installed} EQUAL 0))
+      endif ()
+    endif ()
+
+    #use_prebuilt_binary(fmodstudio)
     if (WINDOWS)
       target_link_libraries( ll::fmodstudio INTERFACE  fmod_vc)
     elseif (DARWIN)

@@ -32,11 +32,7 @@
 
 #include "mikktspace/mikktspace.hh"
 
-#if LL_USESYSTEMLIBS
 #include <meshoptimizer.h>
-#else
-#include "meshoptimizer/meshoptimizer.h"
-#endif
 
 
 using namespace LL::GLTF;

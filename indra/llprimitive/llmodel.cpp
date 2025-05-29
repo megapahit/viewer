@@ -33,7 +33,7 @@
 #include "llvector4a.h"
 #include "hbxxh.h"
 
-#ifdef LL_USESYSTEMLIBS
+#if 1
 # include <zlib.h>
 #else
 # include "zlib-ng/zlib.h"
