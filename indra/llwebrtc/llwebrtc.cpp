@@ -432,9 +432,7 @@ void ll_set_device_module_capture_device(rtc::scoped_refptr<webrtc::AudioDeviceM
     // has it at 0
     device_module->SetRecordingDevice(device + 1);
 #endif
-    device_module->SetStereoRecording(false);
     device_module->InitMicrophone();
-    device_module->InitRecording();
 }
 
 void LLWebRTCImpl::setCaptureDevice(const std::string &id)
@@ -475,6 +473,8 @@ void LLWebRTCImpl::setCaptureDevice(const std::string &id)
                 ll_set_device_module_capture_device(mPeerDeviceModule, recordingDevice);
                 if (recording)
                 {
+                    mPeerDeviceModule->SetStereoRecording(false);
+                    mPeerDeviceModule->InitRecording();
                     mPeerDeviceModule->StartRecording();
                 }
             });
@@ -496,9 +496,7 @@ void ll_set_device_module_render_device(rtc::scoped_refptr<webrtc::AudioDeviceMo
 #else
     device_module->SetPlayoutDevice(device + 1);
 #endif
-    device_module->SetStereoPlayout(true);
     device_module->InitSpeaker();
-    device_module->InitPlayout();
 }
 
 void LLWebRTCImpl::setRenderDevice(const std::string &id)
@@ -542,6 +540,8 @@ void LLWebRTCImpl::setRenderDevice(const std::string &id)
                 ll_set_device_module_render_device(mPeerDeviceModule, playoutDevice);
                 if (playing)
                 {
+                    mPeerDeviceModule->SetStereoPlayout(true);
+                    mPeerDeviceModule->InitPlayout();
                     mPeerDeviceModule->StartPlayout();
                 }
             });
