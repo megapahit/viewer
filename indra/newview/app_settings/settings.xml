@@ -14980,7 +14980,7 @@
         <key>Comment</key>
         <string>Avatar follows cursor with avatars eyes, when disabled, avatar will look forward</string>
         <key>Persist</key>
-        <integer>0</integer>
+        <integer>1</integer>
         <key>Type</key>
         <string>Boolean</string>
         <key>Value</key>
