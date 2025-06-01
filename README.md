@@ -54,7 +54,7 @@ $ megapahit
 
 ### FreeBSD
 ```
-$ sudo su -
+$ su -
 # portmaster devel/cmake devel/pkgconf audio/freealut devel/apr1 devel/boost-libs x11-toolkits/fltk math/glm textproc/hunspell misc/meshoptimizer archivers/minizip graphics/nanosvg www/libnghttp2 graphics/openjpeg devel/sdl20 multimedia/vlc audio/libvorbis devel/xxhash
 # exit
 $ setenv LL_BUILD "-O3 -std=c++20 -fPIC"
@@ -75,6 +75,7 @@ $ megapahit
 ### Gentoo
 ```
 $ su -
+# emerge -a eselect-repository
 # eselect repository add megapahit git git://megapahit.org/ebuild.git
 # emaint sync -r megapahit
 # emerge -a megapahit
