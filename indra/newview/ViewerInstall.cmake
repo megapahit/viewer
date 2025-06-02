@@ -90,16 +90,6 @@ install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${VIEWER_BINARY_NAME}
         DESTINATION bin
         )
 
-if (${LINUX_DISTRO} MATCHES arch)
-     install(PROGRAMS linux_tools/launch_url.sh
-          DESTINATION lib/${VIEWER_BINARY_NAME}
-          )
-else (${LINUX_DISTRO} MATCHES arch)
-    install(PROGRAMS linux_tools/launch_url.sh
-          DESTINATION libexec/${VIEWER_BINARY_NAME}
-          )
-endif (${LINUX_DISTRO} MATCHES arch)
-
 if (LINUX)
         if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
                 set(_LIB lib/${ARCH}-linux-gnu)
