@@ -15,12 +15,7 @@
 #include "llexception.h"
 // STL headers
 // std headers
-#include <iomanip>
-#include <sstream>
 #include <typeinfo>
-#if LL_WINDOWS
-#include <excpt.h>
-#endif // LL_WINDOWS
 // external library headers
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/exception/error_info.hpp>
@@ -34,6 +29,7 @@
 // On Windows, header-only implementation causes macro collisions -- use
 // prebuilt library
 #define BOOST_STACKTRACE_LINK
+#include <excpt.h>
 #endif // LL_WINDOWS
 
 #include <boost/stacktrace.hpp>
@@ -98,34 +94,15 @@ void annotate_exception_(boost::exception& exc)
 
 // For windows SEH exception handling we sometimes need a filter that will
 // separate C++ exceptions from C SEH exceptions
-static constexpr U32 STATUS_MSC_EXCEPTION = 0xE06D7363; // compiler specific
-static constexpr U32 STATUS_STACK_FULL    = 0xC00000FD;
+static const U32 STATUS_MSC_EXCEPTION = 0xE06D7363; // compiler specific
 
-U32 ll_seh_filter(
-    std::string& stacktrace,
-    std::function<U32(U32, struct _EXCEPTION_POINTERS*)> filter,
-    U32 code,
-    struct _EXCEPTION_POINTERS* exception_infop)
+U32 msc_exception_filter(U32 code, struct _EXCEPTION_POINTERS *exception_infop)
 {
-    // By the time the handler gets control, the stack has been unwound,
-    // so report the stack trace now at filter() time.
-    // Even though stack overflow is a problem we would very much like to
-    // diagnose, calling another function when the stack is already blown only
-    // terminates us faster.
-    if (code == STATUS_STACK_FULL)
-    {
-        stacktrace = "(stack overflow, no traceback)";
-    }
-    else
-    {
-        stacktrace = boost::stacktrace::stacktrace().to_string();
-    }
-    
-    return filter(code, exception_infop);
-}
+    const auto stack = to_string(boost::stacktrace::stacktrace());
+    LL_WARNS() << "SEH Exception handled (that probably shouldn't be): Code " << code
+        << "\n Stack trace: \n"
+        << stack << LL_ENDL;
 
-U32 seh_filter(U32 code, struct _EXCEPTION_POINTERS*)
-{
     if (code == STATUS_MSC_EXCEPTION)
     {
         // C++ exception, go on
@@ -133,20 +110,9 @@ U32 seh_filter(U32 code, struct _EXCEPTION_POINTERS*)
     }
     else
     {
-        // This is a non-C++ exception, e.g. hardware check.
+        // handle it
         return EXCEPTION_EXECUTE_HANDLER;
     }
-}
-
-void seh_rethrow(U32 code, const std::string& stacktrace)
-{
-    std::ostringstream out;
-    out << "Windows exception 0x" << std::hex << code;
-    if (! stacktrace.empty())
-    {
-        out << '\n' << stacktrace;
-    }
-    LLTHROW(Windows_SEH_exception(out.str()));
 }
 
 #endif //LL_WINDOWS

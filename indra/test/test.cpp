@@ -36,7 +36,6 @@
 
 #include "linden_common.h"
 #include "llerrorcontrol.h"
-#include "llexception.h"
 #include "lltut.h"
 #include "chained_callback.h"
 #include "stringize.h"
@@ -56,6 +55,13 @@
 
 #include <boost/iostreams/tee.hpp>
 #include <boost/iostreams/stream.hpp>
+
+// On Mac, got:
+// #error "Boost.Stacktrace requires `_Unwind_Backtrace` function. Define
+// `_GNU_SOURCE` macro or `BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED` if
+// _Unwind_Backtrace is available without `_GNU_SOURCE`."
+#define BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
+#include <boost/stacktrace.hpp>
 
 #include <fstream>
 
@@ -506,6 +512,64 @@ void wouldHaveCrashed(const std::string& message)
 
 static LLTrace::ThreadRecorder* sMasterThreadRecorder = NULL;
 
+// this is used in platform-generic code -- define outside #if LL_WINDOWS
+struct Windows_SEH_exception: public std::runtime_error
+{
+    Windows_SEH_exception(const std::string& what): std::runtime_error(what) {}
+};
+
+#if LL_WINDOWS
+
+static constexpr U32 STATUS_MSC_EXCEPTION = 0xE06D7363; // compiler specific
+static constexpr U32 STATUS_STACK_FULL    = 0xC00000FD;
+
+U32 seh_filter(U32 code, struct _EXCEPTION_POINTERS*)
+{
+    if (code == STATUS_MSC_EXCEPTION)
+    {
+        // C++ exception, go on -- but TUT is supposed to have caught those already?!
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+    else
+    {
+        // This is a non-C++ exception, e.g. hardware check.
+        // By the time the handler gets control, the stack has been unwound,
+        // so report the stack trace now at filter() time.
+        // Sadly, even though, at the time of this writing, stack overflow is
+        // the problem we would most like to diagnose, calling another
+        // function when the stack is already blown only terminates us faster.
+        if (code != STATUS_STACK_FULL)
+        {
+            std::cerr << boost::stacktrace::stacktrace() << std::endl;
+        }
+        // pass control into the handler block
+        return EXCEPTION_EXECUTE_HANDLER;
+    }
+}
+
+template <typename CALLABLE0, typename CALLABLE1>
+void seh_catcher(CALLABLE0&& trycode, CALLABLE1&& handler)
+{
+    __try
+    {
+        trycode();
+    }
+    __except (seh_filter(GetExceptionCode(), GetExceptionInformation()))
+    {
+        handler(GetExceptionCode());
+    }
+}
+
+#else  // not LL_WINDOWS
+
+template <typename CALLABLE0, typename CALLABLE1>
+void seh_catcher(CALLABLE0&& trycode, CALLABLE1&&)
+{
+    trycode();
+}
+
+#endif // not LL_WINDOWS
+
 int main(int argc, char **argv)
 {
     ll_init_apr();
@@ -652,7 +716,7 @@ int main(int argc, char **argv)
             }
         },
         // __except
-        [mycallback](U32 code, const std::string& /*stacktrace*/)
+        [mycallback](U32 code)
         {
             static std::map<U32, const char*> codes = {
                 { 0xC0000005, "Access Violation" },
