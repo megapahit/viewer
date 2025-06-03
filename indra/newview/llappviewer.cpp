@@ -131,10 +131,12 @@
 #include "stringize.h"
 #include "llcoros.h"
 #include "llexception.h"
+#if !LL_WINDOWS
 #if LL_DARWIN || LL_LINUX || __FreeBSD__
 #include "cef/dullahan_version.h"
-#endif
+#endif // LL_DARWIN || LL_LINUX || __FreeBSD__
 #include "vlc/libvlc_version.h"
+#endif // !LL_WINDOWS
 
 #if LL_DARWIN
 #if LL_SDL
@@ -3461,7 +3463,7 @@ LLSD LLAppViewer::getViewerInfo() const
     info["LIBCEF_VERSION"] = "Undefined";
 #endif
 
-//#if !LL_LINUX
+#if !LL_WINDOWS
     std::ostringstream vlc_ver_codec;
     vlc_ver_codec << LIBVLC_VERSION_MAJOR;
     vlc_ver_codec << ".";
@@ -3469,11 +3471,9 @@ LLSD LLAppViewer::getViewerInfo() const
     vlc_ver_codec << ".";
     vlc_ver_codec << LIBVLC_VERSION_REVISION;
     info["LIBVLC_VERSION"] = vlc_ver_codec.str();
-/*
 #else
     info["LIBVLC_VERSION"] = "Undefined";
 #endif
-*/
 
     S32 packets_in = (S32)LLViewerStats::instance().getRecording().getSum(LLStatViewer::PACKETS_IN);
     if (packets_in > 0)
