@@ -2045,8 +2045,9 @@ endif()
 set(ARTWORK_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE PATH
     "Path to artwork files.")
 
-set_source_files_properties(llinventorygallery.cpp PROPERTIES COMPILE_FLAGS
-    -Wno-unused-but-set-variable)
+if (NOT WINDOWS)
+    set_source_files_properties(llinventorygallery.cpp PROPERTIES COMPILE_FLAGS -Wno-unused-but-set-variable)
+endif ()
 if (CMAKE_CXX_COMPILER_ID MATCHES Clang)
     set_source_files_properties(llappviewerlinux.cpp PROPERTIES
         COMPILE_FLAGS -Wno-dangling-gsl
