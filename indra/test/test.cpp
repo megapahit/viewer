@@ -638,7 +638,7 @@ int main(int argc, char **argv)
     // a chained_callback subclass must be linked with previous
     mycallback->link();
 
-    LL::seh::catcher(
+    seh_catcher(
         // __try
         [test_group]
         {
