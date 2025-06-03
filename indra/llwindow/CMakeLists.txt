@@ -55,6 +55,7 @@ set(llwindow_LINK_LIBRARIES
         llfilesystem
         llxml
         ll::glm
+        ll::glext
         ll::uilibraries
         ll::SDL
         )

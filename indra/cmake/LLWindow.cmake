@@ -1,7 +1,7 @@
 # -*- cmake -*-
 
 include(Variables)
-include(GLH)
+include(GLEXT)
 include(Prebuilt)
 
 include_guard()
