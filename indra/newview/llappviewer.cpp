@@ -1544,7 +1544,15 @@ bool LLAppViewer::doFrame()
 
             if(fpsLimitSleepFor)
             {
+#if LL_WINDOWS
+                U64 time1 = 0, time2 = 0;
+                QueryPerformanceCounter((LARGE_INTEGER *)&time1);
+                do {
+                    QueryPerformanceCounter((LARGE_INTEGER *)&time2);
+                } while ((time2-time1) < fpsLimitSleepFor);
+#else
                 usleep(fpsLimitSleepFor);
+#endif
             }
 
             // yield some time to the os based on command line option
