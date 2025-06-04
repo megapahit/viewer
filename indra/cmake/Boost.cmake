@@ -4,40 +4,38 @@ include(Prebuilt)
 include_guard()
 
 add_library( ll::boost INTERFACE IMPORTED )
+
+if (DARWIN)
+  target_include_directories( ll::boost SYSTEM INTERFACE /opt/local/libexec/boost/1.87/include)
+  target_link_directories( ll::boost INTERFACE /opt/local/libexec/boost/1.87/lib)
+  set(sfx -mt)
+elseif (WINDOWS)
+  target_include_directories( ll::boost SYSTEM INTERFACE ${prefix_result}/../include)
+  target_link_directories( ll::boost INTERFACE ${prefix_result})
+  set(sfx -vc143-mt-x64-1_88)
+else ()
+  find_package( Boost REQUIRED )
+endif ()
+target_link_libraries( ll::boost INTERFACE
+  boost_context${sfx}
+  boost_fiber${sfx}
+  boost_filesystem${sfx}
+  boost_program_options${sfx}
+  boost_regex${sfx}
+  boost_system${sfx}
+  boost_thread${sfx}
+  boost_url${sfx}
+  )
+target_compile_definitions( ll::boost INTERFACE BOOST_BIND_GLOBAL_PLACEHOLDERS )
+return()
+
 if( USE_CONAN )
   target_link_libraries( ll::boost INTERFACE CONAN_PKG::boost )
   target_compile_definitions( ll::boost INTERFACE BOOST_ALLOW_DEPRECATED_HEADERS BOOST_BIND_GLOBAL_PLACEHOLDERS )
   return()
 endif()
 
-if (WINDOWS)
 use_prebuilt_binary(boost)
-  target_include_directories( ll::boost SYSTEM INTERFACE ${LIBS_PREBUILT_DIR}/include)
-else ()
-  if (DARWIN)
-    target_include_directories( ll::boost SYSTEM INTERFACE /opt/local/libexec/boost/1.87/include)
-    target_link_directories( ll::boost INTERFACE /opt/local/libexec/boost/1.87/lib)
-    set(sfx -mt)
-  elseif (WINDOWS)
-    target_include_directories( ll::boost SYSTEM INTERFACE ${prefix_result}/../include)
-    target_link_directories( ll::boost INTERFACE ${prefix_result})
-    set(sfx -vc143-mt-x64-1_88)
-  else ()
-    find_package( Boost REQUIRED )
-  endif ()
-  target_link_libraries( ll::boost INTERFACE
-    boost_context${sfx}
-    boost_fiber${sfx}
-    boost_filesystem${sfx}
-    boost_program_options${sfx}
-    boost_regex${sfx}
-    boost_system${sfx}
-    boost_thread${sfx}
-    boost_url${sfx}
-    )
-  target_compile_definitions( ll::boost INTERFACE BOOST_BIND_GLOBAL_PLACEHOLDERS )
-  return()
-endif ()
 
 # As of sometime between Boost 1.67 and 1.72, Boost libraries are suffixed
 # with the address size.
