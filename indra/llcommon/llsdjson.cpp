@@ -35,7 +35,7 @@
 #include "llerror.h"
 #include "../llmath/llmath.h"
 
-#include <boost/json/src.hpp>
+#include <boost/json.hpp>
 
 //=========================================================================
 LLSD LlsdFromJson(const boost::json::value& val)

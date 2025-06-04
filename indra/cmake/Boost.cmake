@@ -20,6 +20,7 @@ target_link_libraries( ll::boost INTERFACE
   boost_context${sfx}
   boost_fiber${sfx}
   boost_filesystem${sfx}
+  boost_json${sfx}
   boost_program_options${sfx}
   boost_regex${sfx}
   boost_system${sfx}
