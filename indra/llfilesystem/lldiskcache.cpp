@@ -159,7 +159,11 @@ void LLDiskCache::purge()
         }
         if (should_remove)
         {
+#if LL_WINDOWS
+            boost::filesystem::remove(utf8str_to_utf16str(entry.second.second), ec);
+#else
             boost::filesystem::remove(entry.second.second, ec);
+#endif
             if (ec.failed())
             {
                 LL_WARNS() << "Failed to delete cache file " << entry.second.second << ": " << ec.message() << LL_ENDL;

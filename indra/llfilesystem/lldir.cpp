@@ -121,7 +121,11 @@ std::vector<std::string> LLDir::getFilesInDir(const std::string &dirname)
             {
                 if (boost::filesystem::is_regular_file(dir_itr->status()))
                 {
+#if LL_WINDOWS
+                    v.push_back(utf16str_to_utf8str(dir_itr->path().filename().wstring()));
+#else
                     v.push_back(dir_itr->path().filename().string());
+#endif
                 }
             }
         }
