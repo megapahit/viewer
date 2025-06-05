@@ -20,13 +20,14 @@ target_link_libraries( ll::boost INTERFACE
   boost_context${sfx}
   boost_fiber${sfx}
   boost_filesystem${sfx}
-  boost_json${sfx}
   boost_program_options${sfx}
   boost_system${sfx}
   boost_thread${sfx}
   boost_url${sfx}
   )
-if (NOT WINDOWS)
+if (WINDOWS)
+  target_link_libraries( ll::boost INTERFACE boost_json${sfx})
+else ()
   target_link_libraries( ll::boost INTERFACE boost_regex${sfx})
 endif ()
 target_compile_definitions( ll::boost INTERFACE BOOST_BIND_GLOBAL_PLACEHOLDERS )

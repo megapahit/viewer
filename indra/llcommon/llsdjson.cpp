@@ -35,7 +35,11 @@
 #include "llerror.h"
 #include "../llmath/llmath.h"
 
+#if LL_WINDOWS
 #include <boost/json.hpp>
+#else
+#include <boost/json/src.hpp>
+#endif
 
 //=========================================================================
 LLSD LlsdFromJson(const boost::json::value& val)
