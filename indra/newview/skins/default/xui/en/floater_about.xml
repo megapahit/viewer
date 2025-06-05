@@ -81,30 +81,30 @@
           top="0"
           width="435"
           wrap="true">
-Megapahit is brought to you by (in order of appearance):
+Megapahit is brought to you by:
       </text>
       <text_editor
-        enabled="false"
-        font="Monospace"
-        follows="top|left"
-        height="200"
-        bg_readonly_color="Transparent"
-        left="5"
-        text_color="LtGray"
-        max_length="65536"
-        top_pad="5"
-        width="475"
-        word_wrap="false">
-        Erik Kundiman                 EmilyAmiee
-        LinneNoir                     Bavid Dailey
-        milo (observeur)              Aria (Tashia Redrose)
-        Fritigern Gothly              Cate (32a)
-        Kou Ayashi                    Hiroo Ono
-        Hadet Sonnenkern              Melodey
-        Remmy (Secret Foxtail)        Keysin (scoutkeysin)
-        Eris Ravenwood                Yikes Lopez
-        gwigz (nya)                   ~ ( ^-^ ) ~ (cutie_qu)
-      </text_editor>
+       enabled="false"
+       font="Monospace"
+       follows="top|left"
+       height="200"
+       bg_readonly_color="Transparent"
+       left="5"
+       text_color="LtGray"
+       max_length="65536"
+       top_pad="5"
+       width="475"
+       word_wrap="false">
+Erik Kundiman                 EmilyAmiee
+LinneNoir                     Bavid Dailey
+milo (observeur)              Aria (Tashia Redrose)
+Fritigern Gothly              Cate (32a)
+Kou Ayashi                    Hiroo Ono
+Hadet Sonnenkern              Melodey
+Remmy (Secret Foxtail)        Keysin (scoutkeysin)
+Eris Ravenwood                Yikes Lopez
+gwigz (nya)                   ~ ( ^-^ ) ~ (cutie_qu)
+    </text_editor>
     <text
           follows="top|left"
           font.style="BOLD"
@@ -114,7 +114,7 @@ Megapahit is brought to you by (in order of appearance):
           top_pad="5"
           width="465"
           wrap="true">
-with special thanks to (in order of appearance):
+with special thanks to:
       </text>
 <text_editor
        enabled="false"
@@ -128,12 +128,12 @@ with special thanks to (in order of appearance):
        top_pad="5"
        width="450"
        word_wrap="true">
-Chorazin Allen and Nicky Perian for involving Erik Kundiman in viewer developments;
-JenniWindrider for the pre-MP donation that was used to help build the website;
-Vir Linden for making it possible for the project to have a place (in every sense of the word) in SL;
-nutsobvious for the early testing and video proof;
-Soft Linden for the security testing; and
-Kyle Linden for selling TPV parcel 2 to Erik Kundiman at L$0 price.
+Chorazin Allen and Nicky Perian - Involving Erik Kundiman in viewer development
+JenniWindrider - Pre-MP donation used to help build the website
+Vir Linden - Making it possible for the project to have a place in SL
+nutsobvious - Early testing and video proof
+Soft Linden - Security testing
+Kyle Linden - Giving TPV parcel 2 to Erik Kundiman
     </text_editor>
     </panel>
   </accordion_tab>
@@ -189,7 +189,7 @@ Dummy Name replaced at run time
       <text_editor
        enabled="false"
        follows="left|top"
-       height="375"
+       height="400"
        bg_readonly_color="Transparent"
        left="5"
        text_color="LtGray"
