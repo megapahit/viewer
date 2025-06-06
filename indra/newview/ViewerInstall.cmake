@@ -84,6 +84,78 @@ if (DARWIN)
     endif (PACKAGE)
     install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/FixBundle.cmake)
 
+elseif (WINDOWS)
+
+    install(DIRECTORY
+        app_settings
+        character
+        fonts
+        skins
+        DESTINATION .
+        )
+
+    install(FILES
+        ${AUTOBUILD_INSTALL_DIR}/ca-bundle.crt
+        cube.dae
+        featuretable.txt
+        DESTINATION .
+        )
+
+    install(FILES
+        licenses-win32.txt
+        RENAME licenses.txt
+        DESTINATION .
+        )
+
+    install(FILES
+        ${SCRIPTS_DIR}/messages/message_template.msg
+        ${SCRIPTS_DIR}/../etc/message.xml
+        ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
+        DESTINATION app_settings
+        )
+
+    install(DIRECTORY
+        ${AUTOBUILD_INSTALL_DIR}/dictionaries
+        DESTINATION app_settings
+        )
+
+    install(
+        PROGRAMS
+            ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/${VIEWER_BINARY_NAME}.exe
+            ${prefix_result}/../bin/OpenAL32.dll
+            ${prefix_result}/../bin/alut.dll
+            ${prefix_result}/../bin/boost_context-vc143-mt-x${ADDRESS_SIZE}-1_88.dll
+            ${prefix_result}/../bin/boost_fiber-vc143-mt-x${ADDRESS_SIZE}-1_88.dll
+            ${prefix_result}/../bin/boost_filesystem-vc143-mt-x${ADDRESS_SIZE}-1_88.dll
+            ${prefix_result}/../bin/boost_json-vc143-mt-x${ADDRESS_SIZE}-1_88.dll
+            ${prefix_result}/../bin/boost_program_options-vc143-mt-x${ADDRESS_SIZE}-1_88.dll
+            ${prefix_result}/../bin/boost_thread-vc143-mt-x${ADDRESS_SIZE}-1_88.dll
+            ${prefix_result}/../bin/boost_url-vc143-mt-x${ADDRESS_SIZE}-1_88.dll
+            ${prefix_result}/../bin/brotlicommon.dll
+            ${prefix_result}/../bin/brotlidec.dll
+            ${prefix_result}/../bin/bz2.dll
+            ${prefix_result}/../bin/fmt.dll
+            ${prefix_result}/../bin/freetype.dll
+            ${prefix_result}/../bin/hunspell-1.7-0.dll
+            ${prefix_result}/../bin/iconv-2.dll
+            ${prefix_result}/../bin/jpeg62.dll
+            ${prefix_result}/../bin/libapr-1.dll
+            ${prefix_result}/../bin/libaprutil-1.dll
+            ${prefix_result}/../bin/libexpat.dll
+            ${prefix_result}/../bin/libpng16.dll
+            ${prefix_result}/../bin/libxml2.dll
+            ${prefix_result}/../bin/meshoptimizer.dll
+            ${prefix_result}/../bin/minizip.dll
+            ${prefix_result}/../bin/nghttp2.dll
+            ${prefix_result}/../bin/ogg.dll
+            ${prefix_result}/../bin/openjp2.dll
+            ${prefix_result}/../bin/vorbis.dll
+            ${prefix_result}/../bin/vorbisenc.dll
+            ${prefix_result}/../bin/vorbisfile.dll
+            ${prefix_result}/../bin/zlib1.dll
+        DESTINATION .
+        )
+
 else (DARWIN)
 
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${VIEWER_BINARY_NAME}

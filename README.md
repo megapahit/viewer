@@ -126,8 +126,10 @@ $ export LL_BUILD="/MD /O2 /Ob2 /std:c++20 /Zc:wchar_t- /Zi /GR /DLL_RELEASE=1 /
 $ export PATH="/c/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin:/c/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin:$VCPKG_ROOT/downloads/tools/msys2/21caed2f81ec917b/mingw64/bin:$VCPKG_ROOT/installed/`uname -m|sed 's/86_//'`-windows/tools/libxml2:$PATH"
 $ export PKG_CONFIG_LIBDIR="$VCPKG_ROOT/installed/`uname -m|sed 's/86_//'`-windows/lib/pkgconfig"
 $ export PYTHON="$VCPKG_ROOT/installed/`uname -m|sed 's/86_//'`-windows/tools/python3/python.exe"
-$ cmake -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=OFF -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=OFF -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=OFF -DPACKAGE:BOOL=OFF -DVS_DISABLE_FATAL_WARNINGS:BOOL=ON ../indra
+$ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=OFF -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=OFF -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=Megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON -DVS_DISABLE_FATAL_WARNINGS:BOOL=ON ../indra
 $ MSBuild.exe Megapahit.sln -p:Configuration=Release
+$ cpack -G NSIS
+$ start Megapahit-`cat newview/viewer_version.txt`-win64.exe
 ```
 
 ## Contribute
