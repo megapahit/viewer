@@ -43,6 +43,7 @@ else ()
       execute_process(
         COMMAND sed -i "s/SHARED/STATIC/" 1.4/CMakeLists.txt
         COMMAND sed -i "/#include <cstdarg>/a #define WIN32" dae/daeUtils.cpp
+        COMMAND sed -i "/using namespace cdom;/a namespace boost{void boost::throw_exception(class std::exception const &){}}" dae/daeURI.cpp
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/src
         )
     else ()
