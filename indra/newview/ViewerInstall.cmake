@@ -156,6 +156,16 @@ elseif (WINDOWS)
         DESTINATION .
         )
 
+    install(
+        PROGRAMS
+            ${prefix_result}/../bin/boost_context-vc143-mt-x${ADDRESS_SIZE}-1_88.dll
+            ${prefix_result}/../bin/boost_fiber-vc143-mt-x${ADDRESS_SIZE}-1_88.dll
+            ${prefix_result}/../bin/libapr-1.dll
+            ${prefix_result}/../bin/libaprutil-1.dll
+            ${prefix_result}/../bin/libexpat.dll
+        DESTINATION llplugin
+        )
+
 else (DARWIN)
 
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${VIEWER_BINARY_NAME}
