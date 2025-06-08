@@ -987,7 +987,7 @@ bool LLAppViewer::init()
         return false;
     }
 
-#if defined(__i386__) || defined(__x86_64__) || defined(__amd64__)
+#if defined(__i386__) || defined(__x86_64__) || defined(__amd64__) || _M_X64
     // Without SSE2 support we will crash almost immediately, warn here.
     if (!gSysCPU.hasSSE2())
     {
