@@ -275,6 +275,9 @@ void LLPluginProcessParent::init(const std::string &launcher_filename, const std
 {
     mProcessParams.executable = launcher_filename;
     mProcessParams.cwd = plugin_dir;
+#if LL_WINDOWS
+    mProcessParams.envs.add(llformat("SYSTEMROOT=%s", getenv("SYSTEMROOT")));
+#endif
     mPluginFile = plugin_filename;
     mPluginDir = plugin_dir;
     mCPUUsage = 0.0f;
