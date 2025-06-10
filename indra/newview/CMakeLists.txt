@@ -1970,6 +1970,8 @@ if (WINDOWS)
       set(CPACK_NSIS_URL_INFO_ABOUT https://${VIEWER_PACKAGE_DOMAIN_NAME})
       set(CPACK_NSIS_CONTACT $ENV{USER}@${VIEWER_PACKAGE_DOMAIN_NAME})
       set(CPACK_NSIS_WELCOME_TITLE "Welcome to ${VIEWER_BINARY_NAME}!")
+      set(CPACK_NSIS_MENU_LINKS Megapahit.exe "Megapahit Viewer")
+      set(CPACK_PACKAGE_INSTALL_DIRECTORY ${VIEWER_BINARY_NAME})
 
       if (FALSE)
       add_custom_command(
