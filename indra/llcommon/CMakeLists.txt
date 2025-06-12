@@ -285,7 +285,7 @@ target_link_libraries(
 target_include_directories(llcommon INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(llcommon PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-if (CMAKE_OSX_ARCHITECTURES MATCHES arm64 OR CMAKE_SYSTEM_PROCESSOR MATCHES aarch64 OR $ENV{MSYSTEM_CARCH} MATCHES aarch64)
+if (CMAKE_OSX_ARCHITECTURES MATCHES arm64 OR CMAKE_SYSTEM_PROCESSOR MATCHES aarch64 OR ($ENV{MSYSTEM_CARCH} MATCHES aarch64))
   if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/sse2neon_installed OR NOT ${sse2neon_installed} EQUAL 0)
     file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/include/sse2neon)
     if (NOT EXISTS ${LIBS_PREBUILT_DIR}/include/sse2neon/sse2neon.h)
