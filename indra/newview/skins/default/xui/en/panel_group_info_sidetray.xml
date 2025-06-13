@@ -203,7 +203,7 @@ background_visible="false"
 			name="button_row_ls"
 			left="6"
 			orientation="horizontal"
-			top_pad="5"
+			top_pad="2"
 			width="297">
 	
 				<layout_panel
