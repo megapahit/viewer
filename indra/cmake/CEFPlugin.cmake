@@ -88,12 +88,10 @@ else (CMAKE_OSX_ARCHITECTURES MATCHES arm64)
 use_prebuilt_binary(dullahan)
 endif (CMAKE_OSX_ARCHITECTURES MATCHES arm64)
 
-if (${LINUX_DISTRO} MATCHES fedora)
-    execute_process(
-        COMMAND patchelf --remove-rpath bin/release/dullahan_host
-        WORKING_DIRECTORY ${LIBS_PREBUILT_DIR}
-        )
-endif (${LINUX_DISTRO} MATCHES fedora)
+execute_process(
+    COMMAND patchelf --remove-rpath bin/release/dullahan_host
+    WORKING_DIRECTORY ${LIBS_PREBUILT_DIR}
+    )
 
 target_include_directories( ll::cef SYSTEM INTERFACE  ${LIBS_PREBUILT_DIR}/include/cef)
 
