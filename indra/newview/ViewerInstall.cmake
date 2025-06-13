@@ -184,7 +184,7 @@ if (LINUX)
             install(FILES
                 ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so
                 ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so.13
-                ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so.13.28
+                ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so.13.29
             DESTINATION ${_LIB})
         endif (USE_FMODSTUDIO)
 endif (LINUX)
