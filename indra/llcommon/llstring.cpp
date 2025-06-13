@@ -260,7 +260,7 @@ S32 utf16str_wstring_length(const llutf16string &utf16str, const S32 utf16_len)
 {
     S32 surrogate_pairs = 0;
     // ... craziness to make gcc happy (llutf16string.c_str() is tweaked on linux):
-    const U16 *const utf16_chars = &(*(utf16str.begin()));
+    const auto *const utf16_chars = &(*(utf16str.begin()));
     S32 i = 0;
     while (i < utf16_len)
     {
