@@ -4,7 +4,7 @@ As a third party maintained fork of the [Second Life][] viewer, which includes A
 
 ## Download
 
-Most people use a pre-built viewer release to access Second Life. macOS, GNU/Linux and FreeBSD builds are
+Most people use a pre-built viewer release to access Second Life. FreeBSD, GNU/Linux, macOS and Windows builds are
 [published on the official website][download]. More experimental viewers, such as release candidates and
 project viewers, would be detailed on the same page, [in-world group][] notices, or [Discord][] server.
 
