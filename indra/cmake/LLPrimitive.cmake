@@ -85,7 +85,7 @@ else ()
       )
     if (WINDOWS)
       execute_process(
-        COMMAND MSBuild.exe ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/Project.sln -p:Configuration=Release
+        COMMAND MSBuild.exe ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/Project.sln -p:Configuration=${CMAKE_BUILD_TYPE}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8
         OUTPUT_VARIABLE colladadom_installed
         )
@@ -98,8 +98,9 @@ else ()
         ${LIBS_PREBUILT_DIR}/include/include
         ${LIBS_PREBUILT_DIR}/include/collada
         )
+      file(MAKE_DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE})
       file(RENAME
-        ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/src/1.4/Release/collada14dom.lib
+        ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/src/1.4/${CMAKE_BUILD_TYPE}/collada14dom.lib
         ${ARCH_PREBUILT_DIRS_RELEASE}/libcollada14dom23-s.lib
         )
     elseif (${COLLADADOM_RESULT})
