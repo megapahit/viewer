@@ -70,6 +70,14 @@
                      width="670">
                       <layout_panel
                        auto_resize="false"
+                       height="30"
+                       layout="topleft"
+                       min_height="30"
+                       name="panel_top_spacer"
+                       width="670">
+                      </layout_panel>
+                      <layout_panel
+                       auto_resize="false"
                        height="100"
                        layout="topleft"
                        min_height="100"
@@ -133,6 +141,30 @@
                          top="7"
                          right="-90"
                          word_wrap="true"/>
+                      </layout_panel>
+                      <layout_panel
+                       auto_resize="false"
+                       height="40"
+                       layout="topleft"
+                       min_height="40"
+                       name="panel_icons"
+                       width="670">
+                        <!--Logos are tied to following label from code-->
+                        <text
+                         follows="left|right|top"
+                         layout="topleft"
+                         font="SansSerifLarge"
+                         font_shadow="none"
+                         halign="left"
+                         height="16"
+                         width="240"
+                         left="47"
+                         top="6"
+                         line_spacing.pixels="2"
+                         name="logos_lbl"
+                         text_color="LoginProgressBoxTextColor">
+                          Megapahit uses
+                        </text>
                       </layout_panel>
                     </layout_stack>
                 </layout_panel>
