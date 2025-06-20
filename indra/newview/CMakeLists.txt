@@ -1774,7 +1774,19 @@ if (CMAKE_COMMAND MATCHES /usr/bin/cmake OR WINDOWS)
     COMMAND sed
     ARGS -i '/\t.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
     COMMAND sed
-    ARGS -i '/^    .*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    ARGS -i '/^    B.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/^    C.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/^    M.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/^    O.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/^    S.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/^    s.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/^    V.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
     COMMAND sort
     ARGS -R contributions.txt -o ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
     COMMAND paste
