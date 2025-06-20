@@ -44,9 +44,9 @@
                  width="670" />
                 <layout_panel
                  auto_resize="false"
-                 height="220"
+                 height="255"
                  layout="topleft"
-                 min_height="220"
+                 min_height="255"
                  name="panel4"
                  width="670">
                     <icon
@@ -56,11 +56,11 @@
                      layout="topleft"
                      left="0"
                      top="0"
-                     height="220"
+                     height="255"
                      width="670" />
                     <layout_stack
                      follows="left|right|top|bottom"
-                     height="220"
+                     height="255"
                      layout="topleft"
                      left="0"
                      orientation="vertical"
