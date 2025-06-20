@@ -5,6 +5,6 @@
 	<layout_panel name="panel4"/>
 	<layout_panel name="center"/>
 	<layout_stack name="horizontal_centering">
-		<text name="logos_lbl">Usos de Second Life</text>
+		<text name="logos_lbl">Usos de Megapahit</text>
 	</layout_stack>
 </panel>
