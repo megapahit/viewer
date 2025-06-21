@@ -292,7 +292,7 @@ endif ()
 target_include_directories(llcommon INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(llcommon PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-if (CMAKE_OSX_ARCHITECTURES MATCHES arm64 OR CMAKE_SYSTEM_PROCESSOR MATCHES aarch64 OR ($ENV{MSYSTEM_CARCH} MATCHES aarch64))
+if (CMAKE_OSX_ARCHITECTURES MATCHES arm64 OR CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
   if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/sse2neon_installed OR NOT ${sse2neon_installed} EQUAL 0)
     file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/include/sse2neon)
     if (NOT EXISTS ${LIBS_PREBUILT_DIR}/include/sse2neon/sse2neon.h)
@@ -304,6 +304,8 @@ if (CMAKE_OSX_ARCHITECTURES MATCHES arm64 OR CMAKE_SYSTEM_PROCESSOR MATCHES aarc
     file(WRITE ${PREBUILD_TRACKING_DIR}/sse2neon_installed "0")
   endif ()
   target_include_directories(llcommon PUBLIC ${LIBS_PREBUILT_DIR}/include/sse2neon)
+elseif ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
+  target_include_directories(llcommon PUBLIC ${prefix_result}/../include/sse2neon)
 endif ()
 
 if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu) OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed))
