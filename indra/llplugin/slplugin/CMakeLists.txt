@@ -49,6 +49,10 @@ target_link_libraries(SLPlugin
         ll::pluginlibraries
         )
 
+if ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
+  target_link_libraries(${PROJECT_NAME} clog)
+endif ()
+
 if (DARWIN)
   # Make sure the app bundle has a Resources directory (it will get populated by viewer-manifest.py later)
   add_custom_command(
