@@ -30,6 +30,15 @@
 #include "llmath.h"
 #include "llquantize.h"
 
+#if _M_ARM64
+extern const LLQuad F_ZERO_4A       = {.n128_f32 = {0, 0, 0, 0}};
+extern const LLQuad F_APPROXIMATELY_ZERO_4A = {.n128_f32 = {
+    F_APPROXIMATELY_ZERO,
+    F_APPROXIMATELY_ZERO,
+    F_APPROXIMATELY_ZERO,
+    F_APPROXIMATELY_ZERO
+}};
+#else
 extern const LLQuad F_ZERO_4A       = { 0, 0, 0, 0 };
 extern const LLQuad F_APPROXIMATELY_ZERO_4A = {
     F_APPROXIMATELY_ZERO,
@@ -37,6 +46,7 @@ extern const LLQuad F_APPROXIMATELY_ZERO_4A = {
     F_APPROXIMATELY_ZERO,
     F_APPROXIMATELY_ZERO
 };
+#endif
 
 extern const LLVector4a LL_V4A_ZERO = reinterpret_cast<const LLVector4a&> ( F_ZERO_4A );
 extern const LLVector4a LL_V4A_EPSILON = reinterpret_cast<const LLVector4a&> ( F_APPROXIMATELY_ZERO_4A );
