@@ -2107,6 +2107,10 @@ if (NOT (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES aarch
    target_link_libraries(${VIEWER_BINARY_NAME} llwebrtc )
 endif ()
 
+if ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
+   target_link_libraries(${VIEWER_BINARY_NAME} clog)
+endif ()
+
 if (ENABLE_MEDIA_PLUGINS)
    target_link_libraries(${VIEWER_BINARY_NAME} ll::libvlc )
    if (DARWIN OR LINUX)
