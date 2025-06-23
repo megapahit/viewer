@@ -131,7 +131,7 @@
 #include "stringize.h"
 #include "llcoros.h"
 #include "llexception.h"
-#if 1 // !LL_LINUX
+#if !_M_ARM64 // !LL_LINUX
 #include "cef/dullahan_version.h"
 #include "vlc/libvlc_version.h"
 #endif // LL_LINUX
@@ -3427,7 +3427,7 @@ LLSD LLAppViewer::getViewerInfo() const
         info["VOICE_VERSION"] = LLTrans::getString("NotConnected");
     }
 
-#if 1 // !LL_LINUX
+#if !_M_ARM64 // !LL_LINUX
     std::ostringstream cef_ver_codec;
     cef_ver_codec << "Dullahan: ";
     cef_ver_codec << DULLAHAN_VERSION_MAJOR;
@@ -3457,7 +3457,7 @@ LLSD LLAppViewer::getViewerInfo() const
     info["LIBCEF_VERSION"] = "Undefined";
 #endif
 
-#if 1 // !LL_LINUX
+#if !_M_ARM64 // !LL_LINUX
     std::ostringstream vlc_ver_codec;
     vlc_ver_codec << LIBVLC_VERSION_MAJOR;
     vlc_ver_codec << ".";
