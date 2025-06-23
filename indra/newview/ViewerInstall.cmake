@@ -120,6 +120,13 @@ elseif (WINDOWS)
         )
 
     if ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
+        install(
+            PROGRAMS
+                ${prefix_result}/../bin/libcrypto-3-arm64.dll
+                ${prefix_result}/../bin/libssl-3-arm64.dll
+                ${prefix_result}/../bin/libcurl.dll
+            DESTINATION .
+            )
         set(BOOST_PLATFORM a${ADDRESS_SIZE})
     else ()
         set(BOOST_PLATFORM x${ADDRESS_SIZE})
