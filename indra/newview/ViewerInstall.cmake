@@ -119,18 +119,24 @@ elseif (WINDOWS)
         DESTINATION app_settings
         )
 
+    if ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
+        set(BOOST_PLATFORM a${ADDRESS_SIZE})
+    else ()
+        set(BOOST_PLATFORM x${ADDRESS_SIZE})
+    endif ()
+
     install(
         PROGRAMS
             ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/${VIEWER_BINARY_NAME}.exe
             ${prefix_result}/../bin/OpenAL32.dll
             ${prefix_result}/../bin/alut.dll
-            ${prefix_result}/../bin/boost_context-vc143-mt-x${ADDRESS_SIZE}-1_88.dll
-            ${prefix_result}/../bin/boost_fiber-vc143-mt-x${ADDRESS_SIZE}-1_88.dll
-            ${prefix_result}/../bin/boost_filesystem-vc143-mt-x${ADDRESS_SIZE}-1_88.dll
-            ${prefix_result}/../bin/boost_json-vc143-mt-x${ADDRESS_SIZE}-1_88.dll
-            ${prefix_result}/../bin/boost_program_options-vc143-mt-x${ADDRESS_SIZE}-1_88.dll
-            ${prefix_result}/../bin/boost_thread-vc143-mt-x${ADDRESS_SIZE}-1_88.dll
-            ${prefix_result}/../bin/boost_url-vc143-mt-x${ADDRESS_SIZE}-1_88.dll
+            ${prefix_result}/../bin/boost_context-vc143-mt-${BOOST_PLATFORM}-1_88.dll
+            ${prefix_result}/../bin/boost_fiber-vc143-mt-${BOOST_PLATFORM}-1_88.dll
+            ${prefix_result}/../bin/boost_filesystem-vc143-mt-${BOOST_PLATFORM}-1_88.dll
+            ${prefix_result}/../bin/boost_json-vc143-mt-${BOOST_PLATFORM}-1_88.dll
+            ${prefix_result}/../bin/boost_program_options-vc143-mt-${BOOST_PLATFORM}-1_88.dll
+            ${prefix_result}/../bin/boost_thread-vc143-mt-${BOOST_PLATFORM}-1_88.dll
+            ${prefix_result}/../bin/boost_url-vc143-mt-${BOOST_PLATFORM}-1_88.dll
             ${prefix_result}/../bin/brotlicommon.dll
             ${prefix_result}/../bin/brotlidec.dll
             ${prefix_result}/../bin/bz2.dll
@@ -158,8 +164,8 @@ elseif (WINDOWS)
 
     install(
         PROGRAMS
-            ${prefix_result}/../bin/boost_context-vc143-mt-x${ADDRESS_SIZE}-1_88.dll
-            ${prefix_result}/../bin/boost_fiber-vc143-mt-x${ADDRESS_SIZE}-1_88.dll
+            ${prefix_result}/../bin/boost_context-vc143-mt-${BOOST_PLATFORM}-1_88.dll
+            ${prefix_result}/../bin/boost_fiber-vc143-mt-${BOOST_PLATFORM}-1_88.dll
             ${prefix_result}/../bin/libapr-1.dll
             ${prefix_result}/../bin/libaprutil-1.dll
             ${prefix_result}/../bin/libexpat.dll
