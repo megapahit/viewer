@@ -40,6 +40,7 @@
 #include "lldrawable.h"
 #include "llface.h"
 #include "lliconctrl.h"
+#include "lljointdata.h"
 #include "llmatrix4a.h"
 #include "llmeshrepository.h"
 #include "llmeshoptimizer.h"
@@ -810,6 +811,9 @@ void LLModelPreview::loadModel(std::string filename, S32 lod, bool force_disable
     }
     else
     {
+        LLVOAvatar* av = getPreviewAvatar();
+        std::vector<LLJointData> viewer_skeleton;
+        av->getJointMatricesAndHierarhy(viewer_skeleton);
         mModelLoader = new LLGLTFLoader(
             filename,
             lod,
@@ -822,7 +826,8 @@ void LLModelPreview::loadModel(std::string filename, S32 lod, bool force_disable
             mJointsFromNode,
             joint_alias_map,
             LLSkinningUtil::getMaxJointCount(),
-            gSavedSettings.getU32("ImporterModelLimit"));
+            gSavedSettings.getU32("ImporterModelLimit"),
+            viewer_skeleton);
     }
 
     if (force_disable_slm)

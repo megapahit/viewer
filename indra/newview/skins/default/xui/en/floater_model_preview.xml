@@ -61,9 +61,19 @@
   <string name="ParsingErrorNoRoot">Document has no root</string>
   <string name="ParsingErrorNoScene">Document has no visual_scene</string>
   <string name="ParsingErrorPositionInvalidModel">Unable to process mesh without position data. Invalid model.</string>
-  <string name="InvalidGeometryNonTriangulated">Invalid geometry: GLTF files must contain triangulated meshes only.</string>
-  <string name="IgnoredExtension">Model uses unsupported extension: [EXT], related material properties are ignored.</string>
-  <string name="UnsupportedExtension">Unable to load a model, unsupported extension: [EXT]</string>
+
+ <!-- GLTF specific messages -->
+  <string name="NoScenesFound">No scenes defined in GLTF file</string>
+  <string name="InvalidMeshReference">Node [NODE_NAME] references invalid mesh [MESH_INDEX] (total meshes: [TOTAL_MESHES])</string>
+  <string name="InvalidGeometryNonTriangulated">Mesh [MESH_NAME] primitive [PRIMITIVE_INDEX]: Invalid geometry with [INDEX_COUNT] indices (must be triangulated)</string>
+  <string name="ErrorIndexLimit">Unable to process mesh [MESH_NAME] due to 65,534 vertex limit. Vertex count: [VERTEX_COUNT]</string>
+  <string name="TextureFound">Found texture: [TEXTURE_NAME] for material: [MATERIAL_NAME]</string>
+  <string name="IgnoredExtension">Model uses unsupported extension: [EXT], related material properties are ignored</string>
+  <string name="UnsupportedExtension">Unable to load model, unsupported extension: [EXT]</string>
+  <string name="TooManyMeshParts">Model contains [PART_COUNT] mesh parts. Maximum allowed: [LIMIT]</string>
+  <string name="FailedToCreateTempFile">Failed to create temporary file for embedded [TEXTURE_TYPE] texture [TEXTURE_INDEX]: [TEMP_FILE]</string>
+  <string name="SkinJointsOverLimit">Skin [SKIN_INDEX] defines [JOINT_COUNT] compatible joints, maximum is: [MAX]. Unused joints will be stripped on per model basis.</string>
+  <string name="ModelTooManyJoint">Model [MODEL_NAME] uses [JOINT_COUNT], maximum: [MAX], upload might fail</string>
 
   <panel
     follows="top|left"
