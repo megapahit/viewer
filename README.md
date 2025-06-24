@@ -4,7 +4,7 @@ As a third party maintained fork of the [Second Life][] viewer, which includes A
 
 ## Download
 
-Most people use a pre-built viewer release to access Second Life. macOS, GNU/Linux and FreeBSD builds are
+Most people use a pre-built viewer release to access Second Life. FreeBSD, GNU/Linux, macOS and Windows builds are
 [published on the official website][download]. More experimental viewers, such as release candidates and
 project viewers, would be detailed on the same page, [in-world group][] notices, or [Discord][] server.
 
@@ -54,7 +54,7 @@ $ megapahit
 
 ### FreeBSD
 ```
-$ sudo su -
+$ su -
 # portmaster devel/cmake devel/pkgconf audio/freealut devel/apr1 devel/boost-libs x11-toolkits/fltk math/glm textproc/hunspell misc/meshoptimizer archivers/minizip graphics/nanosvg www/libnghttp2 graphics/openjpeg devel/sdl20 multimedia/vlc audio/libvorbis devel/xxhash
 # exit
 $ setenv LL_BUILD "-O3 -std=c++20 -fPIC"
@@ -75,6 +75,7 @@ $ megapahit
 ### Gentoo
 ```
 $ su -
+# emerge -a eselect-repository
 # eselect repository add megapahit git git://megapahit.org/ebuild.git
 # emaint sync -r megapahit
 # emerge -a megapahit
@@ -96,7 +97,7 @@ $ open newview/Megapahit.app
 ### openSUSE Tumbleweed
 
 ```
-$ sudo zypper install gcc-c++ patchelf apr-util-devel boost-devel libboost_program_options-devel libboost_url1_87_0-devel libboost_context-devel libboost_fiber-devel libboost_filesystem-devel libboost_regex-devel libboost_system-devel libboost_thread-devel libexpat-devel fltk-devel glu-devel hunspell-devel minizip-devel nanosvg-devel libnghttp2-devel openjpeg2-devel pipewire-devel libpulse-devel libSDL2_gfx-1_0-0 libSDL2_gfx-devel sdl2-compat-devel vlc-devel libvorbis-devel xxhash-devel zlib-ng-devel libXrender-devel libXcursor-devel libXfixes-devel libXext-devel libXft-devel libXinerama-devel freetype2-devel fontconfig-devel libjpeg8-devel libjpeg8-devel freealut-devel
+$ sudo zypper install gcc-c++ patchelf apr-util-devel boost-devel libboost_program_options-devel libboost_url1_88_0-devel libboost_context-devel libboost_fiber-devel libboost_filesystem-devel libboost_regex-devel libboost_system-devel libboost_thread-devel libexpat-devel fltk-devel glu-devel hunspell-devel minizip-devel nanosvg-devel libnghttp2-devel openjpeg2-devel pipewire-devel libpulse-devel libSDL2_gfx-1_0-0 libSDL2_gfx-devel sdl2-compat-devel vlc-devel libvorbis-devel xxhash-devel zlib-ng-devel libXrender-devel libXcursor-devel libXfixes-devel libXext-devel libXft-devel libXinerama-devel freetype2-devel fontconfig-devel libjpeg8-devel libjpeg8-devel freealut-devel
 $ export LL_BUILD="-O3 -std=c++20 -fPIC -DLL_LINUX=1"
 $ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=ON -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON ../indra
 $ make -j`nproc`
@@ -118,14 +119,31 @@ $ sudo apt install ./megapahit-`cat newview/viewer_version.txt`-Linux.deb
 $ megapahit
 ```
 
-### Windows
+### Windows arm64
+```
+$ vcpkg install pkgconf python3 freealut apr-util boost cpuinfo curl freetype glm hunspell libjpeg-turbo meshoptimizer minizip nghttp2 openjpeg sse2neon libvorbis libxml2[tools] xxhash
+$ vcpkg install --allow-unsupported boost-fiber
+$ export LL_BUILD="/MD /O2 /Ob2 /std:c++20 /Zc:wchar_t- /Zi /GR /DLL_RELEASE=1 /DLL_RELEASE_FOR_DOWNLOAD=1 /DNDEBUG /D_SECURE_STL=0 /D_HAS_ITERATOR_DEBUGGING=0 /DWIN32 /D_WINDOWS /DLL_WINDOWS=1 /DUNICODE /D_UNICODE /DWINVER=0x0602 /D_WIN32_WINNT=0x0602 /Zc:preprocessor"
+$ export PATH="$VCPKG_ROOT/downloads/tools/cmake-3.30.1-windows/cmake-3.30.1-windows-arm64/bin:$VCPKG_ROOT/downloads/tools/msys2/2db36fb050d01f45/usr/bin:$VCPKG_ROOT/installed/arm64-windows/tools/libxml2:/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin:$PATH"
+$ export PKG_CONFIG_LIBDIR="$VCPKG_ROOT/installed/arm64-windows/lib/pkgconfig"
+$ export PYTHON="$VCPKG_ROOT/installed/arm64-windows/tools/python3/python.exe"
+$ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=OFF -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=OFF -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=Megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -DVS_DISABLE_FATAL_WARNINGS:BOOL=ON ../indra
+$ MSBuild.exe Megapahit.sln -p:Configuration=Release
+$ cpack -G NSIS
+$ start Megapahit-`cat newview/viewer_version.txt`-win64.exe
+```
+
+### Windows x64
 ```
 $ vcpkg install pkgconf python3 freealut apr-util boost freetype glm hunspell libjpeg-turbo meshoptimizer minizip nghttp2 openjpeg libvorbis libxml2[tools] xxhash
 $ export LL_BUILD="/MD /O2 /Ob2 /std:c++20 /Zc:wchar_t- /Zi /GR /DLL_RELEASE=1 /DLL_RELEASE_FOR_DOWNLOAD=1 /DNDEBUG /D_SECURE_STL=0 /D_HAS_ITERATOR_DEBUGGING=0 /DWIN32 /D_WINDOWS /DLL_WINDOWS=1 /DUNICODE /D_UNICODE /DWINVER=0x0602 /D_WIN32_WINNT=0x0602"
-$ export PATH="/c/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin:$VCPKG_ROOT/downloads/tools/msys2/21caed2f81ec917b/mingw64/bin:$VCPKG_ROOT/installed/`uname -m|sed 's/86_//'`-windows/tools/libxml2:$PATH"
-$ export PKG_CONFIG_LIBDIR="$VCPKG_ROOT/installed/`uname -m|sed 's/86_//'`-windows/lib/pkgconfig"
-$ export PYTHON="$VCPKG_ROOT/installed/`uname -m|sed 's/86_//'`-windows/tools/python3/python.exe"
-$ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=OFF -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=OFF -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=OFF -DPACKAGE:BOOL=OFF ../indra
+$ export PATH="$VCPKG_ROOT/downloads/tools/cmake-3.30.1-windows/cmake-3.30.1-windows-i386/bin:$VCPKG_ROOT/downloads/tools/msys2/2db36fb050d01f45/usr/bin:$VCPKG_ROOT/installed/x64-windows/tools/libxml2:/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin:$PATH"
+$ export PKG_CONFIG_LIBDIR="$VCPKG_ROOT/installed/x64-windows/lib/pkgconfig"
+$ export PYTHON="$VCPKG_ROOT/installed/x64-windows/tools/python3/python.exe"
+$ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=OFF -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=Megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -DVS_DISABLE_FATAL_WARNINGS:BOOL=ON ../indra
+$ MSBuild.exe Megapahit.sln -p:Configuration=Release
+$ cpack -G NSIS
+$ start Megapahit-`cat newview/viewer_version.txt`-win64.exe
 ```
 
 ## Contribute

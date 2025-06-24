@@ -99,7 +99,11 @@ public:
 #if LL_FASTTIMER_USE_RDTSC
     static U32 getCPUClockCount32()
     {
+#if _M_ARM64
+        unsigned __int64 val = _ReadStatusReg(ARM64_PMCCNTR_EL0);
+#else
         unsigned __int64 val = __rdtsc();
+#endif
         val = val >> 8;
         return static_cast<U32>(val);
     }
@@ -107,7 +111,11 @@ public:
     // return full timer value, *not* shifted by 8 bits
     static U64 getCPUClockCount64()
     {
+#if _M_ARM64
+        return static_cast<U64>( _ReadStatusReg(ARM64_PMCCNTR_EL0) );
+#else
         return static_cast<U64>( __rdtsc() );
+#endif
     }
 
 #else

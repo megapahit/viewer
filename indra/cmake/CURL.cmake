@@ -5,8 +5,9 @@ include(Linking)
 include_guard()
 add_library( ll::libcurl INTERFACE IMPORTED )
 
-#use_system_binary(libcurl)
-if (LINUX AND CMAKE_SYSTEM_PROCESSOR MATCHES x86_64 OR DARWIN OR WINDOWS)
+if ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
+use_system_binary(libcurl)
+elseif (LINUX AND CMAKE_SYSTEM_PROCESSOR MATCHES x86_64 OR DARWIN OR WINDOWS)
 use_prebuilt_binary(curl)
   if (DARWIN)
     execute_process(

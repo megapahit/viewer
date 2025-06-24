@@ -49,6 +49,10 @@ target_link_libraries(SLPlugin
         ll::pluginlibraries
         )
 
+if ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
+  target_link_libraries(${PROJECT_NAME} clog)
+endif ()
+
 if (DARWIN)
   # Make sure the app bundle has a Resources directory (it will get populated by viewer-manifest.py later)
   add_custom_command(
@@ -66,14 +70,14 @@ if (BUILD_SHARED_LIBS)
 endif ()
 
 if (INSTALL)
-  if (DARWIN)
+  if (DARWIN OR WINDOWS)
     install(TARGETS ${PROJECT_NAME} DESTINATION .)
   elseif (${LINUX_DISTRO} MATCHES arch)
     install(TARGETS ${PROJECT_NAME} DESTINATION lib/${VIEWER_BINARY_NAME})
-  else (DARWIN)
+  else ()
     install(TARGETS ${PROJECT_NAME} DESTINATION libexec/${VIEWER_BINARY_NAME})
-  endif (DARWIN)
-endif (INSTALL)
+  endif ()
+endif ()
 
 if (LL_TESTS)
   ll_deploy_sharedlibs_command(SLPlugin)

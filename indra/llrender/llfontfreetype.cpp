@@ -32,7 +32,7 @@
 // Freetype stuff
 #include <ft2build.h>
 #ifdef LL_WINDOWS
-#include <freetype2\freetype\ftsystem.h>
+#include <freetype/ftsystem.h>
 #endif
 #include "llfontfreetypesvg.h"
 

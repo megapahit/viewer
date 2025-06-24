@@ -11,6 +11,9 @@ include(LLSharedLibs)
 include(ZLIBNG)
 include(Tracy)
 
+if ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
+  include(cpuinfo)
+endif ()
 
 set(llcommon_SOURCE_FILES
     apply.cpp
@@ -282,6 +285,10 @@ target_link_libraries(
         ll::tracy
     )
 
+if ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
+  target_link_libraries(llcommon ll::cpuinfo)
+endif ()
+
 target_include_directories(llcommon INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(llcommon PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -297,6 +304,8 @@ if (CMAKE_OSX_ARCHITECTURES MATCHES arm64 OR CMAKE_SYSTEM_PROCESSOR MATCHES aarc
     file(WRITE ${PREBUILD_TRACKING_DIR}/sse2neon_installed "0")
   endif ()
   target_include_directories(llcommon PUBLIC ${LIBS_PREBUILT_DIR}/include/sse2neon)
+elseif ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
+  target_include_directories(llcommon PUBLIC ${prefix_result}/../include/sse2neon)
 endif ()
 
 if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu) OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed))

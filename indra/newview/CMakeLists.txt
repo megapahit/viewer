@@ -184,11 +184,11 @@ set(viewer_SOURCE_FILES
     llflexibleobject.cpp
     llfloater360capture.cpp
     llfloaterabout.cpp
+    llfloateravatarwelcomepack.cpp
     llfloaterbvhpreview.cpp
     llfloateraddpaymentmethod.cpp
     llfloaterauction.cpp
     llfloaterautoreplacesettings.cpp
-    llfloateravatar.cpp
     llfloateravatarpicker.cpp
     llfloateravatarrendersettings.cpp
     llfloateravatartextures.cpp
@@ -746,7 +746,7 @@ set(viewer_SOURCE_FILES
     rlvhandler.cpp
     )
 
-if (CMAKE_SYSTEM_NAME MATCHES FreeBSD)
+if (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES aarch64))
     list(REMOVE_ITEM viewer_SOURCE_FILES llvoicewebrtc.cpp)
 endif ()
 
@@ -867,11 +867,11 @@ set(viewer_HEADER_FILES
     llflexibleobject.h
     llfloater360capture.h
     llfloaterabout.h
+    llfloateravatarwelcomepack.h
     llfloaterbvhpreview.h
     llfloateraddpaymentmethod.h
     llfloaterauction.h
     llfloaterautoreplacesettings.h
-    llfloateravatar.h
     llfloateravatarpicker.h
     llfloateravatarrendersettings.h
     llfloateravatartextures.h
@@ -1494,7 +1494,7 @@ if (DARWIN)
   list(APPEND viewer_SOURCE_FILES ${viewer_RESOURCE_FILES})
 endif (DARWIN)
 
-if (NOT DARWIN)
+if (NOT (DARWIN OR WINDOWS))
     LIST(APPEND viewer_SOURCE_FILES llappviewerlinux.cpp)
     set_source_files_properties(
       llappviewerlinux.cpp
@@ -1752,6 +1752,74 @@ list(APPEND EVENT_HOST_SCRIPTS ${EVENT_HOST_SCRIPT_GLOB_LIST})
 set(PACKAGE ON CACHE BOOL
     "Add a package target that builds an installer package.")
 
+if (PACKAGE)
+  set(CPACK_PACKAGE_NAME ${VIEWER_BINARY_NAME}
+    CACHE STRING "Viewer binary name.")
+  set(CPACK_PACKAGE_VERSION ${VIEWER_VERSION_MAJOR}.${VIEWER_VERSION_MINOR}.${VIEWER_VERSION_PATCH}.${VIEWER_VERSION_REVISION}
+    CACHE STRING "Viewer major.minor.patch.revision versions.")
+  set(VIEWER_PACKAGE_COMMENT "A fork of the Second Life viewer")
+  set(VIEWER_PACKAGE_DESCRIPTION "An entrance to virtual empires in only megabytes. A shelter for the metaverse refugees, especially those from less supported operating systems.")
+  set(VIEWER_PACKAGE_DOMAIN_NAME ${VIEWER_BINARY_NAME}.net)
+endif ()
+
+if (CMAKE_COMMAND MATCHES /usr/bin/cmake OR WINDOWS)
+  add_custom_command(
+    TARGET ${VIEWER_BINARY_NAME} POST_BUILD
+    COMMAND sed
+    ARGS -e '/Linden Lab.*/d' ${CMAKE_HOME_DIRECTORY}/../doc/contributions.txt > ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/following residents.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/along with.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/^$$/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/\t.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/^    B.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/^    C.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/^    M.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/^    O.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/^    S.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/^    s.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/^    V.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sort
+    ARGS -R contributions.txt -o ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND paste
+    ARGS -s -d, ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt > ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
+    COMMAND sed
+    ARGS -i 's/,/, /g' ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
+    )
+else ()
+  add_custom_command(
+    TARGET ${VIEWER_BINARY_NAME} POST_BUILD
+    COMMAND sed
+    ARGS -e '/Linden Lab.*/d' ${CMAKE_HOME_DIRECTORY}/../doc/contributions.txt > ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '' -e '/following residents.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '' -e '/along with.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '' -e '/^$$/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '' -e '/\t.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '' -e '/^    .*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sort
+    ARGS -R contributions.txt -o ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND paste
+    ARGS -s -d, ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt > ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
+    COMMAND sed
+    ARGS -i '' -e 's/,/, /g' ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
+    )
+endif ()
+
 if(USE_PRECOMPILED_HEADERS)
   target_precompile_headers( ${VIEWER_BINARY_NAME} PRIVATE llviewerprecompiledheaders.h )
 endif(USE_PRECOMPILED_HEADERS)
@@ -1909,6 +1977,17 @@ if (WINDOWS)
     endif (NOT UNATTENDED)
 
     if (PACKAGE)
+
+      set(CPACK_NSIS_DISPLAY_NAME ${VIEWER_BINARY_NAME})
+      set(CPACK_NSIS_PACKAGE_NAME ${VIEWER_BINARY_NAME})
+      set(CPACK_NSIS_HELP_LINK https://${VIEWER_PACKAGE_DOMAIN_NAME})
+      set(CPACK_NSIS_URL_INFO_ABOUT https://${VIEWER_PACKAGE_DOMAIN_NAME})
+      set(CPACK_NSIS_CONTACT $ENV{USER}@${VIEWER_PACKAGE_DOMAIN_NAME})
+      set(CPACK_NSIS_WELCOME_TITLE "Welcome to ${VIEWER_BINARY_NAME}!")
+      set(CPACK_NSIS_MENU_LINKS Megapahit.exe "Megapahit Viewer")
+      set(CPACK_PACKAGE_INSTALL_DIRECTORY ${VIEWER_BINARY_NAME})
+
+      if (FALSE)
       add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/event_host.tar.xz
         COMMAND ${PYTHON_EXECUTABLE}
@@ -1955,6 +2034,7 @@ if (WINDOWS)
         # temporarily disable packaging of event_host until hg subrepos get
         # sorted out on the parabuild cluster...
         #${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/event_host.tar.xz)
+      endif (FALSE)
 
     endif (PACKAGE)
 elseif (DARWIN)
@@ -2025,8 +2105,12 @@ target_link_libraries(${VIEWER_BINARY_NAME}
         ll::openxr
         )
 
-if (NOT CMAKE_SYSTEM_NAME MATCHES FreeBSD)
+if (NOT (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES aarch64)))
    target_link_libraries(${VIEWER_BINARY_NAME} llwebrtc )
+endif ()
+
+if ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
+   target_link_libraries(${VIEWER_BINARY_NAME} clog)
 endif ()
 
 if (ENABLE_MEDIA_PLUGINS)
@@ -2047,8 +2131,9 @@ endif()
 set(ARTWORK_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE PATH
     "Path to artwork files.")
 
-set_source_files_properties(llinventorygallery.cpp PROPERTIES COMPILE_FLAGS
-    -Wno-unused-but-set-variable)
+if (NOT WINDOWS)
+    set_source_files_properties(llinventorygallery.cpp PROPERTIES COMPILE_FLAGS -Wno-unused-but-set-variable)
+endif ()
 if (CMAKE_CXX_COMPILER_ID MATCHES Clang)
     set_source_files_properties(llappviewerlinux.cpp PROPERTIES
         COMPILE_FLAGS -Wno-dangling-gsl
@@ -2125,38 +2210,47 @@ foreach(elem ${country_codes})
    configure_file(${emoji_mapping_src_file} ${emoji_mapping_dst_file} COPYONLY)
 endforeach()
 
-if (PACKAGE)
-  set(CPACK_PACKAGE_NAME ${VIEWER_BINARY_NAME}
-    CACHE STRING "Viewer binary name.")
-  set(CPACK_PACKAGE_VERSION ${VIEWER_VERSION_MAJOR}.${VIEWER_VERSION_MINOR}.${VIEWER_VERSION_PATCH}.${VIEWER_VERSION_REVISION}
-    CACHE STRING "Viewer major.minor.patch.revision versions.")
-  set(VIEWER_PACKAGE_COMMENT "A fork of the Second Life viewer")
-  set(VIEWER_PACKAGE_DESCRIPTION "An entrance to virtual empires in only megabytes. A shelter for the metaverse refugees, especially those from less supported operating systems.")
-  set(VIEWER_PACKAGE_DOMAIN_NAME ${VIEWER_BINARY_NAME}.net)
-endif ()
-
 if (LINUX)
-  add_custom_command(
-    TARGET ${VIEWER_BINARY_NAME} POST_BUILD
-    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-    ARGS -e '/Linden Lab.*/d' ${CMAKE_HOME_DIRECTORY}/../doc/contributions.txt > ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-    ARGS -i '/following residents.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-    ARGS -i '/along with.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-    ARGS -i '/^$$/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-    ARGS -i '/\t.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-    ARGS -i '/^    .*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-    COMMAND sort
-    ARGS -R contributions.txt -o ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-    COMMAND paste
-    ARGS -s -d, ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt > ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
-    COMMAND ${CMAKE_SYSROOT}/usr/bin/sed
-    ARGS -i 's/,/, /g' ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
+  if (FALSE)
+  set(product SecondLife-${ARCH}-${VIEWER_SHORT_VERSION}.${VIEWER_VERSION_REVISION})
+
+  # These are the generated targets that are copied to package/
+  set(COPY_INPUT_DEPENDENCIES
+    ${VIEWER_BINARY_NAME}
+    SLPlugin
+    #media_plugin_gstreamer010
+    llcommon
     )
+
+  #if (NOT USE_BUGSPLAT)
+  #    LIST(APPEND COPY_INPUT_DEPENDENCIES linux-crash-logger)
+  #endif (NOT USE_BUGSPLAT)
+
+  add_custom_command(
+      OUTPUT ${product}.tar.xz
+      COMMAND ${PYTHON_EXECUTABLE}
+      ARGS
+        ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
+        --arch=${ARCH}
+        --artwork=${ARTWORK_DIR}
+        "--bugsplat=${BUGSPLAT_DB}"
+        "--openal=${USE_OPENAL}"
+        "--tracy=${USE_TRACY}"
+        --build=${CMAKE_CURRENT_BINARY_DIR}
+        --buildtype=${CMAKE_BUILD_TYPE}
+        "--channel=${VIEWER_CHANNEL}"
+        --configuration=${CMAKE_CFG_INTDIR}
+        --dest=${CMAKE_CURRENT_BINARY_DIR}/packaged
+        --grid=${GRID}
+        --source=${CMAKE_CURRENT_SOURCE_DIR}
+        --touch=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/.${product}.touched
+        --versionfile=${CMAKE_CURRENT_BINARY_DIR}/viewer_version.txt
+      DEPENDS
+        ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
+        ${COPY_INPUT_DEPENDENCIES}
+      )
+  endif (FALSE)
+
   if (PACKAGE)
     if (${LINUX_DISTRO} MATCHES arch)
       configure_file(
@@ -2198,54 +2292,13 @@ if (LINUX)
         set(CPACK_RPM_PACKAGE_REQUIRES "apr-util, boost-fiber, boost-program-options, boost-regex, boost-thread, boost-url, expat, fltk, mesa-libGLU, hunspell, libnghttp2, openjpeg2, SDL2, vlc-libs, vlc-plugins-base, libvorbis"
           CACHE STRING "RPM package requirements.")
       else ()
-        set(CPACK_RPM_PACKAGE_REQUIRES "libapr-util1-0, libboost_fiber1_87_0, libboost_program_options1_87_0, libboost_regex1_87_0, libboost_thread1_87_0, libboost_url1_87_0, libboost_url1_87_0-x86-64-v3, expat, libfltk1_3, libGLU1, libhunspell-1_7-0, libnghttp2-14, openjpeg2, libSDL2-2_0-0, libvlc5, vlc-codecs, libvorbis0"
+        set(CPACK_RPM_PACKAGE_REQUIRES "libapr-util1-0, libboost_fiber1_88_0, libboost_program_options1_88_0, libboost_regex1_88_0, libboost_thread1_88_0, libboost_url1_88_0, libboost_url1_88_0-x86-64-v3, expat, libfltk1_3, libGLU1, libhunspell-1_7-0, libnghttp2-14, openjpeg2, libSDL2-2_0-0, libvlc5, vlc-codecs, libvorbis0"
           CACHE STRING "RPM package requirements.")
       endif ()
     endif ()
   endif (PACKAGE)
 
   if (FALSE)
-  set(product SecondLife-${ARCH}-${VIEWER_SHORT_VERSION}.${VIEWER_VERSION_REVISION})
-
-  # These are the generated targets that are copied to package/
-  set(COPY_INPUT_DEPENDENCIES
-    ${VIEWER_BINARY_NAME}
-    SLPlugin
-    #media_plugin_gstreamer010
-    llcommon
-    )
-
-  #if (NOT USE_BUGSPLAT)
-  #    LIST(APPEND COPY_INPUT_DEPENDENCIES linux-crash-logger)
-  #endif (NOT USE_BUGSPLAT)
-
-  add_custom_command(
-      OUTPUT ${product}.tar.xz
-      COMMAND ${PYTHON_EXECUTABLE}
-      ARGS
-        ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
-        --arch=${ARCH}
-        --artwork=${ARTWORK_DIR}
-        "--bugsplat=${BUGSPLAT_DB}"
-        "--openal=${USE_OPENAL}"
-        "--tracy=${USE_TRACY}"
-        --build=${CMAKE_CURRENT_BINARY_DIR}
-        --buildtype=${CMAKE_BUILD_TYPE}
-        "--channel=${VIEWER_CHANNEL}"
-        --configuration=${CMAKE_CFG_INTDIR}
-        --dest=${CMAKE_CURRENT_BINARY_DIR}/packaged
-        --grid=${GRID}
-        --source=${CMAKE_CURRENT_SOURCE_DIR}
-        --touch=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/.${product}.touched
-        --versionfile=${CMAKE_CURRENT_BINARY_DIR}/viewer_version.txt
-      DEPENDS
-        ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
-        ${COPY_INPUT_DEPENDENCIES}
-      )
-
-  if (PACKAGE)
-  endif (PACKAGE)
-
   add_custom_command(
     OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/.${product}.copy_touched
     COMMAND ${PYTHON_EXECUTABLE}
@@ -2281,45 +2334,22 @@ if (LINUX)
   endif (PACKAGE)
   endif (FALSE)
 
-else (LINUX)
-  add_custom_command(
-    TARGET ${VIEWER_BINARY_NAME} POST_BUILD
-    COMMAND sed
-    ARGS -e '/Linden Lab.*/d' ${CMAKE_HOME_DIRECTORY}/../doc/contributions.txt > ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-    COMMAND sed
-    ARGS -i '' -e '/following residents.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-    COMMAND sed
-    ARGS -i '' -e '/along with.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-    COMMAND sed
-    ARGS -i '' -e '/^$$/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-    COMMAND sed
-    ARGS -i '' -e '/\t.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-    COMMAND sed
-    ARGS -i '' -e '/^    .*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-    COMMAND sort
-    ARGS -R contributions.txt -o ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
-    COMMAND paste
-    ARGS -s -d, ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt > ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
-    COMMAND sed
-    ARGS -i '' -e 's/,/, /g' ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
-    )
-  if (CMAKE_SYSTEM_NAME MATCHES FreeBSD AND PACKAGE)
-    set(CPACK_BINARY_FREEBSD ON CACHE BOOL "Able to package FreeBSD PKG.")
-    set(CPACK_FREEBSD_PACKAGE_COMMENT ${VIEWER_PACKAGE_COMMENT}
-      CACHE STRING "FreeBSD package comment.")
-    set(CPACK_FREEBSD_PACKAGE_DESCRIPTION ${VIEWER_PACKAGE_DESCRIPTION}
-      CACHE STRING "FreeBSD package description.")
-    set(CPACK_FREEBSD_PACKAGE_WWW https://${VIEWER_PACKAGE_DOMAIN_NAME}
-      CACHE STRING "FreeBSD package WWW.")
-    set(CPACK_FREEBSD_PACKAGE_LICENSE LGPL21
-      CACHE STRING "FreeBSD package license.")
-    set(CPACK_FREEBSD_PACKAGE_MAINTAINER $ENV{USER}@${VIEWER_PACKAGE_DOMAIN_NAME}
-      CACHE STRING "FreeBSD package maintainer.")
-    set(CPACK_FREEBSD_PACKAGE_ORIGIN net/${VIEWER_BINARY_NAME}
-      CACHE STRING "FreeBSD package origin.")
-    set(CPACK_FREEBSD_PACKAGE_DEPS "audio/freealut;devel/apr;devel/boost-libs;x11-toolkits/fltk;textproc/hunspell;misc/meshoptimizer;archivers/minizip;www/libnghttp2;graphics/openjpeg;devel/sdl2;multimedia/vlc;audio/libvorbis"
-      CACHE STRING "FreeBSD package dependencies.")
-  endif ()
+elseif (CMAKE_SYSTEM_NAME MATCHES FreeBSD AND PACKAGE)
+  set(CPACK_BINARY_FREEBSD ON CACHE BOOL "Able to package FreeBSD PKG.")
+  set(CPACK_FREEBSD_PACKAGE_COMMENT ${VIEWER_PACKAGE_COMMENT}
+    CACHE STRING "FreeBSD package comment.")
+  set(CPACK_FREEBSD_PACKAGE_DESCRIPTION ${VIEWER_PACKAGE_DESCRIPTION}
+    CACHE STRING "FreeBSD package description.")
+  set(CPACK_FREEBSD_PACKAGE_WWW https://${VIEWER_PACKAGE_DOMAIN_NAME}
+    CACHE STRING "FreeBSD package WWW.")
+  set(CPACK_FREEBSD_PACKAGE_LICENSE LGPL21
+    CACHE STRING "FreeBSD package license.")
+  set(CPACK_FREEBSD_PACKAGE_MAINTAINER $ENV{USER}@${VIEWER_PACKAGE_DOMAIN_NAME}
+    CACHE STRING "FreeBSD package maintainer.")
+  set(CPACK_FREEBSD_PACKAGE_ORIGIN net/${VIEWER_BINARY_NAME}
+    CACHE STRING "FreeBSD package origin.")
+  set(CPACK_FREEBSD_PACKAGE_DEPS "audio/freealut;devel/apr;devel/boost-libs;x11-toolkits/fltk;textproc/hunspell;misc/meshoptimizer;archivers/minizip;www/libnghttp2;graphics/openjpeg;devel/sdl2;multimedia/vlc;audio/libvorbis"
+    CACHE STRING "FreeBSD package dependencies.")
 
 endif (LINUX)
 

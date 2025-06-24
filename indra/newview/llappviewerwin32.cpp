@@ -47,8 +47,10 @@
 #include "llviewercontrol.h"
 #include "lldxhardware.h"
 
+#if !_M_ARM64
 #include "nvapi/nvapi.h"
 #include "nvapi/NvApiDriverSettings.h"
+#endif
 
 #include <stdlib.h>
 
@@ -206,6 +208,7 @@ LONG WINAPI catchallCrashHandler(EXCEPTION_POINTERS * /*ExceptionInfo*/)
 
 const std::string LLAppViewerWin32::sWindowClass = "Second Life";
 
+#if !_M_ARM64
 /*
     This function is used to print to the command line a text message
     describing the nvapi error and quits
@@ -219,6 +222,7 @@ void nvapi_error(NvAPI_Status status)
     //should always trigger when asserts are enabled
     //llassert(status == NVAPI_OK);
 }
+#endif
 
 // Create app mutex creates a unique global windows object.
 // If the object can be created it returns true, otherwise
@@ -241,6 +245,7 @@ bool create_app_mutex()
     return result;
 }
 
+#if !_M_ARM64
 void ll_nvapi_init(NvDRSSessionHandle hSession)
 {
     // (2) load all the system settings into the session
@@ -395,11 +400,19 @@ void ll_nvapi_init(NvDRSSessionHandle hSession)
         return;
     }
 }
+#endif
 
-int APIENTRY wWinMain(HINSTANCE hInstance,
-                      HINSTANCE hPrevInstance,
-                      PWSTR     pCmdLine,
-                      int       nCmdShow)
+//#define DEBUGGING_SEH_FILTER 1
+#if DEBUGGING_SEH_FILTER
+#   define WINMAIN DebuggingWinMain
+#else
+#   define WINMAIN wWinMain
+#endif
+
+int APIENTRY WINMAIN(HINSTANCE hInstance,
+                     HINSTANCE hPrevInstance,
+                     PWSTR     pCmdLine,
+                     int       nCmdShow)
 {
     // Call Tracy first thing to have it allocate memory
     // https://github.com/wolfpld/tracy/issues/196
@@ -457,6 +470,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
         return -1;
     }
 
+#if !_M_ARM64
     NvDRSSessionHandle hSession = 0;
     static LLCachedControl<bool> use_nv_api(gSavedSettings, "NvAPICreateApplicationProfile", true);
     if (use_nv_api)
@@ -481,6 +495,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
             }
         }
     }
+#endif
 
     // Have to wait until after logging is initialized to display LFH info
     if (num_heaps > 0)
@@ -538,15 +553,38 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     delete viewer_app_ptr;
     viewer_app_ptr = NULL;
 
+#if !_M_ARM64
     // (NVAPI) (6) We clean up. This is analogous to doing a free()
     if (hSession)
     {
         NvAPI_DRS_DestroySession(hSession);
         hSession = 0;
     }
+#endif
 
     return 0;
 }
+
+#if DEBUGGING_SEH_FILTER
+// The compiler doesn't like it when you use __try/__except blocks
+// in a method that uses object destructors. Go figure.
+// This winmain just calls the real winmain inside __try.
+// The __except calls our exception filter function. For debugging purposes.
+int APIENTRY wWinMain(HINSTANCE hInstance,
+                     HINSTANCE hPrevInstance,
+                     PWSTR     lpCmdLine,
+                     int       nCmdShow)
+{
+    __try
+    {
+        WINMAIN(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
+    }
+    __except( viewer_windows_exception_handler( GetExceptionInformation() ) )
+    {
+        _tprintf( _T("Exception handled.\n") );
+    }
+}
+#endif
 
 void LLAppViewerWin32::disableWinErrorReporting()
 {

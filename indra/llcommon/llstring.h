@@ -635,7 +635,11 @@ LL_COMMON_API std::string rawstr_to_utf8(const std::string& raw);
 //
 // This typedef may or may not be identical to std::wstring, depending on
 // LL_WCHAR_T_NATIVE.
+#if __FreeBSD__
+typedef std::basic_string<char16_t> llutf16string;
+#else
 typedef std::basic_string<U16> llutf16string;
+#endif
 
 // Considering wchar_t, llwchar and U16, there are three relevant cases:
 #if LLWCHAR_IS_WCHAR_T         // every which way but Windows
