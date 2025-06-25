@@ -40,9 +40,6 @@
 #   include <intrin.h>
 #   undef _interlockedbittestandset
 #   undef _interlockedbittestandreset
-#if _M_ARM64
-#   include <cpuinfo.h>
-#endif
 #endif
 
 #include "llsd.h"
@@ -442,21 +439,13 @@ static F64 calculate_cpu_frequency(U32 measure_msecs)
     //// completed now (serialization)
     //__asm cpuid
     int cpu_info[4] = {-1};
-#if _M_ARM64
-    std::fill(cpu_info, cpu_info + 4, 0);
-#else
     __cpuid(cpu_info, 0);
-#endif
 
     // We ask the high-res timer for the start time
     QueryPerformanceCounter((LARGE_INTEGER *) &starttime);
 
     // Then we get the current cpu clock and store it
-#if _M_ARM64
-    start = _ReadStatusReg(ARM64_PMCCNTR_EL0);
-#else
     start = __rdtsc();
-#endif
 
     // Now we wart for some msecs
     _Delay(measure_msecs);
@@ -466,11 +455,7 @@ static F64 calculate_cpu_frequency(U32 measure_msecs)
     QueryPerformanceCounter((LARGE_INTEGER *) &endtime);
 
     // And also for the end cpu clock
-#if _M_ARM64
-    end = _ReadStatusReg(ARM64_PMCCNTR_EL0);
-#else
     end = __rdtsc();
-#endif
 
     // Now we can restore the default process and thread priorities
     SetProcessAffinityMask(hProcess, dwProcessMask);
@@ -510,60 +495,17 @@ private:
         // the other three array elements. The CPU identification string is
         // not in linear order. The code below arranges the information
         // in a human readable form.
-#if _M_ARM64
-        cpuinfo_initialize();
-#else
         int cpu_info[4] = {-1};
         __cpuid(cpu_info, 0);
         unsigned int ids = (unsigned int)cpu_info[0];
         setConfig(eMaxID, (S32)ids);
-#endif
 
         char cpu_vendor[0x20];
         memset(cpu_vendor, 0, sizeof(cpu_vendor));
-#if _M_ARM64
-        switch (cpuinfo_get_current_core()->vendor)
-        {
-            case cpuinfo_vendor_unknown:
-                setInfo(eVendor, "Unknown");
-                break;
-            case cpuinfo_vendor_arm:
-                setInfo(eVendor, "ARM");
-                break;
-            case cpuinfo_vendor_qualcomm:
-                setInfo(eVendor, "Qualcomm");
-                break;
-            case cpuinfo_vendor_apple:
-                setInfo(eVendor, "Apple");
-                break;
-            case cpuinfo_vendor_samsung:
-                setInfo(eVendor, "Samsung");
-                break;
-            case cpuinfo_vendor_nvidia:
-                setInfo(eVendor, "Nvidia");
-                break;
-            case cpuinfo_vendor_cavium:
-                setInfo(eVendor, "Cavium");
-                break;
-            case cpuinfo_vendor_broadcom:
-                setInfo(eVendor, "Broadcom");
-                break;
-            case cpuinfo_vendor_apm:
-                setInfo(eVendor, "APM");
-                break;
-            case cpuinfo_vendor_huawei:
-                setInfo(eVendor, "Huawei");
-                break;
-            default:
-                setInfo(eVendor, "Unknown");
-                break;
-        }
-#else
         *((int*)cpu_vendor) = cpu_info[1];
         *((int*)(cpu_vendor+4)) = cpu_info[3];
         *((int*)(cpu_vendor+8)) = cpu_info[2];
         setInfo(eVendor, cpu_vendor);
-#endif
         std::string cmp_vendor(cpu_vendor);
         bool is_amd = false;
         if (cmp_vendor == "AuthenticAMD")
@@ -571,10 +513,6 @@ private:
             is_amd = true;
         }
 
-#if _M_ARM64
-        setInfo(eModel, cpuinfo_get_package(0)->name);
-        setInfo(eType, cpuinfo_get_uarch(0)->uarch);
-#else
         // Get the information associated with each valid Id
         for(unsigned int i=0; i<=ids; ++i)
         {
@@ -685,7 +623,6 @@ private:
                 setConfig(eCacheSizeK, (cpu_info[2] >> 16) & 0xffff);
             }
         }
-#endif
     }
 };
 
