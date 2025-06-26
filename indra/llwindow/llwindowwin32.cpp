@@ -576,6 +576,7 @@ LLWindowWin32::LLWindowWin32(LLWindowCallbacks* callbacks,
     // Make an instance of our window then define the window class
     mhInstance = GetModuleHandle(NULL);
 
+#if !_M_ARM64
     // Init Direct Input - needed for joystick / Spacemouse
 
     LPDIRECTINPUT8 di8_interface;
@@ -590,6 +591,7 @@ LLWindowWin32::LLWindowWin32(LLWindowCallbacks* callbacks,
     {
         gDirectInput8 = di8_interface;
     }
+#endif
 
     mSwapMethod = SWAP_METHOD_UNDEFINED;
 
