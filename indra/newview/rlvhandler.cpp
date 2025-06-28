@@ -109,6 +109,7 @@ ECmdRet RlvHandler::processCommand(std::reference_wrapper<const RlvCommand> rlvC
     switch (rlvCmd.get().getParamType())
     {
         case EParamType::Reply:
+        case EParamType::Force:
             eRet = rlvCmd.get().processCommand();
             break;
         case EParamType::Unknown:
@@ -220,6 +221,13 @@ ECmdRet ReplyHandler<EBehaviour::VersionNum>::onCommand(const RlvCommand& rlvCmd
     else
         return ECmdRet::FailedOption;
     return ECmdRet::Succeeded;
+}
+
+// Force
+
+ECmdRet CommandHandlerBaseImpl<EParamType::Force>::processCommand(const RlvCommand& rlvCmd, ForceHandlerFunc* pHandler)
+{
+    return (*pHandler)(rlvCmd);
 }
 
 // ============================================================================
