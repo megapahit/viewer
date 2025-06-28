@@ -30,6 +30,7 @@
 #include "llstartup.h"
 #include "llviewercontrol.h"
 #include "llviewerobject.h"
+#include "llviewermenu.h"
 
 #include "rlvcommon.h"
 #include "rlvhandler.h"
@@ -228,6 +229,13 @@ ECmdRet ReplyHandler<EBehaviour::VersionNum>::onCommand(const RlvCommand& rlvCmd
 ECmdRet CommandHandlerBaseImpl<EParamType::Force>::processCommand(const RlvCommand& rlvCmd, ForceHandlerFunc* pHandler)
 {
     return (*pHandler)(rlvCmd);
+}
+
+template<> template<>
+ECmdRet ForceHandler<EBehaviour::Sit>::onCommand(const RlvCommand& rlvCmd)
+{
+    handle_object_sit(LLUUID{rlvCmd.getOption()});
+    return ECmdRet::Succeeded;
 }
 
 // ============================================================================

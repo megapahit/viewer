@@ -54,6 +54,9 @@ BehaviourDictionary::BehaviourDictionary()
     addEntry(new ReplyProcessor<EBehaviour::VersionNew, VersionReplyHandler>("versionnew"));
     addEntry(new ReplyProcessor<EBehaviour::VersionNum>("versionnum"));
 
+    // Force
+    addEntry(new ForceProcessor<EBehaviour::Sit>("sit"));
+
     // Populate mString2InfoMap (the tuple <behaviour, type> should be unique)
     for (const BehaviourInfo* bhvr_info_p : mBhvrInfoList)
     {
