@@ -238,4 +238,11 @@ ECmdRet ForceHandler<EBehaviour::Sit>::onCommand(const RlvCommand& rlvCmd)
     return ECmdRet::Succeeded;
 }
 
+template<> template<>
+ECmdRet ForceHandler<EBehaviour::Unsit>::onCommand(const RlvCommand& rlvCmd)
+{
+    gAgent.standUp();
+    return ECmdRet::Succeeded;
+}
+
 // ============================================================================
