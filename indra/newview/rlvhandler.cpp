@@ -29,8 +29,8 @@
 #include "llagent.h"
 #include "llstartup.h"
 #include "llviewercontrol.h"
-#include "llviewerobject.h"
 #include "llviewermenu.h"
+#include "llviewerobject.h"
 
 #include "rlvcommon.h"
 #include "rlvhandler.h"
@@ -111,6 +111,8 @@ ECmdRet RlvHandler::processCommand(std::reference_wrapper<const RlvCommand> rlvC
     {
         case EParamType::Reply:
         case EParamType::Force:
+        case EParamType::Remove:
+        case EParamType::Add:
             eRet = rlvCmd.get().processCommand();
             break;
         case EParamType::Unknown:
@@ -243,6 +245,19 @@ ECmdRet ForceHandler<EBehaviour::Unsit>::onCommand(const RlvCommand& rlvCmd)
 {
     gAgent.standUp();
     return ECmdRet::Succeeded;
+}
+
+// AddRem
+
+ECmdRet CommandHandlerBaseImpl<EParamType::AddRem>::processCommand(const RlvCommand& rlvCmd, BhvrHandlerFunc* pHandler, BhvrToggleHandlerFunc* pToggleHandler)
+{
+    auto param = rlvCmd.getParam();
+    bool toggle = false;
+    if (param == "y")
+        toggle = true;
+    else if (param != "n")
+        return ECmdRet::FailedParam;
+    return (*pHandler)(rlvCmd, toggle);
 }
 
 // ============================================================================
