@@ -60,6 +60,7 @@ BehaviourDictionary::BehaviourDictionary()
     addEntry(new ForceProcessor<EBehaviour::Unsit>("unsit"));
 
     // AddRem
+    addEntry(new BehaviourProcessor<EBehaviour::Unsit>("unsit"));
 
     // Populate mString2InfoMap (the tuple <behaviour, type> should be unique)
     for (const BehaviourInfo* bhvr_info_p : mBhvrInfoList)

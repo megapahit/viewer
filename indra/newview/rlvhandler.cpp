@@ -28,6 +28,7 @@
 #include "llviewerprecompiledheaders.h"
 #include "llagent.h"
 #include "llstartup.h"
+#include "llmoveview.h"
 #include "llviewercontrol.h"
 #include "llviewermenu.h"
 #include "llviewerobject.h"
@@ -267,4 +268,14 @@ ECmdRet CommandHandlerBaseImpl<EParamType::AddRem>::processCommand(const RlvComm
     return (*pHandler)(rlvCmd, toggle);
 }
 
+template<> template<>
+ECmdRet BehaviourToggleHandler<EBehaviour::Unsit>::onCommand(const RlvCommand& rlvCmd, bool& toggle)
+{
+    gAgent.setAllowedToStand(toggle);
+    if (gAgent.isSitting())
+        LLPanelStandStopFlying::getInstance()->setVisibleStandButton(toggle);
+    return ECmdRet::Succeeded;
+}
+
+template<> template<>
 // ============================================================================
