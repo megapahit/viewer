@@ -450,9 +450,12 @@ public:
     void            setAllowedToStand(bool allow) { mAllowedToStand = allow; }
     bool            isAllowedToSit() const        { return mAllowedToSit; }
     void            setAllowedToSit(bool allow)   { mAllowedToSit = allow; }
+    const LLUUID&   getSitObjectID() const                 { return mSitObjectID; }
+    void            setSitObjectID(const LLUUID& objectID) { mSitObjectID = objectID; }
 private:
     bool            mAllowedToStand;
     bool            mAllowedToSit;
+    LLUUID          mSitObjectID;
 
     //--------------------------------------------------------------------
     // Do Not Disturb

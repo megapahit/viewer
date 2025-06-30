@@ -227,6 +227,16 @@ ECmdRet ReplyHandler<EBehaviour::VersionNum>::onCommand(const RlvCommand& rlvCmd
     return ECmdRet::Succeeded;
 }
 
+template<> template<>
+ECmdRet ReplyHandler<EBehaviour::GetSitID>::onCommand(const RlvCommand& rlvCmd, std::string& strReply)
+{
+    if (gAgent.isSitting())
+        gAgent.getSitObjectID().toString(strReply);
+    else
+        strReply = "00000000-0000-0000-0000-000000000000";
+    return ECmdRet::Succeeded;
+}
+
 // Force
 
 ECmdRet CommandHandlerBaseImpl<EParamType::Force>::processCommand(const RlvCommand& rlvCmd, ForceHandlerFunc* pHandler)

@@ -388,6 +388,7 @@ LLAgent::LLAgent() :
 
     mAllowedToStand(true),
     mAllowedToSit(true),
+    mSitObjectID(LLUUID::null),
 
     mAgentAccess(new LLAgentAccess(gSavedSettings)),
     mGodLevelChangeSignal(),
@@ -972,7 +973,11 @@ bool LLAgent::isSitting()
 
 void LLAgent::standUp()
 {
-    if (mAllowedToStand) setControlFlags(AGENT_CONTROL_STAND_UP);
+    if (mAllowedToStand)
+    {
+        setControlFlags(AGENT_CONTROL_STAND_UP);
+        mSitObjectID = LLUUID::null;
+    }
 }
 
 void LLAgent::changeParcels()
