@@ -269,6 +269,13 @@ ECmdRet CommandHandlerBaseImpl<EParamType::AddRem>::processCommand(const RlvComm
 }
 
 template<> template<>
+ECmdRet BehaviourToggleHandler<EBehaviour::Sit>::onCommand(const RlvCommand& rlvCmd, bool& toggle)
+{
+    gAgent.setAllowedToSit(toggle);
+    return ECmdRet::Succeeded;
+}
+
+template<> template<>
 ECmdRet BehaviourToggleHandler<EBehaviour::Unsit>::onCommand(const RlvCommand& rlvCmd, bool& toggle)
 {
     gAgent.setAllowedToStand(toggle);

@@ -4506,7 +4506,7 @@ void handle_object_sit(LLViewerObject* object, const LLVector3& offset)
 {
     // get object selection offset
 
-    if (object && object->getPCode() == LL_PCODE_VOLUME)
+    if (gAgent.isAllowedToSit() && object && object->getPCode() == LL_PCODE_VOLUME)
     {
 
         gMessageSystem->newMessageFast(_PREHASH_AgentRequestSit);

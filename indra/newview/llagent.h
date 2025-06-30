@@ -448,8 +448,11 @@ public:
     void            sitDown();
     bool            isAllowedToStand() const      { return mAllowedToStand; }
     void            setAllowedToStand(bool allow) { mAllowedToStand = allow; }
+    bool            isAllowedToSit() const        { return mAllowedToSit; }
+    void            setAllowedToSit(bool allow)   { mAllowedToSit = allow; }
 private:
     bool            mAllowedToStand;
+    bool            mAllowedToSit;
 
     //--------------------------------------------------------------------
     // Do Not Disturb
