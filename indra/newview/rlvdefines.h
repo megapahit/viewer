@@ -94,6 +94,7 @@ namespace Rlv
         VersionNew,
         VersionNum,
         Sit,
+        SitGround,
         Unsit,
         GetCommand,
 

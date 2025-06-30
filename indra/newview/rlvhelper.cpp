@@ -56,6 +56,7 @@ BehaviourDictionary::BehaviourDictionary()
 
     // Force
     addEntry(new ForceProcessor<EBehaviour::Sit>("sit"));
+    addEntry(new ForceProcessor<EBehaviour::SitGround>("sitground"));
     addEntry(new ForceProcessor<EBehaviour::Unsit>("unsit"));
 
     // AddRem
