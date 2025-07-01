@@ -294,5 +294,4 @@ ECmdRet BehaviourToggleHandler<EBehaviour::Unsit>::onCommand(const RlvCommand& r
     return ECmdRet::Succeeded;
 }
 
-template<> template<>
 // ============================================================================
