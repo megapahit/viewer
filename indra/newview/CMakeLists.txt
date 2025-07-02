@@ -46,6 +46,9 @@ include(VisualLeakDetector)
 #include(VulkanGltf)
 include(ZLIBNG)
 include(LLPrimitive)
+if (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+  include(UnixInstall)
+endif ()
 
 if (ENABLE_MEDIA_PLUGINS)
     include(LibVLCPlugin)
@@ -1498,6 +1501,7 @@ if (NOT (DARWIN OR WINDOWS))
       llappviewerlinux.cpp
       PROPERTIES
       COMPILE_DEFINITIONS "${VIEWER_CHANNEL_VERSION_DEFINES}"
+      COMPILE_FLAGS "-DAPP_PLUGIN_DIR=\\\"${INSTALL_LIBRARY_DIR}\\\""
       )
     #LIST(APPEND viewer_SOURCE_FILES llappviewerlinux_api_dbus.cpp)
   if (NOT CMAKE_CXX_COMPILER_ID MATCHES AppleClang)

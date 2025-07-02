@@ -126,7 +126,11 @@ int main( int argc, char **argv )
     // install unexpected exception handler
     gOldTerminateHandler = std::set_terminate(exceptionTerminateHandler);
 
-    //unsetenv( "LD_PRELOAD" ); // <FS:ND/> Get rid of any preloading, we do not want this to happen during startup of plugins.
+#ifdef __aarch64__
+    setenv("LD_PRELOAD", APP_PLUGIN_DIR"/libcef.so", 1);
+#else
+    unsetenv( "LD_PRELOAD" ); // <FS:ND/> Get rid of any preloading, we do not want this to happen during startup of plugins.
+#endif
 
     bool ok = viewer_app_ptr->init();
     if(!ok)
