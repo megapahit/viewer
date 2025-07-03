@@ -92,7 +92,7 @@ public:
 
     virtual bool setCursorPosition(LLCoordWindow position) = 0;
     virtual bool getCursorPosition(LLCoordWindow *position) = 0;
-#if LL_WINDOWS
+#if LL_WINDOWS && !LL_SDL
     virtual bool getCursorDelta(LLCoordCommon* delta) = 0;
 #endif
     virtual void showCursor() = 0;
