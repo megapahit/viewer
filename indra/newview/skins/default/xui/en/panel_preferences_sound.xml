@@ -449,7 +449,7 @@
    height="30"
    label="Custom stream notification channel"
    layout="topleft"
-   left="20"
+   left="10"
    name="stream_notification_channel_enabled"
    top_pad="-10"
    width="256">
