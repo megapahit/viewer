@@ -34,11 +34,33 @@ class LLJointData
 {
 public:
     std::string mName;
+    std::string mGroup;
     glm::mat4 mJointMatrix;
     glm::mat4 mRestMatrix;
+    glm::vec3 mScale;
+    LLVector3 mRotation;
 
     typedef std::vector<LLJointData> bones_t;
     bones_t mChildren;
+
+    bool mIsJoint; // if not, collision_volume
+    enum SupportCategory
+    {
+        SUPPORT_BASE,
+        SUPPORT_EXTENDED
+    };
+    SupportCategory mSupport;
+    void setSupport(const std::string& support)
+    {
+        if (support == "extended")
+        {
+            mSupport = SUPPORT_EXTENDED;
+        }
+        else
+        {
+            mSupport = SUPPORT_BASE;
+        }
+    }
 };
 
 #endif //LL_LLJOINTDATA_H

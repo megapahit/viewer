@@ -78,6 +78,7 @@ private:
     std::string mName;
     std::string mSupport;
     std::string mAliases;
+    std::string mGroup;
     bool mIsJoint;
     LLVector3 mPos;
     LLVector3 mEnd;
@@ -1606,6 +1607,15 @@ bool LLAvatarBoneInfo::parseXml(LLXmlTreeNode* node)
         mSupport = "base";
     }
 
+    // Skeleton has 133 bones, but shader only allows 110 (LL_MAX_JOINTS_PER_MESH_OBJECT)
+    // Groups can be used by importer to cut out unused groups of joints
+    static LLStdStringHandle group_string = LLXmlTree::addAttributeString("group");
+    if (!node->getFastAttributeString(group_string, mGroup))
+    {
+        LL_WARNS() << "Bone without group " << mName << LL_ENDL;
+        mGroup = "global";
+    }
+
     if (mIsJoint)
     {
         static LLStdStringHandle pivot_string = LLXmlTree::addAttributeString("pivot");
@@ -1683,7 +1693,11 @@ void LLAvatarSkeletonInfo::getJointMatricesAndHierarhy(
 {
     data.mName = bone_info->mName;
     data.mJointMatrix = bone_info->getJointMatrix();
+    data.mScale = glm::vec3(bone_info->mScale[0], bone_info->mScale[1], bone_info->mScale[2]);
+    data.mRotation = bone_info->mRot;
     data.mRestMatrix = parent_mat * data.mJointMatrix;
+    data.mIsJoint = bone_info->mIsJoint;
+    data.mGroup = bone_info->mGroup;
     for (LLAvatarBoneInfo* child_info : bone_info->mChildren)
     {
         LLJointData& child_data = data.mChildren.emplace_back();

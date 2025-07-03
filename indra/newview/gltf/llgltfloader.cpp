@@ -86,20 +86,20 @@ static const glm::mat4 coord_system_rotationxy(
     0.f, 0.f, 0.f, 1.f
 );
 
-LLGLTFLoader::LLGLTFLoader(std::string filename,
-    S32                                 lod,
-    LLModelLoader::load_callback_t      load_cb,
-    LLModelLoader::joint_lookup_func_t  joint_lookup_func,
-    LLModelLoader::texture_load_func_t  texture_load_func,
-    LLModelLoader::state_callback_t     state_cb,
-    void *                              opaque_userdata,
-    JointTransformMap &                 jointTransformMap,
-    JointNameSet &                      jointsFromNodes,
-    std::map<std::string, std::string> &jointAliasMap,
-    U32                                 maxJointsPerMesh,
-    U32                                 modelLimit,
-    std::vector<LLJointData>            viewer_skeleton) //,
-    //bool                                preprocess)
+LLGLTFLoader::LLGLTFLoader(std::string                filename,
+    S32                                               lod,
+    LLModelLoader::load_callback_t                    load_cb,
+    LLModelLoader::joint_lookup_func_t                joint_lookup_func,
+    LLModelLoader::texture_load_func_t                texture_load_func,
+    LLModelLoader::state_callback_t                   state_cb,
+    void *                                            opaque_userdata,
+    JointTransformMap &                               jointTransformMap,
+    JointNameSet &                                    jointsFromNodes,
+    std::map<std::string, std::string, std::less<>> & jointAliasMap,
+    U32                                               maxJointsPerMesh,
+    U32                                               modelLimit,
+    std::vector<LLJointData>                          viewer_skeleton) //,
+    //bool                                            preprocess)
     : LLModelLoader( filename,
                      lod,
                      load_cb,
@@ -129,6 +129,20 @@ bool LLGLTFLoader::OpenFile(const std::string &filename)
     if (!mGltfLoaded)
     {
         notifyUnsupportedExtension(true);
+
+        for (const auto& buffer : mGLTFAsset.mBuffers)
+        {
+            if (buffer.mByteLength > 0 && buffer.mData.empty())
+            {
+                bool bin_file = buffer.mUri.ends_with(".bin");
+                LLSD args;
+                args["Message"] = bin_file ? "ParsingErrorMissingBufferBin" : "ParsingErrorMissingBuffer";
+                args["BUFFER_NAME"] = buffer.mName;
+                args["BUFFER_URI"] = buffer.mUri;
+                mWarningsArray.append(args);
+            }
+        }
+        setLoadState(ERROR_PARSING);
         return false;
     }
 
@@ -258,13 +272,14 @@ bool LLGLTFLoader::parseMeshes()
     if (mGLTFAsset.mSkins.size() > 0)
     {
         checkForXYrotation(mGLTFAsset.mSkins[0]);
+        populateJointGroups();
     }
 
     // Populate the joints from skins first.
     // There's not many skins - and you can pretty easily iterate through the nodes from that.
     for (S32 i = 0; i < mGLTFAsset.mSkins.size(); i++)
     {
-        populateJointFromSkin(i);
+        populateJointsFromSkin(i);
     }
 
     // Track how many times each mesh name has been used
@@ -463,8 +478,29 @@ void LLGLTFLoader::computeCombinedNodeTransform(const LL::GLTF::Asset& asset, S3
     }
 }
 
+bool LLGLTFLoader::addJointToModelSkin(LLMeshSkinInfo& skin_info, S32 gltf_skin_idx, size_t gltf_joint_idx) const
+{
+    const std::string& legal_name = mJointNames[gltf_skin_idx][gltf_joint_idx];
+    if (legal_name.empty())
+    {
+        llassert(false); // should have been stopped by gltf_joint_index_use[i] == -1
+        return false;
+    }
+    skin_info.mJointNames.push_back(legal_name);
+    skin_info.mJointNums.push_back(-1);
+
+    // In scope of same skin multiple meshes reuse same bind matrices
+    skin_info.mInvBindMatrix.push_back(mInverseBindMatrices[gltf_skin_idx][gltf_joint_idx]);
+    skin_info.mAlternateBindMatrix.push_back(mAlternateBindMatrices[gltf_skin_idx][gltf_joint_idx]);
+
+    return true;
+}
+
 bool LLGLTFLoader::populateModelFromMesh(LLModel* pModel, const LL::GLTF::Mesh& mesh, const LL::GLTF::Node& nodeno, material_map& mats, S32 instance_count)
 {
+    // Set the requested label for the floater display and uploading
+    pModel->mRequestedLabel = gDirUtilp->getBaseFileName(mFilename, true);
+
     // Create unique model name
     std::string base_name = mesh.mName;
     if (base_name.empty())
@@ -516,15 +552,9 @@ bool LLGLTFLoader::populateModelFromMesh(LLModel* pModel, const LL::GLTF::Mesh& 
         size_t jointCnt = gltf_skin.mJoints.size();
         gltf_joint_index_use.resize(jointCnt);
 
-        S32 replacement_index = 0;
         for (size_t i = 0; i < jointCnt; ++i)
         {
-            // Process joint name and idnex
-            S32 joint = gltf_skin.mJoints[i];
-            LL::GLTF::Node& jointNode = mGLTFAsset.mNodes[joint];
-
-            std::string legal_name(jointNode.mName);
-            if (mJointMap.find(legal_name) == mJointMap.end())
+            if (mJointNames[i].empty())
             {
                 // This might need to hold a substitute index
                 gltf_joint_index_use[i] = -1; // mark as unsupported
@@ -956,65 +986,106 @@ bool LLGLTFLoader::populateModelFromMesh(LLModel* pModel, const LL::GLTF::Mesh& 
     // Call normalizeVolumeFacesAndWeights to compute proper extents
     pModel->normalizeVolumeFacesAndWeights();
 
-    // Fill joint names, bind matrices and prepare to remap weight indices
+    // Fill joint names, bind matrices and remap weight indices
     if (skinIdx >= 0)
     {
         LL::GLTF::Skin& gltf_skin = mGLTFAsset.mSkins[skinIdx];
         LLMeshSkinInfo& skin_info = pModel->mSkinInfo;
         S32 valid_joints_count = mValidJointsCount[skinIdx];
 
+        S32 replacement_index = 0;
         std::vector<S32> gltfindex_to_joitindex_map;
         size_t jointCnt = gltf_skin.mJoints.size();
         gltfindex_to_joitindex_map.resize(jointCnt);
 
-        S32 replacement_index = 0;
-        S32 stripped_valid_joints = 0;
-        for (size_t i = 0; i < jointCnt; ++i)
+        if (valid_joints_count > LL_MAX_JOINTS_PER_MESH_OBJECT)
         {
-            // Process joint name and idnex
-            S32 joint = gltf_skin.mJoints[i];
-            if (gltf_joint_index_use[i] < 0)
-            {
-                // unsupported (-1) joint, drop it
-                continue;
-            }
-            LL::GLTF::Node& jointNode = mGLTFAsset.mNodes[joint];
+            std::map<std::string, S32> goup_use_count;
+            // Assume that 'Torso' group is always in use since that's what everything else is attached to
+            goup_use_count["Torso"] = 1;
+            // Note that Collisions and Extra groups are all over the place, might want to include them from the start
+            // or add individual when parents are added
 
-            std::string legal_name(jointNode.mName);
-            if (mJointMap.find(legal_name) != mJointMap.end())
+            // Check which groups are in use
+            for (size_t i = 0; i < jointCnt; ++i)
             {
-                legal_name = mJointMap[legal_name];
-            }
-            else
-            {
-                llassert(false); // should have been stopped by gltf_joint_index_use[i] == -1
-                continue;
-            }
-
-            if (valid_joints_count > LL_MAX_JOINTS_PER_MESH_OBJECT
-                && gltf_joint_index_use[i] == 0
-                && legal_name != "mPelvis")
-            {
-                // Unused (0) joint
-                // It's perfectly valid to have more joints than is in use
-                // Ex: sandals that make your legs digitigrade despite not skining to
-                // knees or the like.
-                // But if model is over limid, drop extras sans pelvis.
-                // Keeping 'pelvis' is a workaround to keep preview whole.
-                // Todo: consider improving this, either take as much as possible or
-                // ensure common parents/roots are included
-                continue;
+                std::string& joint_name = mJointNames[skinIdx][i];
+                if (!joint_name.empty())
+                {
+                    if (gltf_joint_index_use[i] > 0)
+                    {
+                        const JointGroups &group = mJointGroups[joint_name];
+                        // Joint in use, increment it's groups
+                        goup_use_count[group.mGroup]++;
+                        goup_use_count[group.mParentGroup]++;
+                    }
+                }
             }
 
-            gltfindex_to_joitindex_map[i] = replacement_index++;
+            // 1. add joints that are in use directly
+            for (size_t i = 0; i < jointCnt; ++i)
+            {
+                // Process joint name and idnex
+                S32 joint = gltf_skin.mJoints[i];
+                if (gltf_joint_index_use[i] <= 0)
+                {
+                    // unsupported (-1) joint, drop it
+                    // unused (0) joint, drop it
+                    continue;
+                }
 
-            skin_info.mJointNames.push_back(legal_name);
-            skin_info.mJointNums.push_back(-1);
+                if (addJointToModelSkin(skin_info, skinIdx, i))
+                {
+                    gltfindex_to_joitindex_map[i] = replacement_index++;
+                }
+            }
 
-            // In scope of same skin multiple meshes reuse same bind matrices
-            skin_info.mInvBindMatrix.push_back(mInverseBindMatrices[skinIdx][i]);
+            // 2. add joints from groups that this model's joints belong to
+            // It's perfectly valid to have more joints than is in use
+            // Ex: sandals that make your legs digitigrade despite not skining to
+            // knees or the like.
+            // Todo: sort and add by usecount
+            for (size_t i = 0; i < jointCnt; ++i)
+            {
+                S32 joint = gltf_skin.mJoints[i];
+                if (gltf_joint_index_use[i] != 0)
+                {
+                    // this step needs only joints that have zero uses
+                    continue;
+                }
+                if (skin_info.mInvBindMatrix.size() > LL_MAX_JOINTS_PER_MESH_OBJECT)
+                {
+                    break;
+                }
+                const std::string& legal_name = mJointNames[skinIdx][i];
+                std::string group_name = mJointGroups[legal_name].mGroup;
+                if (goup_use_count[group_name] > 0)
+                {
+                    if (addJointToModelSkin(skin_info, skinIdx, i))
+                    {
+                        gltfindex_to_joitindex_map[i] = replacement_index++;
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Less than 110, just add every valid joint
+            for (size_t i = 0; i < jointCnt; ++i)
+            {
+                // Process joint name and idnex
+                S32 joint = gltf_skin.mJoints[i];
+                if (gltf_joint_index_use[i] < 0)
+                {
+                    // unsupported (-1) joint, drop it
+                    continue;
+                }
 
-            skin_info.mAlternateBindMatrix.push_back(mAlternateBindMatrices[skinIdx][i]);
+                if (addJointToModelSkin(skin_info, skinIdx, i))
+                {
+                    gltfindex_to_joitindex_map[i] = replacement_index++;
+                }
+            }
         }
 
         if (skin_info.mInvBindMatrix.size() > LL_MAX_JOINTS_PER_MESH_OBJECT)
@@ -1043,7 +1114,7 @@ bool LLGLTFLoader::populateModelFromMesh(LLModel* pModel, const LL::GLTF::Mesh& 
     return true;
 }
 
-void LLGLTFLoader::populateJointFromSkin(S32 skin_idx)
+void LLGLTFLoader::populateJointsFromSkin(S32 skin_idx)
 {
     const LL::GLTF::Skin& skin = mGLTFAsset.mSkins[skin_idx];
 
@@ -1063,6 +1134,7 @@ void LLGLTFLoader::populateJointFromSkin(S32 skin_idx)
     {
         mInverseBindMatrices.resize(skin_idx + 1);
         mAlternateBindMatrices.resize(skin_idx + 1);
+        mJointNames.resize(skin_idx + 1);
         mValidJointsCount.resize(skin_idx + 1, 0);
     }
 
@@ -1119,7 +1191,7 @@ void LLGLTFLoader::populateJointFromSkin(S32 skin_idx)
     glm::mat4 ident(1.0);
     for (auto &viewer_data : mViewerJointData)
     {
-        buildOverrideMatrix(viewer_data, joints_data, names_to_nodes, ident);
+        buildOverrideMatrix(viewer_data, joints_data, names_to_nodes, ident, ident);
     }
 
     for (S32 i = 0; i < joint_count; i++)
@@ -1132,6 +1204,11 @@ void LLGLTFLoader::populateJointFromSkin(S32 skin_idx)
         {
             legal_name = mJointMap[legal_name];
             legal_joint = true;
+            mJointNames[skin_idx].push_back(legal_name);
+        }
+        else
+        {
+            mJointNames[skin_idx].emplace_back();
         }
 
         // Compute bind matrices
@@ -1190,6 +1267,15 @@ void LLGLTFLoader::populateJointFromSkin(S32 skin_idx)
             mJointList[legal_name] = newInverse;
             mJointsFromNode.push_front(legal_name);
         }
+    }
+}
+
+void LLGLTFLoader::populateJointGroups()
+{
+    std::string parent;
+    for (auto& viewer_data : mViewerJointData)
+    {
+        buildJointGroup(viewer_data, parent);
     }
 }
 
@@ -1296,7 +1382,19 @@ S32 LLGLTFLoader::findParentNode(S32 node) const
     return -1;
 }
 
-void LLGLTFLoader::buildOverrideMatrix(LLJointData& viewer_data, joints_data_map_t &gltf_nodes, joints_name_to_node_map_t &names_to_nodes, glm::mat4& parent_rest) const
+void LLGLTFLoader::buildJointGroup(LLJointData& viewer_data, const std::string &parent_group)
+{
+    JointGroups& jount_group_data = mJointGroups[viewer_data.mName];
+    jount_group_data.mGroup = viewer_data.mGroup;
+    jount_group_data.mParentGroup = parent_group;
+
+    for (LLJointData& child_data : viewer_data.mChildren)
+    {
+        buildJointGroup(child_data, viewer_data.mGroup);
+    }
+}
+
+void LLGLTFLoader::buildOverrideMatrix(LLJointData& viewer_data, joints_data_map_t &gltf_nodes, joints_name_to_node_map_t &names_to_nodes, glm::mat4& parent_rest, glm::mat4& parent_support_rest) const
 {
     glm::mat4 new_lefover(1.f);
     glm::mat4 rest(1.f);
@@ -1306,26 +1404,42 @@ void LLGLTFLoader::buildOverrideMatrix(LLJointData& viewer_data, joints_data_map
         S32 gltf_node_idx = found_node->second;
         JointNodeData& node = gltf_nodes[gltf_node_idx];
         node.mIsOverrideValid = true;
+        node.mViewerRestMatrix = viewer_data.mRestMatrix;
 
         glm::mat4 gltf_joint_rest_pose = coord_system_rotation * node.mGltfRestMatrix;
         if (mApplyXYRotation)
         {
             gltf_joint_rest_pose = coord_system_rotationxy * gltf_joint_rest_pose;
         }
-        node.mOverrideMatrix = glm::inverse(parent_rest) * gltf_joint_rest_pose;
 
-        glm::vec3 override;
+        glm::mat4 translated_joint;
+        // Example:
+        // Viewer has pelvis->spine1->spine2->torso.
+        // gltf example model has pelvis->torso
+        // By doing glm::inverse(transalted_rest_spine2) * gltf_rest_torso
+        // We get what torso would have looked like if gltf had a spine2
+        if (viewer_data.mIsJoint)
+        {
+            translated_joint = glm::inverse(parent_rest) * gltf_joint_rest_pose;
+        }
+        else
+        {
+            translated_joint = glm::inverse(parent_support_rest) * gltf_joint_rest_pose;
+        }
+
+        glm::vec3 translation_override;
         glm::vec3 skew;
         glm::vec3 scale;
         glm::vec4 perspective;
         glm::quat rotation;
-        glm::decompose(node.mOverrideMatrix, scale, rotation, override, skew, perspective);
-        glm::vec3 translate;
-        glm::decompose(viewer_data.mJointMatrix, scale, rotation, translate, skew, perspective);
-        glm::mat4 viewer_joint = glm::recompose(scale, rotation, override, skew, perspective);
+        glm::decompose(translated_joint, scale, rotation, translation_override, skew, perspective);
 
-        node.mOverrideMatrix = viewer_joint;
-        rest = parent_rest * node.mOverrideMatrix;
+        node.mOverrideMatrix = glm::recompose(glm::vec3(1, 1, 1), glm::identity<glm::quat>(), translation_override, glm::vec3(0, 0, 0), glm::vec4(0, 0, 0, 1));
+
+        glm::mat4 override_joint = node.mOverrideMatrix;
+        override_joint = glm::scale(override_joint, viewer_data.mScale);
+
+        rest = parent_rest * override_joint;
         node.mOverrideRestMatrix = rest;
     }
     else
@@ -1333,9 +1447,20 @@ void LLGLTFLoader::buildOverrideMatrix(LLJointData& viewer_data, joints_data_map
         // No override for this joint
         rest = parent_rest * viewer_data.mJointMatrix;
     }
+
+    glm::mat4 support_rest(1.f);
+    if (viewer_data.mSupport == LLJointData::SUPPORT_BASE)
+    {
+        support_rest = rest;
+    }
+    else
+    {
+        support_rest = parent_support_rest;
+    }
+
     for (LLJointData& child_data : viewer_data.mChildren)
     {
-        buildOverrideMatrix(child_data, gltf_nodes, names_to_nodes, rest);
+        buildOverrideMatrix(child_data, gltf_nodes, names_to_nodes, rest, support_rest);
     }
 }
 

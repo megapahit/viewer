@@ -72,19 +72,19 @@ class LLGLTFLoader : public LLModelLoader
     typedef std::map <std::string, S32> joints_name_to_node_map_t;
 
     LLGLTFLoader(std::string filename,
-                    S32                                 lod,
-                    LLModelLoader::load_callback_t      load_cb,
-                    LLModelLoader::joint_lookup_func_t  joint_lookup_func,
-                    LLModelLoader::texture_load_func_t  texture_load_func,
-                    LLModelLoader::state_callback_t     state_cb,
-                    void *                              opaque_userdata,
-                    JointTransformMap &                 jointTransformMap,
-                    JointNameSet &                      jointsFromNodes,
-                    std::map<std::string, std::string> &jointAliasMap,
-                    U32                                 maxJointsPerMesh,
-                    U32                                 modelLimit,
-                    std::vector<LLJointData>            viewer_skeleton); //,
-                    //bool                                preprocess );
+                    S32                                               lod,
+                    LLModelLoader::load_callback_t                    load_cb,
+                    LLModelLoader::joint_lookup_func_t                joint_lookup_func,
+                    LLModelLoader::texture_load_func_t                texture_load_func,
+                    LLModelLoader::state_callback_t                   state_cb,
+                    void *                                            opaque_userdata,
+                    JointTransformMap &                               jointTransformMap,
+                    JointNameSet &                                    jointsFromNodes,
+                    std::map<std::string, std::string, std::less<>> & jointAliasMap,
+                    U32                                               maxJointsPerMesh,
+                    U32                                               modelLimit,
+                    std::vector<LLJointData>                          viewer_skeleton); //,
+                    //bool                                            preprocess );
     virtual ~LLGLTFLoader();
 
     virtual bool OpenFile(const std::string &filename);
@@ -112,8 +112,20 @@ protected:
 
     // vector of vectors because of a posibility of having more than one skin
     typedef std::vector<LLMeshSkinInfo::matrix_list_t> bind_matrices_t;
+    typedef std::vector<std::vector<std::string> > joint_names_t;
     bind_matrices_t                     mInverseBindMatrices;
     bind_matrices_t                     mAlternateBindMatrices;
+    joint_names_t                       mJointNames; // empty string when no legal name for a given idx
+
+    // what group a joint belongs to.
+    // For purpose of stripping unused groups when joints are over limit.
+    struct JointGroups
+    {
+        std::string mGroup;
+        std::string mParentGroup;
+    };
+    typedef std::map<std::string, JointGroups> joint_to_group_map_t;
+    joint_to_group_map_t mJointGroups;
 
     // per skin joint count, needs to be tracked for the sake of limits check.
     std::vector<S32>                    mValidJointsCount;
@@ -122,14 +134,17 @@ private:
     bool parseMeshes();
     void computeCombinedNodeTransform(const LL::GLTF::Asset& asset, S32 node_index, glm::mat4& combined_transform) const;
     void processNodeHierarchy(S32 node_idx, std::map<std::string, S32>& mesh_name_counts, U32 submodel_limit, const LLVolumeParams& volume_params);
+    bool addJointToModelSkin(LLMeshSkinInfo& skin_info, S32 gltf_skin_idx, size_t gltf_joint_idx) const;
     bool populateModelFromMesh(LLModel* pModel, const LL::GLTF::Mesh &mesh, const LL::GLTF::Node &node, material_map& mats, S32 instance_count);
-    void populateJointFromSkin(S32 skin_idx);
+    void populateJointsFromSkin(S32 skin_idx);
+    void populateJointGroups();
     void addModelToScene(LLModel* pModel, U32 submodel_limit, const LLMatrix4& transformation, const LLVolumeParams& volume_params, const material_map& mats);
     S32 findClosestValidJoint(S32 source_joint, const LL::GLTF::Skin& gltf_skin) const;
     S32 findValidRootJointNode(S32 source_joint_node, const LL::GLTF::Skin& gltf_skin) const;
     S32 findGLTFRootJointNode(const LL::GLTF::Skin& gltf_skin) const; // if there are multiple roots, gltf stores them under one commor joint
     S32 findParentNode(S32 node) const;
-    void buildOverrideMatrix(LLJointData& data, joints_data_map_t &gltf_nodes, joints_name_to_node_map_t &names_to_nodes, glm::mat4& parent_rest) const;
+    void buildJointGroup(LLJointData& viewer_data, const std::string& parent_group);
+    void buildOverrideMatrix(LLJointData& data, joints_data_map_t &gltf_nodes, joints_name_to_node_map_t &names_to_nodes, glm::mat4& parent_rest, glm::mat4& support_rest) const;
     glm::mat4 buildGltfRestMatrix(S32 joint_node_index, const LL::GLTF::Skin& gltf_skin) const;
     glm::mat4 buildGltfRestMatrix(S32 joint_node_index, const joints_data_map_t& joint_data) const;
     glm::mat4 computeGltfToViewerSkeletonTransform(const joints_data_map_t& joints_data_map, S32 gltf_node_index, const std::string& joint_name) const;
