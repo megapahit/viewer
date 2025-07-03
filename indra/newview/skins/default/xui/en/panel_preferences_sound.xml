@@ -367,7 +367,7 @@
     follows="left|top"
     layout="topleft"
     left="270"
-    top_delta="6"
+    top_delta="10"
     name="Listen from"
     width="112">
     Hear voice from:
