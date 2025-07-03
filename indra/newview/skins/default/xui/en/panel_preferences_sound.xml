@@ -340,7 +340,7 @@
    follows="left|top"
    top_delta="-6"
    layout="topleft"
-   left_pad="5"
+   left_pad="10"
    width="360"
    height="40"
    name="media_ear_location">
@@ -360,45 +360,7 @@
        name="1"
        top_delta ="18"
        width="200" />
-  </radio_group>
-  <text
-    type="string"
-    length="1"
-    follows="left|top"
-    layout="topleft"
-    left="270"
-    top_delta="10"
-    name="Listen from"
-    width="112">
-    Hear voice from:
-  </text>
-  <radio_group
-    enabled_control="EnableVoiceChat"
-    control_name="VoiceEarLocation"
-    follows="left|top"
-    layout="topleft"
-    left_pad="2"
-    top_delta="-6"
-    width="360"
-    height="40"
-    name="ear_location">
-    <radio_item
-      height="19"
-      label="Camera position"
-      follows="left|top"
-      layout="topleft"
-      name="0"
-      width="200"/>
-    <radio_item
-      height="19"
-      follows="left|top"
-      label="Avatar position"
-      layout="topleft"
-      left_delta="0"
-      name="1"
-      top_delta ="18"
-      width="200" />
-    </radio_group>
+  </radio_group>  
  	<check_box
     name="media_show_on_others_btn"
     control_name="MediaShowOnOthers"
@@ -446,12 +408,12 @@
   </combo_box>
   <check_box
    control_name="StreamNotificationChannelEnabled"
-   height="30"
+   height="16"
    label="Custom stream notification channel"
    layout="topleft"
-   left="10"
+   left="20"
    name="stream_notification_channel_enabled"
-   top_pad="-10"
+   top_pad="10"
    width="256">
   </check_box>
   <spinner
@@ -459,26 +421,26 @@
    enabled_control="StreamNotificationChannelEnabled"
    decimal_digits="0"
    follows="left|top"
-   height="30"
+   height="23"
    increment="1"
    initial_value="751751"
    label="Channel number:"
    label_width="105"
    layout="topleft"
-   left_pad="0"
+   left_pad="10"
    max_val="2147483647"
    min_val="-2147483648"
    name="stream_notification_channel"
-   top_pad="-20"
+   top_pad="-15"
    width="170" />
   <text
    layout="topleft"
    height="15"
    left="260"
-   top_pad="-48"
+   top_pad="-18"
    width="100"
    name="noise_suppression_label">
-     Noise suppression
+     Noise Suppression
   </text>
   <combo_box
    control_name="VoiceNoiseSuppressionLevel"
@@ -509,12 +471,47 @@
      name="noise_suppression_max"
      value="4"/>
   </combo_box>
-  <text>
-<!-- spacer -->
+  <text
+   type="string"
+   length="1"
+   follows="left|top"
+   layout="topleft"
+   left="23"
+   top_delta="30"
+   name="Listen from"
+   width="112">
+     Hear voice from:
   </text>
+  <radio_group
+   enabled_control="EnableVoiceChat"
+   control_name="VoiceEarLocation"
+   follows="left|top"
+   layout="topleft"
+   left_pad="10"
+   top_delta="-6"
+   width="360"
+   height="40"
+   name="ear_location">
+   <radio_item
+    height="19"
+    label="Camera position"
+    follows="left|top"
+    layout="topleft"
+    name="0"
+    width="200"/>
+   <radio_item
+    height="19"
+    follows="left|top"
+    label="Avatar position"
+    layout="topleft"
+    left_delta="0"
+    name="1"
+    top_delta ="18" 
+    width="200" />
+  </radio_group>
   <check_box
    control_name="LipSyncEnabled"
-   follows="top|left"
+   follows="left|top"
    height="15"
    label="Move avatar lips when speaking"
    layout="topleft"
