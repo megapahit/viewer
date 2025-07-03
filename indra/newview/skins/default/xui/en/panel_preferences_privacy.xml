@@ -55,13 +55,24 @@
       width="350" />
 
   <check_box
+      control_name="ShowSelectionBeam"
+      height="16"
+      enabled="true"
+      label="Show selection particle beam when selecting or interacting with objects"
+      layout="topleft"
+      left="30"
+      name="selection_beam_visibility"
+      top_pad="15"
+      width="350" />
+
+   <check_box
       height="16"
       enabled="false"
       label="Only friends and groups know I'm online"
       layout="topleft"
       left="30"
       name="online_visibility"
-      top_pad="30"
+      top_pad="15"
       width="350" />
     
     <check_box

@@ -11,9 +11,6 @@ include(LLSharedLibs)
 include(ZLIBNG)
 include(Tracy)
 
-if ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
-  include(cpuinfo)
-endif ()
 
 set(llcommon_SOURCE_FILES
     apply.cpp
@@ -284,10 +281,6 @@ target_link_libraries(
         ll::oslibraries
         ll::tracy
     )
-
-if ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
-  target_link_libraries(llcommon ll::cpuinfo)
-endif ()
 
 target_include_directories(llcommon INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(llcommon PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

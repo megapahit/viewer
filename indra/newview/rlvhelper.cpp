@@ -50,9 +50,20 @@ BehaviourDictionary::BehaviourDictionary()
     // Reply-only
     //
     addEntry(new ReplyProcessor<EBehaviour::GetCommand>("getcommand"));
+    addEntry(new ReplyProcessor<EBehaviour::GetSitID>("getsitid"));
     addEntry(new ReplyProcessor<EBehaviour::Version, VersionReplyHandler>("version"));
     addEntry(new ReplyProcessor<EBehaviour::VersionNew, VersionReplyHandler>("versionnew"));
     addEntry(new ReplyProcessor<EBehaviour::VersionNum>("versionnum"));
+
+    // Force
+    addEntry(new ForceProcessor<EBehaviour::Sit>("sit"));
+    addEntry(new ForceProcessor<EBehaviour::SitGround>("sitground"));
+    addEntry(new ForceProcessor<EBehaviour::Unsit>("unsit"));
+
+    // AddRem
+    addEntry(new BehaviourProcessor<EBehaviour::Sit>("sit"));
+    addEntry(new BehaviourProcessor<EBehaviour::Unsit>("unsit"));
+    addEntry(new BehaviourProcessor<EBehaviour::Detach>("detach"));
 
     // Populate mString2InfoMap (the tuple <behaviour, type> should be unique)
     for (const BehaviourInfo* bhvr_info_p : mBhvrInfoList)

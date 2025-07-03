@@ -40,9 +40,6 @@
 #   include <intrin.h>
 #   undef _interlockedbittestandset
 #   undef _interlockedbittestandreset
-#if _M_ARM64
-#   include <cpuinfo.h>
-#endif
 #endif
 
 #include "llsd.h"
@@ -510,9 +507,7 @@ private:
         // the other three array elements. The CPU identification string is
         // not in linear order. The code below arranges the information
         // in a human readable form.
-#if _M_ARM64
-        cpuinfo_initialize();
-#else
+#if !_M_ARM64
         int cpu_info[4] = {-1};
         __cpuid(cpu_info, 0);
         unsigned int ids = (unsigned int)cpu_info[0];
@@ -521,44 +516,7 @@ private:
 
         char cpu_vendor[0x20];
         memset(cpu_vendor, 0, sizeof(cpu_vendor));
-#if _M_ARM64
-        switch (cpuinfo_get_current_core()->vendor)
-        {
-            case cpuinfo_vendor_unknown:
-                setInfo(eVendor, "Unknown");
-                break;
-            case cpuinfo_vendor_arm:
-                setInfo(eVendor, "ARM");
-                break;
-            case cpuinfo_vendor_qualcomm:
-                setInfo(eVendor, "Qualcomm");
-                break;
-            case cpuinfo_vendor_apple:
-                setInfo(eVendor, "Apple");
-                break;
-            case cpuinfo_vendor_samsung:
-                setInfo(eVendor, "Samsung");
-                break;
-            case cpuinfo_vendor_nvidia:
-                setInfo(eVendor, "Nvidia");
-                break;
-            case cpuinfo_vendor_cavium:
-                setInfo(eVendor, "Cavium");
-                break;
-            case cpuinfo_vendor_broadcom:
-                setInfo(eVendor, "Broadcom");
-                break;
-            case cpuinfo_vendor_apm:
-                setInfo(eVendor, "APM");
-                break;
-            case cpuinfo_vendor_huawei:
-                setInfo(eVendor, "Huawei");
-                break;
-            default:
-                setInfo(eVendor, "Unknown");
-                break;
-        }
-#else
+#if !_M_ARM64
         *((int*)cpu_vendor) = cpu_info[1];
         *((int*)(cpu_vendor+4)) = cpu_info[3];
         *((int*)(cpu_vendor+8)) = cpu_info[2];
@@ -572,8 +530,18 @@ private:
         }
 
 #if _M_ARM64
-        setInfo(eModel, cpuinfo_get_package(0)->name);
-        setInfo(eType, cpuinfo_get_uarch(0)->uarch);
+        HKEY hKey;
+        DWORD gotType;
+        char inBuffer[48] = "";
+        if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0", 0, KEY_READ, &hKey) == ERROR_SUCCESS)
+        {
+            if (!RegQueryValueExA(hKey, "ProcessorNameString", nullptr, &gotType, (PBYTE)(inBuffer), nullptr))
+            {
+                if ((gotType == REG_SZ) && strlen(inBuffer))
+                    setInfo(eModel, inBuffer);
+            }
+            RegCloseKey(hKey);
+        }
 #else
         // Get the information associated with each valid Id
         for(unsigned int i=0; i<=ids; ++i)

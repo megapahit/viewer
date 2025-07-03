@@ -4506,7 +4506,7 @@ void handle_object_sit(LLViewerObject* object, const LLVector3& offset)
 {
     // get object selection offset
 
-    if (object && object->getPCode() == LL_PCODE_VOLUME)
+    if (gAgent.isAllowedToSit() && object && object->getPCode() == LL_PCODE_VOLUME)
     {
 
         gMessageSystem->newMessageFast(_PREHASH_AgentRequestSit);
@@ -7700,6 +7700,7 @@ bool enable_detach(const LLSD&)
     // Only enable detach if all faces of object are selected
     if (!object ||
         !object->isAttachment() ||
+        object->isLocked() ||
         !LLSelectMgr::getInstance()->getSelection()->contains(object,SELECT_ALL_TES ))
     {
         return false;

@@ -46,6 +46,9 @@ include(VisualLeakDetector)
 #include(VulkanGltf)
 include(ZLIBNG)
 include(LLPrimitive)
+if (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+  include(UnixInstall)
+endif ()
 
 if (ENABLE_MEDIA_PLUGINS)
     include(LibVLCPlugin)
@@ -1500,6 +1503,7 @@ if (NOT (DARWIN OR WINDOWS))
       llappviewerlinux.cpp
       PROPERTIES
       COMPILE_DEFINITIONS "${VIEWER_CHANNEL_VERSION_DEFINES}"
+      COMPILE_FLAGS "-DAPP_PLUGIN_DIR=\\\"${INSTALL_LIBRARY_DIR}\\\""
       )
     #LIST(APPEND viewer_SOURCE_FILES llappviewerlinux_api_dbus.cpp)
   if (NOT CMAKE_CXX_COMPILER_ID MATCHES AppleClang)
@@ -1759,10 +1763,33 @@ if (PACKAGE)
     CACHE STRING "Viewer major.minor.patch.revision versions.")
   set(VIEWER_PACKAGE_COMMENT "A fork of the Second Life viewer")
   set(VIEWER_PACKAGE_DESCRIPTION "An entrance to virtual empires in only megabytes. A shelter for the metaverse refugees, especially those from less supported operating systems.")
-  set(VIEWER_PACKAGE_DOMAIN_NAME ${VIEWER_BINARY_NAME}.net)
+  string(TOLOWER ${VIEWER_BINARY_NAME} DOMAIN_NAME)
+  set(VIEWER_PACKAGE_DOMAIN_NAME ${DOMAIN_NAME}.net)
 endif ()
 
-if (CMAKE_COMMAND MATCHES /usr/bin/cmake OR WINDOWS)
+if (CMAKE_COMMAND MATCHES /usr/bin/cmake)
+  add_custom_command(
+    TARGET ${VIEWER_BINARY_NAME} POST_BUILD
+    COMMAND sed
+    ARGS -e '/Linden Lab.*/d' ${CMAKE_HOME_DIRECTORY}/../doc/contributions.txt > ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/following residents.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/along with.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/^$$/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/\t.*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sed
+    ARGS -i '/^    .*/d' ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND sort
+    ARGS -R contributions.txt -o ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt
+    COMMAND paste
+    ARGS -s -d, ${CMAKE_CURRENT_BINARY_DIR}/contributions.txt > ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
+    COMMAND sed
+    ARGS -i 's/,/, /g' ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
+    )
+elseif (WINDOWS)
   add_custom_command(
     TARGET ${VIEWER_BINARY_NAME} POST_BUILD
     COMMAND sed
@@ -1982,9 +2009,9 @@ if (WINDOWS)
       set(CPACK_NSIS_PACKAGE_NAME ${VIEWER_BINARY_NAME})
       set(CPACK_NSIS_HELP_LINK https://${VIEWER_PACKAGE_DOMAIN_NAME})
       set(CPACK_NSIS_URL_INFO_ABOUT https://${VIEWER_PACKAGE_DOMAIN_NAME})
-      set(CPACK_NSIS_CONTACT $ENV{USER}@${VIEWER_PACKAGE_DOMAIN_NAME})
+      set(CPACK_NSIS_CONTACT $ENV{USERNAME}@${VIEWER_PACKAGE_DOMAIN_NAME})
       set(CPACK_NSIS_WELCOME_TITLE "Welcome to ${VIEWER_BINARY_NAME}!")
-      set(CPACK_NSIS_MENU_LINKS Megapahit.exe "Megapahit Viewer")
+      set(CPACK_NSIS_MENU_LINKS ${VIEWER_BINARY_NAME}.exe "${VIEWER_BINARY_NAME} Viewer")
       set(CPACK_PACKAGE_INSTALL_DIRECTORY ${VIEWER_BINARY_NAME})
 
       if (FALSE)
@@ -2107,10 +2134,6 @@ target_link_libraries(${VIEWER_BINARY_NAME}
 
 if (NOT (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES aarch64)))
    target_link_libraries(${VIEWER_BINARY_NAME} llwebrtc )
-endif ()
-
-if ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
-   target_link_libraries(${VIEWER_BINARY_NAME} clog)
 endif ()
 
 if (ENABLE_MEDIA_PLUGINS)
@@ -2292,7 +2315,7 @@ if (LINUX)
         set(CPACK_RPM_PACKAGE_REQUIRES "apr-util, boost-fiber, boost-program-options, boost-regex, boost-thread, boost-url, expat, fltk, mesa-libGLU, hunspell, libnghttp2, openjpeg2, SDL2, vlc-libs, vlc-plugins-base, libvorbis"
           CACHE STRING "RPM package requirements.")
       else ()
-        set(CPACK_RPM_PACKAGE_REQUIRES "libapr-util1-0, libboost_fiber1_88_0, libboost_program_options1_88_0, libboost_regex1_88_0, libboost_thread1_88_0, libboost_url1_88_0, libboost_url1_88_0-x86-64-v3, expat, libfltk1_3, libGLU1, libhunspell-1_7-0, libnghttp2-14, openjpeg2, libSDL2-2_0-0, libvlc5, vlc-codecs, libvorbis0"
+        set(CPACK_RPM_PACKAGE_REQUIRES "libapr-util1-0, libboost_fiber1_88_0, libboost_program_options1_88_0, libboost_regex1_88_0, libboost_thread1_88_0, libboost_url1_88_0, libboost_url1_88_0-x86-64-v3, libpng16-16 expat, libfltk1_3, libGLU1, libhunspell-1_7-0, libnghttp2-14, openjpeg2, libSDL2-2_0-0, libvlc5, vlc-codecs, libvorbis0"
           CACHE STRING "RPM package requirements.")
       endif ()
     endif ()

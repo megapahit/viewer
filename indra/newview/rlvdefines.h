@@ -93,6 +93,11 @@ namespace Rlv
         Version = 0,
         VersionNew,
         VersionNum,
+        GetSitID,
+        Sit,
+        SitGround,
+        Unsit,
+        Detach,
         GetCommand,
 
         Count,

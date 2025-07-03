@@ -28,8 +28,11 @@
 #include "llviewerprecompiledheaders.h"
 #include "llagent.h"
 #include "llstartup.h"
+#include "llmoveview.h"
 #include "llviewercontrol.h"
+#include "llviewermenu.h"
 #include "llviewerobject.h"
+#include "llviewerobjectlist.h"
 
 #include "rlvcommon.h"
 #include "rlvhandler.h"
@@ -109,6 +112,9 @@ ECmdRet RlvHandler::processCommand(std::reference_wrapper<const RlvCommand> rlvC
     switch (rlvCmd.get().getParamType())
     {
         case EParamType::Reply:
+        case EParamType::Force:
+        case EParamType::Remove:
+        case EParamType::Add:
             eRet = rlvCmd.get().processCommand();
             break;
         case EParamType::Unknown:
@@ -219,6 +225,80 @@ ECmdRet ReplyHandler<EBehaviour::VersionNum>::onCommand(const RlvCommand& rlvCmd
         strReply = Strings::getVersionImplNum();
     else
         return ECmdRet::FailedOption;
+    return ECmdRet::Succeeded;
+}
+
+template<> template<>
+ECmdRet ReplyHandler<EBehaviour::GetSitID>::onCommand(const RlvCommand& rlvCmd, std::string& strReply)
+{
+    if (gAgent.isSitting())
+        gAgent.getSitObjectID().toString(strReply);
+    else
+        strReply = "00000000-0000-0000-0000-000000000000";
+    return ECmdRet::Succeeded;
+}
+
+// Force
+
+ECmdRet CommandHandlerBaseImpl<EParamType::Force>::processCommand(const RlvCommand& rlvCmd, ForceHandlerFunc* pHandler)
+{
+    return (*pHandler)(rlvCmd);
+}
+
+template<> template<>
+ECmdRet ForceHandler<EBehaviour::Sit>::onCommand(const RlvCommand& rlvCmd)
+{
+    handle_object_sit(LLUUID{rlvCmd.getOption()});
+    return ECmdRet::Succeeded;
+}
+
+template<> template<>
+ECmdRet ForceHandler<EBehaviour::SitGround>::onCommand(const RlvCommand& rlvCmd)
+{
+    gAgent.sitDown();
+    return ECmdRet::Succeeded;
+}
+
+template<> template<>
+ECmdRet ForceHandler<EBehaviour::Unsit>::onCommand(const RlvCommand& rlvCmd)
+{
+    gAgent.standUp();
+    return ECmdRet::Succeeded;
+}
+
+// AddRem
+
+ECmdRet CommandHandlerBaseImpl<EParamType::AddRem>::processCommand(const RlvCommand& rlvCmd, BhvrHandlerFunc* pHandler, BhvrToggleHandlerFunc* pToggleHandler)
+{
+    auto param = rlvCmd.getParam();
+    bool toggle = false;
+    if (param == "y")
+        toggle = true;
+    else if (param != "n")
+        return ECmdRet::FailedParam;
+    return (*pHandler)(rlvCmd, toggle);
+}
+
+template<> template<>
+ECmdRet BehaviourToggleHandler<EBehaviour::Sit>::onCommand(const RlvCommand& rlvCmd, bool& toggle)
+{
+    gAgent.setAllowedToSit(toggle);
+    return ECmdRet::Succeeded;
+}
+
+template<> template<>
+ECmdRet BehaviourToggleHandler<EBehaviour::Unsit>::onCommand(const RlvCommand& rlvCmd, bool& toggle)
+{
+    gAgent.setAllowedToStand(toggle);
+    if (gAgent.isSitting())
+        LLPanelStandStopFlying::getInstance()->setVisibleStandButton(toggle);
+    return ECmdRet::Succeeded;
+}
+
+template<> template<>
+ECmdRet BehaviourToggleHandler<EBehaviour::Detach>::onCommand(const RlvCommand& rlvCmd, bool& toggle)
+{
+    gObjectList.findObject(rlvCmd.getObjectID())->setLocked(!toggle);
     return ECmdRet::Succeeded;
 }
 
