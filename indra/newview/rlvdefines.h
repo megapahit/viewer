@@ -97,6 +97,7 @@ namespace Rlv
         Sit,
         SitGround,
         Unsit,
+        Detach,
         GetCommand,
 
         Count,

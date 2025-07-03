@@ -974,10 +974,14 @@ public:
 
     LLJointRiggingInfoTab mJointRiggingInfoTab;
 
+    bool isLocked() const       { return mLocked; }
+    void setLocked(bool locked) { mLocked = locked; }
+
 private:
     LLUUID mAttachmentItemID; // ItemID of the associated object is in user inventory.
     EObjectUpdateType   mLastUpdateType;
     bool    mLastUpdateCached;
+    bool    mLocked;
 
 public:
     // reflection probe state

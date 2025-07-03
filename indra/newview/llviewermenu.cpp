@@ -7700,6 +7700,7 @@ bool enable_detach(const LLSD&)
     // Only enable detach if all faces of object are selected
     if (!object ||
         !object->isAttachment() ||
+        object->isLocked() ||
         !LLSelectMgr::getInstance()->getSelection()->contains(object,SELECT_ALL_TES ))
     {
         return false;

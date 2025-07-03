@@ -32,6 +32,7 @@
 #include "llviewercontrol.h"
 #include "llviewermenu.h"
 #include "llviewerobject.h"
+#include "llviewerobjectlist.h"
 
 #include "rlvcommon.h"
 #include "rlvhandler.h"
@@ -291,6 +292,13 @@ ECmdRet BehaviourToggleHandler<EBehaviour::Unsit>::onCommand(const RlvCommand& r
     gAgent.setAllowedToStand(toggle);
     if (gAgent.isSitting())
         LLPanelStandStopFlying::getInstance()->setVisibleStandButton(toggle);
+    return ECmdRet::Succeeded;
+}
+
+template<> template<>
+ECmdRet BehaviourToggleHandler<EBehaviour::Detach>::onCommand(const RlvCommand& rlvCmd, bool& toggle)
+{
+    gObjectList.findObject(rlvCmd.getObjectID())->setLocked(!toggle);
     return ECmdRet::Succeeded;
 }
 
