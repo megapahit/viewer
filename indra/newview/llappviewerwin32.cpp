@@ -31,7 +31,9 @@
 #endif
 #include "llwin32headers.h"
 
+#if !LL_SDL
 #include "llwindowwin32.h" // *FIX: for setting gIconResource.
+#endif
 
 #include "llappviewerwin32.h"
 
@@ -423,7 +425,9 @@ int APIENTRY WINMAIN(HINSTANCE hInstance,
     DWORD heap_enable_lfh_error[MAX_HEAPS];
     S32 num_heaps = 0;
 
+#if !LL_SDL
     LLWindowWin32::setDPIAwareness();
+#endif
 
 #if WINDOWS_CRT_MEM_CHECKS && !INCLUDE_VLD
     _CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF ); // dump memory leaks on exit
@@ -452,8 +456,10 @@ int APIENTRY WINMAIN(HINSTANCE hInstance,
 #endif
 #endif
 
+#if !LL_SDL
     // *FIX: global
     gIconResource = MAKEINTRESOURCE(IDI_LL_ICON);
+#endif
 
     LLAppViewerWin32* viewer_app_ptr = new LLAppViewerWin32(ll_convert_wide_to_string(pCmdLine).c_str());
 
