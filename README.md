@@ -116,7 +116,7 @@ $ open newview/Megapahit.app
 ### openSUSE Tumbleweed
 
 ```
-$ sudo zypper install gcc-c++ patchelf apr-util-devel boost-devel libboost_program_options-devel libboost_url1_88_0 libboost_url1_88_0-devel libboost_context-devel libboost_fiber-devel libboost_filesystem-devel libboost_regex-devel libboost_system-devel libboost_thread-devel libpng16-devel libxml++-devel libexpat-devel fltk-devel glu-devel hunspell-devel minizip-devel nanosvg-devel libnghttp2-devel openjpeg2-devel pipewire-devel libpulse-devel libSDL2_gfx-1_0-0 libSDL2_gfx-devel sdl2-compat-devel vlc-devel libvorbis-devel xxhash-devel zlib-ng-devel libXrender-devel libXcursor-devel libXfixes-devel libXext-devel libXft-devel libXinerama-devel freetype2-devel fontconfig-devel libjpeg8-devel libjpeg8-devel freealut-devel
+$ sudo zypper install cmake gcc-c++ patch patchelf apr-util-devel boost-devel libboost_program_options-devel libboost_url1_88_0 libboost_url1_88_0-devel libboost_context-devel libboost_fiber-devel libboost_filesystem-devel libboost_regex-devel libboost_system-devel libboost_thread-devel libpng16-devel libxml++-devel libexpat-devel fltk-devel glu-devel hunspell-devel minizip-devel nanosvg-devel libnghttp2-devel openjpeg2-devel pipewire-devel libpulse-devel libSDL2_gfx-1_0-0 libSDL2_gfx-devel sdl2-compat-devel vlc-devel libvorbis-devel xxhash-devel zlib-ng-devel libXrender-devel libXcursor-devel libXfixes-devel libXext-devel libXft-devel libXinerama-devel freetype2-devel fontconfig-devel libjpeg8-devel libjpeg8-devel freealut-devel
 $ export LL_BUILD="-O3 -std=c++20 -fPIC -DLL_LINUX=1"
 ```
 build with FMOD Studio: ([register with fmod to get linux package][fmod] and then place the `.tar.gz` in `~/Downloads`)
