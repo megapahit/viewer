@@ -2178,6 +2178,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     set_source_files_properties(llviewerstats.cpp PROPERTIES
         COMPILE_FLAGS -Wno-unused-value)
     set_source_files_properties(
+        gltf/llgltfloader.cpp
         llaisapi.cpp
         llconversationlog.cpp
         llconversationmodel.cpp
