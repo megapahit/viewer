@@ -374,33 +374,6 @@
         name="autoplay_ask"
         value="2"/>
   </combo_box>
-  <check_box
-   control_name="StreamNotificationChannelEnabled"
-   height="16"
-   label="Custom stream notification channel"
-   layout="topleft"
-   left="20"
-   name="stream_notification_channel_enabled"
-   top_pad="10"
-   width="256">
-  </check_box>
-  <spinner
-   control_name="StreamNotificationChannel"
-   enabled_control="StreamNotificationChannelEnabled"
-   decimal_digits="0"
-   follows="left|top"
-   height="23"
-   increment="1"
-   initial_value="751751"
-   label="Channel number:"
-   label_width="105"
-   layout="topleft"
-   left_pad="10"
-   max_val="2147483647"
-   min_val="-2147483648"
-   name="stream_notification_channel"
-   top_pad="-15"
-   width="170" />
     <text
         follows="left|top"
         layout="topleft"
