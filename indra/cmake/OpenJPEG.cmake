@@ -19,7 +19,7 @@ if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKIN
     DESTINATION ${CMAKE_BINARY_DIR}
     )
 
-  if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
+  if (${LINUX_DISTRO} MATCHES debian AND CMAKE_SYSTEM_PROCESSOR MATCHES x86_64 OR (${LINUX_DISTRO} MATCHES ubuntu))
     try_compile(OPENJPEG_RESULT
       PROJECT OPENJPEG
       SOURCE_DIR ${CMAKE_BINARY_DIR}/openjpeg-2.5.3
@@ -61,7 +61,7 @@ if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKIN
   file(WRITE ${PREBUILD_TRACKING_DIR}/openjpeg_installed "${openjpeg_installed}")
 endif ()
 
-if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
+if (${LINUX_DISTRO} MATCHES debian AND CMAKE_SYSTEM_PROCESSOR MATCHES x86_64 OR (${LINUX_DISTRO} MATCHES ubuntu))
 target_link_libraries(ll::openjpeg INTERFACE openjp2 )
 else ()
     include(FindPkgConfig)

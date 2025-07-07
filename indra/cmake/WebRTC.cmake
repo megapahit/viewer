@@ -6,7 +6,7 @@ include_guard()
 
 add_library( ll::webrtc INTERFACE IMPORTED )
 target_include_directories( ll::webrtc SYSTEM INTERFACE "${LIBS_PREBUILT_DIR}/include/webrtc" "${LIBS_PREBUILT_DIR}/include/webrtc/third_party/abseil-cpp")
-if (${LINUX_DISTRO} MATCHES debian OR CMAKE_OSX_ARCHITECTURES MATCHES x86_64 OR WINDOWS)
+if (${LINUX_DISTRO} MATCHES debian AND CMAKE_SYSTEM_PROCESSOR MATCHES x86-64 OR CMAKE_OSX_ARCHITECTURES MATCHES x86_64 OR WINDOWS)
 use_prebuilt_binary(webrtc)
 elseif (NOT (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES aarch64)))
     target_compile_definitions(ll::webrtc INTERFACE CM_WEBRTC=1)
