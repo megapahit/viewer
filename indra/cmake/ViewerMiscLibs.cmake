@@ -16,7 +16,7 @@ endif()
 use_prebuilt_binary(slvoice)
 endif (FALSE)
 
-if (${LINUX_DISTRO} MATCHES debian OR DARWIN)
+if (${LINUX_DISTRO} MATCHES debian AND CMAKE_SYSTEM_PROCESSOR MATCHES x86_64 OR DARWIN)
 use_prebuilt_binary(nanosvg)
 endif ()
 use_prebuilt_binary(viewer-fonts)
