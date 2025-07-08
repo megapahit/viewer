@@ -16,7 +16,7 @@ endif()
 use_prebuilt_binary(slvoice)
 endif (FALSE)
 
-if (${LINUX_DISTRO} MATCHES debian OR DARWIN OR WINDOWS)
+if (${LINUX_DISTRO} MATCHES debian OR DARWIN)
 use_prebuilt_binary(nanosvg)
 endif ()
 use_prebuilt_binary(viewer-fonts)

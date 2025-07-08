@@ -170,7 +170,7 @@ $ megapahit
 
 ### Windows arm64
 ```
-$ vcpkg install pkgconf python3 freealut apr-util boost curl freetype glm hunspell libjpeg-turbo meshoptimizer minizip nghttp2 openjpeg sse2neon libvorbis libxml2[tools] xxhash
+$ vcpkg install pkgconf python3 freealut apr-util boost curl freetype glm hunspell libjpeg-turbo meshoptimizer minizip nanosvg nghttp2 openjpeg sse2neon libvorbis libxml2[tools] xxhash
 $ vcpkg install --allow-unsupported boost-fiber
 $ export LL_BUILD="/MD /O2 /Ob2 /std:c++20 /Zc:wchar_t- /Zi /GR /DLL_RELEASE=1 /DLL_RELEASE_FOR_DOWNLOAD=1 /DNDEBUG /D_SECURE_STL=0 /D_HAS_ITERATOR_DEBUGGING=0 /DWIN32 /D_WINDOWS /DLL_WINDOWS=1 /DUNICODE /D_UNICODE /DWINVER=0x0602 /D_WIN32_WINNT=0x0602 /Zc:preprocessor"
 $ export PATH="$VCPKG_ROOT/downloads/tools/cmake-3.30.1-windows/cmake-3.30.1-windows-arm64/bin:$VCPKG_ROOT/downloads/tools/msys2/2db36fb050d01f45/usr/bin:$VCPKG_ROOT/installed/arm64-windows/tools/libxml2:/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin:$PATH"
@@ -184,7 +184,7 @@ $ start Megapahit-`cat newview/viewer_version.txt`-win64.exe
 
 ### Windows x64
 ```
-$ vcpkg install pkgconf python3 freealut apr-util boost freetype glm hunspell libjpeg-turbo meshoptimizer minizip nghttp2 openjpeg libvorbis libxml2[tools] xxhash
+$ vcpkg install pkgconf python3 freealut apr-util boost freetype glm hunspell libjpeg-turbo meshoptimizer minizip nanosvg nghttp2 openjpeg libvorbis libxml2[tools] xxhash
 $ export LL_BUILD="/MD /O2 /Ob2 /std:c++20 /Zc:wchar_t- /Zi /GR /DLL_RELEASE=1 /DLL_RELEASE_FOR_DOWNLOAD=1 /DNDEBUG /D_SECURE_STL=0 /D_HAS_ITERATOR_DEBUGGING=0 /DWIN32 /D_WINDOWS /DLL_WINDOWS=1 /DUNICODE /D_UNICODE /DWINVER=0x0602 /D_WIN32_WINNT=0x0602"
 $ export PATH="$VCPKG_ROOT/downloads/tools/cmake-3.30.1-windows/cmake-3.30.1-windows-i386/bin:$VCPKG_ROOT/downloads/tools/msys2/2db36fb050d01f45/usr/bin:$VCPKG_ROOT/installed/x64-windows/tools/libxml2:/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin:$PATH"
 $ export PKG_CONFIG_LIBDIR="$VCPKG_ROOT/installed/x64-windows/lib/pkgconfig"
