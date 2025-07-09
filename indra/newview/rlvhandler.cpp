@@ -28,6 +28,8 @@
 #include "llviewerprecompiledheaders.h"
 #include "llagent.h"
 #include "llstartup.h"
+#include "llappearancemgr.h"
+#include "llinventorymodel.h"
 #include "llmoveview.h"
 #include "llviewercontrol.h"
 #include "llviewermenu.h"
@@ -235,6 +237,29 @@ ECmdRet ReplyHandler<EBehaviour::GetSitID>::onCommand(const RlvCommand& rlvCmd, 
         gAgent.getSitObjectID().toString(strReply);
     else
         strReply = "00000000-0000-0000-0000-000000000000";
+    return ECmdRet::Succeeded;
+}
+
+template<> template<>
+ECmdRet ReplyHandler<EBehaviour::GetInv>::onCommand(const RlvCommand& rlvCmd, std::string& strReply)
+{
+    LLInventoryModel::cat_array_t* cats;
+    LLInventoryModel::item_array_t* items;
+    auto rlvFolderID = findDescendentCategoryIDByName(gInventory.getRootFolderID(), "#RLV");
+    if (rlvFolderID == LLUUID::null)
+        return ECmdRet::FailedNoSharedRoot;
+    strReply = "";
+    gInventory.getDirectDescendentsOf(rlvFolderID, cats, items);
+    auto iter = cats->begin();
+    for(; cats->end() != iter; ++iter)
+    {
+        auto name = (*iter)->getName();
+        if (name.front() == '.')
+            continue;
+        if (iter != cats->begin())
+            strReply.append(",");
+        strReply.append(name);
+    }
     return ECmdRet::Succeeded;
 }
 

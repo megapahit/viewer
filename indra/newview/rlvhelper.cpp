@@ -51,6 +51,7 @@ BehaviourDictionary::BehaviourDictionary()
     //
     addEntry(new ReplyProcessor<EBehaviour::GetCommand>("getcommand"));
     addEntry(new ReplyProcessor<EBehaviour::GetSitID>("getsitid"));
+    addEntry(new ReplyProcessor<EBehaviour::GetInv>("getinv"));
     addEntry(new ReplyProcessor<EBehaviour::Version, VersionReplyHandler>("version"));
     addEntry(new ReplyProcessor<EBehaviour::VersionNew, VersionReplyHandler>("versionnew"));
     addEntry(new ReplyProcessor<EBehaviour::VersionNum>("versionnum"));
