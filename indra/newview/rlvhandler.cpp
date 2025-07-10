@@ -243,13 +243,26 @@ ECmdRet ReplyHandler<EBehaviour::GetSitID>::onCommand(const RlvCommand& rlvCmd, 
 template<> template<>
 ECmdRet ReplyHandler<EBehaviour::GetInv>::onCommand(const RlvCommand& rlvCmd, std::string& strReply)
 {
-    LLInventoryModel::cat_array_t* cats;
-    LLInventoryModel::item_array_t* items;
-    auto rlvFolderID = findDescendentCategoryIDByName(gInventory.getRootFolderID(), "#RLV");
-    if (rlvFolderID == LLUUID::null)
+    auto folderID = findDescendentCategoryIDByName(gInventory.getRootFolderID(), "#RLV");
+    if (folderID == LLUUID::null)
         return ECmdRet::FailedNoSharedRoot;
     strReply = "";
-    gInventory.getDirectDescendentsOf(rlvFolderID, cats, items);
+    LLInventoryModel::cat_array_t* cats;
+    LLInventoryModel::item_array_t* items;
+    std::vector<std::string> optionList;
+    auto option = rlvCmd.getOption();
+    if (!option.empty())
+    {
+        Util::parseStringList(option, optionList, "/");
+        auto optIter = optionList.begin();
+        for(; optionList.end() != optIter; ++optIter)
+        {
+            auto name = *optIter;
+            if (!name.empty())
+                folderID = findDescendentCategoryIDByName(folderID, name);
+        }
+    }
+    gInventory.getDirectDescendentsOf(folderID, cats, items);
     auto iter = cats->begin();
     for(; cats->end() != iter; ++iter)
     {
