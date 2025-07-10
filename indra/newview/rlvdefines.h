@@ -99,6 +99,7 @@ namespace Rlv
         Unsit,
         Detach,
         GetInv,
+        Attach,
         GetCommand,
 
         Count,

@@ -304,6 +304,33 @@ ECmdRet ForceHandler<EBehaviour::Unsit>::onCommand(const RlvCommand& rlvCmd)
     return ECmdRet::Succeeded;
 }
 
+template<> template<>
+ECmdRet ForceHandler<EBehaviour::Attach>::onCommand(const RlvCommand& rlvCmd)
+{
+    auto rlvFolderID = findDescendentCategoryIDByName(gInventory.getRootFolderID(), "#RLV");
+    if (rlvFolderID == LLUUID::null)
+        return ECmdRet::FailedNoSharedRoot;
+    std::vector<std::string> optionList;
+    auto option = rlvCmd.getOption();
+    if (!option.empty())
+    {
+        auto folderID = findDescendentCategoryIDByName(rlvFolderID, option);
+        if (folderID == LLUUID::null)
+        {
+            Util::parseStringList(option, optionList, "/");
+            auto iter = optionList.begin();
+            for(; optionList.end() != iter; ++iter)
+            {
+                auto name = *iter;
+                if (!name.empty())
+                    folderID = findDescendentCategoryIDByName(folderID, name);
+            }
+        }
+        LLAppearanceMgr::instance().replaceCurrentOutfit(folderID);
+    }
+    return ECmdRet::Succeeded;
+}
+
 // AddRem
 
 ECmdRet CommandHandlerBaseImpl<EParamType::AddRem>::processCommand(const RlvCommand& rlvCmd, BhvrHandlerFunc* pHandler, BhvrToggleHandlerFunc* pToggleHandler)

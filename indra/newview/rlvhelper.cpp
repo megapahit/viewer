@@ -60,6 +60,7 @@ BehaviourDictionary::BehaviourDictionary()
     addEntry(new ForceProcessor<EBehaviour::Sit>("sit"));
     addEntry(new ForceProcessor<EBehaviour::SitGround>("sitground"));
     addEntry(new ForceProcessor<EBehaviour::Unsit>("unsit"));
+    addEntry(new ForceProcessor<EBehaviour::Attach>("attach"));
 
     // AddRem
     addEntry(new BehaviourProcessor<EBehaviour::Sit>("sit"));
