@@ -590,7 +590,7 @@
       -->
     <color
       name="NameTagBackground"
-      value="0 0 0 1" />
+      value="0.101 0.101 0.101 0.6" />
     <color
      name="NameTagChat"
      reference="White" />
