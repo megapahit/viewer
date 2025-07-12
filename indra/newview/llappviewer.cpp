@@ -1348,6 +1348,10 @@ bool LLAppViewer::doFrame()
     U64 fpsLimitSleepFor = 0;
     TimePoint fpsLimitFrameStartTime = std::chrono::steady_clock::now();
 
+#ifdef LL_DISCORD
+    LLStartUp::runDiscordCallbacks();
+#endif
+
     LL_RECORD_BLOCK_TIME(FTM_FRAME);
     {
     // and now adjust the visuals from previous frame.

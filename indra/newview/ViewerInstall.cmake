@@ -169,6 +169,13 @@ elseif (WINDOWS)
         DESTINATION .
         )
 
+    if (USE_DISCORD)
+        install(
+            PROGRAMS ${LIBS_PREBUILT_DIR}/bin/release/discord_partner_sdk.dll
+            DESTINATION .
+            )
+    endif ()
+
     install(
         PROGRAMS
             ${prefix_result}/../bin/boost_context-vc143-mt-${BOOST_PLATFORM}-1_88.dll
@@ -192,6 +199,12 @@ if (LINUX)
                 set(_LIB lib${ADDRESS_SIZE})
         else ()
                 set(_LIB lib)
+        endif ()
+        if (USE_DISCORD)
+            install(
+                FILES ${ARCH_PREBUILT_DIRS_RELEASE}/libdiscord_partner_sdk.so
+                DESTINATION ${_LIB}
+                )
         endif ()
         if (USE_FMODSTUDIO)
             install(FILES
