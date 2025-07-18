@@ -86,6 +86,8 @@ static const glm::mat4 coord_system_rotationxy(
     0.f, 0.f, 0.f, 1.f
 );
 
+static const S32 VERTICIES_LIMIT = USHRT_MAX - 2;
+
 LLGLTFLoader::LLGLTFLoader(std::string                filename,
     S32                                               lod,
     LLModelLoader::load_callback_t                    load_cb,
@@ -98,6 +100,7 @@ LLGLTFLoader::LLGLTFLoader(std::string                filename,
     std::map<std::string, std::string, std::less<>> & jointAliasMap,
     U32                                               maxJointsPerMesh,
     U32                                               modelLimit,
+    U32                                               debugMode,
     std::vector<LLJointData>                          viewer_skeleton) //,
     //bool                                            preprocess)
     : LLModelLoader( filename,
@@ -110,9 +113,12 @@ LLGLTFLoader::LLGLTFLoader(std::string                filename,
                      jointTransformMap,
                      jointsFromNodes,
                      jointAliasMap,
-                     maxJointsPerMesh )
-    , mGeneratedModelLimit(modelLimit)
+                     maxJointsPerMesh,
+                     modelLimit,
+                     debugMode)
     , mViewerJointData(viewer_skeleton)
+    , mGltfLoaded(false)
+    , mApplyXYRotation(false)
 {
 }
 
@@ -120,6 +126,9 @@ LLGLTFLoader::~LLGLTFLoader() {}
 
 bool LLGLTFLoader::OpenFile(const std::string &filename)
 {
+    // Clear the material cache for new file
+    mMaterialCache.clear();
+
     tinygltf::TinyGLTF loader;
     std::string filename_lc(filename);
     LLStringUtil::toLower(filename_lc);
@@ -182,6 +191,7 @@ bool LLGLTFLoader::OpenFile(const std::string &filename)
 
 void LLGLTFLoader::addModelToScene(
     LLModel* pModel,
+    const std::string& model_name,
     U32 submodel_limit,
     const LLMatrix4& transformation,
     const LLVolumeParams& volume_params,
@@ -216,6 +226,7 @@ void LLGLTFLoader::addModelToScene(
     LLVolume::face_list_t remainder;
     std::vector<LLModel*> ready_models;
     LLModel* current_model = pModel;
+
     do
     {
         current_model->trimVolumeFacesToSize(LL_SCULPT_MESH_MAX_FACES, &remainder);
@@ -233,7 +244,26 @@ void LLGLTFLoader::addModelToScene(
             LLModel* next = new LLModel(volume_params, 0.f);
             next->ClearFacesAndMaterials();
             next->mSubmodelID = ++submodelID;
-            next->mLabel = pModel->mLabel + (char)((int)'a' + next->mSubmodelID) + lod_suffix[mLod];
+
+            std::string instance_name = model_name;
+            if (next->mSubmodelID > 0)
+            {
+                instance_name += (char)((int)'a' + next->mSubmodelID);
+            }
+            // Check for duplicates and add copy suffix if needed
+            int duplicate_count = 0;
+            for (const auto& inst : mScene[transformation])
+            {
+                if (inst.mLabel == instance_name)
+                {
+                    ++duplicate_count;
+                }
+            }
+            if (duplicate_count > 0) {
+                instance_name += "_copy_" + std::to_string(duplicate_count);
+            }
+            next->mLabel = instance_name;
+
             next->getVolumeFaces() = remainder;
             next->mNormalizedScale = current_model->mNormalizedScale;
             next->mNormalizedTranslation = current_model->mNormalizedTranslation;
@@ -283,7 +313,13 @@ void LLGLTFLoader::addModelToScene(
                 materials[model->mMaterialList[i]] = LLImportMaterial();
             }
         }
-        mScene[transformation].push_back(LLModelInstance(model, model->mLabel, transformation, materials));
+        // Keep base name for scene instance.
+        std::string instance_name = model->mLabel;
+        // Add suffix. Suffix is nessesary for model matching logic
+        // because sometimes higher lod can be used as a lower one, so models
+        // need unique names not just in scope of one lod, but across lods.
+        model->mLabel += lod_suffix[mLod];
+        mScene[transformation].push_back(LLModelInstance(model, instance_name, transformation, materials));
         stretch_extents(model, transformation);
     }
 }
@@ -311,7 +347,7 @@ bool LLGLTFLoader::parseMeshes()
     }
 
     // Populate the joints from skins first.
-    // There's not many skins - and you can pretty easily iterate through the nodes from that.
+    // Multiple meshes can share the same skin, so preparing skins beforehand.
     for (S32 i = 0; i < mGLTFAsset.mSkins.size(); i++)
     {
         populateJointsFromSkin(i);
@@ -365,9 +401,9 @@ void LLGLTFLoader::processNodeHierarchy(S32 node_idx, std::map<std::string, S32>
     if (node_idx < 0 || node_idx >= static_cast<S32>(mGLTFAsset.mNodes.size()))
         return;
 
-    auto& node = mGLTFAsset.mNodes[node_idx];
+    const LL::GLTF::Node& node = mGLTFAsset.mNodes[node_idx];
 
-    LL_INFOS("GLTF_IMPORT") << "Processing node " << node_idx << " (" << node.mName << ")"
+    LL_DEBUGS("GLTF_IMPORT") << "Processing node " << node_idx << " (" << node.mName << ")"
                             << " - has mesh: " << (node.mMesh >= 0 ? "yes" : "no")
                             << " - children: " << node.mChildren.size() << LL_ENDL;
 
@@ -378,10 +414,10 @@ void LLGLTFLoader::processNodeHierarchy(S32 node_idx, std::map<std::string, S32>
         material_map mats;
 
         LLModel* pModel = new LLModel(volume_params, 0.f);
-        auto& mesh = mGLTFAsset.mMeshes[node.mMesh];
+        const LL::GLTF::Mesh& mesh = mGLTFAsset.mMeshes[node.mMesh];
 
         // Get base mesh name and track usage
-        std::string base_name = mesh.mName;
+        std::string base_name = getLodlessLabel(mesh);
         if (base_name.empty())
         {
             base_name = "mesh_" + std::to_string(node.mMesh);
@@ -389,7 +425,13 @@ void LLGLTFLoader::processNodeHierarchy(S32 node_idx, std::map<std::string, S32>
 
         S32 instance_count = mesh_name_counts[base_name]++;
 
-        if (populateModelFromMesh(pModel, mesh, node, mats, instance_count) &&
+        // make name unique
+        if (instance_count > 0)
+        {
+            base_name = base_name + "_copy_" + std::to_string(instance_count);
+        }
+
+        if (populateModelFromMesh(pModel, base_name, mesh, node, mats) &&
             (LLModel::NO_ERRORS == pModel->getStatus()) &&
             validate_model(pModel))
         {
@@ -437,7 +479,7 @@ void LLGLTFLoader::processNodeHierarchy(S32 node_idx, std::map<std::string, S32>
                 mWarningsArray.append(args);
             }
 
-            addModelToScene(pModel, submodel_limit, transformation, volume_params, mats);
+            addModelToScene(pModel, base_name, submodel_limit, transformation, volume_params, mats);
             mats.clear();
         }
         else
@@ -523,29 +565,149 @@ bool LLGLTFLoader::addJointToModelSkin(LLMeshSkinInfo& skin_info, S32 gltf_skin_
     return true;
 }
 
-bool LLGLTFLoader::populateModelFromMesh(LLModel* pModel, const LL::GLTF::Mesh& mesh, const LL::GLTF::Node& nodeno, material_map& mats, S32 instance_count)
+LLGLTFLoader::LLGLTFImportMaterial LLGLTFLoader::processMaterial(S32 material_index, S32 fallback_index)
 {
-    // Set the requested label for the floater display and uploading
-    pModel->mRequestedLabel = gDirUtilp->getBaseFileName(mFilename, true);
-
-    // Create unique model name
-    std::string base_name = mesh.mName;
-    if (base_name.empty())
+    // Check cache first
+    auto cached = mMaterialCache.find(material_index);
+    if (cached != mMaterialCache.end())
     {
-        S32 mesh_index = static_cast<S32>(&mesh - &mGLTFAsset.mMeshes[0]);
-        base_name = "mesh_" + std::to_string(mesh_index);
+        return cached->second;
     }
 
-    LL_INFOS("GLTF_DEBUG") << "Processing model " << base_name << LL_ENDL;
+    LLImportMaterial impMat;
+    impMat.mDiffuseColor = LLColor4::white; // Default color
 
-    if (instance_count > 0)
+    // Generate material name
+    std::string materialName = generateMaterialName(material_index, fallback_index);
+
+    // Process material if available
+    if (material_index >= 0 && material_index < mGLTFAsset.mMaterials.size())
     {
-        pModel->mLabel = base_name + "_copy_" + std::to_string(instance_count);
+        LL::GLTF::Material* material = &mGLTFAsset.mMaterials[material_index];
+
+        // Set diffuse color from base color factor
+        impMat.mDiffuseColor = LLColor4(
+            material->mPbrMetallicRoughness.mBaseColorFactor[0],
+            material->mPbrMetallicRoughness.mBaseColorFactor[1],
+            material->mPbrMetallicRoughness.mBaseColorFactor[2],
+            material->mPbrMetallicRoughness.mBaseColorFactor[3]
+        );
+
+        // Process base color texture if it exists
+        if (material->mPbrMetallicRoughness.mBaseColorTexture.mIndex >= 0)
+        {
+            S32 texIndex = material->mPbrMetallicRoughness.mBaseColorTexture.mIndex;
+            std::string filename = processTexture(texIndex, "base_color", material->mName);
+
+            if (!filename.empty())
+            {
+                impMat.mDiffuseMapFilename = filename;
+                impMat.mDiffuseMapLabel = material->mName.empty() ? filename : material->mName;
+
+                // Check if the texture is already loaded
+                S32 sourceIndex;
+                if (validateTextureIndex(texIndex, sourceIndex))
+                {
+                    LL::GLTF::Image& image = mGLTFAsset.mImages[sourceIndex];
+                    if (image.mTexture.notNull())
+                    {
+                        impMat.setDiffuseMap(image.mTexture->getID());
+                        LL_INFOS("GLTF_IMPORT") << "Using existing texture ID: " << image.mTexture->getID().asString() << LL_ENDL;
+                    }
+                    else
+                    {
+                        LL_INFOS("GLTF_IMPORT") << "Texture needs loading: " << impMat.mDiffuseMapFilename << LL_ENDL;
+                    }
+                }
+            }
+        }
+    }
+
+    // Create cached material with both material and name
+    LLGLTFImportMaterial cachedMat(impMat, materialName);
+
+    // Cache the processed material
+    mMaterialCache[material_index] = cachedMat;
+    return cachedMat;
+}
+
+std::string LLGLTFLoader::processTexture(S32 texture_index, const std::string& texture_type, const std::string& material_name)
+{
+    S32 sourceIndex;
+    if (!validateTextureIndex(texture_index, sourceIndex))
+        return "";
+
+    LL::GLTF::Image& image = mGLTFAsset.mImages[sourceIndex];
+
+    // Process URI-based textures
+    if (!image.mUri.empty())
+    {
+        std::string filename = image.mUri;
+        size_t pos = filename.find_last_of("/\\");
+        if (pos != std::string::npos)
+        {
+            filename = filename.substr(pos + 1);
+        }
+
+        LL_INFOS("GLTF_IMPORT") << "Found texture: " << filename << " for material: " << material_name << LL_ENDL;
+
+        LLSD args;
+        args["Message"] = "TextureFound";
+        args["TEXTURE_NAME"] = filename;
+        args["MATERIAL_NAME"] = material_name;
+        mWarningsArray.append(args);
+
+        return filename;
+    }
+
+    // Process embedded textures
+    if (image.mBufferView >= 0)
+    {
+        return extractTextureToTempFile(texture_index, texture_type);
+    }
+
+    return "";
+}
+
+bool LLGLTFLoader::validateTextureIndex(S32 texture_index, S32& source_index)
+{
+    if (texture_index < 0 || texture_index >= mGLTFAsset.mTextures.size())
+        return false;
+
+    source_index = mGLTFAsset.mTextures[texture_index].mSource;
+    if (source_index < 0 || source_index >= mGLTFAsset.mImages.size())
+        return false;
+
+    return true;
+}
+
+std::string LLGLTFLoader::generateMaterialName(S32 material_index, S32 fallback_index)
+{
+    if (material_index >= 0 && material_index < mGLTFAsset.mMaterials.size())
+    {
+        LL::GLTF::Material* material = &mGLTFAsset.mMaterials[material_index];
+        std::string materialName = material->mName;
+
+        if (materialName.empty())
+        {
+            materialName = "mat" + std::to_string(material_index);
+        }
+        return materialName;
     }
     else
     {
-        pModel->mLabel = base_name;
+        return fallback_index >= 0 ? "mat_default" + std::to_string(fallback_index) : "mat_default";
     }
+}
+
+bool LLGLTFLoader::populateModelFromMesh(LLModel* pModel, const std::string& base_name, const LL::GLTF::Mesh& mesh, const LL::GLTF::Node& nodeno, material_map& mats)
+{
+    // Set the requested label for the floater display and uploading
+    pModel->mRequestedLabel = gDirUtilp->getBaseFileName(mFilename, true);
+    // Set only name, suffix will be added later
+    pModel->mLabel = base_name;
+
+    LL_DEBUGS("GLTF_DEBUG") << "Processing model " << pModel->mLabel << LL_ENDL;
 
     pModel->ClearFacesAndMaterials();
 
@@ -599,91 +761,11 @@ bool LLGLTFLoader::populateModelFromMesh(LLModel* pModel, const LL::GLTF::Mesh& 
         LLVolumeFace face;
         std::vector<GLTFVertex> vertices;
 
-        LLImportMaterial impMat;
-        impMat.mDiffuseColor = LLColor4::white; // Default color
-
-        // Process material if available
-        if (prim.mMaterial >= 0 && prim.mMaterial < mGLTFAsset.mMaterials.size())
-        {
-            LL::GLTF::Material* material = &mGLTFAsset.mMaterials[prim.mMaterial];
-
-            // Set diffuse color from base color factor
-            impMat.mDiffuseColor = LLColor4(
-                material->mPbrMetallicRoughness.mBaseColorFactor[0],
-                material->mPbrMetallicRoughness.mBaseColorFactor[1],
-                material->mPbrMetallicRoughness.mBaseColorFactor[2],
-                material->mPbrMetallicRoughness.mBaseColorFactor[3]
-            );
-
-            // Process base color texture if it exists
-            if (material->mPbrMetallicRoughness.mBaseColorTexture.mIndex >= 0)
-            {
-                S32 texIndex = material->mPbrMetallicRoughness.mBaseColorTexture.mIndex;
-                if (texIndex < mGLTFAsset.mTextures.size())
-                {
-                    S32 sourceIndex = mGLTFAsset.mTextures[texIndex].mSource;
-                    if (sourceIndex >= 0 && sourceIndex < mGLTFAsset.mImages.size())
-                    {
-                        LL::GLTF::Image& image = mGLTFAsset.mImages[sourceIndex];
-
-                        // Use URI as texture file name
-                        if (!image.mUri.empty())
-                        {
-                            // URI might be a remote URL or a local path
-                            std::string filename = image.mUri;
-
-                            // Extract just the filename from the URI
-                            size_t pos = filename.find_last_of("/\\");
-                            if (pos != std::string::npos)
-                            {
-                                filename = filename.substr(pos + 1);
-                            }
-
-                            // Store the texture filename
-                            impMat.mDiffuseMapFilename = filename;
-                            impMat.mDiffuseMapLabel = material->mName.empty() ? filename : material->mName;
-
-                            LL_INFOS("GLTF_IMPORT") << "Found texture: " << impMat.mDiffuseMapFilename
-                                << " for material: " << material->mName << LL_ENDL;
-
-                            LLSD args;
-                            args["Message"] = "TextureFound";
-                            args["TEXTURE_NAME"] = impMat.mDiffuseMapFilename;
-                            args["MATERIAL_NAME"] = material->mName;
-                            mWarningsArray.append(args);
-
-                            // If the image has a texture loaded already, use it
-                            if (image.mTexture.notNull())
-                            {
-                                impMat.setDiffuseMap(image.mTexture->getID());
-                                LL_INFOS("GLTF_IMPORT") << "Using existing texture ID: " << image.mTexture->getID().asString() << LL_ENDL;
-                            }
-                            else
-                            {
-                                // Texture will be loaded later through the callback system
-                                LL_INFOS("GLTF_IMPORT") << "Texture needs loading: " << impMat.mDiffuseMapFilename << LL_ENDL;
-                            }
-                        }
-                        else if (image.mTexture.notNull())
-                        {
-                            // No URI but we have a texture, use it directly
-                            impMat.setDiffuseMap(image.mTexture->getID());
-                            LL_INFOS("GLTF_IMPORT") << "Using existing texture ID without URI: " << image.mTexture->getID().asString() << LL_ENDL;
-                        }
-                        else if (image.mBufferView >= 0)
-                        {
-                            // For embedded textures (no URI but has buffer data)
-                            std::string temp_filename = extractTextureToTempFile(texIndex, "base_color");
-                            if (!temp_filename.empty())
-                            {
-                                impMat.mDiffuseMapFilename = temp_filename;
-                                impMat.mDiffuseMapLabel = material->mName.empty() ? temp_filename : material->mName;
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // Use cached material processing
+        LLGLTFImportMaterial cachedMat = processMaterial(prim.mMaterial, pModel->getNumVolumeFaces() - 1);
+        LLImportMaterial impMat = cachedMat;
+        std::string materialName = cachedMat.name;
+        mats[materialName] = impMat;
 
         if (prim.getIndexCount() % 3 != 0)
         {
@@ -866,26 +948,8 @@ bool LLGLTFLoader::populateModelFromMesh(LLModel* pModel, const LL::GLTF::Mesh& 
             }
         }
 
-        // Create a unique material name for this primitive
-        std::string materialName;
-        if (prim.mMaterial >= 0 && prim.mMaterial < mGLTFAsset.mMaterials.size())
-        {
-            LL::GLTF::Material* material = &mGLTFAsset.mMaterials[prim.mMaterial];
-            materialName = material->mName;
-
-            if (materialName.empty())
-            {
-                materialName = "mat" + std::to_string(prim.mMaterial);
-            }
-        }
-        else
-        {
-            materialName = "mat_default" + std::to_string(pModel->getNumVolumeFaces() - 1);
-        }
-        mats[materialName] = impMat;
-
         // Indices handling
-        if (faceVertices.size() >= USHRT_MAX)
+        if (faceVertices.size() >= VERTICIES_LIMIT)
         {
             // Will have to remap 32 bit indices into 16 bit indices
             // For the sake of simplicity build vector of 32 bit indices first
@@ -908,23 +972,40 @@ bool LLGLTFLoader::populateModelFromMesh(LLModel* pModel, const LL::GLTF::Mesh& 
                 }
             }
 
-            // remap 32 bit into multiple 16 bit ones
+            // Generates a vertex remap table with no gaps in the resulting sequence
+            std::vector<U32> remap(faceVertices.size());
+            size_t vertex_count = meshopt_generateVertexRemap(&remap[0], &indices_32[0], indices_32.size(), &faceVertices[0], faceVertices.size(), sizeof(LLVolumeFace::VertexData));
+
+            // Manually remap vertices
+            std::vector<LLVolumeFace::VertexData> optimized_vertices(vertex_count);
+            for (size_t i = 0; i < vertex_count; ++i)
+            {
+                optimized_vertices[i] = faceVertices[remap[i]];
+            }
+
+            std::vector<U32> optimized_indices(indices_32.size());
+            meshopt_remapIndexBuffer(&optimized_indices[0], &indices_32[0], indices_32.size(), &remap[0]);
+
+            // Sort indices to improve mesh splits (reducing amount of duplicated indices)
+            meshopt_optimizeVertexCache(&optimized_indices[0], &optimized_indices[0], indices_32.size(), vertex_count);
+
             std::vector<U16> indices_16;
-            std::vector<S64> vertices_remap; // should it be a point map?
-            vertices_remap.resize(faceVertices.size(), -1);
+            std::vector<S64> vertices_remap;
+            vertices_remap.resize(vertex_count, -1);
             S32 created_faces = 0;
             std::vector<LLVolumeFace::VertexData> face_verts;
             min = glm::vec3(FLT_MAX);
             max = glm::vec3(-FLT_MAX);
-            for (size_t idx = 0; idx < indices_32.size(); idx++)
+
+            for (size_t idx = 0; idx < optimized_indices.size(); idx++)
             {
-                size_t vert_index = indices_32[idx];
+                size_t vert_index = optimized_indices[idx];
                 if (vertices_remap[vert_index] == -1)
                 {
                     // First encounter, add it
                     size_t new_vert_idx = face_verts.size();
                     vertices_remap[vert_index] = (S64)new_vert_idx;
-                    face_verts.push_back(faceVertices[vert_index]);
+                    face_verts.push_back(optimized_vertices[vert_index]);
                     vert_index = new_vert_idx;
 
                     // Update min/max bounds
@@ -953,7 +1034,7 @@ bool LLGLTFLoader::populateModelFromMesh(LLModel* pModel, const LL::GLTF::Mesh& 
                 }
                 indices_16.push_back((U16)vert_index);
 
-                if (indices_16.size() % 3 == 0 && face_verts.size() >= 65532)
+                if (indices_16.size() % 3 == 0 && face_verts.size() >= VERTICIES_LIMIT - 1)
                 {
                     LLVolumeFace face;
                     face.fillFromLegacyData(face_verts, indices_16);
@@ -982,7 +1063,7 @@ bool LLGLTFLoader::populateModelFromMesh(LLModel* pModel, const LL::GLTF::Mesh& 
                 created_faces++;
             }
 
-            LL_INFOS("GLTF_IMPORT") << "Primitive " << pModel->mLabel
+            LL_INFOS("GLTF_IMPORT") << "Primitive " << (S32)prim_idx << " from model " << pModel->mLabel
                 << " is over vertices limit, it was split into " << created_faces
                 << " faces" << LL_ENDL;
             LLSD args;
@@ -1037,9 +1118,16 @@ bool LLGLTFLoader::populateModelFromMesh(LLModel* pModel, const LL::GLTF::Mesh& 
         size_t jointCnt = gltf_skin.mJoints.size();
         gltfindex_to_joitindex_map.resize(jointCnt, -1);
 
-        if (valid_joints_count > LL_MAX_JOINTS_PER_MESH_OBJECT)
+        if (valid_joints_count > (S32)mMaxJointsPerMesh)
         {
             std::map<std::string, S32> goup_use_count;
+
+            for (const auto& elem : mJointGroups)
+            {
+                goup_use_count[elem.second.mGroup] = 0;
+                goup_use_count[elem.second.mParentGroup] = 0;
+            }
+
             // Assume that 'Torso' group is always in use since that's what everything else is attached to
             goup_use_count["Torso"] = 1;
             // Note that Collisions and Extra groups are all over the place, might want to include them from the start
@@ -1092,7 +1180,7 @@ bool LLGLTFLoader::populateModelFromMesh(LLModel* pModel, const LL::GLTF::Mesh& 
                     // this step needs only joints that have zero uses
                     continue;
                 }
-                if (skin_info.mInvBindMatrix.size() > LL_MAX_JOINTS_PER_MESH_OBJECT)
+                if (skin_info.mInvBindMatrix.size() > mMaxJointsPerMesh)
                 {
                     break;
                 }
@@ -1127,16 +1215,18 @@ bool LLGLTFLoader::populateModelFromMesh(LLModel* pModel, const LL::GLTF::Mesh& 
             }
         }
 
-        if (skin_info.mInvBindMatrix.size() > LL_MAX_JOINTS_PER_MESH_OBJECT)
+        if (skin_info.mInvBindMatrix.size() > mMaxJointsPerMesh)
         {
+            // mMaxJointsPerMesh ususlly is equal to LL_MAX_JOINTS_PER_MESH_OBJECT
+            // and is 110.
             LL_WARNS("GLTF_IMPORT") << "Too many jonts in " << pModel->mLabel
                 << " Count: " << (S32)skin_info.mInvBindMatrix.size()
-                << " Limit:" << (S32)LL_MAX_JOINTS_PER_MESH_OBJECT << LL_ENDL;
+                << " Limit:" << (S32)mMaxJointsPerMesh << LL_ENDL;
             LLSD args;
             args["Message"] = "ModelTooManyJoints";
             args["MODEL_NAME"] = pModel->mLabel;
             args["JOINT_COUNT"] = (S32)skin_info.mInvBindMatrix.size();
-            args["MAX"] = (S32)LL_MAX_JOINTS_PER_MESH_OBJECT;
+            args["MAX"] = (S32)mMaxJointsPerMesh;
             mWarningsArray.append(args);
         }
 
@@ -1184,7 +1274,7 @@ void LLGLTFLoader::populateJointsFromSkin(S32 skin_idx)
     for (S32 i = 0; i < joint_count; i++)
     {
         S32 joint = skin.mJoints[i];
-        LL::GLTF::Node jointNode = mGLTFAsset.mNodes[joint];
+        const LL::GLTF::Node &jointNode = mGLTFAsset.mNodes[joint];
         JointNodeData& data = joints_data[joint];
         data.mNodeIdx = joint;
         data.mJointListIdx = i;
@@ -1214,6 +1304,7 @@ void LLGLTFLoader::populateJointsFromSkin(S32 skin_idx)
     }
 
     // Go over viewer joints and build overrides
+    // This is needed because gltf skeleton doesn't necessarily match viewer's skeleton.
     glm::mat4 ident(1.0);
     for (auto &viewer_data : mViewerJointData)
     {
@@ -1223,8 +1314,10 @@ void LLGLTFLoader::populateJointsFromSkin(S32 skin_idx)
     for (S32 i = 0; i < joint_count; i++)
     {
         S32 joint = skin.mJoints[i];
-        LL::GLTF::Node jointNode = mGLTFAsset.mNodes[joint];
+        const LL::GLTF::Node &jointNode = mGLTFAsset.mNodes[joint];
         std::string legal_name(jointNode.mName);
+
+        // Viewer supports a limited set of joints, mark them as legal
         bool legal_joint = false;
         if (mJointMap.find(legal_name) != mJointMap.end())
         {
@@ -1250,8 +1343,7 @@ void LLGLTFLoader::populateJointsFromSkin(S32 skin_idx)
         }
         else if (inverse_count > i)
         {
-            // Transalte existing bind matrix to viewer's skeleton
-            // todo: probably should be 'to viewer's overriden skeleton'
+            // Transalte existing bind matrix to viewer's overriden skeleton
             glm::mat4 original_bind_matrix = glm::inverse(skin.mInverseBindMatricesData[i]);
             glm::mat4 rotated_original = coord_system_rotation * original_bind_matrix;
             glm::mat4 skeleton_transform = computeGltfToViewerSkeletonTransform(joints_data, joint, legal_name);
@@ -1259,20 +1351,20 @@ void LLGLTFLoader::populateJointsFromSkin(S32 skin_idx)
             glm::mat4 final_inverse_bind_matrix = glm::inverse(tranlated_original);
 
             LLMatrix4 gltf_transform = LLMatrix4(glm::value_ptr(final_inverse_bind_matrix));
-            LL_INFOS("GLTF_DEBUG") << "mInvBindMatrix name: " << legal_name << " Translated val: " << gltf_transform << LL_ENDL;
+            LL_DEBUGS("GLTF_DEBUG") << "mInvBindMatrix name: " << legal_name << " Translated val: " << gltf_transform << LL_ENDL;
             mInverseBindMatrices[skin_idx].push_back(LLMatrix4a(gltf_transform));
         }
         else
         {
             // If bind matrices aren't present (they are optional in gltf),
             // assume an identy matrix
-            // todo: find a model with this, might need to use rotated matrix
+            // todo: find a model with this, might need to use YZ rotated matrix
             glm::mat4 inv_bind(1.0f);
             glm::mat4 skeleton_transform = computeGltfToViewerSkeletonTransform(joints_data, joint, legal_name);
             inv_bind = glm::inverse(skeleton_transform * inv_bind);
 
             LLMatrix4 gltf_transform = LLMatrix4(glm::value_ptr(inv_bind));
-            LL_INFOS("GLTF_DEBUG") << "mInvBindMatrix name: " << legal_name << " Generated val: " << gltf_transform << LL_ENDL;
+            LL_DEBUGS("GLTF_DEBUG") << "mInvBindMatrix name: " << legal_name << " Generated val: " << gltf_transform << LL_ENDL;
             mInverseBindMatrices[skin_idx].push_back(LLMatrix4a(gltf_transform));
         }
 
@@ -1284,7 +1376,7 @@ void LLGLTFLoader::populateJointsFromSkin(S32 skin_idx)
         LLMatrix4 newInverse = LLMatrix4(mInverseBindMatrices[skin_idx].back().getF32ptr());
         newInverse.setTranslation(original_joint_transform.getTranslation());
 
-        LL_INFOS("GLTF_DEBUG") << "mAlternateBindMatrix name: " << legal_name << " val: " << newInverse << LL_ENDL;
+        LL_DEBUGS("GLTF_DEBUG") << "mAlternateBindMatrix name: " << legal_name << " val: " << newInverse << LL_ENDL;
         mAlternateBindMatrices[skin_idx].push_back(LLMatrix4a(newInverse));
 
         if (legal_joint)
@@ -1299,7 +1391,7 @@ void LLGLTFLoader::populateJointsFromSkin(S32 skin_idx)
     S32 valid_joints = mValidJointsCount[skin_idx];
     if (valid_joints < joint_count)
     {
-        LL_WARNS("GLTF_IMPORT") << "Skin " << skin_idx
+        LL_INFOS("GLTF_IMPORT") << "Skin " << skin_idx
             << " defines " << joint_count
             << " joints, but only " << valid_joints
             << " were recognized and are compatible." << LL_ENDL;
@@ -1335,7 +1427,6 @@ void LLGLTFLoader::buildJointGroup(LLJointData& viewer_data, const std::string &
 
 void LLGLTFLoader::buildOverrideMatrix(LLJointData& viewer_data, joints_data_map_t &gltf_nodes, joints_name_to_node_map_t &names_to_nodes, glm::mat4& parent_rest, glm::mat4& parent_support_rest) const
 {
-    glm::mat4 new_lefover(1.f);
     glm::mat4 rest(1.f);
     joints_name_to_node_map_t::iterator found_node = names_to_nodes.find(viewer_data.mName);
     if (found_node != names_to_nodes.end())
@@ -1373,15 +1464,14 @@ void LLGLTFLoader::buildOverrideMatrix(LLJointData& viewer_data, joints_data_map
         glm::quat rotation;
         glm::decompose(translated_joint, scale, rotation, translation_override, skew, perspective);
 
+        // Viewer allows overrides, which are base joint with applied translation override.
+        // fortunately normal bones use only translation, without rotation or scale
         node.mOverrideMatrix = glm::recompose(glm::vec3(1, 1, 1), glm::identity<glm::quat>(), translation_override, glm::vec3(0, 0, 0), glm::vec4(0, 0, 0, 1));
 
         glm::mat4 overriden_joint = node.mOverrideMatrix;
-        // This is incomplete or even wrong.
-        // Viewer allows overrides, which are base joint with applied translation override.
-        // So we should be taking viewer joint matrix and replacing translation part with an override.
-        // Or should rebuild the matrix from viewer_data.scale, viewer_data.rotation, translation_override parts.
-        overriden_joint = glm::scale(overriden_joint, viewer_data.mScale);
 
+        // todo: if gltf bone had rotation or scale, they probably should be saved here
+        // then applied to bind matrix
         rest = parent_rest * overriden_joint;
         if (viewer_data.mIsJoint)
         {
@@ -1389,6 +1479,13 @@ void LLGLTFLoader::buildOverrideMatrix(LLJointData& viewer_data, joints_data_map
         }
         else
         {
+            // This is likely incomplete or even wrong.
+            // Viewer Collision bones specify rotation and scale.
+            // Importer should apply rotation and scale to this matrix and save as needed
+            // then subsctruct them from bind matrix
+            // Todo: get models that use collision bones, made by different programs
+
+            overriden_joint = glm::scale(overriden_joint, viewer_data.mScale);
             node.mOverrideRestMatrix = parent_support_rest * overriden_joint;
         }
     }
@@ -1524,7 +1621,7 @@ void LLGLTFLoader::checkForXYrotation(const LL::GLTF::Skin& gltf_skin)
     for (S32 i= 0; i < size; i++)
     {
         S32 joint = gltf_skin.mJoints[i];
-        auto joint_node = mGLTFAsset.mNodes[joint];
+        const LL::GLTF::Node &joint_node = mGLTFAsset.mNodes[joint];
 
         // todo: we are doing this search thing everywhere,
         // just pre-translate every joint
@@ -1699,5 +1796,24 @@ void LLGLTFLoader::notifyUnsupportedExtension(bool unsupported)
 
         LL_WARNS("GLTF_IMPORT") << "Model uses unsupported extension: " << ext << LL_ENDL;
     }
+}
+
+size_t LLGLTFLoader::getSuffixPosition(const std::string &label)
+{
+    if ((label.find("_LOD") != -1) || (label.find("_PHYS") != -1))
+    {
+        return label.rfind('_');
+    }
+    return -1;
+}
+
+std::string LLGLTFLoader::getLodlessLabel(const LL::GLTF::Mesh& mesh)
+{
+    size_t ext_pos = getSuffixPosition(mesh.mName);
+    if (ext_pos != -1)
+    {
+        return mesh.mName.substr(0, ext_pos);
+    }
+    return mesh.mName;
 }
 

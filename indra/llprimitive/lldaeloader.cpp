@@ -883,6 +883,7 @@ LLDAELoader::LLDAELoader(
     std::map<std::string, std::string, std::less<>>&     jointAliasMap,
     U32                 maxJointsPerMesh,
     U32                 modelLimit,
+    U32                 debugMode,
     bool                preprocess)
 : LLModelLoader(
         filename,
@@ -895,8 +896,9 @@ LLDAELoader::LLDAELoader(
         jointTransformMap,
         jointsFromNodes,
         jointAliasMap,
-        maxJointsPerMesh),
-  mGeneratedModelLimit(modelLimit),
+        maxJointsPerMesh,
+        modelLimit,
+        debugMode),
   mPreprocessDAE(preprocess)
 {
 }
@@ -1680,6 +1682,7 @@ void LLDAELoader::processDomModel(LLModel* model, DAE* dae, daeElement* root, do
         {
             materials[model->mMaterialList[i]] = LLImportMaterial();
         }
+        // todo: likely a bug here, shouldn't be using suffixed label, see how it gets used in other places.
         mScene[transformation].push_back(LLModelInstance(model, model->mLabel, transformation, materials));
         stretch_extents(model, transformation);
     }
@@ -2412,7 +2415,7 @@ std::string LLDAELoader::getElementLabel(daeElement *element)
 }
 
 // static
-size_t LLDAELoader::getSuffixPosition(std::string label)
+size_t LLDAELoader::getSuffixPosition(const std::string &label)
 {
     if ((label.find("_LOD") != -1) || (label.find("_PHYS") != -1))
     {

@@ -71,6 +71,14 @@ class LLGLTFLoader : public LLModelLoader
     typedef std::map <S32, JointNodeData> joints_data_map_t;
     typedef std::map <std::string, S32> joints_name_to_node_map_t;
 
+    class LLGLTFImportMaterial : public LLImportMaterial
+    {
+    public:
+        std::string name;
+        LLGLTFImportMaterial() = default;
+        LLGLTFImportMaterial(const LLImportMaterial& mat, const std::string& n) : LLImportMaterial(mat), name(n) {}
+    };
+
     LLGLTFLoader(std::string filename,
                     S32                                               lod,
                     LLModelLoader::load_callback_t                    load_cb,
@@ -83,6 +91,7 @@ class LLGLTFLoader : public LLModelLoader
                     std::map<std::string, std::string, std::less<>> & jointAliasMap,
                     U32                                               maxJointsPerMesh,
                     U32                                               modelLimit,
+                    U32                                               debugMode,
                     std::vector<LLJointData>                          viewer_skeleton); //,
                     //bool                                            preprocess );
     virtual ~LLGLTFLoader();
@@ -101,9 +110,8 @@ class LLGLTFLoader : public LLModelLoader
 protected:
     LL::GLTF::Asset mGLTFAsset;
     tinygltf::Model mGltfModel;
-    bool            mGltfLoaded;
+    bool            mGltfLoaded = false;
     bool            mApplyXYRotation = false;
-    U32             mGeneratedModelLimit;
 
     // GLTF isn't aware of viewer's skeleton and uses it's own,
     // so need to take viewer's joints and use them to
@@ -125,21 +133,29 @@ protected:
         std::string mGroup;
         std::string mParentGroup;
     };
-    typedef std::map<std::string, JointGroups> joint_to_group_map_t;
+    typedef std::map<std::string, JointGroups, std::less<> > joint_to_group_map_t;
     joint_to_group_map_t mJointGroups;
 
     // per skin joint count, needs to be tracked for the sake of limits check.
     std::vector<S32>                    mValidJointsCount;
+
+    // Cached material information
+    typedef std::map<S32, LLGLTFImportMaterial> MaterialCache;
+    MaterialCache mMaterialCache;
 
 private:
     bool parseMeshes();
     void computeCombinedNodeTransform(const LL::GLTF::Asset& asset, S32 node_index, glm::mat4& combined_transform) const;
     void processNodeHierarchy(S32 node_idx, std::map<std::string, S32>& mesh_name_counts, U32 submodel_limit, const LLVolumeParams& volume_params);
     bool addJointToModelSkin(LLMeshSkinInfo& skin_info, S32 gltf_skin_idx, size_t gltf_joint_idx);
-    bool populateModelFromMesh(LLModel* pModel, const LL::GLTF::Mesh &mesh, const LL::GLTF::Node &node, material_map& mats, S32 instance_count);
+    LLGLTFImportMaterial processMaterial(S32 material_index, S32 fallback_index);
+    std::string processTexture(S32 texture_index, const std::string& texture_type, const std::string& material_name);
+    bool validateTextureIndex(S32 texture_index, S32& source_index);
+    std::string generateMaterialName(S32 material_index, S32 fallback_index = -1);
+    bool populateModelFromMesh(LLModel* pModel, const std::string& base_name, const LL::GLTF::Mesh &mesh, const LL::GLTF::Node &node, material_map& mats);
     void populateJointsFromSkin(S32 skin_idx);
     void populateJointGroups();
-    void addModelToScene(LLModel* pModel, U32 submodel_limit, const LLMatrix4& transformation, const LLVolumeParams& volume_params, const material_map& mats);
+    void addModelToScene(LLModel* pModel, const std::string& model_name, U32 submodel_limit, const LLMatrix4& transformation, const LLVolumeParams& volume_params, const material_map& mats);
     void buildJointGroup(LLJointData& viewer_data, const std::string& parent_group);
     void buildOverrideMatrix(LLJointData& data, joints_data_map_t &gltf_nodes, joints_name_to_node_map_t &names_to_nodes, glm::mat4& parent_rest, glm::mat4& support_rest) const;
     glm::mat4 buildGltfRestMatrix(S32 joint_node_index, const LL::GLTF::Skin& gltf_skin) const;
@@ -152,6 +168,9 @@ private:
     std::string extractTextureToTempFile(S32 textureIndex, const std::string& texture_type);
 
     void notifyUnsupportedExtension(bool unsupported);
+
+    static size_t getSuffixPosition(const std::string& label);
+    static std::string getLodlessLabel(const LL::GLTF::Mesh& mesh);
 
     //    bool mPreprocessGLTF;
 
@@ -189,10 +208,6 @@ private:
     // to get around volume face limitations while retaining >8 materials
     //
     bool loadModelsFromGltfMesh(gltfMesh *mesh, std::vector<LLModel *> &models_out, U32 submodel_limit);
-
-    static std::string getElementLabel(gltfElement *element);
-    static size_t      getSuffixPosition(std::string label);
-    static std::string getLodlessLabel(gltfElement *element);
 
     static std::string preprocessGLTF(std::string filename);
     */
