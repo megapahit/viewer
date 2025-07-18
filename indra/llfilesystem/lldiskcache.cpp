@@ -114,14 +114,22 @@ void LLDiskCache::purge()
         {
             if (boost::filesystem::is_regular_file(*iter, ec) && !ec.failed())
             {
+#if LL_WINDOWS
+                if (utf16str_to_utf8str((*iter).path().wstring()).find(CACHE_FILENAME_PREFIX) != std::string::npos)
+#else
                 if ((*iter).path().string().find(CACHE_FILENAME_PREFIX) != std::string::npos)
+#endif
                 {
                     uintmax_t file_size = boost::filesystem::file_size(*iter, ec);
                     if (ec.failed())
                     {
                         continue;
                     }
+#if LL_WINDOWS
+                    const std::string file_path = utf16str_to_utf8str((*iter).path().wstring());
+#else
                     const std::string file_path = (*iter).path().string();
+#endif
                     const std::time_t file_time = boost::filesystem::last_write_time(*iter, ec);
                     if (ec.failed())
                     {
@@ -159,10 +167,16 @@ void LLDiskCache::purge()
         }
         if (should_remove)
         {
+#if LL_WINDOWS
+            boost::filesystem::remove(utf8str_to_utf16str(entry.second.second), ec);
+#else
             boost::filesystem::remove(entry.second.second, ec);
+#endif
             if (ec.failed())
             {
+#if !LL_WINDOWS
                 LL_WARNS() << "Failed to delete cache file " << entry.second.second << ": " << ec.message() << LL_ENDL;
+#endif
             }
         }
     }
@@ -237,12 +251,18 @@ void LLDiskCache::clearCache()
         {
             if (boost::filesystem::is_regular_file(*iter, ec) && !ec.failed())
             {
+#if LL_WINDOWS
+                if (utf16str_to_utf8str((*iter).path().wstring()).find(CACHE_FILENAME_PREFIX) != std::string::npos)
+#else
                 if ((*iter).path().string().find(CACHE_FILENAME_PREFIX) != std::string::npos)
+#endif
                 {
                     boost::filesystem::remove(*iter, ec);
                     if (ec.failed())
                     {
+#if !LL_WINDOWS
                         LL_WARNS() << "Failed to delete cache file " << *iter << ": " << ec.message() << LL_ENDL;
+#endif
                     }
                 }
             }
@@ -270,13 +290,20 @@ void LLDiskCache::removeOldVFSFiles()
         {
             if (boost::filesystem::is_regular_file(*iter, ec) && !ec.failed())
             {
+#if LL_WINDOWS
+                if ((utf16str_to_utf8str((*iter).path().wstring()).find(CACHE_FORMAT) != std::string::npos) ||
+                    (utf16str_to_utf8str((*iter).path().wstring()).find(DB_FORMAT) != std::string::npos))
+#else
                 if (((*iter).path().string().find(CACHE_FORMAT) != std::string::npos) ||
                     ((*iter).path().string().find(DB_FORMAT) != std::string::npos))
+#endif
                 {
                     boost::filesystem::remove(*iter, ec);
                     if (ec.failed())
                     {
+#if !LL_WINDOWS
                         LL_WARNS() << "Failed to delete cache file " << *iter << ": " << ec.message() << LL_ENDL;
+#endif
                     }
                 }
             }
@@ -311,7 +338,11 @@ uintmax_t LLDiskCache::dirFileSize(const std::string& dir)
         {
             if (boost::filesystem::is_regular_file(*iter, ec) && !ec.failed())
             {
+#if LL_WINDOWS
+                if (utf16str_to_utf8str((*iter).path().wstring()).find(CACHE_FILENAME_PREFIX) != std::string::npos)
+#else
                 if ((*iter).path().string().find(CACHE_FILENAME_PREFIX) != std::string::npos)
+#endif
                 {
                     uintmax_t file_size = boost::filesystem::file_size(*iter, ec);
                     if (!ec.failed())

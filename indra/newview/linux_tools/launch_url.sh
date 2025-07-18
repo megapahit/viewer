@@ -61,7 +61,6 @@ fi
 # will be tried first, which is a debian alternative.
 BROWSER_COMMANDS="      \
     x-www-browser       \
-    chrome              \
     firefox             \
     mozilla-firefox     \
     iceweasel           \

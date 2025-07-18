@@ -11,7 +11,7 @@ include(LLPrimitive)
 include(GLM)
 include(TinyGLTF)
 
-if(LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD )
+if (LINUX AND NOT (${LINUX_DISTRO} MATCHES debian AND CMAKE_SYSTEM_PROCESSOR MATCHES aarch64) OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
   set_property(DIRECTORY APPEND
     PROPERTY CMAKE_CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/../patches/collada-dom-v2.3-r8.patch)
   prepare_thirdparty(
@@ -30,7 +30,7 @@ if(LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD )
 	  ${colladadom_SOURCE_DIR}/include/1.4
   )
   target_link_libraries( ll::colladadom INTERFACE collada14dom )
-endif(LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD )
+endif ()
 
 set(llprimitive_SOURCE_FILES
     lldaeloader.cpp

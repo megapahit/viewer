@@ -397,7 +397,7 @@ std::string LLViewerMedia::getCurrentUserAgent()
     // This was also helpful:
     // http://www.mozilla.org/build/revised-user-agent-strings.html
     std::ostringstream codec;
-    codec << "Megapahit/";
+    codec << "SecondLife/";
     codec << LLVersionInfo::instance().getVersion();
     codec << " (" << channel << "; " << skin_name << " skin)";
     LL_INFOS() << codec.str() << LL_ENDL;

@@ -32,7 +32,7 @@
 #include "llwindow.h"
 #include "lltimer.h"
 
-#if !defined(__i386__) && !defined(__x86_64__)
+#if !defined(__i386__) && !defined(__x86_64__) && !_M_X64
 #define SDL_DISABLE_IMMINTRIN_H
 #endif
 #include "SDL2/SDL.h"

@@ -70,7 +70,7 @@
      follows="all"
      left="10"
      name="megapahit_credits_panel"
-     height="420"
+     height="405"
      top="10">
       <text
           follows="top|left|right"
@@ -81,37 +81,29 @@
           top="0"
           width="435"
           wrap="true">
-Megapahit is brought to you by (in order of appearance):
+Megapahit is brought to you by:
       </text>
       <text_editor
        enabled="false"
+       font="Monospace"
        follows="top|left"
-       height="260"
+       height="200"
        bg_readonly_color="Transparent"
        left="5"
        text_color="LtGray"
        max_length="65536"
        top_pad="5"
-       width="545"
-       word_wrap="true">
-Erik Kundiman
-LinneNoir
-milo (observeur)
-Fritigern Gothly
-Kou Ayashi
-Hadet Sonnenkern
-Remmy (Secret Foxtail)
-Eris Ravenwood
-gwigz (nya)
-EmilyAmiee
-Bavid Dailey
-Aria (Tashia Redrose)
-Cate (32a)
-Hiroo Ono
-Melodey
-Keysin (scoutkeysin)
-Yikes Lopez
-~ ( ^-^ ) ~ (cutie_qu)
+       width="475"
+       word_wrap="false">
+Erik Kundiman                 LinneNoir
+milo (observeur)              Fritigern Gothly
+Kou Ayashi                    Hadet Sonnenkern
+Remmy (Secret Foxtail)        Eris Ravenwood
+gwigz (nya)                   EmilyAmiee
+Bavid Dailey                  Aria (Tashia Redrose)
+Cate (32a)                    Hiroo Ono
+Melodey                       Keysin (scoutkeysin)
+Yikes Lopez                   ~ ( ^-^ ) ~ (cutie_qu)
     </text_editor>
     <text
           follows="top|left"
@@ -122,7 +114,7 @@ Yikes Lopez
           top_pad="5"
           width="465"
           wrap="true">
-with special thanks to (in order of appearance):
+with special thanks to:
       </text>
 <text_editor
        enabled="false"
@@ -136,12 +128,12 @@ with special thanks to (in order of appearance):
        top_pad="5"
        width="450"
        word_wrap="true">
-Chorazin Allen and Nicky Perian for involving Erik Kundiman in viewer developments;
-JenniWindrider for the pre-MP donation that was used to help build the website;
-Vir Linden for making it possible for the project to have a place (in every sense of the word) in SL;
-nutsobvious for the early testing and video proof;
-Soft Linden for the security testing; and
-Kyle Linden for selling TPV parcel 2 to Erik Kundiman at L$0 price.
+Chorazin Allen and Nicky Perian - Involving Erik Kundiman in viewer development
+JenniWindrider - Pre-MP donation used to help build the website
+Vir Linden - Making it possible for the project to have a place in SL
+nutsobvious - Early testing and video proof
+Soft Linden - Security testing
+Kyle Linden - Giving TPV parcel 2 to Erik Kundiman
     </text_editor>
     </panel>
   </accordion_tab>
@@ -197,7 +189,7 @@ Dummy Name replaced at run time
       <text_editor
        enabled="false"
        follows="left|top"
-       height="375"
+       height="450"
        bg_readonly_color="Transparent"
        left="5"
        text_color="LtGray"
@@ -206,27 +198,45 @@ Dummy Name replaced at run time
        top="5"
        width="465"
        word_wrap="true">
-        3Dconnexion SDK Copyright (C) 1992-2009 3Dconnexion
-        APR Copyright (C) 2011 The Apache Software Foundation
-        Collada DOM Copyright 2006 Sony Computer Entertainment Inc.
-        cURL Copyright (C) 1996-2010, Daniel Stenberg, (daniel@haxx.se)
-        expat Copyright (C) 1998, 1999, 2000 Thai Open Source Software Center Ltd.
-        FreeType Copyright (C) 1996-2002, 2006 David Turner, Robert Wilhelm, and Werner Lemberg.
-        GL Copyright (C) 1999-2004 Brian Paul.
-        jpeglib Copyright (C) 1991-1998, Thomas G. Lane.
-        llphysicsextensions_tpv Copyright (c) 2010, Linden Research, Inc.
-        meshoptimizer Copyright (c) 2016-2021 Arseny Kapoulkine
-        ogg/vorbis Copyright (C) 2002, Xiphophorus
-        OpenSSL Copyright (C) 1998-2008 The OpenSSL Project.
-        PCRE Copyright (c) 1997-2012 University of Cambridge
-        SDL Copyright (C) 1997-2024 Sam Lantinga
-        SSLeay Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
-        xxHash Copyright (C) 2012-2020 Yann Collet.
-        zlib Copyright (C) 1995-2012 Jean-loup Gailly and Mark Adler.
+3Dconnexion SDK Copyright (C) 1992-2009 3Dconnexion
 
-        This software contains source code provided by NVIDIA Corporation.
+APR Copyright (C) 2011 The Apache Software Foundation
 
-        All rights reserved.  See licenses.txt for details.
+Collada DOM Copyright 2006 Sony Computer Entertainment Inc.
+
+cURL Copyright (C) 1996-2010, Daniel Stenberg, (daniel@haxx.se)
+
+Discord Social SDK Copyright (c) 2025, Discord, Inc.
+
+expat Copyright (C) 1998, 1999, 2000 Thai Open Source Software Center Ltd.
+
+FreeType Copyright (C) 1996-2002, 2006 David Turner, Robert Wilhelm, and Werner Lemberg.
+
+GL Copyright (C) 1999-2004 Brian Paul.
+
+jpeglib Copyright (C) 1991-1998, Thomas G. Lane.
+
+llphysicsextensions_tpv Copyright (c) 2010, Linden Research, Inc.
+
+meshoptimizer Copyright (c) 2016-2021 Arseny Kapoulkine
+
+ogg/vorbis Copyright (C) 2002, Xiphophorus
+
+OpenSSL Copyright (C) 1998-2008 The OpenSSL Project.
+
+PCRE Copyright (c) 1997-2012 University of Cambridge
+
+SDL Copyright (C) 1997-2024 Sam Lantinga
+
+SSLeay Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
+
+xxHash Copyright (C) 2012-2020 Yann Collet.
+
+zlib Copyright (C) 1995-2012 Jean-loup Gailly and Mark Adler.
+
+This software contains source code provided by NVIDIA Corporation.
+
+All rights reserved.  See licenses.txt for details.
       </text_editor>
       </panel>
     </tab_container>

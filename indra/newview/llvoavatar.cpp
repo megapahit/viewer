@@ -1190,7 +1190,7 @@ void LLVOAvatar::initClass()
 
     LLControlAvatar::sRegionChangedSlot = gAgent.addRegionChangedCallback(&LLControlAvatar::onRegionChanged);
 
-    sCloudTexture = LLViewerTextureManager::getFetchedTextureFromFile("cloud-particle.j2c");
+    sCloudTexture = LLViewerTextureManager::getFetchedTextureFromFile("cloud-particle.png");
 }
 
 

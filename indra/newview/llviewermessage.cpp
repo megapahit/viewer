@@ -4212,6 +4212,8 @@ void process_avatar_sit_response(LLMessageSystem *mesgsys, void **user_data)
     {
         LL_WARNS("Messaging") << "Received sit approval for unknown object " << sitObjectID << LL_ENDL;
     }
+
+    gAgent.setSitObjectID(sitObjectID);
 }
 
 void process_clear_follow_cam_properties(LLMessageSystem *mesgsys, void **user_data)

@@ -160,7 +160,18 @@ HGLRC SafeCreateContext(HDC &hdc)
 
 GLuint SafeChoosePixelFormat(HDC &hdc, const PIXELFORMATDESCRIPTOR *ppfd)
 {
-    return LL::seh::catcher([hdc, ppfd]{ return ChoosePixelFormat(hdc, ppfd); });
+    __try
+    {
+        return ChoosePixelFormat(hdc, ppfd);
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER)
+    {
+        // convert to C++ styled exception
+        // C exception don't allow classes, so it's a regular char array
+        char integer_string[32];
+        sprintf(integer_string, "SEH, code: %lu\n", GetExceptionCode());
+        throw std::exception(integer_string);
+    }
 }
 
 //static
@@ -570,6 +581,7 @@ LLWindowWin32::LLWindowWin32(LLWindowCallbacks* callbacks,
     // Make an instance of our window then define the window class
     mhInstance = GetModuleHandle(NULL);
 
+#if !_M_ARM64
     // Init Direct Input - needed for joystick / Spacemouse
 
     LPDIRECTINPUT8 di8_interface;
@@ -584,6 +596,7 @@ LLWindowWin32::LLWindowWin32(LLWindowCallbacks* callbacks,
     {
         gDirectInput8 = di8_interface;
     }
+#endif
 
     mSwapMethod = SWAP_METHOD_UNDEFINED;
 

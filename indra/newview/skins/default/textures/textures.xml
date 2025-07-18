@@ -798,7 +798,7 @@ with the same filename but different name
   <texture name="script_error.j2c" use_mips="true" />
   <texture name="silhouette.j2c" use_mips="true" />
   <texture name="foot_shadow.j2c" use_mips="true" />
-  <texture name="cloud-particle.j2c" use_mips="true" />
+  <texture name="cloud-particle.png" use_mips="true" />
   <texture name="transparent.j2c" use_mips="true" />
 
   <!--WARNING OLD ART BELOW *do not use*-->

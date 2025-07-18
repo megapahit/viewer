@@ -439,13 +439,21 @@ static F64 calculate_cpu_frequency(U32 measure_msecs)
     //// completed now (serialization)
     //__asm cpuid
     int cpu_info[4] = {-1};
+#if _M_ARM64
+    std::fill(cpu_info, cpu_info + 4, 0);
+#else
     __cpuid(cpu_info, 0);
+#endif
 
     // We ask the high-res timer for the start time
     QueryPerformanceCounter((LARGE_INTEGER *) &starttime);
 
     // Then we get the current cpu clock and store it
+#if _M_ARM64
+    start = _ReadStatusReg(ARM64_PMCCNTR_EL0);
+#else
     start = __rdtsc();
+#endif
 
     // Now we wart for some msecs
     _Delay(measure_msecs);
@@ -455,7 +463,11 @@ static F64 calculate_cpu_frequency(U32 measure_msecs)
     QueryPerformanceCounter((LARGE_INTEGER *) &endtime);
 
     // And also for the end cpu clock
+#if _M_ARM64
+    end = _ReadStatusReg(ARM64_PMCCNTR_EL0);
+#else
     end = __rdtsc();
+#endif
 
     // Now we can restore the default process and thread priorities
     SetProcessAffinityMask(hProcess, dwProcessMask);
@@ -495,17 +507,21 @@ private:
         // the other three array elements. The CPU identification string is
         // not in linear order. The code below arranges the information
         // in a human readable form.
+#if !_M_ARM64
         int cpu_info[4] = {-1};
         __cpuid(cpu_info, 0);
         unsigned int ids = (unsigned int)cpu_info[0];
         setConfig(eMaxID, (S32)ids);
+#endif
 
         char cpu_vendor[0x20];
         memset(cpu_vendor, 0, sizeof(cpu_vendor));
+#if !_M_ARM64
         *((int*)cpu_vendor) = cpu_info[1];
         *((int*)(cpu_vendor+4)) = cpu_info[3];
         *((int*)(cpu_vendor+8)) = cpu_info[2];
         setInfo(eVendor, cpu_vendor);
+#endif
         std::string cmp_vendor(cpu_vendor);
         bool is_amd = false;
         if (cmp_vendor == "AuthenticAMD")
@@ -513,6 +529,20 @@ private:
             is_amd = true;
         }
 
+#if _M_ARM64
+        HKEY hKey;
+        DWORD gotType;
+        char inBuffer[48] = "";
+        if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0", 0, KEY_READ, &hKey) == ERROR_SUCCESS)
+        {
+            if (!RegQueryValueExA(hKey, "ProcessorNameString", nullptr, &gotType, (PBYTE)(inBuffer), nullptr))
+            {
+                if ((gotType == REG_SZ) && strlen(inBuffer))
+                    setInfo(eModel, inBuffer);
+            }
+            RegCloseKey(hKey);
+        }
+#else
         // Get the information associated with each valid Id
         for(unsigned int i=0; i<=ids; ++i)
         {
@@ -623,6 +653,7 @@ private:
                 setConfig(eCacheSizeK, (cpu_info[2] >> 16) & 0xffff);
             }
         }
+#endif
     }
 };
 

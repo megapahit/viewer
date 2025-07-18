@@ -12,7 +12,11 @@ if (DARWIN)
 elseif (WINDOWS)
   target_include_directories( ll::boost SYSTEM INTERFACE ${prefix_result}/../include)
   target_link_directories( ll::boost INTERFACE ${prefix_result})
-  set(sfx -vc143-mt-x64-1_88)
+  if ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
+    set(sfx -vc143-mt-a64-1_88)
+  else ()
+    set(sfx -vc143-mt-x64-1_88)
+  endif ()
 else ()
   find_package( Boost REQUIRED )
 endif ()
@@ -21,11 +25,15 @@ target_link_libraries( ll::boost INTERFACE
   boost_fiber${sfx}
   boost_filesystem${sfx}
   boost_program_options${sfx}
-  boost_regex${sfx}
   boost_system${sfx}
   boost_thread${sfx}
   boost_url${sfx}
   )
+if (WINDOWS)
+  target_link_libraries( ll::boost INTERFACE boost_json${sfx})
+else ()
+  target_link_libraries( ll::boost INTERFACE boost_regex${sfx})
+endif ()
 target_compile_definitions( ll::boost INTERFACE BOOST_BIND_GLOBAL_PLACEHOLDERS )
 return()
 

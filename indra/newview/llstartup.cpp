@@ -217,6 +217,11 @@
 
 #include "fsfloatersearch.h"
 
+#ifdef LL_DISCORD
+#define DISCORDPP_IMPLEMENTATION
+#include <discordpp.h>
+static std::shared_ptr<discordpp::Client> gDiscordClient;
+#endif
 
 //
 // exported globals
@@ -751,6 +756,17 @@ bool idle_startup()
         {
             LL_WARNS("AppInit") << "Unreliable timers detected (may be bad PCI chipset)!!" << LL_ENDL;
         }
+
+#ifdef LL_DISCORD
+        gDiscordClient = std::make_shared<discordpp::Client>();
+        gDiscordClient->SetStatusChangedCallback([](discordpp::Client::Status status, discordpp::Client::Error, int32_t) {
+            if (status == discordpp::Client::Status::Ready) {
+                discordpp::Activity activity;
+                activity.SetType(discordpp::ActivityTypes::Playing);
+                gDiscordClient->UpdateRichPresence(activity, [](discordpp::ClientResult) {});
+            }
+        });
+#endif
 
         //
         // Log on to system
@@ -2133,9 +2149,6 @@ bool idle_startup()
 
         do_startup_frame();
 
-        // We're successfully logged in.
-        gSavedSettings.setBOOL("FirstLoginThisInstall", false);
-
         LLFloaterReg::showInitialVisibleInstances();
 
         LLFloaterGridStatus::getInstance()->startGridStatusTimer();
@@ -2480,6 +2493,27 @@ bool idle_startup()
         LLUIUsage::instance().clear();
 
         LLPerfStats::StatsRecorder::setAutotuneInit();
+
+        // Display Avatar Welcome Pack the first time a user logs in
+        // (or clears their settings....)
+        if (gSavedSettings.getBOOL("FirstLoginThisInstall"))
+        {
+            LLFloater* avatar_welcome_pack_floater = LLFloaterReg::findInstance("avatar_welcome_pack");
+            if (avatar_welcome_pack_floater != nullptr)
+            {
+                // There is a (very - 1 in ~50 times) hard to repro bug where the login
+                // page is not hidden when the AWP floater is presented. This (agressive)
+                // approach to always close it seems like the best fix for now.
+                LLPanelLogin::closePanel();
+
+                avatar_welcome_pack_floater->setVisible(true);
+            }
+        }
+
+        //// We're successfully logged in.
+        // 2025-06 Moved lower down in the state machine so the Avatar Welcome Pack
+        // floater display can be triggered correctly.
+        gSavedSettings.setBOOL("FirstLoginThisInstall", false);
 
         return true;
     }
@@ -3412,6 +3446,35 @@ bool LLStartUp::startLLProxy()
 
     return proxy_ok;
 }
+
+#ifdef LL_DISCORD
+
+void LLStartUp::runDiscordCallbacks()
+{
+    discordpp::RunCallbacks();
+}
+
+void LLStartUp::handleDiscordSocial()
+{
+    static const uint64_t DISCORD_APPLICATION_ID = 1393451183741599796;
+    discordpp::AuthorizationArgs discordAuthArgs{};
+    discordAuthArgs.SetClientId(DISCORD_APPLICATION_ID);
+    discordAuthArgs.SetScopes(discordpp::Client::GetDefaultPresenceScopes());
+    auto discordCodeVerifier = gDiscordClient->CreateAuthorizationCodeVerifier();
+    discordAuthArgs.SetCodeChallenge(discordCodeVerifier.Challenge());
+    gDiscordClient->Authorize(discordAuthArgs, [discordCodeVerifier](auto result, auto code, auto redirectUri) {
+        if (result.Successful()) {
+            gDiscordClient->GetToken(DISCORD_APPLICATION_ID, code, discordCodeVerifier.Verifier(), redirectUri, [](discordpp::ClientResult result, std::string accessToken, std::string, discordpp::AuthorizationTokenType, int32_t, std::string) {
+                gDiscordClient->UpdateToken(discordpp::AuthorizationTokenType::Bearer, accessToken, [](discordpp::ClientResult result) {
+                    if (result.Successful())
+                        gDiscordClient->Connect();
+                    });
+            });
+        }
+    });
+}
+
+#endif
 
 bool login_alert_done(const LLSD& notification, const LLSD& response)
 {

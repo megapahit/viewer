@@ -297,6 +297,8 @@ if (CMAKE_OSX_ARCHITECTURES MATCHES arm64 OR CMAKE_SYSTEM_PROCESSOR MATCHES aarc
     file(WRITE ${PREBUILD_TRACKING_DIR}/sse2neon_installed "0")
   endif ()
   target_include_directories(llcommon PUBLIC ${LIBS_PREBUILT_DIR}/include/sse2neon)
+elseif ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
+  target_include_directories(llcommon PUBLIC ${prefix_result}/../include/sse2neon)
 endif ()
 
 if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu) OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed))

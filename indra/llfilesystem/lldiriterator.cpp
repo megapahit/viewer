@@ -72,7 +72,11 @@ LLDirIterator::Impl::Impl(const std::string &dirname, const std::string &mask)
 
     if (!is_dir)
     {
+#if LL_WINDOWS
+        LL_WARNS() << "Invalid path: \"" << utf16str_to_utf8str(dir_path.wstring()) << "\"" << LL_ENDL;
+#else
         LL_WARNS() << "Invalid path: \"" << dir_path.string() << "\"" << LL_ENDL;
+#endif
         return;
     }
 
@@ -130,7 +134,11 @@ bool LLDirIterator::Impl::next(std::string &fname)
         while (mIter != end_itr && !found)
         {
             boost::smatch match;
+#if LL_WINDOWS
+            std::string name = utf16str_to_utf8str(mIter->path().filename().wstring());
+#else
             std::string name = mIter->path().filename().string();
+#endif
             found = ll_regex_match(name, match, mFilterExp);
             if (found)
             {

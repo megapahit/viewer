@@ -49,7 +49,7 @@ if (LINUX)
     linux/volume_catcher_pipewire.cpp 
   )
 
-  if (NOT (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu)))
+  if (NOT (${LINUX_DISTRO} MATCHES debian AND CMAKE_SYSTEM_PROCESSOR MATCHES x86_64 OR (${LINUX_DISTRO} MATCHES ubuntu)))
     message( "Building with Linux volume catcher for PulseAudio only and cancelling PipeWire" )
     list(REMOVE_ITEM LINUX_VOLUME_CATCHER linux/volume_catcher_pipewire.cpp)
   endif ()
@@ -76,7 +76,7 @@ add_library(media_plugin_cef
     ${media_plugin_cef_SOURCE_FILES}
     )
 
-if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
+if (${LINUX_DISTRO} MATCHES debian AND CMAKE_SYSTEM_PROCESSOR MATCHES x86_64 OR (${LINUX_DISTRO} MATCHES ubuntu))
     target_compile_definitions(media_plugin_cef PRIVATE USE_VOLUME_CATCHER_PW=1)
 endif ()
 
@@ -193,8 +193,39 @@ if (INSTALL)
             DIRECTORY ${AUTOBUILD_INSTALL_DIR}/resources/locales
             DESTINATION ${_LIB}
             )
-    else (DARWIN)
+    elseif (WINDOWS)
+        set(_LIB llplugin)
+        install(
+            PROGRAMS
+                ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/${PROJECT_NAME}.dll
+                ${AUTOBUILD_INSTALL_DIR}/bin/release/chrome_elf.dll
+                ${AUTOBUILD_INSTALL_DIR}/bin/release/d3dcompiler_47.dll
+                ${AUTOBUILD_INSTALL_DIR}/bin/release/dullahan_host.exe
+                ${AUTOBUILD_INSTALL_DIR}/bin/release/libEGL.dll
+                ${AUTOBUILD_INSTALL_DIR}/bin/release/libGLESv2.dll
+                ${AUTOBUILD_INSTALL_DIR}/bin/release/libcef.dll
+                ${AUTOBUILD_INSTALL_DIR}/bin/release/libvlc.dll
+                ${AUTOBUILD_INSTALL_DIR}/bin/release/libvlccore.dll
+            DESTINATION llplugin
+            )
+        install(
+            FILES
+                ${AUTOBUILD_INSTALL_DIR}/resources/chrome_100_percent.pak
+                ${AUTOBUILD_INSTALL_DIR}/resources/chrome_200_percent.pak
+                ${AUTOBUILD_INSTALL_DIR}/resources/icudtl.dat
+                ${AUTOBUILD_INSTALL_DIR}/resources/resources.pak
+                ${AUTOBUILD_INSTALL_DIR}/bin/release/snapshot_blob.bin
+                ${AUTOBUILD_INSTALL_DIR}/bin/release/v8_context_snapshot.bin
+            DESTINATION llplugin
+            )
+        install(
+            DIRECTORY ${AUTOBUILD_INSTALL_DIR}/resources/locales
+            DESTINATION llplugin
+            )
+    else ()
         set(_LIB lib)
-    endif (DARWIN)
-    install(TARGETS ${PROJECT_NAME} DESTINATION ${_LIB})
-endif (INSTALL)
+    endif ()
+    if (NOT WINDOWS)
+      install(TARGETS ${PROJECT_NAME} DESTINATION ${_LIB})
+    endif ()
+endif ()

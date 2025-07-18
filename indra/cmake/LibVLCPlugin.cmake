@@ -27,6 +27,12 @@ if (DARWIN)
     target_include_directories( ll::libvlc SYSTEM INTERFACE /Volumes/VLC\ media\ player/VLC.app/Contents/MacOS/include)
     target_link_directories( ll::libvlc INTERFACE /Volumes/VLC\ media\ player/VLC.app/Contents/MacOS/lib)
     target_link_libraries( ll::libvlc INTERFACE vlc vlccore )
+elseif (WINDOWS)
+use_prebuilt_binary(vlc-bin)
+    target_link_libraries( ll::libvlc INTERFACE
+            libvlc.lib
+            libvlccore.lib
+    )
 else ()
     include(FindPkgConfig)
     pkg_check_modules(Libvlc REQUIRED libvlc vlc-plugin)
@@ -35,7 +41,6 @@ else ()
     target_link_libraries( ll::libvlc INTERFACE ${Libvlc_LIBRARIES} )
 endif ()
 
-#use_prebuilt_binary(vlc-bin)
 set(LIBVLCPLUGIN ON CACHE BOOL
         "LIBVLCPLUGIN support for the llplugin/llmedia test apps.")
 

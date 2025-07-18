@@ -4506,7 +4506,7 @@ void handle_object_sit(LLViewerObject* object, const LLVector3& offset)
 {
     // get object selection offset
 
-    if (object && object->getPCode() == LL_PCODE_VOLUME)
+    if (gAgent.isAllowedToSit() && object && object->getPCode() == LL_PCODE_VOLUME)
     {
 
         gMessageSystem->newMessageFast(_PREHASH_AgentRequestSit);
@@ -7765,6 +7765,7 @@ bool enable_detach(const LLSD&)
     // Only enable detach if all faces of object are selected
     if (!object ||
         !object->isAttachment() ||
+        object->isLocked() ||
         !LLSelectMgr::getInstance()->getSelection()->contains(object,SELECT_ALL_TES ))
     {
         return false;
@@ -9036,6 +9037,13 @@ void handle_report_bug(const LLSD& param)
     LLWeb::loadURLExternal(url);
 }
 
+#ifdef LL_DISCORD
+void handle_discord_social(const LLSD& param)
+{
+    LLStartUp::handleDiscordSocial();
+}
+#endif
+
 void handle_buy_currency_test()
 {
     std::string url =
@@ -10016,6 +10024,9 @@ void initialize_menus()
     commit.add("Advanced.WebContentTest", boost::bind(&handle_web_content_test, _2));   // this one opens the Web Content floater
     commit.add("Advanced.ShowURL", boost::bind(&handle_show_url, _2));
     commit.add("Advanced.ReportBug", boost::bind(&handle_report_bug, _2));
+#ifdef LL_DISCORD
+    commit.add("Advanced.DiscordSocial", boost::bind(&handle_discord_social, _2));
+#endif
     view_listener_t::addMenu(new LLAdvancedBuyCurrencyTest(), "Advanced.BuyCurrencyTest");
     view_listener_t::addMenu(new LLAdvancedDumpSelectMgr(), "Advanced.DumpSelectMgr");
     view_listener_t::addMenu(new LLAdvancedDumpInventory(), "Advanced.DumpInventory");

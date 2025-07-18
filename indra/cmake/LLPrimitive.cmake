@@ -18,44 +18,53 @@ if( USE_CONAN )
     "${CONAN_INCLUDE_DIRS_COLLADADOM}/collada-dom/1.4/" )
 endif()
 
-if( LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD )
+if (LINUX AND NOT (${LINUX_DISTRO} MATCHES debian AND CMAKE_SYSTEM_PROCESSOR MATCHES aarch64) OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
   # Build of the collada-dom for Linux and FreeBSD is done in
   # indra/llprimitive/CMakeLists.txt
   return()
-elseif ( NOT WINDOWS )
+else ()
   include(FindPkgConfig)
   pkg_check_modules(Minizip REQUIRED minizip)
   pkg_check_modules(Libxml2 REQUIRED libxml-2.0)
   target_link_libraries( ll::minizip-ng INTERFACE ${Minizip_LIBRARIES} )
   target_link_libraries( ll::libxml INTERFACE ${Libxml2_LIBRARIES} )
-  if( ${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/colladadom_installed OR NOT ${colladadom_installed} EQUAL 0 )
-    if( NOT EXISTS ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8.tar.gz )
+  if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/colladadom_installed OR NOT ${colladadom_installed} EQUAL 0)
+    if (NOT EXISTS ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8.tar.gz)
       file(DOWNLOAD
         https://github.com/secondlife/3p-colladadom/archive/refs/tags/v2.3-r8.tar.gz
         ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8.tar.gz
         )
-    endif()
+    endif ()
     file(ARCHIVE_EXTRACT
       INPUT ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8.tar.gz
       DESTINATION ${CMAKE_BINARY_DIR}
       )
-    if ( WINDOWS )
+    if (WINDOWS)
       execute_process(
-        COMMAND sed -i "s/SHARED/STATIC/g" CMakeLists.txt
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/src/1.4
+        COMMAND sed -i "s/SHARED/STATIC/" 1.4/CMakeLists.txt
+        COMMAND sed -i "/#include <cstdarg>/a #define WIN32" dae/daeUtils.cpp
+        COMMAND sed -i "/using namespace cdom;/a namespace boost{void boost::throw_exception(class std::exception const &){}}" dae/daeURI.cpp
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/src
         )
-      set(BOOST_LIBRARY_SUFFIX -vc143-mt-x64-1_88)
     else ()
       execute_process(
-        COMMAND sed -i "" -e "s/SHARED/STATIC/g" CMakeLists.txt
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/src/1.4
+        COMMAND sed -i "" -e "s/SHARED/STATIC/" src/1.4/CMakeLists.txt
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8
         )
     endif ()
-    if( DARWIN )
+    if (DARWIN)
       set(BOOST_CFLAGS -I${Libxml2_LIBRARY_DIRS}exec/boost/1.87/include)
       set(BOOST_LIBS -L${Minizip_LIBRARY_DIRS}exec/boost/1.87/lib)
       set(BOOST_LIBRARY_SUFFIX -mt)
-    endif()
+    elseif (WINDOWS)
+      set(BOOST_CFLAGS -I${prefix_result}/../include)
+      set(BOOST_LIBS -L${prefix_result})
+      if ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
+        set(BOOST_LIBRARY_SUFFIX -vc143-mt-a64-1_88)
+      else ()
+        set(BOOST_LIBRARY_SUFFIX -vc143-mt-x64-1_88)
+      endif ()
+    endif ()
     file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/include/collada/1.4)
     try_compile(COLLADADOM_RESULT
       PROJECT colladadom
@@ -78,7 +87,27 @@ elseif ( NOT WINDOWS )
         -DOPT_COLLADA14:BOOL=ON
         -DCOLLADA_DOM_INCLUDE_INSTALL_DIR:PATH=${LIBS_PREBUILT_DIR}/include/collada
       )
-    if( ${COLLADADOM_RESULT} )
+    if (WINDOWS)
+      execute_process(
+        COMMAND MSBuild.exe ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/Project.sln -p:Configuration=${CMAKE_BUILD_TYPE}
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8
+        OUTPUT_VARIABLE colladadom_installed
+        )
+      file(REMOVE_RECURSE ${LIBS_PREBUILT_DIR}/include/collada)
+      file(
+        COPY ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/include
+        DESTINATION ${LIBS_PREBUILT_DIR}/include
+        )
+      file(RENAME
+        ${LIBS_PREBUILT_DIR}/include/include
+        ${LIBS_PREBUILT_DIR}/include/collada
+        )
+      file(MAKE_DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE})
+      file(RENAME
+        ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8/src/1.4/${CMAKE_BUILD_TYPE}/collada14dom.lib
+        ${ARCH_PREBUILT_DIRS_RELEASE}/libcollada14dom23-s.lib
+        )
+    elseif (${COLLADADOM_RESULT})
       execute_process(
         COMMAND ${CMAKE_MAKE_PROGRAM} install
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8
@@ -88,17 +117,15 @@ elseif ( NOT WINDOWS )
         ${ARCH_PREBUILT_DIRS}/libcollada14dom.a
         ${ARCH_PREBUILT_DIRS_RELEASE}/libcollada14dom.a
         )
-      file(WRITE ${PREBUILD_TRACKING_DIR}/colladadom_installed "${colladadom_installed}")
-    endif()
-  endif()
-endif()
-
-#use_system_binary( colladadom )
-
-if (WINDOWS)
-use_prebuilt_binary(colladadom)
+    endif ()
+    file(WRITE ${PREBUILD_TRACKING_DIR}/colladadom_installed "${colladadom_installed}")
+  endif ()
 endif ()
-if( FALSE )
+
+if (FALSE)
+use_system_binary( colladadom )
+
+use_prebuilt_binary(colladadom)
 use_prebuilt_binary(minizip-ng) # needed for colladadom
 use_prebuilt_binary(libxml2)
 
@@ -113,7 +140,7 @@ if (WINDOWS)
 else()
     target_link_libraries( ll::libxml INTERFACE ${ARCH_PREBUILT_DIRS_RELEASE}/libxml2.a)
 endif()
-endif( FALSE )
+endif (FALSE)
 
 target_include_directories( ll::colladadom SYSTEM INTERFACE
         ${LIBS_PREBUILT_DIR}/include/collada

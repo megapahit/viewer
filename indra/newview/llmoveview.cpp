@@ -538,7 +538,7 @@ void LLPanelStandStopFlying::setStandStopFlyingMode(EStandStopFlyingMode mode)
         LLFirstUse::sit();
         LLFirstUse::notMoving(false);
     }
-    panel->mStandButton->setVisible(SSFM_STAND == mode);
+    panel->mStandButton->setVisible((SSFM_STAND == mode) & gAgent.isAllowedToStand());
     panel->mStopFlyingButton->setVisible(SSFM_STOP_FLYING == mode);
 
     //visibility of it should be updated after updating visibility of the buttons

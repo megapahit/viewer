@@ -35,6 +35,8 @@ add_compile_definitions(BOOST_BIND_GLOBAL_PLACEHOLDERS)
 
 if(CMAKE_OSX_ARCHITECTURES MATCHES arm64 OR CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
 add_compile_definitions(GLM_FORCE_DEFAULT_ALIGNED_GENTYPES=1 GLM_FORCE_NEON=1 GLM_ENABLE_EXPERIMENTAL=1)
+elseif($ENV{MSYSTEM_CARCH} MATCHES aarch64)
+add_compile_definitions(GLM_FORCE_DEFAULT_ALIGNED_GENTYPES=1 GLM_ENABLE_EXPERIMENTAL=1)
 else()
 # Force enable SSE2 instructions in GLM per the manual
 # https://github.com/g-truc/glm/blob/master/manual.md#section2_10

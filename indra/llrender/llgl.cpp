@@ -238,8 +238,6 @@ PFNWGLBLITCONTEXTFRAMEBUFFERAMDPROC             wglBlitContextFramebufferAMD = n
 PFNWGLSWAPINTERVALEXTPROC    wglSwapIntervalEXT = nullptr;
 PFNWGLGETSWAPINTERVALEXTPROC wglGetSwapIntervalEXT = nullptr;
 
-/*
-
 // GL_VERSION_1_2
 //PFNGLDRAWRANGEELEMENTSPROC  glDrawRangeElements = nullptr;
 //PFNGLTEXIMAGE3DPROC         glTexImage3D = nullptr;
@@ -984,7 +982,6 @@ PFNGLMULTIDRAWARRAYSINDIRECTCOUNTPROC    glMultiDrawArraysIndirectCount = nullpt
 PFNGLMULTIDRAWELEMENTSINDIRECTCOUNTPROC  glMultiDrawElementsIndirectCount = nullptr;
 PFNGLPOLYGONOFFSETCLAMPPROC              glPolygonOffsetClamp = nullptr;
 
-*/
 #endif
 
 LLGLManager gGLManager;
@@ -1434,7 +1431,6 @@ void LLGLManager::initExtensions()
 
     mInited = true;
 
-/*
 #if LL_WINDOWS
     LL_DEBUGS("RenderInit") << "GL Probe: Getting symbols" << LL_ENDL;
 
@@ -2272,7 +2268,6 @@ void LLGLManager::initExtensions()
     glPolygonOffsetClamp = (PFNGLPOLYGONOFFSETCLAMPPROC)GLH_EXT_GET_PROC_ADDRESS("glPolygonOffsetClamp");
 
 #endif
-*/
 }
 
 void rotate_quat(LLQuaternion& rotation)

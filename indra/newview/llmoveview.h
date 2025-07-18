@@ -143,6 +143,7 @@ public:
     static void clearStandStopFlyingMode(EStandStopFlyingMode mode);
     /*virtual*/ bool postBuild();
     /*virtual*/ void setVisible(bool visible);
+    void setVisibleStandButton(bool visible) { mStandButton->setVisible(visible); }
 
     // *HACK: due to hard enough to have this control aligned with "Move" button while resizing
     // let update its position in each frame

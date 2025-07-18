@@ -55,6 +55,7 @@ set(llwindow_LINK_LIBRARIES
         llfilesystem
         llxml
         ll::glm
+        ll::glext
         ll::uilibraries
         ll::SDL
         )
@@ -63,7 +64,7 @@ include_directories(${CMAKE_SOURCE_DIR}/llrender)
 
 # Libraries on which this library depends, needed for Linux builds
 # Sort by high-level to low-level
-if (NOT DARWIN)
+if (NOT (DARWIN OR WINDOWS))
   list(APPEND viewer_SOURCE_FILES
        llkeyboardsdl.cpp
        llwindowsdl.cpp

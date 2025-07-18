@@ -131,10 +131,10 @@
 #include "stringize.h"
 #include "llcoros.h"
 #include "llexception.h"
-#if LL_DARWIN || LL_LINUX || __FreeBSD__
+#if !_M_ARM64 // !LL_LINUX
 #include "cef/dullahan_version.h"
-#endif
 #include "vlc/libvlc_version.h"
+#endif // LL_LINUX
 
 #if LL_DARWIN
 #if LL_SDL
@@ -1002,7 +1002,7 @@ bool LLAppViewer::init()
         return false;
     }
 
-#if defined(__i386__) || defined(__x86_64__) || defined(__amd64__)
+#if defined(__i386__) || defined(__x86_64__) || defined(__amd64__) || _M_X64
     // Without SSE2 support we will crash almost immediately, warn here.
     if (!gSysCPU.hasSSE2())
     {
@@ -1363,6 +1363,10 @@ bool LLAppViewer::doFrame()
     U64 fpsLimitSleepFor = 0;
     TimePoint fpsLimitFrameStartTime = std::chrono::steady_clock::now();
 
+#ifdef LL_DISCORD
+    LLStartUp::runDiscordCallbacks();
+#endif
+
     LL_RECORD_BLOCK_TIME(FTM_FRAME);
     {
     // and now adjust the visuals from previous frame.
@@ -1559,7 +1563,11 @@ bool LLAppViewer::doFrame()
 
             if(fpsLimitSleepFor)
             {
+#if LL_WINDOWS
+                std::this_thread::sleep_for(std::chrono::microseconds(fpsLimitSleepFor));
+#else
                 usleep(fpsLimitSleepFor);
+#endif
             }
 
             // yield some time to the os based on command line option
@@ -3438,7 +3446,7 @@ LLSD LLAppViewer::getViewerInfo() const
         info["VOICE_VERSION"] = LLTrans::getString("NotConnected");
     }
 
-#if LL_DARWIN || LL_LINUX || __FreeBSD__
+#if !_M_ARM64 // !LL_LINUX
     std::ostringstream cef_ver_codec;
     cef_ver_codec << "Dullahan: ";
     cef_ver_codec << DULLAHAN_VERSION_MAJOR;
@@ -3468,7 +3476,7 @@ LLSD LLAppViewer::getViewerInfo() const
     info["LIBCEF_VERSION"] = "Undefined";
 #endif
 
-//#if !LL_LINUX
+#if !_M_ARM64 // !LL_LINUX
     std::ostringstream vlc_ver_codec;
     vlc_ver_codec << LIBVLC_VERSION_MAJOR;
     vlc_ver_codec << ".";
@@ -3476,11 +3484,9 @@ LLSD LLAppViewer::getViewerInfo() const
     vlc_ver_codec << ".";
     vlc_ver_codec << LIBVLC_VERSION_REVISION;
     info["LIBVLC_VERSION"] = vlc_ver_codec.str();
-/*
 #else
     info["LIBVLC_VERSION"] = "Undefined";
 #endif
-*/
 
     S32 packets_in = (S32)LLViewerStats::instance().getRecording().getSum(LLStatViewer::PACKETS_IN);
     if (packets_in > 0)

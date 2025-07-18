@@ -1304,7 +1304,7 @@ void LLAgentWearables::findAttachmentsAddRemoveInfo(LLInventoryModel::item_array
                 LLUUID object_item_id = objectp->getAttachmentItemID();
 
                 bool remove_attachment = true;
-                if (requested_item_ids.find(object_item_id) != requested_item_ids.end())
+                if (requested_item_ids.find(object_item_id) != requested_item_ids.end() || objectp->isLocked())
                 {   // Object currently worn, was requested to keep it
                     // Flag as currently worn so we won't have to add it again.
                     remove_attachment = false;

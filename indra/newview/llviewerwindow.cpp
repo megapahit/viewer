@@ -2303,13 +2303,13 @@ void LLViewerWindow::initWorldUI()
             url = LLWeb::expandURLSubstitutions(url, LLSD());
             destinations->navigateTo(url, HTTP_CONTENT_TEXT_HTML);
         }
-        LLMediaCtrl* avatar_picker = LLFloaterReg::getInstance("avatar")->findChild<LLMediaCtrl>("avatar_picker_contents");
-        if (avatar_picker)
+        LLMediaCtrl* avatar_welcome_pack = LLFloaterReg::getInstance("avatar_welcome_pack")->findChild<LLMediaCtrl>("avatar_picker_contents");
+        if (avatar_welcome_pack)
         {
-            avatar_picker->setErrorPageURL(gSavedSettings.getString("GenericErrorPageURL"));
-            std::string url = gSavedSettings.getString("AvatarPickerURL");
+            avatar_welcome_pack->setErrorPageURL(gSavedSettings.getString("GenericErrorPageURL"));
+            std::string url = gSavedSettings.getString("AvatarWelcomePack");
             url = LLWeb::expandURLSubstitutions(url, LLSD());
-            avatar_picker->navigateTo(url, HTTP_CONTENT_TEXT_HTML);
+            avatar_welcome_pack->navigateTo(url, HTTP_CONTENT_TEXT_HTML);
         }
     }
 }
@@ -3858,7 +3858,7 @@ void LLViewerWindow::updateLayout()
 
 void LLViewerWindow::updateMouseDelta()
 {
-#if LL_WINDOWS
+#if LL_WINDOWS && !LL_SDL
     LLCoordCommon delta;
     mWindow->getCursorDelta(&delta);
     S32 dx = delta.mX;

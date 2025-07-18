@@ -521,12 +521,21 @@
          value="default"
          width="75" />
         <radio_item
+          label="gold"
+          left_pad="0"
+          layout="topleft"
+          top_delta="0"
+          height="16"
+          name="radio2"
+          value="gold"
+          width="75" />
+        <radio_item
          label="contrast"
          left_pad="0"
          layout="topleft"
          top_delta="0"
          height="16"
-         name="radio2"
+         name="radio3"
          value="contrast"
          width="75" />
         <radio_group.commit_callback
