@@ -293,6 +293,7 @@ execute_process(
         Frameworks/libbrotlicommon.1.1.0.dylib
         Frameworks/libbrotlidec.1.1.0.dylib
         Frameworks/libbz2.1.0.8.dylib
+        Frameworks/libdiscord_partner_sdk.dylib
         Frameworks/libexpat.1.10.0.dylib
         Frameworks/libfreetype.6.dylib
         Frameworks/libhunspell-1.7.0.dylib

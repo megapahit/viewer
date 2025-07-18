@@ -28,6 +28,8 @@
 #include "llviewerprecompiledheaders.h"
 #include "llagent.h"
 #include "llstartup.h"
+#include "llappearancemgr.h"
+#include "llinventorymodel.h"
 #include "llmoveview.h"
 #include "llviewercontrol.h"
 #include "llviewermenu.h"
@@ -238,6 +240,42 @@ ECmdRet ReplyHandler<EBehaviour::GetSitID>::onCommand(const RlvCommand& rlvCmd, 
     return ECmdRet::Succeeded;
 }
 
+template<> template<>
+ECmdRet ReplyHandler<EBehaviour::GetInv>::onCommand(const RlvCommand& rlvCmd, std::string& strReply)
+{
+    auto folderID = findDescendentCategoryIDByName(gInventory.getRootFolderID(), "#RLV");
+    if (folderID == LLUUID::null)
+        return ECmdRet::FailedNoSharedRoot;
+    strReply = "";
+    LLInventoryModel::cat_array_t* cats;
+    LLInventoryModel::item_array_t* items;
+    std::vector<std::string> optionList;
+    auto option = rlvCmd.getOption();
+    if (!option.empty())
+    {
+        Util::parseStringList(option, optionList, "/");
+        auto optIter = optionList.begin();
+        for(; optionList.end() != optIter; ++optIter)
+        {
+            auto name = *optIter;
+            if (!name.empty())
+                folderID = findDescendentCategoryIDByName(folderID, name);
+        }
+    }
+    gInventory.getDirectDescendentsOf(folderID, cats, items);
+    auto iter = cats->begin();
+    for(; cats->end() != iter; ++iter)
+    {
+        auto name = (*iter)->getName();
+        if (name.front() == '.')
+            continue;
+        if (iter != cats->begin())
+            strReply.append(",");
+        strReply.append(name);
+    }
+    return ECmdRet::Succeeded;
+}
+
 // Force
 
 ECmdRet CommandHandlerBaseImpl<EParamType::Force>::processCommand(const RlvCommand& rlvCmd, ForceHandlerFunc* pHandler)
@@ -263,6 +301,60 @@ template<> template<>
 ECmdRet ForceHandler<EBehaviour::Unsit>::onCommand(const RlvCommand& rlvCmd)
 {
     gAgent.standUp();
+    return ECmdRet::Succeeded;
+}
+
+template<> template<>
+ECmdRet ForceHandler<EBehaviour::Attach>::onCommand(const RlvCommand& rlvCmd)
+{
+    auto rlvFolderID = findDescendentCategoryIDByName(gInventory.getRootFolderID(), "#RLV");
+    if (rlvFolderID == LLUUID::null)
+        return ECmdRet::FailedNoSharedRoot;
+    std::vector<std::string> optionList;
+    auto option = rlvCmd.getOption();
+    if (!option.empty())
+    {
+        auto folderID = findDescendentCategoryIDByName(rlvFolderID, option);
+        if (folderID == LLUUID::null)
+        {
+            Util::parseStringList(option, optionList, "/");
+            auto iter = optionList.begin();
+            for(; optionList.end() != iter; ++iter)
+            {
+                auto name = *iter;
+                if (!name.empty())
+                    folderID = findDescendentCategoryIDByName(folderID, name);
+            }
+        }
+        LLAppearanceMgr::instance().replaceCurrentOutfit(folderID);
+    }
+    return ECmdRet::Succeeded;
+}
+
+template<> template<>
+ECmdRet ForceHandler<EBehaviour::AttachOver>::onCommand(const RlvCommand& rlvCmd)
+{
+    auto rlvFolderID = findDescendentCategoryIDByName(gInventory.getRootFolderID(), "#RLV");
+    if (rlvFolderID == LLUUID::null)
+        return ECmdRet::FailedNoSharedRoot;
+    std::vector<std::string> optionList;
+    auto option = rlvCmd.getOption();
+    if (!option.empty())
+    {
+        auto folderID = findDescendentCategoryIDByName(rlvFolderID, option);
+        if (folderID == LLUUID::null)
+        {
+            Util::parseStringList(option, optionList, "/");
+            auto iter = optionList.begin();
+            for(; optionList.end() != iter; ++iter)
+            {
+                auto name = *iter;
+                if (!name.empty())
+                    folderID = findDescendentCategoryIDByName(folderID, name);
+            }
+        }
+        LLAppearanceMgr::instance().addCategoryToCurrentOutfit(folderID);
+    }
     return ECmdRet::Succeeded;
 }
 

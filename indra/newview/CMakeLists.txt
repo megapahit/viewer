@@ -15,6 +15,9 @@ include(CMakeCopyIfDifferent)
 include(CubemapToEquirectangularJS)
 #include(DBusGlib)
 include(DragDrop)
+if (USE_DISCORD)
+  include(Discord)
+endif ()
 include(EXPAT)
 include(Hunspell)
 include(JPEGEncoderBasic)
@@ -2143,6 +2146,10 @@ if (ENABLE_MEDIA_PLUGINS)
    endif ()
 endif ()
 
+if (USE_DISCORD)
+   target_link_libraries(${VIEWER_BINARY_NAME} ll::discord )
+endif ()
+
 if( TARGET ll::intel_memops )
    target_link_libraries(${VIEWER_BINARY_NAME} ll::intel_memops )
 endif()
@@ -2283,8 +2290,11 @@ if (LINUX)
         )
     elseif (${LINUX_DISTRO} MATCHES debian OR ${LINUX_DISTRO} MATCHES ubuntu)
       set(CPACK_BINARY_DEB ON CACHE BOOL "Able to package Debian DEB.")
-      set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE amd64
-        CACHE STRING "Debian package architecture.")
+      if (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+        set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE arm64 CACHE STRING "Debian package architecture.")
+      elseif (CMAKE_SYSTEM_PROCESSOR MATCHES x86_64)
+        set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE amd64 CACHE STRING "Debian package architecture.")
+      endif ()
       set(CPACK_DEBIAN_PACKAGE_DESCRIPTION ${VIEWER_PACKAGE_COMMENT}
         CACHE STRING "Debian package description.")
       set(CPACK_DEBIAN_PACKAGE_MAINTAINER $ENV{USER}@${VIEWER_PACKAGE_DOMAIN_NAME}
@@ -2292,8 +2302,13 @@ if (LINUX)
       set(CPACK_DEBIAN_PACKAGE_SECTION net
         CACHE STRING "Debian package section.")
       if (${LINUX_DISTRO} MATCHES debian)
-        set(CPACK_DEBIAN_PACKAGE_DEPENDS "libalut0, libaprutil1, libboost-fiber1.81.0, libboost-filesystem1.81.0, libboost-program-options1.81.0, libboost-regex1.81.0, libboost-thread1.81.0, libboost-url1.81.0, libexpat1, libfltk1.3, libgles-dev, libglu1-mesa, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1, libnghttp2-14, libsdl2-2.0-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
+        if (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+          set(CPACK_DEBIAN_PACKAGE_DEPENDS "libalut0, libaprutil1t64, libboost-fiber1.83.0, libboost-filesystem1.83.0, libboost-program-options1.83.0, libboost-regex1.83.0, libboost-thread1.83.0, libboost-url1.83.0, libexpat1, libfltk1.3t64, libgles-dev, libglu1-mesa, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1t64, libnghttp2-14, libopenjp2-7, libsdl2-2.0-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
         CACHE STRING "Debian package dependencies.")
+        else ()
+          set(CPACK_DEBIAN_PACKAGE_DEPENDS "libalut0, libaprutil1, libboost-fiber1.81.0, libboost-filesystem1.81.0, libboost-program-options1.81.0, libboost-regex1.81.0, libboost-thread1.81.0, libboost-url1.81.0, libexpat1, libfltk1.3, libgles-dev, libglu1-mesa, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1, libnghttp2-14, libsdl2-2.0-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
+        CACHE STRING "Debian package dependencies.")
+        endif ()
       else ()
         set(CPACK_DEBIAN_PACKAGE_DEPENDS "libaprutil1t64, libboost-fiber1.83.0, libboost-filesystem1.83.0, libboost-program-options1.83.0, libboost-regex1.83.0, libboost-thread1.83.0, libboost-url1.83.0, libexpat1, libfltk1.3t64, libgles-dev, libglu1-mesa, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1, libnghttp2-14, libsdl2-2.0-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
         CACHE STRING "Debian package dependencies.")

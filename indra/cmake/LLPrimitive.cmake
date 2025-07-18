@@ -18,7 +18,7 @@ if( USE_CONAN )
     "${CONAN_INCLUDE_DIRS_COLLADADOM}/collada-dom/1.4/" )
 endif()
 
-if (LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
+if (LINUX AND NOT (${LINUX_DISTRO} MATCHES debian AND CMAKE_SYSTEM_PROCESSOR MATCHES aarch64) OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
   # Build of the collada-dom for Linux and FreeBSD is done in
   # indra/llprimitive/CMakeLists.txt
   return()
