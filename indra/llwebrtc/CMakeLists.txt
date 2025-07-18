@@ -28,7 +28,6 @@ list(APPEND llwebrtc_SOURCE_FILES ${llwebrtc_HEADER_FILES})
 
 add_library (llwebrtc SHARED ${llwebrtc_SOURCE_FILES})
 
-target_compile_definitions(ll::webrtc INTERFACE LL_WEBRTC=1)
 #set_target_properties(llwebrtc PROPERTIES PUBLIC_HEADER llwebrtc.h)
 
 if (WINDOWS)
