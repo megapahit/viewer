@@ -751,7 +751,7 @@ set(viewer_SOURCE_FILES
     rlvhandler.cpp
     )
 
-if (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES aarch64))
+if (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES aarch64) OR (${LINUX_DISTRO} MATCHES debian AND CMAKE_SYSTEM_PROCESSOR MATCHES aarch64))
     list(REMOVE_ITEM viewer_SOURCE_FILES llvoicewebrtc.cpp)
 endif ()
 
@@ -2133,7 +2133,7 @@ target_link_libraries(${VIEWER_BINARY_NAME}
         ll::openxr
         )
 
-if (NOT (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES aarch64)))
+if (NOT (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES aarch64) OR (${LINUX_DISTRO} MATCHES debian AND CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)))
    target_link_libraries(${VIEWER_BINARY_NAME} llwebrtc )
 endif ()
 
