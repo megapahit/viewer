@@ -8938,6 +8938,7 @@ void LLVOAvatar::updateMeshTextures()
         bool is_ltda = layerset
             && layerset->getViewerComposite()->isInitialized()
             && layerset->isLocalTextureDataAvailable();
+#ifndef __aarch64__
         mBakedTextureDebugText += llformat("%4d   %4s     %4d %4d %4d %4d %4s\n",
                                            i,
                                            (layerset?"*":"0"),
@@ -8946,6 +8947,7 @@ void LLVOAvatar::updateMeshTextures()
                                            is_layer_baked[i],
                                            use_lkg_baked_layer[i],
                                            last_id_string.c_str());
+#endif
     }
 
     for (U32 i=0; i < mBakedTextureDatas.size(); i++)
