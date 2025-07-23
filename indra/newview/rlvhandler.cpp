@@ -340,6 +340,30 @@ ECmdRet ForceHandler<EBehaviour::Unsit>::onCommand(const RlvCommand& rlvCmd)
     LLAppearanceMgr::instance().addCategoryToCurrentOutfit(folderID);
 
 template<> template<>
+ECmdRet ForceHandler<EBehaviour::RemOutfit>::onCommand(const RlvCommand& rlvCmd)
+{
+    std::vector<std::string> optionList;
+    auto option = rlvCmd.getOption();
+    if (option.empty())
+    {
+        LLAppearanceMgr::instance().removeAllClothesFromAvatar();
+    }
+    else
+    {
+        LLWearableType::EType type = LLWearableType::getInstance()->typeNameToType(option);
+        if (type >= LLWearableType::WT_SHAPE
+            && type < LLWearableType::WT_COUNT
+            && (gAgentWearables.getWearableCount(type) > 0))
+        {
+            U32 wearable_index = gAgentWearables.getWearableCount(type) - 1;
+            LLUUID item_id = gAgentWearables.getWearableItemID(type,wearable_index);
+            LLAppearanceMgr::instance().removeItemFromAvatar(item_id);
+        }
+    }
+    return ECmdRet::Succeeded;
+}
+
+template<> template<>
 ECmdRet ForceHandler<EBehaviour::Attach>::onCommand(const RlvCommand& rlvCmd)
 {
     RESTRAINED_LOVE_OUTFIT(RESTRAINED_LOVE_REPLACE);
