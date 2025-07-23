@@ -351,6 +351,28 @@ ECmdRet ForceHandler<EBehaviour::AttachOver>::onCommand(const RlvCommand& rlvCmd
     RESTRAINED_LOVE_OUTFIT(RESTRAINED_LOVE_ADD);
 }
 
+template<> template<>
+ECmdRet ForceHandler<EBehaviour::Detach>::onCommand(const RlvCommand& rlvCmd)
+{
+    auto folderID = gInventory.getRootFolderID();
+    LLNameCategoryCollector has_name("#RLV");
+    if (!gInventory.hasMatchingDirectDescendent(folderID, has_name))
+        return ECmdRet::FailedNoSharedRoot;
+    folderID = findDescendentCategoryIDByName(folderID, "#RLV");
+    std::vector<std::string> optionList;
+    auto option = rlvCmd.getOption();
+    if (!option.empty())
+    {
+        LLNameCategoryCollector is_named(option);
+        if (gInventory.hasMatchingDirectDescendent(folderID, is_named))
+        {
+            folderID = findDescendentCategoryIDByName(folderID, option);
+            LLAppearanceMgr::instance().takeOffOutfit(folderID);
+        }
+    }
+    return ECmdRet::Succeeded;
+}
+
 // AddRem
 
 ECmdRet CommandHandlerBaseImpl<EParamType::AddRem>::processCommand(const RlvCommand& rlvCmd, BhvrHandlerFunc* pHandler, BhvrToggleHandlerFunc* pToggleHandler)
