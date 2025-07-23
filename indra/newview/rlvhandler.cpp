@@ -29,6 +29,7 @@
 #include "llagent.h"
 #include "llstartup.h"
 #include "llappearancemgr.h"
+#include "llinventoryfunctions.h"
 #include "llinventorymodel.h"
 #include "llmoveview.h"
 #include "llviewercontrol.h"
@@ -243,9 +244,11 @@ ECmdRet ReplyHandler<EBehaviour::GetSitID>::onCommand(const RlvCommand& rlvCmd, 
 template<> template<>
 ECmdRet ReplyHandler<EBehaviour::GetInv>::onCommand(const RlvCommand& rlvCmd, std::string& strReply)
 {
-    auto folderID = findDescendentCategoryIDByName(gInventory.getRootFolderID(), "#RLV");
-    if (folderID == LLUUID::null)
+    auto folderID = gInventory.getRootFolderID();
+    LLNameCategoryCollector has_name("#RLV");
+    if (!gInventory.hasMatchingDirectDescendent(folderID, has_name))
         return ECmdRet::FailedNoSharedRoot;
+    folderID = findDescendentCategoryIDByName(folderID, "#RLV");
     strReply = "";
     LLInventoryModel::cat_array_t* cats;
     LLInventoryModel::item_array_t* items;
