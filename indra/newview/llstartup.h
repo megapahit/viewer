@@ -128,7 +128,6 @@ public:
     static bool startLLProxy(); // Initialize the SOCKS 5 proxy
 
     static LLViewerStats::PhaseMap& getPhases() { return *sPhases; }
-
 private:
     friend class LLStartupListener;
     static LLSLURL sStartSLURL;
