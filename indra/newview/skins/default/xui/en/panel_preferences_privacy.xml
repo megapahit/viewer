@@ -150,6 +150,7 @@
 
       <check_box
         enabled_control="EnableDiscord"
+        control_name="ShowDiscordActivityState"
         height="16"
         enabled="false"
         label="Show location"
