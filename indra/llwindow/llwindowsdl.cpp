@@ -106,6 +106,10 @@ bool hasHIDPI = 0;
 # include <X11/Xutil.h>
 #endif //LL_X11
 
+#if LL_WINDOWS && !LL_MESA_HEADLESS
+#pragma comment(lib, "dinput8")
+#endif
+
 // TOFU HACK -- (*exactly* the same hack as LLWindowMacOSX for a similar
 // set of reasons): Stash a pointer to the LLWindowSDL object here and
 // maintain in the constructor and destructor.  This assumes that there will

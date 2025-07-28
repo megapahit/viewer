@@ -251,6 +251,12 @@ public:
     // Note: mQuitRequested can be aborted by user.
     void outOfMemorySoftQuit();
 
+#ifdef LL_DISCORD
+    static void initDiscordSocial();
+    static void handleDiscordSocial(const LLSD& value);
+    static void updateDiscordActivity();
+#endif
+
 protected:
     virtual bool initWindow(); // Initialize the viewer's window.
     virtual void initLoggingAndGetLastDuration(); // Initialize log files, logging system

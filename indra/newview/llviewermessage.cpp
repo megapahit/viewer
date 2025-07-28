@@ -3072,6 +3072,10 @@ void process_agent_movement_complete(LLMessageSystem* msg, void**)
         }
     }
 
+#ifdef LL_DISCORD
+    LLAppViewer::updateDiscordActivity();
+#endif
+
     if ( LLTracker::isTracking(NULL) )
     {
         // Check distance to beacon, if < 5m, remove beacon
