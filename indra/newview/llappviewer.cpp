@@ -5938,10 +5938,10 @@ void LLAppViewer::initDiscordSocial()
     }
 }
 
-void LLAppViewer::handleDiscordSocial(bool enable)
+void LLAppViewer::handleDiscordSocial(const LLSD& value)
 {
     static const uint64_t APPLICATION_ID = 1393451183741599796;
-    if (enable)
+    if (value.asBoolean())
     {
         discordpp::AuthorizationArgs args{};
         args.SetClientId(APPLICATION_ID);
@@ -5986,13 +5986,16 @@ void LLAppViewer::updateDiscordActivity()
     discordpp::Activity activity;
     activity.SetType(discordpp::ActivityTypes::Playing);
 
-    LLAvatarName av_name;
-    LLAvatarNameCache::get(gAgent.getID(), &av_name);
-    auto name = av_name.getUserName();
-    auto displayName = av_name.getDisplayName();
-    if (name != displayName)
-        name = displayName + " (" + name + ")";
-    activity.SetDetails(name);
+    if (gSavedSettings.getBOOL("ShowDiscordActivityDetails"))
+    {
+        LLAvatarName av_name;
+        LLAvatarNameCache::get(gAgent.getID(), &av_name);
+        auto name = av_name.getUserName();
+        auto displayName = av_name.getDisplayName();
+        if (name != displayName)
+            name = displayName + " (" + name + ")";
+        activity.SetDetails(name);
+    }
 
     if (gSavedSettings.getBOOL("ShowDiscordActivityState"))
     {
