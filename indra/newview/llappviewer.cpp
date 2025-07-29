@@ -1356,7 +1356,10 @@ bool LLAppViewer::doFrame()
     TimePoint fpsLimitFrameStartTime = std::chrono::steady_clock::now();
 
 #ifdef LL_DISCORD
-    discordpp::RunCallbacks();
+    {
+        LL_PROFILE_ZONE_NAMED("discord_callbacks");
+        discordpp::RunCallbacks();
+    }
 #endif
 
     LL_RECORD_BLOCK_TIME(FTM_FRAME);
@@ -5992,6 +5995,7 @@ void LLAppViewer::handleDiscordSocial(const LLSD& value)
 
 void LLAppViewer::updateDiscordActivity()
 {
+    LL_PROFILE_ZONE_SCOPED;
     discordpp::Activity activity;
     activity.SetType(discordpp::ActivityTypes::Playing);
     discordpp::ActivityTimestamps timestamps;
