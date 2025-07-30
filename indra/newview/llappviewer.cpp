@@ -5959,7 +5959,7 @@ void LLAppViewer::initDiscordSocial()
     }
 }
 
-void LLAppViewer::handleDiscordSocial(const LLSD& value)
+void LLAppViewer::toggleDiscordIntegration(const LLSD& value)
 {
     static const uint64_t APPLICATION_ID = 1393451183741599796;
     if (value.asBoolean())
