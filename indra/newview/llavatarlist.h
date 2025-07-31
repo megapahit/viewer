@@ -74,6 +74,7 @@ public:
     uuid_vec_t& getIDs()                            { return mIDs; }
     bool contains(const LLUUID& id);
 
+    void setAvatarsPositions(const std::map<LLUUID, LLVector3d>& avatarsPositions);
     void setContextMenu(LLListContextMenu* menu) { mContextMenu = menu; }
     void setSessionID(const LLUUID& session_id) { mSessionID = session_id; }
     const LLUUID& getSessionID() { return mSessionID; }
@@ -114,8 +115,6 @@ protected:
         const uuid_vec_t& vnew,
         uuid_vec_t& vadded,
         uuid_vec_t& vremoved);
-    void updateAvatarArrivalTime();
-    void updateAvatarDistance();
     void updateLastInteractionTimes();
     void rebuildNames();
     void onItemDoubleClicked(LLUICtrl* ctrl, S32 x, S32 y, MASK mask);
@@ -144,6 +143,7 @@ private:
     uuid_vec_t              mIDs;
     LLUUID                  mSessionID;
 
+    std::map<LLUUID, LLVector3d> mAvatarsPositions;
     LLListContextMenu*  mContextMenu;
 
     commit_signal_t mRefreshCompleteSignal;
