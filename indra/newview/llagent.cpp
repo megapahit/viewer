@@ -1305,6 +1305,12 @@ const LLVector3 &LLAgent::getPositionAgent()
     return mFrameAgent.getOrigin();
 }
 
+void LLAgent::setAvatarsPositions(const std::map<LLUUID, LLVector3d>& avatarsPositions)
+{
+    mAvatarsPositions.clear();
+    mAvatarsPositions = avatarsPositions;
+}
+
 boost::signals2::connection LLAgent::whenPositionChanged(position_signal_t::slot_type fn)
 {
     return mOnPositionChanged.connect(fn);

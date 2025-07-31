@@ -74,7 +74,6 @@ public:
     uuid_vec_t& getIDs()                            { return mIDs; }
     bool contains(const LLUUID& id);
 
-    void setAvatarsPositions(const std::map<LLUUID, LLVector3d>& avatarsPositions);
     void setContextMenu(LLListContextMenu* menu) { mContextMenu = menu; }
     void setSessionID(const LLUUID& session_id) { mSessionID = session_id; }
     const LLUUID& getSessionID() { return mSessionID; }
@@ -143,7 +142,6 @@ private:
     uuid_vec_t              mIDs;
     LLUUID                  mSessionID;
 
-    std::map<LLUUID, LLVector3d> mAvatarsPositions;
     LLListContextMenu*  mContextMenu;
 
     commit_signal_t mRefreshCompleteSignal;

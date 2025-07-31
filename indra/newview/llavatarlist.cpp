@@ -186,12 +186,6 @@ std::string LLAvatarList::getAvatarName(LLAvatarName av_name)
     return mShowCompleteName? av_name.getCompleteName(false, mForceCompleteName) : av_name.getDisplayName();
 }
 
-void LLAvatarList::setAvatarsPositions(const std::map<LLUUID, LLVector3d>& avatarsPositions)
-{
-    mAvatarsPositions.clear();
-    mAvatarsPositions = avatarsPositions;
-}
-
 // virtual
 void LLAvatarList::draw()
 {
@@ -224,7 +218,10 @@ void LLAvatarList::draw()
                         item->setAvatarArrivalTime(secs_since);
                 }
                 if (mAvatarDistance)
-                    item->setAvatarDistance(dist_vec(mAvatarsPositions[item->getAvatarId()], gAgent.getPositionGlobal()));
+                {
+                    auto avatarsPositions = gAgent.getAvatarsPositions();
+                    item->setAvatarDistance(dist_vec(avatarsPositions[item->getAvatarId()], gAgent.getPositionGlobal()));
+                }
             }
         }
         if (mShowLastInteractionTime)

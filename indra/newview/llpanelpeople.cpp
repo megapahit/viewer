@@ -850,7 +850,7 @@ void LLPanelPeople::updateNearbyList()
 #endif
 
     DISTANCE_COMPARATOR.updateAvatarsPositions(positions, mNearbyList->getIDs());
-    mNearbyList->setAvatarsPositions(DISTANCE_COMPARATOR.getAvatarsPositions());
+    gAgent.setAvatarsPositions(DISTANCE_COMPARATOR.getAvatarsPositions());
     LLActiveSpeakerMgr::instance().update(true);
 }
 
