@@ -821,13 +821,11 @@ LLVOAvatar::~LLVOAvatar()
     static LLCachedControl<bool> show_arrival_departures(gSavedSettings, "IMShowArrivalsDepartures", false);
     if (show_arrival_departures)
     {
-        LLAvatarName av_name;
-        LLAvatarNameCache::get(getID(), &av_name);
-        auto display_name = av_name.getDisplayName();
-        if (!display_name.empty())
+        auto full_name = getFullname();
+        if (!full_name.empty())
         {
-            LLChat chat{llformat("%s left.", display_name.c_str())};
-            chat.mFromName = display_name;
+            LLChat chat{llformat("%s left.", full_name.c_str())};
+            chat.mFromName = full_name;
             chat.mFromID = getID();
             LLSD args;
             args["COLOR"] = "ChatHistoryTextColor";
@@ -2587,15 +2585,15 @@ U32 LLVOAvatar::processUpdateMessage(LLMessageSystem *mesgsys,
         static LLCachedControl<bool> show_arrival_departures(gSavedSettings, "IMShowArrivalsDepartures", false);
         if (show_arrival_departures)
         {
-            LLAvatarName av_name;
-            LLAvatarNameCache::get(getID(), &av_name);
-            auto display_name = av_name.getDisplayName();
-            if (!display_name.empty())
+            auto full_name = getFullname();
+            if (!full_name.empty())
             {
                 auto avatarsPositions = gAgent.getAvatarsPositions();
-                LLChat chat{llformat("%s arrived (%.1f m).", display_name.c_str(), dist_vec(avatarsPositions[getID()], gAgent.getPositionGlobal()))};
-                chat.mFromName = display_name;
-                chat.mFromID = getID();
+                auto id = getID();
+                auto avatarPosition = avatarsPositions[id];
+                LLChat chat{std::string{full_name + " arrived" + (avatarPosition.isExactlyZero() ? "" : llformat(" (%.1f m)", dist_vec(avatarPosition, gAgent.getPositionGlobal()))) + "."}};
+                chat.mFromName = full_name;
+                chat.mFromID = id;
                 LLSD args;
                 args["COLOR"] = "ChatHistoryTextColor";
                 LLNotificationsUI::LLNotificationManager::instance().onChat(chat, args);
