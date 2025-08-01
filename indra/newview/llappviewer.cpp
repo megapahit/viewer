@@ -283,6 +283,9 @@ using namespace LL;
 #include <discordpp.h>
 static std::shared_ptr<discordpp::Client> gDiscordClient;
 static uint64_t gDiscordTimestampsStart;
+static std::string gDiscordActivityDetails;
+static int32_t gDiscordPartyCurrentSize;
+static int32_t gDiscordPartyMaxSize;
 #endif
 
 static LLAppViewerListener sAppViewerListener(LLAppViewer::instance);
@@ -1356,7 +1359,10 @@ bool LLAppViewer::doFrame()
     TimePoint fpsLimitFrameStartTime = std::chrono::steady_clock::now();
 
 #ifdef LL_DISCORD
-    discordpp::RunCallbacks();
+    {
+        LL_PROFILE_ZONE_NAMED("discord_callbacks");
+        discordpp::RunCallbacks();
+    }
 #endif
 
     LL_RECORD_BLOCK_TIME(FTM_FRAME);
@@ -5950,6 +5956,8 @@ void LLAppViewer::metricsSend(bool enable_reporting)
 
 void LLAppViewer::initDiscordSocial()
 {
+    gDiscordPartyCurrentSize = 1;
+    gDiscordPartyMaxSize = 0;
     gDiscordTimestampsStart = time(nullptr);
     gDiscordClient = std::make_shared<discordpp::Client>();
     gDiscordClient->SetStatusChangedCallback([](discordpp::Client::Status status, discordpp::Client::Error, int32_t) {
@@ -5960,14 +5968,25 @@ void LLAppViewer::initDiscordSocial()
     });
     if (gSavedSettings.getBOOL("EnableDiscord"))
     {
-        gDiscordClient->UpdateToken(discordpp::AuthorizationTokenType::Bearer, gSecAPIHandler->loadCredential("Discord")->getAuthenticator()["token"].asString(), [](discordpp::ClientResult result) {
-            if (result.Successful())
-                gDiscordClient->Connect();
-        });
+        auto credential = gSecAPIHandler->loadCredential("Discord");
+        if (credential.notNull())
+        {
+            gDiscordClient->UpdateToken(discordpp::AuthorizationTokenType::Bearer, credential->getAuthenticator()["token"].asString(), [](discordpp::ClientResult result) {
+                if (result.Successful())
+                    gDiscordClient->Connect();
+                else
+                    LL_WARNS("Discord") << result.Error() << LL_ENDL;
+            });
+        }
+        else
+        {
+            LL_WARNS("Discord") << "Integration was enabled, but no credentials. Disabling integration." << LL_ENDL;
+            gSavedSettings.setBOOL("EnableDiscord", false);
+        }
     }
 }
 
-void LLAppViewer::handleDiscordSocial(const LLSD& value)
+void LLAppViewer::toggleDiscordIntegration(const LLSD& value)
 {
     static const uint64_t APPLICATION_ID = 1393451183741599796;
     if (value.asBoolean())
@@ -5981,34 +6000,60 @@ void LLAppViewer::handleDiscordSocial(const LLSD& value)
             if (result.Successful())
             {
                 gDiscordClient->GetToken(APPLICATION_ID, code, codeVerifier.Verifier(), redirectUri, [](discordpp::ClientResult result, std::string accessToken, std::string, discordpp::AuthorizationTokenType, int32_t, std::string) {
-                    gDiscordClient->UpdateToken(discordpp::AuthorizationTokenType::Bearer, accessToken, [](discordpp::ClientResult result) {
-                        if (result.Successful())
-                            gDiscordClient->Connect();
-                    });
-                    LLSD authenticator = LLSD::emptyMap();
-                    authenticator["token"] = accessToken;
-                    gSecAPIHandler->saveCredential(gSecAPIHandler->createCredential("Discord", LLSD::emptyMap(), authenticator), true);
+                    if (result.Successful())
+                    {
+                        gDiscordClient->UpdateToken(discordpp::AuthorizationTokenType::Bearer, accessToken, [accessToken](discordpp::ClientResult result) {
+                            if (result.Successful())
+                            {
+                                LLSD authenticator = LLSD::emptyMap();
+                                authenticator["token"] = accessToken;
+                                gSecAPIHandler->saveCredential(gSecAPIHandler->createCredential("Discord", LLSD::emptyMap(), authenticator), true);
+                                gDiscordClient->Connect();
+                            }
+                            else
+                            {
+                                LL_WARNS("Discord") << result.Error() << LL_ENDL;
+                            }
+                        });
+                    }
+                    else
+                    {
+                        LL_WARNS("Discord") << result.Error() << LL_ENDL;
+                    }
                 });
             }
             else
             {
+                LL_WARNS("Discord") << result.Error() << LL_ENDL;
                 gSavedSettings.setBOOL("EnableDiscord", false);
             }
         });
     }
     else
     {
-        gDiscordClient->RevokeToken(APPLICATION_ID, gSecAPIHandler->loadCredential("Discord")->getAuthenticator()["token"].asString(), [](discordpp::ClientResult result) {
-            if (result.Successful())
-                gDiscordClient->Disconnect();
+        gDiscordClient->Disconnect();
+        auto credential = gSecAPIHandler->loadCredential("Discord");
+        if (credential.notNull())
+        {
+            gDiscordClient->RevokeToken(APPLICATION_ID, credential->getAuthenticator()["token"].asString(), [](discordpp::ClientResult result) {
+                if (result.Successful())
+                    LL_INFOS("Discord") << "Access token successfully revoked." << LL_ENDL;
+                else
+                    LL_WARNS("Discord") << "No access token to revoke." << LL_ENDL;
+            });
             auto cred = new LLCredential("Discord");
             gSecAPIHandler->deleteCredential(cred);
-        });
+        }
+        else
+        {
+            LL_WARNS("Discord") << "Credentials are already nonexistent." << LL_ENDL;
+        }
     }
 }
 
 void LLAppViewer::updateDiscordActivity()
 {
+    LL_PROFILE_ZONE_SCOPED;
     discordpp::Activity activity;
     activity.SetType(discordpp::ActivityTypes::Playing);
     discordpp::ActivityTimestamps timestamps;
@@ -6021,18 +6066,23 @@ void LLAppViewer::updateDiscordActivity()
         return;
     }
 
-    if (gSavedSettings.getBOOL("ShowDiscordActivityDetails"))
+    static LLCachedControl<bool> show_details(gSavedSettings, "ShowDiscordActivityDetails", false);
+    if (show_details)
     {
-        LLAvatarName av_name;
-        LLAvatarNameCache::get(gAgent.getID(), &av_name);
-        auto name = av_name.getUserName();
-        auto displayName = av_name.getDisplayName();
-        if (name != displayName)
-            name = displayName + " (" + name + ")";
-        activity.SetDetails(name);
+        if (gDiscordActivityDetails.empty())
+        {
+            LLAvatarName av_name;
+            LLAvatarNameCache::get(gAgent.getID(), &av_name);
+            gDiscordActivityDetails = av_name.getUserName();
+            auto displayName = av_name.getDisplayName();
+            if (gDiscordActivityDetails != displayName)
+                gDiscordActivityDetails = displayName + " (" + gDiscordActivityDetails + ")";
+        }
+        activity.SetDetails(gDiscordActivityDetails);
     }
 
-    if (gSavedSettings.getBOOL("ShowDiscordActivityState"))
+    static LLCachedControl<bool> show_state(gSavedSettings, "ShowDiscordActivityState", false);
+    if (show_state)
     {
         auto agent_pos_region = gAgent.getPositionAgent();
         S32 pos_x = S32(agent_pos_region.mV[VX] + 0.5f);
@@ -6056,19 +6106,26 @@ void LLAppViewer::updateDiscordActivity()
         auto location = llformat("%s (%d, %d, %d)", gAgent.getRegion()->getName().c_str(), pos_x, pos_y, pos_z);
         activity.SetState(location);
 
-        auto world = LLWorld::getInstance();
-        uuid_vec_t chat_radius_uuids, near_me_uuids;
-        auto position = gAgent.getPositionGlobal();
-        world->getAvatars(&chat_radius_uuids, NULL, position, CHAT_NORMAL_RADIUS);
-        world->getAvatars(&near_me_uuids, NULL, position, gSavedSettings.getF32("MPVNearMeRange"));
         discordpp::ActivityParty party;
         party.SetId(location);
-        party.SetCurrentSize(chat_radius_uuids.size());
-        party.SetMaxSize(near_me_uuids.size());
+        party.SetCurrentSize(gDiscordPartyCurrentSize);
+        party.SetMaxSize(gDiscordPartyMaxSize);
         activity.SetParty(party);
     }
 
     gDiscordClient->UpdateRichPresence(activity, [](discordpp::ClientResult) {});
+}
+
+void LLAppViewer::updateDiscordPartyCurrentSize(int32_t size)
+{
+    gDiscordPartyCurrentSize = size;
+    updateDiscordActivity();
+}
+
+void LLAppViewer::updateDiscordPartyMaxSize(int32_t size)
+{
+    gDiscordPartyMaxSize = size;
+    updateDiscordActivity();
 }
 
 #endif

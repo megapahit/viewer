@@ -195,6 +195,8 @@ public:
     // Call once per frame to update position, angles (radians).
     void            updateAgentPosition(const F32 dt, const F32 yaw, const S32 mouse_x, const S32 mouse_y);
     void            setPositionAgent(const LLVector3 &center);
+    void            setAvatarsPositions(const std::map<LLUUID, LLVector3d>& avatarsPositions);
+    const std::map<LLUUID, LLVector3d>& getAvatarsPositions() const { return mAvatarsPositions;}
 
     boost::signals2::connection whenPositionChanged(position_signal_t::slot_type fn);
 
@@ -205,6 +207,7 @@ private:
 
     position_signal_t   mOnPositionChanged;
     LLVector3d          mLastTestGlobal;
+    std::map<LLUUID, LLVector3d> mAvatarsPositions;
 
     //--------------------------------------------------------------------
     // Velocity

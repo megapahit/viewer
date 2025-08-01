@@ -818,15 +818,14 @@ LLVOAvatar::~LLVOAvatar()
 {
     sInstances.remove(this);
 
-    if (gSavedSettings.getBOOL("IMShowArrivalsDepartures"))
+    static LLCachedControl<bool> show_arrival_departures(gSavedSettings, "IMShowArrivalsDepartures", false);
+    if (show_arrival_departures)
     {
-        LLAvatarName av_name;
-        LLAvatarNameCache::get(getID(), &av_name);
-        auto display_name = av_name.getDisplayName();
-        if (!display_name.empty())
+        auto full_name = getFullname();
+        if (!full_name.empty())
         {
-            LLChat chat{llformat("%s left.", display_name.c_str())};
-            chat.mFromName = display_name;
+            LLChat chat{llformat("%s left.", full_name.c_str())};
+            chat.mFromName = full_name;
             chat.mFromID = getID();
             LLSD args;
             args["COLOR"] = "ChatHistoryTextColor";
@@ -2583,31 +2582,21 @@ U32 LLVOAvatar::processUpdateMessage(LLMessageSystem *mesgsys,
     {
         mDebugExistenceTimer.reset();
         debugAvatarRezTime("AvatarRezArrivedNotification", "avatar arrived");
-        if (gSavedSettings.getBOOL("IMShowArrivalsDepartures"))
+        static LLCachedControl<bool> show_arrival_departures(gSavedSettings, "IMShowArrivalsDepartures", false);
+        if (show_arrival_departures)
         {
-            uuid_vec_t uuids;
-            std::vector<LLVector3d> positions;
-            LLWorld::getInstance()->getAvatars(&uuids, &positions, gAgent.getPositionGlobal(), gSavedSettings.getF32("MPVNearMeRange"));
-            auto pos_it = positions.begin();
-            auto id_it = uuids.begin();
-            for (;pos_it != positions.end() && id_it != uuids.end(); ++pos_it, ++id_it)
+            auto full_name = getFullname();
+            if (!full_name.empty())
             {
-                if (*id_it == getID() && !isSelf())
-                {
-                    LLAvatarName av_name;
-                    LLAvatarNameCache::get(getID(), &av_name);
-                    auto display_name = av_name.getDisplayName();
-                    if (!display_name.empty())
-                    {
-                        LLChat chat{llformat("%s arrived (%.1f m).", display_name.c_str(), dist_vec(*pos_it, gAgent.getPositionGlobal()))};
-                        chat.mFromName = display_name;
-                        chat.mFromID = getID();
-                        LLSD args;
-                        args["COLOR"] = "ChatHistoryTextColor";
-                        LLNotificationsUI::LLNotificationManager::instance().onChat(chat, args);
-                    }
-                    break;
-                }
+                auto avatarsPositions = gAgent.getAvatarsPositions();
+                auto id = getID();
+                auto avatarPosition = avatarsPositions[id];
+                LLChat chat{std::string{full_name + " arrived" + (avatarPosition.isExactlyZero() ? "" : llformat(" (%.1f m)", dist_vec(avatarPosition, gAgent.getPositionGlobal()))) + "."}};
+                chat.mFromName = full_name;
+                chat.mFromID = id;
+                LLSD args;
+                args["COLOR"] = "ChatHistoryTextColor";
+                LLNotificationsUI::LLNotificationManager::instance().onChat(chat, args);
             }
         }
     }
