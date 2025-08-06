@@ -14358,17 +14358,6 @@
       <key>Value</key>
       <integer>0</integer>
     </map>
-    <key>MPVNearMeRange</key>
-    <map>
-      <key>Comment</key>
-      <string>Search radius in the people panel</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <integer>4096</integer>
-    </map>
     <key>RenderVSyncEnabled</key>
     <map>
       <key>Comment</key>
