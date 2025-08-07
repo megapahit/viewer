@@ -819,7 +819,7 @@ LLVOAvatar::~LLVOAvatar()
     sInstances.remove(this);
 
     static LLCachedControl<bool> show_arrival_departures(gSavedSettings, "IMShowArrivalsDepartures", false);
-    if (show_arrival_departures)
+    if (show_arrival_departures && !isSelf())
     {
         auto full_name = getFullname();
         if (!full_name.empty())
@@ -2583,7 +2583,7 @@ U32 LLVOAvatar::processUpdateMessage(LLMessageSystem *mesgsys,
         mDebugExistenceTimer.reset();
         debugAvatarRezTime("AvatarRezArrivedNotification", "avatar arrived");
         static LLCachedControl<bool> show_arrival_departures(gSavedSettings, "IMShowArrivalsDepartures", false);
-        if (show_arrival_departures)
+        if (show_arrival_departures && !isSelf())
         {
             auto full_name = getFullname();
             if (!full_name.empty())
