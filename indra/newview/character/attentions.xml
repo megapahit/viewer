@@ -33,7 +33,7 @@ MOUSELOOK: Tracks center of view when in mouselook view mode.
       <param attention="hover"        priority="4.0" timeout="1.0"  />
       <param attention="conversation" priority="0.0" timeout="-1"   />
       <param attention="select"       priority="6.0" timeout="-1"   />
-      <param attention="focus"        priority="0.0" timeout="-1"   />
+      <param attention="focus"        priority="6.0" timeout="-1"   />
       <param attention="mouselook"    priority="7.0" timeout="-1"   />
    </gender>
    <gender name="Feminine">
@@ -44,7 +44,7 @@ MOUSELOOK: Tracks center of view when in mouselook view mode.
       <param attention="hover"        priority="4.0" timeout="1.0"  />
       <param attention="conversation" priority="0.0" timeout="-1"   />
       <param attention="select"       priority="6.0" timeout="-1"   />
-      <param attention="focus"        priority="0.0" timeout="-1"   />
+      <param attention="focus"        priority="6.0" timeout="-1"   />
       <param attention="mouselook"    priority="7.0" timeout="-1"   />
    </gender>
 </linden_attentions>
