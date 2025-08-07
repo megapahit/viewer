@@ -87,6 +87,7 @@ set(viewer_SOURCE_FILES
     gltf/accessor.cpp
     gltf/primitive.cpp
     gltf/animation.cpp
+    gltf/llgltfloader.cpp
     groupchatlistener.cpp
     llaccountingcostmanager.cpp
     llaisapi.cpp
@@ -770,6 +771,7 @@ set(viewer_HEADER_FILES
     gltf/buffer_util.h
     gltf/primitive.h
     gltf/animation.h
+    gltf/llgltfloader.h
     llaccountingcost.h
     llaccountingcostmanager.h
     llaisapi.h
@@ -2187,6 +2189,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     set_source_files_properties(llviewerstats.cpp PROPERTIES
         COMPILE_FLAGS -Wno-unused-value)
     set_source_files_properties(
+        gltf/llgltfloader.cpp
         llaisapi.cpp
         llconversationlog.cpp
         llconversationmodel.cpp
