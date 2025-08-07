@@ -3178,7 +3178,15 @@ bool LLAppViewer::initWindow()
         .height(gSavedSettings.getU32("WindowHeight"))
         .min_width(gSavedSettings.getU32("MinWindowWidth"))
         .min_height(gSavedSettings.getU32("MinWindowHeight"))
+#ifdef LL_DARWIN
+        // Setting it to true causes black screen with no UI displayed.
+        // Given that it's a DEBUG settings and application goes fullscreen
+        // on mac simply by expanding it, it was decided to not support/use
+        // this setting on mac.
+        .fullscreen(false)
+#else // LL_DARWIN
         .fullscreen(gSavedSettings.getBOOL("FullScreen"))
+#endif
         .ignore_pixel_depth(ignorePixelDepth)
         .first_run(mIsFirstRun);
 
@@ -4365,8 +4373,8 @@ bool LLAppViewer::initCache()
     const std::string cache_dir_name = gSavedSettings.getString("DiskCacheDirName");
 
     const U32 MB = 1024 * 1024;
-    const uintmax_t MIN_CACHE_SIZE = 256 * MB;
-    const uintmax_t MAX_CACHE_SIZE = 9984ll * MB;
+    const uintmax_t MIN_CACHE_SIZE = 896 * MB;
+    const uintmax_t MAX_CACHE_SIZE = 32768ll * MB;
     const uintmax_t setting_cache_total_size = uintmax_t(gSavedSettings.getU32("CacheSize")) * MB;
     const uintmax_t cache_total_size = llclamp(setting_cache_total_size, MIN_CACHE_SIZE, MAX_CACHE_SIZE);
     const F64 disk_cache_percent = gSavedSettings.getF32("DiskCachePercentOfTotal");

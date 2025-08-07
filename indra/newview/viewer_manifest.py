@@ -151,7 +151,6 @@ class ViewerManifest(LLManifest):
             with self.prefix(src_dst="skins"):
                     # include the entire textures directory recursively
                     with self.prefix(src_dst="*/textures"):
-                            self.path("*/*.jpg")
                             self.path("*/*.png")
                             self.path("*.tga")
                             self.path("*.j2c")
@@ -558,6 +557,9 @@ class Windows_x86_64_Manifest(ViewerManifest):
                     'llwebrtc.dll',
             ):
                 self.path(libfile)
+
+            if self.args['discord'] == 'ON':
+                self.path("discord_partner_sdk.dll")
 
             if self.args['openal'] == 'ON':
                 # Get openal dll
@@ -1020,6 +1022,13 @@ class Darwin_x86_64_Manifest(ViewerManifest):
                                 'libvivoxsdk.dylib',
                                 ):
                     self.path2basename(relpkgdir, libfile)
+
+                # Discord social SDK
+                if self.args['discord'] == 'ON':
+                    for libfile in (
+                                "libdiscord_partner_sdk.dylib",
+                                ):
+                        self.path2basename(relpkgdir, libfile)
 
                 # OpenAL dylibs
                 if self.args['openal'] == 'ON':
@@ -1825,6 +1834,7 @@ if __name__ == "__main__":
     extra_arguments = [
         dict(name='bugsplat', description="""BugSplat database to which to post crashes,
              if BugSplat crash reporting is desired""", default=''),
+        dict(name='discord', description="""Indication discord social sdk libraries are needed""", default='OFF'),
         dict(name='openal', description="""Indication openal libraries are needed""", default='OFF'),
         dict(name='tracy', description="""Indication tracy profiler is enabled""", default='OFF'),
         ]

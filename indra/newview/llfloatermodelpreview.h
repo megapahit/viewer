@@ -206,7 +206,7 @@ private:
     void onClickCalculateBtn();
     void onJointListSelection();
 
-    void onLoDSourceCommit(S32 lod, bool refresh_ui);
+    void onLoDSourceCommit(S32 lod);
 
     void modelUpdated(bool calculate_visible);
 
