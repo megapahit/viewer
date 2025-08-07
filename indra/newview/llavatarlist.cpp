@@ -48,12 +48,11 @@
 #include "llvoiceclient.h"
 #include "llviewercontrol.h"    // for gSavedSettings
 #include "lltooldraganddrop.h"
-#include "llworld.h"
 
 static LLDefaultChildRegistry::Register<LLAvatarList> r("avatar_list");
 
 // Last interaction time update period.
-static const F32 LIT_UPDATE_PERIOD = 1;
+static const F32 LIT_UPDATE_PERIOD = 5;
 
 // Maximum number of avatars that can be added to a list in one pass.
 // Used to limit time spent for avatar list update per frame.
@@ -205,13 +204,25 @@ void LLAvatarList::draw()
 
     if ((mShowLastInteractionTime || mAvatarDistance || mAvatarArrivalTime) && mLITUpdateTimer->hasExpired())
     {
-        if (mAvatarArrivalTime)
+        if (mAvatarArrivalTime || mAvatarDistance)
         {
-            updateAvatarArrivalTime();
-        }
-        if (mAvatarDistance)
-        {
-            updateAvatarDistance();
+            std::vector<LLPanel*> items;
+            getItems(items);
+            for (auto it = items.begin(); it != items.end(); it++)
+            {
+                auto item = static_cast<LLAvatarListItem*>(*it);
+                if (mAvatarArrivalTime)
+                {
+                    auto secs_since = LLDate::now().secondsSinceEpoch() - LLRecentPeople::instance().getArrivalTimeByID(item->getAvatarId());
+                    if (secs_since >= 0)
+                        item->setAvatarArrivalTime(secs_since);
+                }
+                if (mAvatarDistance)
+                {
+                    auto avatarsPositions = gAgent.getAvatarsPositions();
+                    item->setAvatarDistance(dist_vec(avatarsPositions[item->getAvatarId()], gAgent.getPositionGlobal()));
+                }
+            }
         }
         if (mShowLastInteractionTime)
         {
@@ -552,46 +563,6 @@ void LLAvatarList::computeDifference(
     }
 
     LLCommonUtils::computeDifference(vnew_unsorted, vcur, vadded, vremoved);
-}
-
-void LLAvatarList::updateAvatarArrivalTime()
-{
-    std::vector<LLPanel*> items;
-    getItems(items);
-    auto uuids = getIDs();
-    std::vector<LLVector3d> positions;
-    auto me_pos = gAgent.getPositionGlobal();
-    LLWorld::getInstance()->getAvatars(&uuids, &positions, me_pos, gSavedSettings.getF32("MPVNearMeRange"));
-    LLRecentPeople::instance().updateAvatarsArrivalTime(uuids);
-    for (auto it = items.begin(); it != items.end(); it++)
-    {
-        auto item = static_cast<LLAvatarListItem*>(*it);
-        auto secs_since = LLDate::now().secondsSinceEpoch() - LLRecentPeople::instance().getArrivalTimeByID(item->getAvatarId());
-        if (secs_since >= 0)
-            item->setAvatarArrivalTime(secs_since);
-    }
-}
-
- void LLAvatarList::updateAvatarDistance()
-{
-    std::vector<LLPanel*> items;
-    getItems(items);
-    auto uuids = getIDs();
-    std::vector<LLVector3d> positions;
-    auto me_pos = gAgent.getPositionGlobal();
-    LLWorld::getInstance()->getAvatars(&uuids, &positions, me_pos, gSavedSettings.getF32("MPVNearMeRange"));
-    std::map <LLUUID, LLVector3d> avatarsPositions;
-    auto pos_it = positions.begin();
-    auto id_it = uuids.begin();
-    for (;pos_it != positions.end() && id_it != uuids.end(); ++pos_it, ++id_it)
-    {
-        avatarsPositions[*id_it] = *pos_it;
-    }
-    for (auto it = items.begin(); it != items.end(); it++)
-    {
-        auto item = static_cast<LLAvatarListItem*>(*it);
-        item->setAvatarDistance(dist_vec(avatarsPositions[item->getAvatarId()], me_pos));
-    }
 }
 
 // Refresh shown time of our last interaction with all listed avatars.

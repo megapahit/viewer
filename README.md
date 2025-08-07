@@ -19,7 +19,7 @@ $ cd build-`uname -s|tr '[:upper:]' '[:lower:]'`-`uname -m`
 
 ### Arch
 ```
-$ sudo pacman -S cmake base-devel python apr-util boost fltk glm glu hunspell minizip nanosvg libnghttp2 openjpeg2 libpipewire sdl2 vlc libvorbis xxhash
+$ sudo pacman -S cmake base-devel sed python apr-util boost fltk glm glu hunspell minizip nanosvg libnghttp2 openjpeg2 libpipewire sdl2 vlc libvorbis xxhash
 $ export LL_BUILD="-O3 -std=c++20 -fPIC -DLL_LINUX=1"
 ```
 build with FMOD Studio: ([register with fmod to get linux package][fmod] and then place the `.tar.gz` in `~/Downloads`)

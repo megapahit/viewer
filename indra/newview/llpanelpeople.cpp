@@ -160,6 +160,7 @@ public:
             mAvatarsPositions[*id_it] = *pos_it;
         }
     };
+    const id_to_pos_map_t& getAvatarsPositions() const { return mAvatarsPositions; }
 
 protected:
     virtual bool doCompare(const LLAvatarListItem* item1, const LLAvatarListItem* item2) const
@@ -841,10 +842,15 @@ void LLPanelPeople::updateNearbyList()
 
     std::vector<LLVector3d> positions;
 
-    LLWorld::getInstance()->getAvatars(&mNearbyList->getIDs(), &positions, gAgent.getPositionGlobal(), gSavedSettings.getF32("MPVNearMeRange"));
+    LLWorld::getInstance()->getAvatars(&mNearbyList->getIDs(), &positions, gAgent.getPositionGlobal(), gSavedSettings.getF32("NearMeRange"));
     mNearbyList->setDirty();
+#ifdef LL_DISCORD
+    if (gSavedSettings.getBOOL("EnableDiscord"))
+        LLAppViewer::updateDiscordPartyMaxSize(mNearbyList->getIDs().size());
+#endif
 
     DISTANCE_COMPARATOR.updateAvatarsPositions(positions, mNearbyList->getIDs());
+    gAgent.setAvatarsPositions(DISTANCE_COMPARATOR.getAvatarsPositions());
     LLActiveSpeakerMgr::instance().update(true);
 }
 

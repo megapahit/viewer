@@ -98,6 +98,7 @@ namespace Rlv
         SitGround,
         Unsit,
         Detach,
+        RemOutfit,
         GetInv,
         Attach,
         AttachOver,

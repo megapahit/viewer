@@ -29,6 +29,7 @@
 #include "llagent.h"
 #include "llstartup.h"
 #include "llappearancemgr.h"
+#include "llinventoryfunctions.h"
 #include "llinventorymodel.h"
 #include "llmoveview.h"
 #include "llviewercontrol.h"
@@ -243,9 +244,11 @@ ECmdRet ReplyHandler<EBehaviour::GetSitID>::onCommand(const RlvCommand& rlvCmd, 
 template<> template<>
 ECmdRet ReplyHandler<EBehaviour::GetInv>::onCommand(const RlvCommand& rlvCmd, std::string& strReply)
 {
-    auto folderID = findDescendentCategoryIDByName(gInventory.getRootFolderID(), "#RLV");
-    if (folderID == LLUUID::null)
+    auto folderID = gInventory.getRootFolderID();
+    LLNameCategoryCollector has_name("#RLV");
+    if (!gInventory.hasMatchingDirectDescendent(folderID, has_name))
         return ECmdRet::FailedNoSharedRoot;
+    folderID = findDescendentCategoryIDByName(folderID, "#RLV");
     strReply = "";
     LLInventoryModel::cat_array_t* cats;
     LLInventoryModel::item_array_t* items;
@@ -305,55 +308,91 @@ ECmdRet ForceHandler<EBehaviour::Unsit>::onCommand(const RlvCommand& rlvCmd)
 }
 
 template<> template<>
-ECmdRet ForceHandler<EBehaviour::Attach>::onCommand(const RlvCommand& rlvCmd)
+ECmdRet ForceHandler<EBehaviour::RemOutfit>::onCommand(const RlvCommand& rlvCmd)
 {
-    auto rlvFolderID = findDescendentCategoryIDByName(gInventory.getRootFolderID(), "#RLV");
-    if (rlvFolderID == LLUUID::null)
-        return ECmdRet::FailedNoSharedRoot;
     std::vector<std::string> optionList;
     auto option = rlvCmd.getOption();
-    if (!option.empty())
+    if (option.empty())
     {
-        auto folderID = findDescendentCategoryIDByName(rlvFolderID, option);
-        if (folderID == LLUUID::null)
+        LLAppearanceMgr::instance().removeAllClothesFromAvatar();
+    }
+    else
+    {
+        LLWearableType::EType type = LLWearableType::getInstance()->typeNameToType(option);
+        if (type >= LLWearableType::WT_SHAPE
+            && type < LLWearableType::WT_COUNT
+            && (gAgentWearables.getWearableCount(type) > 0))
         {
-            Util::parseStringList(option, optionList, "/");
-            auto iter = optionList.begin();
-            for(; optionList.end() != iter; ++iter)
-            {
-                auto name = *iter;
-                if (!name.empty())
-                    folderID = findDescendentCategoryIDByName(folderID, name);
-            }
+            U32 wearable_index = gAgentWearables.getWearableCount(type) - 1;
+            LLUUID item_id = gAgentWearables.getWearableItemID(type,wearable_index);
+            LLAppearanceMgr::instance().removeItemFromAvatar(item_id);
         }
-        LLAppearanceMgr::instance().replaceCurrentOutfit(folderID);
     }
     return ECmdRet::Succeeded;
+}
+
+#define RESTRAINED_LOVE_OUTFIT(A) \
+    auto folderID = gInventory.getRootFolderID();\
+    LLNameCategoryCollector has_name("#RLV");\
+    if (!gInventory.hasMatchingDirectDescendent(folderID, has_name))\
+        return ECmdRet::FailedNoSharedRoot;\
+    folderID = findDescendentCategoryIDByName(folderID, "#RLV");\
+    std::vector<std::string> optionList;\
+    auto option = rlvCmd.getOption();\
+    if (!option.empty())\
+    {\
+        folderID = findDescendentCategoryIDByName(folderID, option);\
+        if (folderID == LLUUID::null)\
+        {\
+            Util::parseStringList(option, optionList, "/");\
+            auto iter = optionList.begin();\
+            for(; optionList.end() != iter; ++iter)\
+            {\
+                auto name = *iter;\
+                if (!name.empty())\
+                    folderID = findDescendentCategoryIDByName(folderID, name);\
+            }\
+        }\
+        A\
+    }\
+    return ECmdRet::Succeeded;
+
+#define RESTRAINED_LOVE_REPLACE \
+        LLAppearanceMgr::instance().replaceCurrentOutfit(folderID);
+
+#define RESTRAINED_LOVE_ADD \
+        LLAppearanceMgr::instance().addCategoryToCurrentOutfit(folderID);
+
+template<> template<>
+ECmdRet ForceHandler<EBehaviour::Attach>::onCommand(const RlvCommand& rlvCmd)
+{
+    RESTRAINED_LOVE_OUTFIT(RESTRAINED_LOVE_REPLACE);
 }
 
 template<> template<>
 ECmdRet ForceHandler<EBehaviour::AttachOver>::onCommand(const RlvCommand& rlvCmd)
 {
-    auto rlvFolderID = findDescendentCategoryIDByName(gInventory.getRootFolderID(), "#RLV");
-    if (rlvFolderID == LLUUID::null)
+    RESTRAINED_LOVE_OUTFIT(RESTRAINED_LOVE_ADD);
+}
+
+template<> template<>
+ECmdRet ForceHandler<EBehaviour::Detach>::onCommand(const RlvCommand& rlvCmd)
+{
+    auto folderID = gInventory.getRootFolderID();
+    LLNameCategoryCollector has_name("#RLV");
+    if (!gInventory.hasMatchingDirectDescendent(folderID, has_name))
         return ECmdRet::FailedNoSharedRoot;
+    folderID = findDescendentCategoryIDByName(folderID, "#RLV");
     std::vector<std::string> optionList;
     auto option = rlvCmd.getOption();
     if (!option.empty())
     {
-        auto folderID = findDescendentCategoryIDByName(rlvFolderID, option);
-        if (folderID == LLUUID::null)
+        LLNameCategoryCollector is_named(option);
+        if (gInventory.hasMatchingDirectDescendent(folderID, is_named))
         {
-            Util::parseStringList(option, optionList, "/");
-            auto iter = optionList.begin();
-            for(; optionList.end() != iter; ++iter)
-            {
-                auto name = *iter;
-                if (!name.empty())
-                    folderID = findDescendentCategoryIDByName(folderID, name);
-            }
+            folderID = findDescendentCategoryIDByName(folderID, option);
+            LLAppearanceMgr::instance().takeOffOutfit(folderID);
         }
-        LLAppearanceMgr::instance().addCategoryToCurrentOutfit(folderID);
     }
     return ECmdRet::Succeeded;
 }
