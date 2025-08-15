@@ -3971,6 +3971,7 @@ Abuse Report</string>
   <string name="AvatarBirthDateFormatShort">[mthnum,datetime,slt]/[day,datetime,slt]</string>
 
   <string name="DefaultMimeType">none/none</string>
+  <string name="texture_load_area_error">Can't load images larger than [PIXELS] pixels</string>
   <string name="texture_load_dimensions_error">Can't load images larger than [WIDTH]*[HEIGHT]</string>
   <string name="texture_load_format_error">Incorrect image format.</string>
   <string name="texture_load_empty_file">File is empty.</string>
