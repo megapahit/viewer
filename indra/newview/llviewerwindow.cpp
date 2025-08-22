@@ -4829,13 +4829,21 @@ void LLViewerWindow::saveImageLocal(LLImageFormatted *image, const snapshot_save
     auto err = 0;
     auto extension("." + image->getExtension());
     auto now = LLDate::now();
+    static LLCachedControl<bool> snapshot_timestamp(gSavedSettings, "SnapshotTimestamp", true) ;
     do
     {
         filepath = sSnapshotDir;
         filepath += gDirUtilp->getDirDelimiter();
         filepath += sSnapshotBaseName;
+        if (snapshot_timestamp)
+        {
         filepath += now.toLocalDateString("_%Y-%m-%d_%H%M%S");
         filepath += llformat("%.2d", i);
+        }
+	else if (is_snapshot_name_loc_set)
+        {
+            filepath += llformat("_%.3d", i);
+        }
         filepath += extension;
 
         llstat stat_info;
