@@ -25,7 +25,7 @@
 
 /*[EXTRA_CODE_HERE]*/
 
-out vec4 frag_color;
+//out vec4 frag_color;
 
 in vec4 post_pos;
 in float target_pos_x;
@@ -59,5 +59,5 @@ void main()
         }
     }
 
-    frag_color = vec4(1,1,1,1);
+    //frag_color = vec4(1,1,1,1);
 }

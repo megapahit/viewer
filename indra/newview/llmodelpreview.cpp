@@ -3717,16 +3717,10 @@ bool LLModelPreview::render()
                                     buffer->drawRange(LLRender::TRIANGLES, 0, buffer->getNumVerts() - 1, buffer->getNumIndices(), 0);
 
                                     gGL.diffuseColor4fv(PREVIEW_PSYH_EDGE_COL.mV);
-                                    glLineWidth(PREVIEW_PSYH_EDGE_WIDTH);
-#if GL_VERSION_1_1
                                     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-#endif
                                     buffer->drawRange(LLRender::TRIANGLES, 0, buffer->getNumVerts() - 1, buffer->getNumIndices(), 0);
 
-#if GL_VERSION_1_1
                                     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-#endif
-                                    glLineWidth(1.f);
 
                                     buffer->unmapBuffer();
                                 }
@@ -3738,10 +3732,7 @@ bool LLModelPreview::render()
                     // only do this if mDegenerate was set in the preceding mesh checks [Check this if the ordering ever breaks]
                     if (mHasDegenerate)
                     {
-                        glLineWidth(PREVIEW_DEG_EDGE_WIDTH);
-#if GL_VERSION_1_1
                         glPointSize(PREVIEW_DEG_POINT_SIZE);
-#endif
                         gPipeline.enableLightsFullbright();
                         //show degenerate triangles
                         LLGLDepthTest depth(GL_TRUE, GL_TRUE, GL_ALWAYS);
@@ -3810,10 +3801,8 @@ bool LLModelPreview::render()
 
                             gGL.popMatrix();
                         }
-                        glLineWidth(1.f);
-#if GL_VERSION_1_1
+                        //glLineWidth(1.f);
                         glPointSize(1.f);
-#endif
                         gPipeline.enableLightsPreview();
                         gGL.setSceneBlendType(LLRender::BT_ALPHA);
                     }
@@ -3934,15 +3923,10 @@ bool LLModelPreview::render()
                             {
                                 gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
                                 gGL.diffuseColor4fv(PREVIEW_EDGE_COL.mV);
-                                glLineWidth(PREVIEW_EDGE_WIDTH);
-#if GL_VERSION_1_1
+                                //glLineWidth(PREVIEW_EDGE_WIDTH);
                                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-#endif
                                 buffer->draw(LLRender::TRIANGLES, buffer->getNumIndices(), 0);
-#if GL_VERSION_1_1
                                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-#endif
-                                glLineWidth(1.f);
                             }
                         }
                     }

@@ -137,6 +137,10 @@ LLGLSLShader            gGlowProgram;
 LLGLSLShader            gGlowExtractProgram;
 LLGLSLShader            gPostScreenSpaceReflectionProgram;
 
+LLGLSLShader            gBloomExtractProgram;
+LLGLSLShader            gBloomBlurProgram;
+LLGLSLShader            gBloomCombineProgram;
+
 // Deferred rendering shaders
 LLGLSLShader            gDeferredImpostorProgram;
 LLGLSLShader            gDeferredDiffuseProgram;
@@ -802,7 +806,7 @@ std::string LLViewerShaderMgr::loadBasicShaders()
 
     if (shadow_detail >= 1)
     {
-        attribs["SUN_SHADOW"] = "1";
+    attribs["SUN_SHADOW"] = "1";
 
         if (shadow_detail >= 2)
         {
@@ -902,8 +906,9 @@ bool LLViewerShaderMgr::loadShadersWater()
     bool success = true;
     bool terrainWaterSuccess = true;
 
+    S32 shadow_detail = gSavedSettings.getS32("RenderShadowDetail");
     bool use_sun_shadow = mShaderLevel[SHADER_DEFERRED] > 1 &&
-        gSavedSettings.getS32("RenderShadowDetail") > 0;
+        shadow_detail > 0;
 
     if (mShaderLevel[SHADER_WATER] == 0)
     {
@@ -999,6 +1004,52 @@ bool LLViewerShaderMgr::loadShadersEffects()
         gGlowProgram.unload();
         gGlowExtractProgram.unload();
         return true;
+    }
+
+    if (success)
+    {
+        gBloomExtractProgram.mName = "Bloom Extract Shader";
+        gBloomExtractProgram.mShaderFiles.clear();
+        gBloomExtractProgram.mShaderFiles.push_back(make_pair("effects/bloomExtractV.glsl", GL_VERTEX_SHADER));
+        gBloomExtractProgram.mShaderFiles.push_back(make_pair("effects/bloomExtractF.glsl", GL_FRAGMENT_SHADER));
+        gBloomExtractProgram.mShaderLevel = mShaderLevel[SHADER_EFFECT];
+
+        success = gBloomExtractProgram.createShader();
+        if (!success)
+        {
+            LL_WARNS() << "gBloomExtractProgram creation ERROR" << LL_ENDL;
+            //LLPipeline::sRenderGlow = false;
+        }
+    }
+
+    if (success)
+    {
+        gBloomBlurProgram.mName = "Bloom Blur Shader";
+        gBloomBlurProgram.mShaderFiles.clear();
+        gBloomBlurProgram.mShaderFiles.push_back(make_pair("effects/bloomBlurV.glsl", GL_VERTEX_SHADER));
+        gBloomBlurProgram.mShaderFiles.push_back(make_pair("effects/bloomBlurF.glsl", GL_FRAGMENT_SHADER));
+        gBloomBlurProgram.mShaderLevel = mShaderLevel[SHADER_EFFECT];
+
+        success = gBloomBlurProgram.createShader();
+        if(!success)
+        {
+            LL_WARNS() << "gBloomBlurProgram creation ERROR" << LL_ENDL;
+        }
+    }
+
+    if (success)
+    {
+        gBloomCombineProgram.mName = "Bloom Combine Shader";
+        gBloomCombineProgram.mShaderFiles.clear();
+        gBloomCombineProgram.mShaderFiles.push_back(make_pair("effects/bloomCombineV.glsl", GL_VERTEX_SHADER));
+        gBloomCombineProgram.mShaderFiles.push_back(make_pair("effects/bloomCombineF.glsl", GL_FRAGMENT_SHADER));
+        gBloomCombineProgram.mShaderLevel = mShaderLevel[SHADER_EFFECT];
+
+        success = gBloomCombineProgram.createShader();
+        if(!success)
+        {
+            LL_WARNS() << "gBloomCombineProgram creation ERROR" << LL_ENDL;
+        }
     }
 
     if (success)
@@ -2482,9 +2533,9 @@ bool LLViewerShaderMgr::loadShadersDeferred()
     if (success && gGLManager.mGLVersion > 3.9f)
     {
         std::vector<std::pair<std::string, std::string>> quality_levels = { {"12", "Low"},
-                                                                             {"23", "Medium"},
-                                                                             {"28", "High"},
-                                                                             {"39", "Ultra"} };
+                                                                            {"23", "Medium"},
+                                                                            {"28", "High"},
+                                                                            {"39", "Ultra"} };
         int i = 0;
         bool failed = false;
         for (const auto& quality_pair : quality_levels)
@@ -2535,9 +2586,9 @@ bool LLViewerShaderMgr::loadShadersDeferred()
     if (gGLManager.mGLVersion > 3.15f && success)
     {
         std::vector<std::pair<std::string, std::string>> quality_levels = { {"SMAA_PRESET_LOW", "Low"},
-                                                                             {"SMAA_PRESET_MEDIUM", "Medium"},
-                                                                             {"SMAA_PRESET_HIGH", "High"},
-                                                                          {"SMAA_PRESET_ULTRA", "Ultra"} };
+                                                                            {"SMAA_PRESET_MEDIUM", "Medium"},
+                                                                            {"SMAA_PRESET_HIGH", "High"},
+                                                                        {"SMAA_PRESET_ULTRA", "Ultra"} };
         int i = 0;
         bool failed = false;
         for (const auto& smaa_pair : quality_levels)

@@ -1,65 +1,66 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <floater
- positioning="cascading"
- legacy_header_height="40"
- top="12"
- right="-334"
- height="80"
- min_height="120"
- width="330"
- min_width="330"
- can_minimize="true"
- can_close="true"
- can_resize="false"
- layout="topright"
- name="mpv_performance"
- single_instance="true"
- save_rect="true"
- save_visibility="true"
- title="FPS Limiter">
+positioning="cascading"
+legacy_header_height="40"
+top="12"
+right="-334"
+height="80"
+min_height="120"
+width="330"
+min_width="330"
+can_minimize="true"
+can_close="true"
+can_resize="false"
+layout="topright"
+name="mpv_performance"
+single_instance="true"
+save_rect="true"
+save_visibility="true"
+title="FPS Limiter">
 
- <panel
-     name="panel_fps"
-     border="false"
-     width="320"
-     height="60"
-     left="10"
-     top="40"
-     follows="left|top|right|bottom"
-     layout="topleft"
-     >
+<panel
+    name="panel_fps"
+    border="false"
+    width="320"
+    height="60"
+    left="10"
+    top="40"
+    follows="left|top|right|bottom"
+    layout="topleft"
+    >
 
-     <slider
-     follows="left|top"
-     width="240"
-     height="15"
-     left="12"
-     layout="topleft"
-     name="fpsSlider"
-     enabled="true"
-     control_name="fpsSlider"
-     decimal_digits="0"
-     increment="12"
-     initial_value="0"
-     label="Max FPS:"
-     label_width="50"
-     text_width="2"
-     can_edit_text="false"
-     show_text="false"
-     >
-     </slider>
+    <slider
+    follows="left|top"
+    width="240"
+    height="15"
+    left="12"
+    layout="topleft"
+    name="fpsSliderCtrl"
+    enabled="true"
+    decimal_digits="0"
+    min_val="0"
+    max_val="132"
+    increment="12"
+    initial_value="132"
+    label="Max FPS:"
+    label_width="50"
+    text_width="2"
+    can_edit_text="false"
+    show_text="false"
+    >
+    </slider>
 
-     <text
-     follows="left|top"
-     width="50"
-     height="15"
-     left_delta="252"
-     layout="topleft"
-     type="string"
-     name="fpsText"
-     >
-       no limit
-     </text>
+    <text
+    follows="left|top"
+    width="50"
+    height="15"
+    left_delta="252"
+    layout="topleft"
+    type="string"
+    name="fpsTextCtrl"
+    >
+      no limit
+    </text>
 
 </panel>
 

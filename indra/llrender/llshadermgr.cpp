@@ -451,7 +451,7 @@ void LLShaderMgr::dumpObjectLog(GLuint ret, bool warns, const std::string& filen
         LL_SHADER_LOADING_WARNS() << "Shader loading from " << fname << LL_ENDL;
         LL_SHADER_LOADING_WARNS() << "\n" << log << LL_ENDL;
     }
- }
+}
 
 GLuint LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shader_level, GLenum type, std::map<std::string, std::string>* defines, S32 texture_index_channels)
 {
@@ -571,7 +571,7 @@ GLuint LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shader_lev
             }
             else
             {
-                shader_code_text[shader_code_count++] = strdup("#version 400\n");
+                shader_code_text[shader_code_count++] = strdup("#version 410\n");
             }
         }
         else if (major_version == 3)
@@ -740,7 +740,7 @@ GLuint LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shader_lev
 
     //copy file into memory
     enum {
-          flag_write_to_out_of_extra_block_area = 0x01
+        flag_write_to_out_of_extra_block_area = 0x01
         , flag_extra_block_marker_was_found = 0x02
     };
 
@@ -756,7 +756,7 @@ GLuint LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shader_lev
 #endif
 
     while(NULL != fgets((char *)buff, 1024, file)
-          && shader_code_count < (LL_ARRAY_SIZE(shader_code_text) - LL_ARRAY_SIZE(extra_code_text)))
+        && shader_code_count < (LL_ARRAY_SIZE(shader_code_text) - LL_ARRAY_SIZE(extra_code_text)))
     {
         file_lines_count++;
 
@@ -1500,6 +1500,18 @@ void LLShaderMgr::initAttribsAndUniforms()
     mReservedUniforms.push_back("areaTex");
     mReservedUniforms.push_back("searchTex");
     mReservedUniforms.push_back("blendTex");
+
+    mReservedUniforms.push_back("bloomEMap");
+    mReservedUniforms.push_back("bloomBlurredMap");
+    mReservedUniforms.push_back("bloomHorizontal");
+    mReservedUniforms.push_back("bloomBlurRadius");
+    mReservedUniforms.push_back("bloomExtractBrightness");
+    mReservedUniforms.push_back("bloomStrength");
+    mReservedUniforms.push_back("bloomExtractEmissive");
+    mReservedUniforms.push_back("bloomExtractEmissive2");
+    mReservedUniforms.push_back("bloomExtractORM");
+    mReservedUniforms.push_back("bloomExtractMetal");
+    mReservedUniforms.push_back("bloomExtractNonMetal");
 
     llassert(mReservedUniforms.size() == END_RESERVED_UNIFORMS);
 

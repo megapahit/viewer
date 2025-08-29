@@ -420,6 +420,7 @@
    width="180">
       (Enter value between 0.0 and 4.0)
   </text>
+
   <text
    follows="left|top"
    font="SansSerifSmall"

@@ -113,8 +113,8 @@ float sampleDirectionalShadow(vec3 pos, vec3 norm, vec2 pos_screen)
     if (spos.z > -shadow_clip.w)
     {
         vec4 lpos;
-        vec4 near_split = shadow_clip*-0.75;
-        vec4 far_split = shadow_clip*-1.25;
+        vec4 near_split = shadow_clip*-0.9;
+        vec4 far_split = shadow_clip*-1.1;
         vec4 transition_domain = near_split-far_split;
         float weight = 0.0;
 
@@ -131,7 +131,10 @@ float sampleDirectionalShadow(vec3 pos, vec3 norm, vec2 pos_screen)
                 shadow += contrib;
                 weight += w;
             }
-            shadow += max((pos.z+shadow_clip.z)/(shadow_clip.z-shadow_clip.w)*2.0-1.0, 0.0);
+
+            //shadow += max( (pos.z+shadow_clip.z) / (shadow_clip.z-shadow_clip.w) * 2.0 - 1.0, 0.0);
+            shadow += max( (pos.z+shadow_clip.z) / (shadow_clip.z-shadow_clip.w) * 1.0, 0.0);
+            //shadow -= max(  (shadow_clip.z + pos.z) / (shadow_clip.z - shadow_clip.w) , 0.0);
         }
 
         if (spos.z < near_split.y && spos.z > far_split.z)

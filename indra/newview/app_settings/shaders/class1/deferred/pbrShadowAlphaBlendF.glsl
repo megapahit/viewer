@@ -23,7 +23,7 @@
  * $/LicenseInfo$
  */
 
-out vec4 frag_color;
+//out vec4 frag_color;
 
 uniform sampler2D diffuseMap;
 
@@ -52,5 +52,5 @@ void main()
         }
     }
 
-    frag_color = vec4(1,1,1,1);
+    //frag_color = vec4(1,1,1,1);
 }

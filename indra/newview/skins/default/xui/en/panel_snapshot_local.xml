@@ -28,9 +28,9 @@
      top_delta="2">
         Disk
     </text>
-    <view_border 
+    <view_border
      bevel_style="in"
-     follows="left|top|right" 
+     follows="left|top|right"
      height="1"
      left="9"
      layout="topleft"
@@ -74,6 +74,10 @@
          label="1600x1200"
          name="1600x1200"
          value="[i1600,i1200]" />
+         <combo_box.item
+         label="2048x2048"
+         name="2048x2048"
+         value="[i2048,i2048]" />
         <combo_box.item
          label="Custom"
          name="Custom"

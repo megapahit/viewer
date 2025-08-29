@@ -403,7 +403,7 @@ void LLFastTimerView::draw()
     legend_panel->localRectToOtherView(legend_panel->getLocalRect(), &mLegendRect, this);
 
     // Draw the window background
-            gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
+    gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
     gl_rect_2d(getLocalRect(), LLColor4(0.f, 0.f, 0.f, 0.25f));
 
     drawHelp(getRect().getHeight() - MARGIN);
@@ -518,7 +518,8 @@ void LLFastTimerView::exportCharts(const std::string& base, const std::string& t
     //render charts
     gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
 
-    buffer.bindTarget();
+    buffer.bindTarget("", 1);
+    buffer.clear();
 
     for (std::set<std::string>::iterator iter = chart_names.begin(); iter != chart_names.end(); ++iter)
     {
@@ -1057,8 +1058,7 @@ void LLFastTimerView::drawLineGraph()
         //fatten highlighted timer
         if (mHoverID == idp)
         {
-            gGL.flush();
-            glLineWidth(3);
+            LLRender2D::setLineWidth(3.0);
         }
 
         llassert(idp->getIndex() < sTimerColors.size());
@@ -1118,8 +1118,7 @@ void LLFastTimerView::drawLineGraph()
 
         if (mHoverID == idp)
         {
-            gGL.flush();
-            glLineWidth(1);
+            LLRender2D::setLineWidth(1.f);
         }
 
         if (idp->getTreeNode().mCollapsed)

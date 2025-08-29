@@ -71,7 +71,7 @@
 #define LL_PROFILER_CONFIG_TRACY_FAST_TIMER 3  // Profiling on: Fast Timers + Tracy
 
 #ifndef LL_PROFILER_CONFIGURATION
-#define LL_PROFILER_CONFIGURATION           LL_PROFILER_CONFIG_FAST_TIMER
+#define LL_PROFILER_CONFIGURATION           0
 #endif
 
 extern thread_local bool gProfilerEnabled;
@@ -87,6 +87,7 @@ extern thread_local bool gProfilerEnabled;
         #define LL_PROFILER_ENABLE_RENDER_DOC 0
 
     #endif
+
 
     #if LL_PROFILER_CONFIGURATION == LL_PROFILER_CONFIG_TRACY
         #define LL_PROFILER_FRAME_END                   FrameMark
@@ -155,6 +156,28 @@ extern thread_local bool gProfilerEnabled;
 #else
     #define LL_PROFILER_FRAME_END
     #define LL_PROFILER_SET_THREAD_NAME( name ) (void)(name)
+
+        #define LL_PROFILER_FRAME_END
+        #define LL_PROFILER_SET_THREAD_NAME( name )      (void)(name)
+        #define LL_RECORD_BLOCK_TIME(name)
+        #define LL_PROFILE_ZONE_NAMED(name)             // LL_PROFILE_ZONE_NAMED is a no-op when Tracy is disabled
+        #define LL_PROFILE_ZONE_NAMED_COLOR(name,color) // LL_PROFILE_ZONE_NAMED_COLOR is a no-op when Tracy is disabled
+        #define LL_PROFILE_ZONE_SCOPED                  // LL_PROFILE_ZONE_SCOPED is a no-op when Tracy is disabled
+        #define LL_PROFILE_ZONE_COLOR(name,color)       // LL_RECORD_BLOCK_TIME(name)
+
+        #define LL_PROFILE_ZONE_NUM( val )              (void)( val );                // Not supported
+        #define LL_PROFILE_ZONE_TEXT( text, size )      (void)( text ); void( size ); // Not supported
+
+        #define LL_PROFILE_ZONE_ERR(name)               (void)(name); // Not supported
+        #define LL_PROFILE_ZONE_INFO(name)              (void)(name); // Not supported
+        #define LL_PROFILE_ZONE_WARN(name)              (void)(name); // Not supported
+
+        #define LL_PROFILE_MUTEX(type, varname) type varname
+        #define LL_PROFILE_MUTEX_NAMED(type, varname, desc) type varname
+        #define LL_PROFILE_MUTEX_SHARED(type, varname) type varname
+        #define LL_PROFILE_MUTEX_SHARED_NAMED(type, varname, desc) type varname
+        #define LL_PROFILE_MUTEX_LOCK(varname) // LL_PROFILE_MUTEX_LOCK is a no-op when Tracy is disabled
+
 #endif // LL_PROFILER
 
 #if LL_PROFILER_ENABLE_TRACY_OPENGL

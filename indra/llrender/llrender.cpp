@@ -1,4 +1,4 @@
- /**
+/**
  * @file llrender.cpp
  * @brief LLRender implementation
  *
@@ -139,21 +139,21 @@ U32 LLTexUnit::getInternalType(eTextureType type)
 
 void LLTexUnit::refreshState(void)
 {
-    // We set dirty to true so that the tex unit knows to ignore caching
-    // and we reset the cached tex unit state
+// We set dirty to true so that the tex unit knows to ignore caching
+// and we reset the cached tex unit state
 
-    gGL.flush();
+gGL.flush();
 
-    glActiveTexture(GL_TEXTURE0 + mIndex);
+glActiveTexture(GL_TEXTURE0 + mIndex);
 
-    if (mCurrTexType != TT_NONE)
-    {
-        glBindTexture(sGLTextureType[mCurrTexType], mCurrTexture);
-    }
-    else
-    {
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
+if (mCurrTexType != TT_NONE)
+{
+    glBindTexture(sGLTextureType[mCurrTexType], mCurrTexture);
+}
+else
+{
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
 }
 
 void LLTexUnit::activate(void)
@@ -203,6 +203,7 @@ void LLTexUnit::bindFast(LLTexture* texture)
     glActiveTexture(GL_TEXTURE0 + mIndex);
     gGL.mCurrTextureUnitIndex = mIndex;
     mCurrTexture = gl_tex->getTexName();
+    mCurrTexType = gl_tex->getTarget();
     if (!mCurrTexture)
     {
         LL_PROFILE_ZONE_NAMED("MISSING TEXTURE");
@@ -479,41 +480,49 @@ void LLTexUnit::setTextureFilteringOption(LLTexUnit::eTextureFilterOptions optio
 {
     if (mIndex < 0 || mCurrTexture == 0 || mCurrTexType == LLTexUnit::TT_MULTISAMPLE_TEXTURE) return;
 
+    GLenum target = sGLTextureType[mCurrTexType];
+
+    if (mCurrTexType == LLTexUnit::TT_NONE)
+    {
+        LL_WARNS() << "setTextureFilteringOption() Error: mCurrTexType==TT_NONE texture: " << mCurrTexture << LL_ENDL;
+        gGL.debugTexUnits();
+    }
+
     gGL.flush();
 
     if (option == TFO_POINT)
     {
-        glTexParameteri(sGLTextureType[mCurrTexType], GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
     else
     {
-        glTexParameteri(sGLTextureType[mCurrTexType], GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
 
     if (option >= TFO_TRILINEAR && mHasMipMaps)
     {
-        glTexParameteri(sGLTextureType[mCurrTexType], GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     }
     else if (option >= TFO_BILINEAR)
     {
         if (mHasMipMaps)
         {
-            glTexParameteri(sGLTextureType[mCurrTexType], GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
         }
         else
         {
-            glTexParameteri(sGLTextureType[mCurrTexType], GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         }
     }
     else
     {
         if (mHasMipMaps)
         {
-            glTexParameteri(sGLTextureType[mCurrTexType], GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
         }
         else
         {
-            glTexParameteri(sGLTextureType[mCurrTexType], GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         }
     }
 
@@ -521,11 +530,11 @@ void LLTexUnit::setTextureFilteringOption(LLTexUnit::eTextureFilterOptions optio
     {
         if (LLImageGL::sGlobalUseAnisotropic && option == TFO_ANISOTROPIC)
         {
-            glTexParameterf(sGLTextureType[mCurrTexType], GL_TEXTURE_MAX_ANISOTROPY_EXT, gGLManager.mMaxAnisotropy);
+            glTexParameterf(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, gGLManager.mMaxAnisotropy);
         }
         else
         {
-            glTexParameterf(sGLTextureType[mCurrTexType], GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.f);
+            glTexParameterf(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.f);
         }
     }
 }
@@ -651,12 +660,12 @@ void LLTexUnit::debugTextureUnit(void)
 
 LLLightState::LLLightState(S32 index)
 : mIndex(index),
-  mEnabled(false),
-  mConstantAtten(1.f),
-  mLinearAtten(0.f),
-  mQuadraticAtten(0.f),
-  mSpotExponent(0.f),
-  mSpotCutoff(180.f)
+mEnabled(false),
+mConstantAtten(1.f),
+mLinearAtten(0.f),
+mQuadraticAtten(0.f),
+mSpotExponent(0.f),
+mSpotCutoff(180.f)
 {
     if (mIndex == 0)
     {
@@ -815,7 +824,7 @@ void LLLightState::setSpotDirection(const LLVector3& direction)
 }
 
 LLRender::LLRender()
-  : mDirty(false),
+: mDirty(false),
     mCount(0),
     mMode(LLRender::TRIANGLES),
     mCurrTextureUnitIndex(0)
@@ -908,13 +917,12 @@ bool LLRender::init(bool needs_vertex_buffer)
 void LLRender::initVertexBuffer()
 {
     llassert_always(mBuffer.isNull());
-    stop_glerror();
     mBuffer = new LLVertexBuffer(immediate_mask);
-    mBuffer->allocateBuffer(4096, 0);
+    mBuffer->allocateBuffer(16384, 0);
     mBuffer->getVertexStrider(mVerticesp);
     mBuffer->getTexCoord0Strider(mTexcoordsp);
     mBuffer->getColorStrider(mColorsp);
-    stop_glerror();
+    LOG_GLERROR("LLRender::initVertexBuffer()");
 }
 
 void LLRender::resetVertexBuffer()
@@ -1000,7 +1008,6 @@ void LLRender::syncLightState()
 
 void LLRender::syncMatrices()
 {
-    STOP_GLERROR;
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DISPLAY;
 
     static const U32 name[] =
@@ -1145,7 +1152,7 @@ void LLRender::syncMatrices()
             syncLightState();
         }
     }
-    STOP_GLERROR;
+    LOG_GLERROR("LLRender::syncMatrices()");
 }
 
 void LLRender::translatef(const GLfloat& x, const GLfloat& y, const GLfloat& z)
@@ -1448,7 +1455,7 @@ void LLRender::blendFunc(eBlendFactor sfactor, eBlendFactor dfactor)
 }
 
 void LLRender::blendFunc(eBlendFactor color_sfactor, eBlendFactor color_dfactor,
-             eBlendFactor alpha_sfactor, eBlendFactor alpha_dfactor)
+            eBlendFactor alpha_sfactor, eBlendFactor alpha_dfactor)
 {
     llassert(color_sfactor < BF_UNDEF);
     llassert(color_dfactor < BF_UNDEF);
@@ -1465,7 +1472,7 @@ void LLRender::blendFunc(eBlendFactor color_sfactor, eBlendFactor color_dfactor,
         flush();
 
         glBlendFuncSeparate(sGLBlendFactor[color_sfactor], sGLBlendFactor[color_dfactor],
-                           sGLBlendFactor[alpha_sfactor], sGLBlendFactor[alpha_dfactor]);
+                        sGLBlendFactor[alpha_sfactor], sGLBlendFactor[alpha_dfactor]);
     }
 }
 
@@ -1555,7 +1562,7 @@ void LLRender::begin(const GLuint& mode)
             mMode == LLRender::TRIANGLES ||
             mMode == LLRender::POINTS)
         {
-            flush();
+            flush("LLRender::begin");
         }
         else if (mCount != 0)
         {
@@ -1566,7 +1573,7 @@ void LLRender::begin(const GLuint& mode)
     }
 }
 
-void LLRender::end()
+void LLRender::end(std::string comment_)
 {
     if (mCount == 0)
     {
@@ -1579,13 +1586,13 @@ void LLRender::end()
         mMode != LLRender::POINTS) ||
         mCount > 2048)
     {
-        flush();
+        flush("from end  " + comment_);
     }
 }
 
-void LLRender::flush()
+void LLRender::flush(std::string comment_)
 {
-    STOP_GLERROR;
+    LOG_GLERROR("LLRender::flush() begin " + comment_);
     if (mCount > 0)
     {
         LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
@@ -1604,8 +1611,8 @@ void LLRender::flush()
         {
             if (mCount%3 != 0)
             {
-            count -= (mCount % 3);
-            LL_WARNS() << "Incomplete triangle requested." << LL_ENDL;
+                count -= (mCount % 3);
+                LL_WARNS() << "Incomplete triangle requested." << LL_ENDL;
             }
         }
 
@@ -1655,6 +1662,8 @@ void LLRender::flush()
 
         resetStriders(count);
     }
+
+    LOG_GLERROR("LLRender::flush() end " + comment_);
 }
 
 LLVertexBuffer* LLRender::bufferfromCache(U32 attribute_mask, U32 count)
@@ -2026,7 +2035,8 @@ void LLRender::debugTexUnits(void)
     std::string active_enabled = "false";
     for (U32 i = 0; i < mTexUnits.size(); i++)
     {
-        if (getTexUnit(i)->mCurrTexType != LLTexUnit::TT_NONE)
+        //if (getTexUnit(i)->mCurrTexType != LLTexUnit::TT_NONE)
+        if(1)
         {
             if (i == mCurrTextureUnitIndex) active_enabled = "true";
             LL_INFOS("TextureUnit") << "TexUnit: " << i << " Enabled" << LL_ENDL;
@@ -2044,8 +2054,19 @@ void LLRender::debugTexUnits(void)
                 case LLTexUnit::TT_CUBE_MAP:
                     LL_CONT << "Cube Map";
                     break;
+                case LLTexUnit::TT_CUBE_MAP_ARRAY:
+                LL_CONT << "Cube Map Array";
+                    break;
+
+                case LLTexUnit::TT_MULTISAMPLE_TEXTURE:
+                LL_CONT << "Multisample Texture";
+                    break;
+
+                case LLTexUnit::TT_TEXTURE_3D:
+                LL_CONT << "Texture 3D";
+                    break;
                 default:
-                    LL_CONT << "ARGH!!! NONE!";
+                    LL_CONT << "ARGH!!! NONE! -> type = " << getTexUnit(i)->mCurrTexType;
                     break;
             }
             LL_CONT << ", Texture Bound: " << getTexUnit(i)->mCurrTexture << LL_ENDL;
@@ -2108,9 +2129,9 @@ glm::vec3 mul_mat4_vec3(const glm::mat4& mat, const glm::vec3& vec)
 #if 1 // SIMD path results in strange crashes. Fall back to scalar for now.
     const float w = vec[0] * mat[0][3] + vec[1] * mat[1][3] + vec[2] * mat[2][3] + mat[3][3];
     return glm::vec3(
-       (vec[0] * mat[0][0] + vec[1] * mat[1][0] + vec[2] * mat[2][0] + mat[3][0]) / w,
-       (vec[0] * mat[0][1] + vec[1] * mat[1][1] + vec[2] * mat[2][1] + mat[3][1]) / w,
-       (vec[0] * mat[0][2] + vec[1] * mat[1][2] + vec[2] * mat[2][2] + mat[3][2]) / w
+    (vec[0] * mat[0][0] + vec[1] * mat[1][0] + vec[2] * mat[2][0] + mat[3][0]) / w,
+    (vec[0] * mat[0][1] + vec[1] * mat[1][1] + vec[2] * mat[2][1] + mat[3][1]) / w,
+    (vec[0] * mat[0][2] + vec[1] * mat[1][2] + vec[2] * mat[2][2] + mat[3][2]) / w
     );
 #else
     LLVector4a x, y, z, s, t, p, q;

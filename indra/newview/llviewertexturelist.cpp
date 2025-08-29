@@ -1146,6 +1146,8 @@ F32 LLViewerTextureList::updateImagesCreateTextures(F32 max_time)
 
         // just in case we downres textures, bind downresmap and copy program
         gPipeline.mDownResMap.bindTarget();
+        //gPipeline.mDownResMap.clear();
+
         gCopyProgram.bind();
         gPipeline.mScreenTriangleVB->setBuffer();
 
@@ -1155,7 +1157,7 @@ F32 LLViewerTextureList::updateImagesCreateTextures(F32 max_time)
         // do at least 5 and make sure we don't get too far behind even if it violates
         // the time limit.  If we don't downscale quickly the viewer will hit swap and may
         // freeze.
-        S32 min_count = (S32)mCreateTextureList.size() / 20 + 5;
+        S32 min_count = (S32)mCreateTextureList.size() / 20 + 3;
 
         create_timer.reset();
         while (!mDownScaleQueue.empty())

@@ -8558,7 +8558,7 @@
     <key>Type</key>
     <string>F32</string>
     <key>Value</key>
-    <real>1.4</real>
+    <real>1.0</real>
   </map>
   <key>RenderShadowBlurSamples</key>
   <map>
@@ -9337,9 +9337,9 @@
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>
-    <string>U32</string>
+    <string>F32</string>
     <key>Value</key>
-    <integer>1</integer>
+    <integer>1.0</integer>
   </map>
   <key>RenderShaderLightingMaxLevel</key>
   <map>
@@ -11564,17 +11564,6 @@
       <string>S32</string>
       <key>Value</key>
       <integer>75</integer>
-    </map>
-    <key>SnapshotTimestamp</key>
-    <map>
-      <key>Comment</key>
-      <string>Add timestamp to snapshot file names</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>Boolean</string>
-      <key>Value</key>
-      <integer>1</integer>
     </map>
     <key>AbuseReportScreenshotDelay</key>
     <map>
@@ -14363,7 +14352,77 @@
 
 
     <!-- megapahit settings -->
-    <key>MPVBufferOptiMode</key>
+    <key>MPLowColorPrecision</key>
+    <map>
+      <key>Comment</key>
+      <string>Enable / Disable lower precision buffers encoding</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>1</integer>
+    </map>
+    <key>MPNoGLDebug</key>
+    <map>
+      <key>Comment</key>
+      <string>Enable / Disable GL Debug</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>1</integer>
+    </map>
+    <key>MPGamma</key>
+    <map>
+      <key>Comment</key>
+      <string>Enable / Disable Gamma</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>1</integer>
+    </map>
+    <key>MPTone</key>
+    <map>
+      <key>Comment</key>
+      <string>Enable / Disable Tonemap</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>1</integer>
+    </map>
+    <key>MPGlow</key>
+    <map>
+      <key>Comment</key>
+      <string>Enable / Disable Glow</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>1</integer>
+    </map>
+    <key>MPLuminanceMipmap</key>
+    <map>
+      <key>Comment</key>
+      <string>
+      Luminance Map Mipmaps:
+      (set to 0 to fix post-processing slowdowns)
+      0:no
+      1:yes
+      </string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>U32</string>
+      <key>Value</key>
+      <integer>1</integer>
+    </map>
     <map>
       <key>Comment</key>
       <string>
@@ -14379,6 +14438,17 @@
       <key>Value</key>
       <integer>0</integer>
     </map>
+    <key>MPDumbCopy</key>
+    <map>
+      <key>Comment</key>
+      <string>Add a useless copy in pipeline::renderFinalize()</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <real>0</real>
+    </map>
     <key>MPRenderShadowOpti</key>
     <map>
       <key>Comment</key>
@@ -14386,9 +14456,130 @@
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
-      <string>S32</string>
+      <string>U32</string>
       <key>Value</key>
       <integer>0</integer>
+    </map>
+    <key>MPRenderShadowMaxDist</key>
+    <map>
+      <key>Comment</key>
+      <string>Shadows Max Draw distance</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <integer>64</integer>
+    </map>
+    <key>MPRenderBloom</key>
+    <map>
+      <key>Comment</key>
+      <string>Automatic bloom (n blur iterations, 0: Disable)</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>U32</string>
+      <key>Value</key>
+      <integer>0</integer>
+    </map>
+    <key>MPBloomExtractBrightness</key>
+    <map>
+      <key>Comment</key>
+      <string>Auto bloom: Min extracted brightness</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.20</real>
+    </map>
+    <key>MPBloomExtractMetal</key>
+    <map>
+      <key>Comment</key>
+      <string>Auto bloom: Metal roughness limit filter</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.40</real>
+    </map>
+    <key>MPBloomExtractNonMetal</key>
+    <map>
+      <key>Comment</key>
+      <string>Auto bloom: Non Metal roughness limit filter</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.0</real>
+    </map>
+    <key>MPBloomStrength</key>
+    <map>
+      <key>Comment</key>
+      <string>Auto bloom Strength (0.1 to 1.5)</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>1.0</real>
+    </map>
+    <key>MPBloomBlurRadius</key>
+    <map>
+      <key>Comment</key>
+      <string>Auto bloom: Radius</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>1.5</real>
+    </map>
+    <key>MPBloomBlurRadiusAdd</key>
+    <map>
+      <key>Comment</key>
+      <string>Auto bloom: Radius add</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.9</real>
+    </map>
+    <key>MPRenderProbeUpdatePeriod</key>
+    <map>
+      <key>Comment</key>
+      <string>Delay between probes updates</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>15.0</real>
+    </map>
+    <key>MPRenderProbeSlowDown</key>
+    <map>
+      <key>Comment</key>
+      <string>Slow down probes updates</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.05</real>
+    </map>
+    <key>MPRenderProbeProgressive</key>
+    <map>
+      <key>Comment</key>
+      <string>Calculate Radiance progressively</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <real>0</real>
     </map>
     <key>MPVCameraCollapsed</key>
     <map>

@@ -425,6 +425,8 @@ bool LLGLTFPreviewTexture::render()
 
     if (!mShouldRender) { return false; }
 
+    LL_WARNS() << "LLGLTFPreviewTexture:render()" << LL_ENDL;
+
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -520,18 +522,40 @@ bool LLGLTFPreviewTexture::render()
     // *HACK: Hide mExposureMap from generateExposure
     gPipeline.mExposureMap.swapFBORefs(gPipeline.mLastExposure);
 
-    gPipeline.copyScreenSpaceReflections(&screen, &gPipeline.mSceneMap);
-    gPipeline.generateLuminance(&screen, &gPipeline.mLuminanceMap);
-    gPipeline.generateExposure(&gPipeline.mLuminanceMap, &gPipeline.mExposureMap, /*use_history = */ false);
-    gPipeline.gammaCorrect(&screen, &gPipeline.mPostMap);
+    //bool hdr = gPipeline.has_hdr();
+    bool hdr = true;
+
+    if (hdr)
+    {
+        gPipeline.copyScreenSpaceReflections(&screen, &gPipeline.mSceneMap);
+        gPipeline.generateLuminance(&screen, &gPipeline.mLuminanceMap);
+        gPipeline.generateExposure(&gPipeline.mLuminanceMap, &gPipeline.mExposureMap, /*use_history = */ false);
+    }
+
+    U16 activeRT = 0;
+    gPipeline.gammaCorrect(&screen, &gPipeline.mPostMaps[activeRT]);
+
     LLVertexBuffer::unbind();
-    gPipeline.generateGlow(&gPipeline.mPostMap);
-    gPipeline.combineGlow(&gPipeline.mPostMap, &screen);
-    gPipeline.renderDoF(&screen, &gPipeline.mPostMap);
-    gPipeline.applyFXAA(&gPipeline.mPostMap, &screen);
+
+    gPipeline.generateGlow(&gPipeline.mPostMaps[activeRT]);
+    gPipeline.combineGlow(&gPipeline.mPostMaps[activeRT], &gPipeline.mPostMaps[1-activeRT]);
+    activeRT = 1-activeRT;
+
+    if(gPipeline.renderDoF(&gPipeline.mPostMaps[activeRT], &gPipeline.mPostMaps[1-activeRT]))
+    {
+        activeRT = 1-activeRT;
+    }
+
+    if(gPipeline.applyFXAA(&gPipeline.mPostMaps[activeRT], &gPipeline.mPostMaps[1-activeRT]))
+    {
+        activeRT = 1-activeRT;
+    }
 
     // *HACK: Restore mExposureMap (it will be consumed by generateExposure next frame)
     gPipeline.mExposureMap.swapFBORefs(gPipeline.mLastExposure);
+
+    gPipeline.copyRenderTarget(&gPipeline.mPostMaps[activeRT], &screen);
+
 
     // Final render
 
