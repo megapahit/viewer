@@ -931,4 +931,13 @@ with the same filename but different name
   <texture name="ProgressLarge_11" file_name="icons/ProgressLarge_11.png" preload="true" />
   <texture name="ProgressLarge_12" file_name="icons/ProgressLarge_12.png" preload="true" />
 
+  <texture name="mp_fpsButton" file_name="megapahit/fps_button.png" preload="false" />
+
+  <texture name="mp_red_bullet" file_name="megapahit/mp_red_bullet.png" preload="false" />
+  <texture name="mp_yellow_bullet" file_name="megapahit/mp_yellow_bullet.png" preload="false" />
+  <texture name="mp_green_bullet" file_name="megapahit/mp_green_bullet.png" preload="false" />
+  <texture name="mp_blue_bullet" file_name="megapahit/mp_blue_bullet.png" preload="false" />
+  <texture name="mp_help_bullet" file_name="megapahit/mp_help_bullet.png" preload="false" />
+  <texture name="mp_info_bullet" file_name="megapahit/mp_info_bullet.png" preload="false" />
+
 </textures>

@@ -592,6 +592,8 @@ static void settings_modify()
     LLVOSurfacePatch::sLODFactor        = gSavedSettings.getF32("RenderTerrainLODFactor");
     LLVOSurfacePatch::sLODFactor *= LLVOSurfacePatch::sLODFactor; //square lod factor to get exponential range of [1,4]
     gDebugGL       = gDebugGLSession || gDebugSession;
+    bool noGLDebug = gSavedSettings.getBOOL("MPNoGLDebug");
+    if(noGLDebug) gDebugGL = false;
     gDebugPipeline = gSavedSettings.getBOOL("RenderDebugPipeline");
 }
 
@@ -1351,12 +1353,11 @@ bool LLAppViewer::frame()
 bool LLAppViewer::doFrame()
 {
     U32 fpsLimitMaxFps = (U32)gSavedSettings.getU32("MaxFPS");
-    if(fpsLimitMaxFps>120) fpsLimitMaxFps=0;
+    if(fpsLimitMaxFps > 120) fpsLimitMaxFps = 0;
 
     using TimePoint = std::chrono::steady_clock::time_point;
-
-    U64 fpsLimitSleepFor = 0;
-    TimePoint fpsLimitFrameStartTime = std::chrono::steady_clock::now();
+    U64 additionalSleepTime = 0;
+    TimePoint frameStartTime = std::chrono::steady_clock::now();
 
 #ifdef LL_DISCORD
     {
@@ -1535,18 +1536,6 @@ bool LLAppViewer::doFrame()
             }
         }
 
-        if(fpsLimitMaxFps > 0)
-        {
-            auto elapsed = std::chrono::steady_clock::now() - fpsLimitFrameStartTime;
-
-            long long fpsLimitFrameTime = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-            U64 desired_time_us = (U32)(1000000.f / fpsLimitMaxFps);
-            if((fpsLimitFrameTime+1000) < desired_time_us)
-            {
-                fpsLimitSleepFor = (desired_time_us - fpsLimitFrameTime - 1000) * 1.0;
-            }
-        }
-
         {
             LL_PROFILE_ZONE_NAMED_CATEGORY_APP("df pauseMainloopTimeout");
             pingMainloopTimeout("Main:Sleep");
@@ -1559,13 +1548,25 @@ bool LLAppViewer::doFrame()
             //LL_RECORD_BLOCK_TIME(SLEEP2);
             LL_PROFILE_ZONE_WARN("Sleep2");
 
-            if(fpsLimitSleepFor)
+            auto elapsed = std::chrono::steady_clock::now() - frameStartTime;
+            long long frameTime = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+
+            if(fpsLimitMaxFps > 0)
             {
-#if LL_WINDOWS
-                std::this_thread::sleep_for(std::chrono::microseconds(fpsLimitSleepFor));
-#else
-                usleep(fpsLimitSleepFor);
-#endif
+                U64 desired_time_us = (U32)(1000000.f / fpsLimitMaxFps);
+                if((frameTime+1000) < desired_time_us)
+                {
+                    additionalSleepTime = 0.92 * (F64)(desired_time_us - frameTime);
+                    if(additionalSleepTime < 200)
+                    {
+                        additionalSleepTime = 0;
+                    }
+                }
+            }
+
+            if(additionalSleepTime > 0)
+            {
+                std::this_thread::sleep_for(std::chrono::microseconds(additionalSleepTime));
             }
 
             // yield some time to the os based on command line option
@@ -1661,6 +1662,9 @@ bool LLAppViewer::doFrame()
                 LL_PROFILE_ZONE_NAMED_CATEGORY_APP("df resumeMainloopTimeout");
                 resumeMainloopTimeout();
             }
+
+            //swap();
+
             pingMainloopTimeout("Main:End");
         }
     }

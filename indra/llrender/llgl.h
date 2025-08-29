@@ -154,17 +154,20 @@ void rotate_quat(LLQuaternion& rotation);
 
 void flush_glerror(); // Flush GL errors when we know we're handling them correctly.
 
-void log_glerror();
+void log_glerror(std::string comment);
 void assert_glerror();
 
 void clear_glerror();
 
 
-#if !LL_RELEASE_FOR_DOWNLOAD
-# define stop_glerror() assert_glerror()
-# define llglassertok() assert_glerror()
-# define STOP_GLERROR stop_glerror()
+//#if !LL_RELEASE_FOR_DOWNLOAD
+#if 1
+# define LOG_GLERROR(COMMENT) log_glerror(COMMENT)
+# define stop_glerror() log_glerror("stop")
+# define llglassertok() log_glerror("ASSERTOK")
+# define STOP_GLERROR log_glerror("STOP")
 #else
+# define LOG_GLERROR(COMMENT)
 # define stop_glerror()
 # define llglassertok()
 # define STOP_GLERROR

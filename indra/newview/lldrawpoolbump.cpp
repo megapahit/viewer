@@ -911,7 +911,8 @@ void LLBumpImageList::onSourceUpdated(LLViewerTexture* src, EBumpEffect bump_cod
 
         // generate normal map in empty texture
         {
-            sRenderTarget.bindTarget();
+            sRenderTarget.bindTarget("", 1);
+            //sRenderTarget.clear();
 
             LLGLDepthTest depth(GL_FALSE);
             LLGLDisable cull(GL_CULL_FACE);

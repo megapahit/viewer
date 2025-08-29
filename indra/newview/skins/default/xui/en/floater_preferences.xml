@@ -100,6 +100,15 @@
          layout="topleft"
          help_topic="preferences_display_tab"
          name="display" />
+
+        <panel
+        class="panel_preference_graphics3"
+         filename="panel_preferences_graphics3.xml"
+         label="Visual Effects"
+         layout="topleft"
+         help_topic="preferences_display_tab"
+         name="display3" />
+
         <panel
 		 class="panel_preference"
          filename="panel_preferences_sound.xml"

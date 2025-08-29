@@ -125,6 +125,8 @@ public:
 private:
     //implementation of above, wrapped for easy error handling
     eFBOStatus doAllocateScreenBuffer(U32 resX, U32 resY);
+    void renderTriangle();
+
 public:
 
     //attempt to allocate screen buffers at resX, resY
@@ -158,14 +160,16 @@ public:
     void tonemap(LLRenderTarget* src, LLRenderTarget* dst);
     void gammaCorrect(LLRenderTarget* src, LLRenderTarget* dst);
     void generateGlow(LLRenderTarget* src);
-    void applyCAS(LLRenderTarget* src, LLRenderTarget* dst);
-    void applyFXAA(LLRenderTarget* src, LLRenderTarget* dst);
+    bool applyCAS(LLRenderTarget* src, LLRenderTarget* dst);
+    bool applyFXAA(LLRenderTarget* src, LLRenderTarget* dst);
     void generateSMAABuffers(LLRenderTarget* src);
-    void applySMAA(LLRenderTarget* src, LLRenderTarget* dst);
-    void renderDoF(LLRenderTarget* src, LLRenderTarget* dst);
+    bool applySMAA(LLRenderTarget* src, LLRenderTarget* dst);
+    bool renderDoF(LLRenderTarget* src, LLRenderTarget* dst);
     void copyRenderTarget(LLRenderTarget* src, LLRenderTarget* dst);
     void combineGlow(LLRenderTarget* src, LLRenderTarget* dst);
     void visualizeBuffers(LLRenderTarget* src, LLRenderTarget* dst, U32 bufferIndex);
+
+    bool renderBloom(LLRenderTarget* src, LLRenderTarget* dst);
 
     void init();
     void cleanup();
@@ -729,8 +733,12 @@ public:
     LLRenderTarget          mExposureMap;
     LLRenderTarget          mLastExposure;
 
+    LLRenderTarget          mBloomMap;
+    LLRenderTarget          mBloomBlur[2];
+
     // tonemapped and gamma corrected render ready for post
-    LLRenderTarget          mPostMap;
+    //LLRenderTarget          mPostMap;
+    LLRenderTarget          mPostMaps[2];
 
     // FXAA helper target
     LLRenderTarget          mFXAAMap;
@@ -1008,7 +1016,7 @@ public:
     static bool RenderDeferred;
     static F32 RenderDeferredSunWash;
     static U32 RenderFSAAType;
-    static U32 RenderResolutionDivisor;
+    static F32 RenderResolutionDivisor;
     static bool RenderUIBuffer;
     static S32 RenderShadowDetail;
     static S32 MPRenderShadowOpti;

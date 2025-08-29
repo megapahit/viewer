@@ -29,20 +29,28 @@
 
 #include "llfloater.h"
 
+class LLSliderCtrl;
+class LLTextBox;
+
 class MPFloaterTuning: public LLFloater
 {
-public:
+    public:
+
     MPFloaterTuning(const LLSD& key);
 
     bool postBuild();
 
     void onFinalCommit();
 
-    static void syncFromPreferenceSetting(void *user_data);
-
-    //void updateEditEnabled();
 
     /*virtual*/ void onClose(bool app_quitting);
+
+    private:
+
+    LLSliderCtrl* mFpsSlider = nullptr;
+    LLTextBox* mFpsTextBox = nullptr;
+
+    void onFpsSliderChanged();
 };
 
 #endif

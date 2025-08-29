@@ -39,47 +39,37 @@ MPFloaterTuning::MPFloaterTuning(const LLSD& key) : LLFloater(key)
 {
 }
 
-void MPFloaterTuning::syncFromPreferenceSetting(void *user_data)
-{
-    MPFloaterTuning *self = static_cast<MPFloaterTuning*>(user_data);
-
-    U32 fps = gSavedSettings.getU32("MaxFPS");
-    if(fps==0) fps=132;
-
-    LLSliderCtrl* fpsSliderCtrl = self->getChild<LLSliderCtrl>("fpsSlider");
-    fpsSliderCtrl->setValue(fps,FALSE);
-
-    LLTextBox* fpsText = self->getChild<LLTextBox>("fpsText");
-    if(fps>120) fpsText->setValue("no limit");
-    else fpsText->setValue(std::to_string(fps)+" fps");
-}
 
 bool MPFloaterTuning::postBuild()
 {
-    LLSliderCtrl* fpsSliderCtrl = getChild<LLSliderCtrl>("fpsSlider");
-    fpsSliderCtrl->setMinValue(12);
-    fpsSliderCtrl->setMaxValue(132);
-    fpsSliderCtrl->setSliderMouseUpCallback(boost::bind(&MPFloaterTuning::onFinalCommit,this));
+    U32 fps = gSavedSettings.getU32("MaxFPS");
+    if(fps==0) fps=132;
 
-    LLTextBox* fpsText = getChild<LLTextBox>("fpsText");
-    fpsText->setValue("");
+    mFpsSlider = getChild<LLSliderCtrl>("fpsSliderCtrl");
+    mFpsSlider->setCommitCallback(boost::bind(&MPFloaterTuning::onFpsSliderChanged, this));
 
-    syncFromPreferenceSetting(this);
+    mFpsSlider->setValue(fps, false);
 
-    return TRUE;
+    mFpsTextBox = getChild<LLTextBox>("fpsTextCtrl");
+    mFpsTextBox->setValue("");
+
+    if(fps>120) mFpsTextBox->setValue("no limit");
+    else if(fps==0) mFpsTextBox->setValue("no limit");
+    else mFpsTextBox->setValue(std::to_string(fps)+" fps");
+
+    return true;
 }
 
 // Do send-to-the-server work when slider drag completes, or new
 // value entered as text.
-void MPFloaterTuning::onFinalCommit()
+void MPFloaterTuning::onFpsSliderChanged()
 {
-    LLSliderCtrl* fpsSliderCtrl = getChild<LLSliderCtrl>("fpsSlider");
-    U32 fps = (U32)fpsSliderCtrl->getValueF32();
+    U32 fps = (U32)mFpsSlider->getValueF32();
     gSavedSettings.setU32("MaxFPS",fps);
 
-    LLTextBox* fpsText = getChild<LLTextBox>("fpsText");
-    if(fps>120) fpsText->setValue("no limit");
-    else fpsText->setValue(std::to_string(fps)+" fps");
+    if(fps>120) mFpsTextBox->setValue("no limit");
+    else if(fps==0) mFpsTextBox->setValue("no limit");
+    else mFpsTextBox->setValue(std::to_string(fps)+" fps");
 }
 
 void MPFloaterTuning::onClose(bool app_quitting)

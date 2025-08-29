@@ -23,7 +23,7 @@
  * $/LicenseInfo$
  */
 
-out vec4 frag_color;
+//out vec4 frag_color;
 
 uniform float minimum_alpha;
 
@@ -51,5 +51,5 @@ void main()
       }
     }
 
-    frag_color = vec4(1,1,1,1);
+    //frag_color = vec4(1,1,1,1);
 }

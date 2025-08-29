@@ -648,7 +648,7 @@ void LLFace::renderOneWireframe(const LLColor4 &color, F32 fogCfx, bool wirefram
         LLGLEnable offset(GL_POLYGON_OFFSET_LINE);
 #endif
         glPolygonOffset(3.f, 3.f);
-        glLineWidth(5.f);
+        //glLineWidth(5.f);
 #if GL_VERSION_1_1
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 #endif
