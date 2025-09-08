@@ -1690,6 +1690,10 @@ void render_ui_3d()
     gUIProgram.bind();
     gGL.color4f(1.f, 1.f, 1.f, 1.f);
 
+    static LLCachedControl<bool> hdrDisplay(gSavedSettings, "MPHDRDisplay");
+    static LLCachedControl<F32> hdrUIBoost(gSavedSettings, "MPHDRUIBoost");
+    if(hdrDisplay) gUIProgram.uniform1f(LLShaderMgr::MP_HDR_BOOST, (GLfloat)hdrUIBoost);
+
     // Coordinate axes
     static LLCachedControl<bool> show_axes(gSavedSettings, "ShowAxes");
     if (show_axes())

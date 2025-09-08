@@ -14352,16 +14352,72 @@
 
 
     <!-- megapahit settings -->
-    <key>MPLowColorPrecision</key>
+
+    <key>MPVertexBufferMode</key>
     <map>
       <key>Comment</key>
-      <string>Enable / Disable lower precision buffers encoding</string>
+      <string>Vertex Buffer Mode for Mac (0=LL, 1=MP)</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>U32</string>
+      <key>Value</key>
+      <integer>0</integer>
+    </map>
+    <key>MPHDRDisplay</key>
+    <map>
+      <key>Comment</key>
+      <string>Enable / Disable HDR Display Support (Mac)</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>Boolean</string>
       <key>Value</key>
+      <integer>0</integer>
+    </map>
+    <key>MPHDRBoost</key>
+    <map>
+      <key>Comment</key>
+      <string>HDR Boost</string>
+      <key>Persist</key>
       <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <integer>1.5</integer>
+    </map>
+    <key>MPHDRGamma</key>
+    <map>
+      <key>Comment</key>
+      <string>HDR Gamma</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <integer>2.4</integer>
+    </map>
+    <key>MPHDRUIBoost</key>
+    <map>
+      <key>Comment</key>
+      <string>HDR UI Boost</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <integer>1.5</integer>
+    </map>
+    <key>MPColorPrecision</key>
+    <map>
+      <key>Comment</key>
+      <string>Color buffers precision</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>U32</string>
+      <key>Value</key>
+      <integer>0</integer>
     </map>
     <key>MPNoGLDebug</key>
     <map>
@@ -14431,28 +14487,6 @@
       1:normal
       2:MP optimised
       3:LL optimized.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>U32</string>
-      <key>Value</key>
-      <integer>0</integer>
-    </map>
-    <key>MPDumbCopy</key>
-    <map>
-      <key>Comment</key>
-      <string>Add a useless copy in pipeline::renderFinalize()</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>Boolean</string>
-      <key>Value</key>
-      <real>0</real>
-    </map>
-    <key>MPRenderShadowOpti</key>
-    <map>
-      <key>Comment</key>
-      <string>Shadows Optimisations</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>

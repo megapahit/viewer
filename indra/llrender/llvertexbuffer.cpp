@@ -29,7 +29,6 @@
 #include "llfasttimer.h"
 #include "llsys.h"
 #include "llvertexbuffer.h"
-// #include "llrender.h"
 #include "llglheaders.h"
 #include "llrender.h"
 #include "llvector4a.h"
@@ -272,13 +271,13 @@ static GLuint gen_buffer()
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_VERTEX("gen buffer");
         sIndex = pool_size;
-#if !LL_DARWIN
+//#if !LL_DARWIN
         if (!gGLManager.mIsAMD)
         {
             glGenBuffers(pool_size, sNamePool);
         }
         else
-#endif
+//#endif
         { // work around for AMD driver bug
             for (U32 i = 0; i < pool_size; ++i)
             {
@@ -615,6 +614,8 @@ public:
 
 static LLVBOPool* sVBOPool = nullptr;
 
+static U32 sMPVertexBufferMode = 0;
+
 void LLVertexBufferData::drawWithMatrix()
 {
     if (!mVB)
@@ -946,11 +947,13 @@ void LLVertexBuffer::drawArrays(U32 mode, U32 first, U32 count) const
 }
 
 //static
-void LLVertexBuffer::initClass(LLWindow* window)
+void LLVertexBuffer::initClass(LLWindow* window, U32 mode_)
 {
     llassert(sVBOPool == nullptr);
 
-    if (gGLManager.mIsApple)
+    sMPVertexBufferMode = mode_;
+
+    if (mode_ == 0 && gGLManager.mIsApple)
     {
         LL_INFOS() << "VBO Pooling Disabled" << LL_ENDL;
         sVBOPool = new LLAppleVBOPool();
@@ -970,6 +973,12 @@ void LLVertexBuffer::initClass(LLWindow* window)
         sVBOThread[i]->start();
     }
 #endif
+}
+
+//static
+U32 LLVertexBuffer::getVertexBufferMode()
+{
+    return sMPVertexBufferMode;
 }
 
 //static
@@ -1291,7 +1300,7 @@ U8* LLVertexBuffer::mapVertexBuffer(LLVertexBuffer::AttributeType type, U32 inde
         count = mNumVerts - index;
     }
 
-    if (!gGLManager.mIsApple)
+    if (!gGLManager.mIsApple || sMPVertexBufferMode == 1)
     {
         U32 start = mOffsets[type] + sTypeSize[type] * index;
         U32 end = start + sTypeSize[type] * count-1;
@@ -1328,7 +1337,7 @@ U8* LLVertexBuffer::mapIndexBuffer(U32 index, S32 count)
         count = mNumIndices-index;
     }
 
-    if (!gGLManager.mIsApple)
+    if (!gGLManager.mIsApple || sMPVertexBufferMode == 1)
     {
         U32 start = sizeof(U16) * index;
         U32 end = start + sizeof(U16) * count-1;
@@ -1365,13 +1374,35 @@ void LLVertexBuffer::flush_vbo(GLenum target, U32 start, U32 end, void* data, U8
 {
     if (gGLManager.mIsApple)
     {
-        // on OS X, flush_vbo doesn't actually write to the GL buffer, so be sure to call
-        // _mapBuffer to tag the buffer for flushing to GL
-        _mapBuffer();
-        LL_PROFILE_ZONE_NAMED_CATEGORY_VERTEX("vb memcpy");
-        //LOG_GLERROR("LLVertexBuffer::flush_vbo()");
-        // copy into mapped buffer
-        memcpy(dst+start, data, end-start+1);
+        if(sMPVertexBufferMode == 1)
+        {
+            //LL_WARNS() << "flush_vbo mode 1" << LL_ENDL;
+
+            U32 MapBits = GL_MAP_WRITE_BIT;
+            //U32 MapBits = GL_MAP_READ_BIT;
+            U32 buffer_size = end-start+1;
+
+            U8 * mptr = NULL;
+            mptr = (U8*) glMapBufferRange( target, start, end-start+1, MapBits);
+
+            if (mptr)
+            {
+                std::memcpy(mptr, (U8*) data, buffer_size);
+                if(!glUnmapBuffer(target)) LL_WARNS() << "glUnmapBuffer() failed" << LL_ENDL;
+            }
+            else LL_WARNS() << "glMapBufferRange() returned NULL" << LL_ENDL;
+
+        }
+        else
+        {
+            //LL_WARNS() << "flush_vbo mode 0" << LL_ENDL;
+            // on OS X, flush_vbo doesn't actually write to the GL buffer, so be sure to call
+            // _mapBuffer to tag the buffer for flushing to GL
+            _mapBuffer();
+            LL_PROFILE_ZONE_NAMED_CATEGORY_VERTEX("vb memcpy");
+            // copy into mapped buffer
+            memcpy(dst+start, data, end-start+1);
+        }
     }
     else
     {
@@ -1428,7 +1459,7 @@ void LLVertexBuffer::_unmapBuffer()
         }
     };
 
-    if (gGLManager.mIsApple)
+    if (gGLManager.mIsApple && sMPVertexBufferMode == 0)
     {
         LOG_GLERROR("LLVertexBuffer::_unmapBuffer() - apple 1");
         if (mMappedData)

@@ -79,6 +79,7 @@ void main()
     vec4 diff = texture(diffuseRect, vary_fragcoord.xy);
 
 #ifdef HAS_NOISE
+
     vec2 tc = vary_fragcoord.xy*screen_res*4.0;
     vec3 seed = (diff.rgb+vec3(1.0))*vec3(tc.xy, tc.x+tc.y);
     vec3 nz = vec3(noise(seed.rg), noise(seed.gb), noise(seed.rb));

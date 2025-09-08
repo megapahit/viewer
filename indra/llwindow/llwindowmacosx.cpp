@@ -53,6 +53,7 @@
 
 extern bool gDebugWindowProc;
 bool gHiDPISupport = true;
+bool gHDRDisplaySupport = false;
 
 const S32   BITS_PER_PIXEL = 32;
 const S32   MAX_NUM_RESOLUTIONS = 32;
