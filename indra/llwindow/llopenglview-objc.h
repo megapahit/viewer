@@ -43,6 +43,8 @@
     bool mMarkedTextAllowed;
     bool mSimulatedRightClick;
     bool mOldResize;
+
+    bool mHDRDisplay;
 }
 - (id) initWithSamples:(NSUInteger)samples;
 - (id) initWithSamples:(NSUInteger)samples andVsync:(BOOL)vsync;

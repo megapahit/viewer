@@ -1512,6 +1512,8 @@ void LLShaderMgr::initAttribsAndUniforms()
     mReservedUniforms.push_back("bloomExtractORM");
     mReservedUniforms.push_back("bloomExtractMetal");
     mReservedUniforms.push_back("bloomExtractNonMetal");
+    mReservedUniforms.push_back("bloomClampValue");
+    mReservedUniforms.push_back("mpHDRBoost");
 
     llassert(mReservedUniforms.size() == END_RESERVED_UNIFORMS);
 

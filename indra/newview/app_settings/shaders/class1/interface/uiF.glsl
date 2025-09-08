@@ -27,10 +27,12 @@ out vec4 frag_color;
 
 uniform sampler2D diffuseMap;
 
+uniform float mpHDRBoost = 1.0;
+
 in vec2 vary_texcoord0;
 in vec4 vertex_color;
 
 void main()
 {
-    frag_color = vertex_color*texture(diffuseMap, vary_texcoord0.xy);
+    frag_color = mpHDRBoost * vertex_color*texture(diffuseMap, vary_texcoord0.xy);
 }

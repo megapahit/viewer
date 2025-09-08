@@ -6,18 +6,16 @@ uniform sampler2D diffuseMap;
 uniform sampler2D bloomBlurredMap;
 
 uniform float bloomStrength;
+uniform float bloomClampValue;
 
 void main()
 {
     vec4 hdrColor = texture(diffuseMap, vary_texcoord0);
-    vec3 bloomColor = texture(bloomBlurredMap, vary_texcoord0).rgb;
-    vec4 result = vec4(0.0);
+    vec4 bloomColor = texture(bloomBlurredMap, vary_texcoord0);
+    vec4 result = hdrColor;
 
-    result.r = min(hdrColor.r + bloomStrength * bloomColor.r, 1.0);
-    result.g = min(hdrColor.g + bloomStrength * bloomColor.g, 1.0);
-    result.b = min(hdrColor.b + bloomStrength * bloomColor.b, 1.0);
-    result.a = hdrColor.a;
+    result.rgb += bloomStrength * bloomColor.rgb;
+    result.rgb = clamp(result.rgb, vec3(0.0), vec3(bloomClampValue));
 
-    //bloomColor += hdrColor.rgb;
     frag_color = result;
 }

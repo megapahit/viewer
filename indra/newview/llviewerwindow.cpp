@@ -1967,7 +1967,8 @@ LLViewerWindow::LLViewerWindow(const Params& p)
     LL_DEBUGS("Window") << "Loading feature tables." << LL_ENDL;
 
     // Initialize OpenGL Renderer
-    LLVertexBuffer::initClass(mWindow);
+    LLVertexBuffer::initClass(mWindow, gSavedSettings.getU32("MPVertexBufferMode"));
+
     LL_INFOS("RenderInit") << "LLVertexBuffer initialization done." << LL_ENDL ;
     if (!gGL.init(true))
     {
@@ -5177,7 +5178,7 @@ bool LLViewerWindow::rawSnapshot(LLImageRaw *raw, S32 image_width, S32 image_hei
                             glReadPixels(
                                          subimage_x_offset, out_y + subimage_y_offset,
                                          read_width, 1,
-                                         GL_DEPTH_COMPONENT, GL_FLOAT,
+                                         GL_DEPTH_COMPONENT, GL_UNSIGNED_INT,
                                          depth_line_buffer->getData()// current output pixel is beginning of buffer...
                                          );
 

@@ -352,6 +352,8 @@ public:
         BLOOM_EXTRACT_ORM,                  //  "bloomExtractORM"
         BLOOM_EXTRACT_METAL,                //  "bloomExtractMetal"
         BLOOM_EXTRACT_NONMETAL,             //  "bloomExtractNonMetal"
+        BLOOM_CLAMP,                        //  "bloomClampValue"
+        MP_HDR_BOOST,                       //  "mpHDRBoost"
 
         END_RESERVED_UNIFORMS
     } eGLSLReservedUniforms;

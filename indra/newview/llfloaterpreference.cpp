@@ -2647,6 +2647,8 @@ void LLPanelPreferenceGraphics3::onMPRecommanded()
     gSavedSettings.setU32("RenderFSAAType", 2);
     gSavedSettings.setU32("RenderFSAASamples", 2);
 
+    gSavedSettings.setBOOL("RenderAnisotropic", false);
+
     // Shadows
 
     gSavedSettings.setS32("RenderShadowDetail", 0);
@@ -2658,8 +2660,8 @@ void LLPanelPreferenceGraphics3::onMPRecommanded()
     // Bloom
 
     gSavedSettings.setU32("MPRenderBloom", 0);
-    gSavedSettings.setF32("MPBloomBlurRadius", 1.0);
-    gSavedSettings.setF32("MPBloomBlurRadiusAdd", 0.6);
+    gSavedSettings.setF32("MPBloomBlurRadius", 1.2);
+    gSavedSettings.setF32("MPBloomBlurRadiusAdd", 1.2);
     gSavedSettings.setF32("MPBloomExtractBrightness", 0.1);
     gSavedSettings.setF32("MPBloomStrength", 1.0);
 
@@ -2681,11 +2683,18 @@ void LLPanelPreferenceGraphics3::onMPRecommanded()
 
     gSavedSettings.setBOOL("RenderDisableVintageMode", true);
     gSavedSettings.setBOOL("RenderTransparentWater", true);
-    gSavedSettings.setBOOL("MPLowColorPrecision", true);
+    gSavedSettings.setU32("MPColorPrecision", 0);
+
+    gSavedSettings.setU32("RenderResolutionDivisor", 1.0);
 
     gSavedSettings.setBOOL("RenderGLMultiThreadedTextures", false);
     gSavedSettings.setBOOL("RenderAppleUseMultGL", false);
     gSavedSettings.setBOOL("MPNoGLDebug", true);
+
+    gSavedSettings.setBOOL("MPHDRDisplay", false);
+    gSavedSettings.setF32("MPHDRBoost", 1.0);
+    gSavedSettings.setF32("MPHDRUIBoost", 1.0);
+    gSavedSettings.setF32("MPHDRGamma", 2.4);
 }
 
 //------------------------LLPanelPreferenceControls--------------------------------

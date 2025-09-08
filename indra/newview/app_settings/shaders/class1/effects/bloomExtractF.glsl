@@ -56,7 +56,7 @@ void main()
     if(orm.b < 0.15)
     {
         // non metal
-        if(orm.g > bloomExtractNonMetal)
+        if(orm.g >= bloomExtractNonMetal)
         {
             discard;
             return;
@@ -65,7 +65,7 @@ void main()
     else if(orm.b > 0.8)
     {
         // metal
-        if(orm.g > bloomExtractMetal)
+        if(orm.g >= bloomExtractMetal)
         {
             discard;
             return;

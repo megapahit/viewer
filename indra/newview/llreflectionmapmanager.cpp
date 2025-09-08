@@ -297,8 +297,8 @@ void LLReflectionMapManager::update()
 
     U32 color_fmt = render_hdr ? GL_R11F_G11F_B10F : GL_RGB8;
 
-    static LLCachedControl<bool> MPLowColorPrecision(gSavedSettings, "MPLowColorPrecision", 0);
-    if(MPLowColorPrecision)
+    static LLCachedControl<U32> MPColorPrecision(gSavedSettings, "MPColorPrecision", 0);
+    if(MPColorPrecision == 1)
     {
         color_fmt = GL_RGB8;
     }
@@ -563,12 +563,10 @@ void LLReflectionMapManager::update()
 
             if(probe->mCompletedCount < 2)
             {
-                LL_WARNS() << "we program a short delay for this probe" << LL_ENDL;
                 probe->mNextUpdateTime = gFrameTimeSeconds + fmax( ((F32)sMPUpdatePeriod / 2.0), 0.25);
             }
             else
             {
-                LL_WARNS() << "we program a long delay for this probe" << LL_ENDL;
                 probe->mNextUpdateTime = gFrameTimeSeconds + fmax( (F32)sMPUpdatePeriod, 0.25);
             }
 
@@ -820,7 +818,6 @@ void LLReflectionMapManager::doProbeUpdate()
             mUpdatingProbe->mCompletedCount++;
             mUpdatingProbe = nullptr;
             mRadiancePass = false;
-            LL_WARNS() << "probe updated !" << LL_ENDL;
         }
         else
         {
@@ -1027,7 +1024,6 @@ void LLReflectionMapManager::updateProbeIrradiance(LLReflectionMap* probe)
 
     static LLStaticHashedString sSourceIdx("sourceIdx");
 
-    LL_WARNS() << "IRRADIANCE 1" << LL_ENDL;
 
     mMipChain[0].bindTarget("irradiance", 0);
     mMipChain[0].clear(0);
@@ -1107,7 +1103,6 @@ void LLReflectionMapManager::updateProbeRadiance(LLReflectionMap* probe)
 
     static LLStaticHashedString sSourceIdx("sourceIdx");
 
-    LL_WARNS() << "RADIANCE" << LL_ENDL;
     //LL_RECORD_BLOCK_TIME(FTM_RENDER_RADIANCE);
 
     mMipChain[0].bindTarget("radiance", 0);
@@ -1802,8 +1797,6 @@ void LLReflectionMapManager::initReflectionMaps()
         mDefaultProbe->mNextUpdateTime = 0.f;
 
         touch_default_probe(mDefaultProbe);
-
-        LL_WARNS() << "====== END initReflectionMaps() =======" << LL_ENDL;
     }
 
     if (mVertexBuffer.isNull())
