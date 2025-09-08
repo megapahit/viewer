@@ -326,7 +326,6 @@ bool LLRenderTarget::addColorAttachment(U32 color_fmt)
     {
         gGL.getTexUnit(0)->setTextureAddressMode(LLTexUnit::TAM_MIRROR);
         LOG_GLERROR(mName + " setting address mode to TAM_MIRROR");
-
     }
     else
 #endif
@@ -367,8 +366,7 @@ bool LLRenderTarget::allocateDepth()
     gGL.getTexUnit(0)->bindManual(mUsage, mDepth);
 
     U32 internal_type = LLTexUnit::getInternalType(mUsage);
-
-    LLImageGL::setManualImage(internal_type, 0, GL_DEPTH_COMPONENT24, mResX, mResY, GL_DEPTH_COMPONENT, GL_FLOAT, NULL, false);
+    LLImageGL::setManualImage(internal_type, 0, GL_DEPTH_COMPONENT24, mResX, mResY, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL, false);
     gGL.getTexUnit(0)->setTextureFilteringOption(LLTexUnit::TFO_POINT);
 
     sBytesAllocated += mResX*mResY*4;
@@ -521,9 +519,7 @@ void LLRenderTarget::bindTarget(std::string name_, U32 mode_)
     {
         glDrawBuffers(static_cast<GLsizei>(mTex.size()), drawbuffers);
         glReadBuffer(GL_COLOR_ATTACHMENT0);
-
         LOG_GLERROR(mName+" read and write buffers");
-
     }
     else if(mMode == 1)
     {
@@ -557,8 +553,11 @@ void LLRenderTarget::clear(U32 mask_in)
     U32 mask = 0;
 
     if(!mTex.empty()) mask |= GL_COLOR_BUFFER_BIT;
-    if (mUseDepth) mask |= GL_DEPTH_BUFFER_BIT;
+    if (mUseDepth)
+    {
+        mask |= GL_DEPTH_BUFFER_BIT;
 
+    }
     if (mFBO)
     {
         check_framebuffer_status();

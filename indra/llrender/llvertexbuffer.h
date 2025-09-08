@@ -109,7 +109,7 @@ public:
         return *this;
     }
 
-    static void initClass(LLWindow* window);
+    static void initClass(LLWindow* window, U32 mode_ = 0);
     static void cleanupClass();
     static void setupClientArrays(U32 data_mask);
     static void drawArrays(U32 mode, const std::vector<LLVector3>& pos);
@@ -127,6 +127,8 @@ public:
 
     // flush any pending mapped buffers
     static void flushBuffers();
+
+    static U32 getVertexBufferMode();
 
     //WARNING -- when updating these enums you MUST
     // 1 - update LLVertexBuffer::sTypeSize

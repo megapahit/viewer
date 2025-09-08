@@ -530,7 +530,9 @@ void LLTexUnit::setTextureFilteringOption(LLTexUnit::eTextureFilterOptions optio
     {
         if (LLImageGL::sGlobalUseAnisotropic && option == TFO_ANISOTROPIC)
         {
-            glTexParameterf(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, gGLManager.mMaxAnisotropy);
+            //glTexParameterf(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, gGLManager.mMaxAnisotropy);
+            //We plan to add a setting. For now we stick to a low value.
+            glTexParameterf(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, 4.0);
         }
         else
         {
@@ -1592,7 +1594,6 @@ void LLRender::end(std::string comment_)
 
 void LLRender::flush(std::string comment_)
 {
-    LOG_GLERROR("LLRender::flush() begin " + comment_);
     if (mCount > 0)
     {
         LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
@@ -1661,9 +1662,9 @@ void LLRender::flush(std::string comment_)
         }
 
         resetStriders(count);
-    }
 
-    LOG_GLERROR("LLRender::flush() end " + comment_);
+        LOG_GLERROR("LLRender::flush() end " + comment_);
+    }
 }
 
 void LLRender::flush()
@@ -1765,9 +1766,11 @@ LLVertexBuffer* LLRender::genBuffer(U32 attribute_mask, S32 count)
         vb->setColorData(mColorsp.get());
     }
 
-#if LL_DARWIN
+    if(gGLManager.mIsApple && LLVertexBuffer::getVertexBufferMode() == 0)
+    {
     vb->unmapBuffer();
-#endif
+    }
+
     vb->unbind();
 
     return vb;

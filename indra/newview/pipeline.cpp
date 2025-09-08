@@ -144,7 +144,6 @@ U32 LLPipeline::RenderFSAAType;
 F32 LLPipeline::RenderResolutionDivisor;
 bool LLPipeline::RenderUIBuffer;
 S32 LLPipeline::RenderShadowDetail;
-S32 LLPipeline::MPRenderShadowOpti;
 S32 LLPipeline::RenderShadowSplits;
 bool LLPipeline::RenderDeferredSSAO;
 F32 LLPipeline::RenderShadowResolutionScale;
@@ -354,13 +353,13 @@ bool addDeferredAttachments(LLRenderTarget& target, bool for_impostor = false)
     U32 norm = GL_RGBA16F;
     U32 emissive = GL_RGB16F;
 
-    static LLCachedControl<bool> MPLowColorPrecision(gSavedSettings, "MPLowColorPrecision", 0);
-
     static LLCachedControl<bool> has_emissive(gSavedSettings, "RenderEnableEmissiveBuffer", false);
     static LLCachedControl<bool> has_hdr(gSavedSettings, "RenderHDREnabled", true);
+    static LLCachedControl<U32> MPColorPrecision(gSavedSettings, "MPColorPrecision", 0);
+
     bool hdr = has_hdr() && gGLManager.mGLVersion > 4.05f;
 
-    if (!hdr || MPLowColorPrecision)
+    if (!hdr || MPColorPrecision < 2)
     {
         norm = GL_RGB10_A2;
         emissive = GL_RGB8;
@@ -485,6 +484,10 @@ void LLPipeline::init()
         gSavedSettings.setBOOL("RenderPerformanceTest", true);
     }
 
+#if LL_DARWIN
+    mHDRDisplay = gSavedSettings.getBOOL("MPHDRDisplay");
+#endif
+
     mOldRenderDebugMask = mRenderDebugMask;
 
     mBackfaceCull = true;
@@ -533,7 +536,6 @@ void LLPipeline::init()
     connectRefreshCachedSettingsSafe("RenderResolutionDivisor");
     connectRefreshCachedSettingsSafe("RenderUIBuffer");
     connectRefreshCachedSettingsSafe("RenderShadowDetail");
-    connectRefreshCachedSettingsSafe("MPRenderShadowOpti");
     connectRefreshCachedSettingsSafe("RenderShadowSplits");
     connectRefreshCachedSettingsSafe("RenderDeferredSSAO");
     connectRefreshCachedSettingsSafe("RenderShadowResolutionScale");
@@ -819,12 +821,14 @@ LLPipeline::eFBOStatus LLPipeline::doAllocateScreenBuffer(U32 resX, U32 resY)
     return ret;
 }
 
-bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY)
+bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY, U32 type_)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DISPLAY;
 
     static LLCachedControl<bool> has_hdr(gSavedSettings, "RenderHDREnabled", true);
     bool hdr = gGLManager.mGLVersion > 4.05f && has_hdr();
+
+    static LLCachedControl<U32> MPColorPrecision(gSavedSettings, "MPColorPrecision", 0);
 
     if (mRT == &mMainRT)
     { // hacky -- allocate auxillary buffer
@@ -838,14 +842,14 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY)
 
         mRT = &mAuxillaryRT;
         U32 res = mReflectionMapManager.mProbeResolution * 4;  //multiply by 4 because probes will be 16x super sampled
-        allocateScreenBufferInternal(res, res);
+        allocateScreenBufferInternal(res, res, 1);
 
         if (RenderMirrors)
         {
             mHeroProbeManager.initReflectionMaps();
             res = mHeroProbeManager.mProbeResolution;  // We also scale the hero probe RT to the probe res since we don't super sample it.
             mRT = &mHeroProbeRT;
-            allocateScreenBufferInternal(res, res);
+            allocateScreenBufferInternal(res, res, 2);
         }
 
         mRT = &mMainRT;
@@ -858,25 +862,27 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY)
 
     F32 res_mod = fmin(RenderResolutionDivisor, 4.0);
 
-    LL_WARNS() << "res_mod=" << res_mod << " resX=" << resX << " resY=" << resY << LL_ENDL;
-
     if (res_mod >= 0.5 && res_mod <= 4.0)
     {
         resX = (U32)(floor((F32)resX / res_mod));
         resY = (U32)(floor((F32)resY / res_mod));
-        LL_WARNS() << "res_mod=" << res_mod << " resX=" << resX << " resY=" << resY << LL_ENDL;
     }
 
     S32 shadow_detail = RenderShadowDetail;
     bool ssao = RenderDeferredSSAO;
 
     //allocate deferred rendering color buffers
-    if (!mRT->deferredScreen.allocate(resX, resY, GL_RGBA8, true)) return false;
+
+    GLuint deferredScreenFormat = GL_RGBA8;
+    if((hdr || mHDRDisplay) && MPColorPrecision == 2) deferredScreenFormat = GL_RGBA16F;
+
+    if (!mRT->deferredScreen.allocate(resX, resY, deferredScreenFormat, true)) return false;
     if (!addDeferredAttachments(mRT->deferredScreen)) return false;
 
-    GLuint screenFormat = hdr ? GL_RGBA16F : GL_RGBA8;
+    GLuint screenFormat = GL_RGBA8;
+    if(hdr || mHDRDisplay) screenFormat = GL_RGBA16F;
 
-    if (!mRT->screen.allocate(resX, resY, screenFormat)) return false;
+    if (!mRT->screen.allocate(resX, resY, GL_RGBA16F)) return false;
 
     mRT->deferredScreen.shareDepthBuffer(mRT->screen);
 
@@ -890,13 +896,16 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY)
     }
 
     //allocateShadowBuffer(resX, resY);
-    allocateShadowBuffer(SHADOWS_RESX, SHADOWS_RESY);
+    if(type_ == 0) allocateShadowBuffer(SHADOWS_RESX, SHADOWS_RESY);
 
     if (!gCubeSnapshot) // hack to not re-allocate various targets for cube snapshots
     {
+        GLuint UIFormat = GL_RGBA8;
+        if(mHDRDisplay && MPColorPrecision == 2) UIFormat = GL_RGBA16F;
+
         if (RenderUIBuffer)
         {
-            if (!mUIScreen.allocate(resX, resY, GL_RGBA8))
+            if (!mUIScreen.allocate(resX, resY, UIFormat))
             {
                 return false;
             }
@@ -904,10 +913,13 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY)
 
         if (RenderFSAAType > 0)
         {
-            if (!mFXAAMap.allocate(resX, resY, GL_RGBA8)) return false;
+            GLuint AAFormat = GL_RGBA8;
+            if(mHDRDisplay && MPColorPrecision == 2) AAFormat = GL_RGBA16F;
+
+            if (!mFXAAMap.allocate(resX, resY, AAFormat)) return false;
             if (RenderFSAAType == 2)
             {
-                if (!mSMAABlendBuffer.allocate(resX, resY, GL_RGBA8, false)) return false;
+                if (!mSMAABlendBuffer.allocate(resX, resY, AAFormat, false)) return false;
             }
         }
         else
@@ -921,17 +933,25 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY)
 
         if(RenderScreenSpaceReflections)
         {
-            mSceneMap.allocate(resX, resY, screenFormat, true);
+            //mSceneMap.allocate(resX, resY, screenFormat, true);
+            //We plan a setting. For now e go with a reasonable value
+            mSceneMap.allocate(512, 512, screenFormat, true);
         }
         else
         {
             mSceneMap.release();
         }
 
-        //mPostMaps[0].allocate(resX, resY, screenFormat);
-        //mPostMaps[1].allocate(resX, resY, screenFormat);
-        mPostMaps[0].allocate(resX, resY, GL_RGBA);
-        mPostMaps[1].allocate(resX, resY, GL_RGBA);
+        if((hdr && MPColorPrecision == 2) || mHDRDisplay)
+        {
+            mPostMaps[0].allocate(resX, resY, screenFormat);
+            mPostMaps[1].allocate(resX, resY, screenFormat);
+        }
+        else
+        {
+            mPostMaps[0].allocate(resX, resY, GL_RGBA);
+            mPostMaps[1].allocate(resX, resY, GL_RGBA);
+        }
 
         // The water exclusion mask needs its own depth buffer so we can take care of the problem of multiple water planes.
         // Should we ever make water not just a plane, it also aids with that as well as the water planes will be rendered into the mask.
@@ -975,7 +995,7 @@ bool LLPipeline::allocateShadowBuffer(U32 resX, U32 resY)
     U32 sun_shadow_map_width = resX * scale;
     U32 sun_shadow_map_height = resY * scale;
 
-    if (shadow_detail > 0)
+    if (shadow_detail > 0 && shadow_detail < 3)
     { //allocate 4 sun shadow maps
         for (U32 i = 0; i < 4; i++)
         {
@@ -1311,17 +1331,21 @@ void LLPipeline::createGLBuffers()
     // allocate screen space glow buffers
     const U32 glow_res = llmax(1, llmin(512, 1 << gSavedSettings.getS32("RenderGlowResolutionPow")));
     const bool glow_hdr = gSavedSettings.getBOOL("RenderGlowHDR");
-    const U32 glow_color_fmt = glow_hdr ? GL_RGBA16F : GL_RGBA8;
+    static LLCachedControl<U32> MPColorPrecision(gSavedSettings, "MPColorPrecision", 0);
+
+    U32 glow_color_fmt = glow_hdr ? GL_RGBA16F : GL_RGBA8;
+    if(MPColorPrecision == 2) glow_color_fmt = GL_RGBA16F;
+
     for (U32 i = 0; i < 3; i++)
     {
         mGlow[i].allocate(512, glow_res, glow_color_fmt);
     }
 
-    mBloomMap.allocate(resX/2.0, resY/2.0, glow_color_fmt);
+    mBloomMap.allocate(512, 256, glow_color_fmt);
 
     for (U32 i = 0; i < 2; i++)
     {
-        mBloomBlur[i].allocate(resX/2.0, resY/2.0, glow_color_fmt);
+        mBloomBlur[i].allocate(512, 256, glow_color_fmt);
     }
 
     allocateScreenBuffer(resX, resY);
@@ -3867,6 +3891,10 @@ void render_hud_elements()
     gGL.color4f(1, 1, 1, 1);
     LLGLDepthTest depth(GL_TRUE, GL_FALSE);
 
+    static LLCachedControl<bool> HDRDisplay(gSavedSettings, "MPHDRDisplay");
+    static LLCachedControl<F32> hdrUIBoost(gSavedSettings, "MPHDRUIBoost");
+    if(HDRDisplay) gUIProgram.uniform1f(LLShaderMgr::MP_HDR_BOOST, (GLfloat)hdrUIBoost);
+
     if (!LLPipeline::sReflectionRender && gPipeline.hasRenderDebugFeatureMask(LLPipeline::RENDER_DEBUG_FEATURE_UI))
     {
         gViewerWindow->renderSelections(false, false, false); // For HUD version in render_ui_3d()
@@ -5797,19 +5825,22 @@ void LLPipeline::setupHWLights()
         mSunDiffuse.setVec(psky->getSunlightColor());
         mMoonDiffuse.setVec(psky->getMoonlightColor());
 
-        F32 max_color = llmax(mSunDiffuse.mV[0], mSunDiffuse.mV[1], mSunDiffuse.mV[2]);
-        if (max_color > 1.f)
+        if(!mHDRDisplay)
         {
-            mSunDiffuse *= 1.f/max_color;
-        }
-        mSunDiffuse.clamp();
+            F32 max_color = llmax(mSunDiffuse.mV[0], mSunDiffuse.mV[1], mSunDiffuse.mV[2]);
+            if (max_color > 1.f)
+            {
+                mSunDiffuse *= 1.f/max_color;
+            }
+            mSunDiffuse.clamp();
 
-        max_color = llmax(mMoonDiffuse.mV[0], mMoonDiffuse.mV[1], mMoonDiffuse.mV[2]);
-        if (max_color > 1.f)
-        {
-            mMoonDiffuse *= 1.f/max_color;
+            max_color = llmax(mMoonDiffuse.mV[0], mMoonDiffuse.mV[1], mMoonDiffuse.mV[2]);
+            if (max_color > 1.f)
+            {
+                mMoonDiffuse *= 1.f/max_color;
+            }
+            mMoonDiffuse.clamp();
         }
-        mMoonDiffuse.clamp();
 
         // prevent underlighting from having neither lightsource facing us
         if (!sun_up && !moon_up)
@@ -7072,9 +7103,8 @@ static LLTrace::BlockTimerStatHandle FTM_RENDER_BLOOM("Post processing");
 void LLPipeline::visualizeBuffers(LLRenderTarget* src, LLRenderTarget* dst, U32 bufferIndex)
 {
     dst->bindTarget("visualizeBuffers", 1);
-    dst->clear();
     gDeferredBufferVisualProgram.bind();
-    gDeferredBufferVisualProgram.bindTexture(LLShaderMgr::DEFERRED_DIFFUSE, src, false, LLTexUnit::TFO_BILINEAR, bufferIndex);
+    gDeferredBufferVisualProgram.bindTexture(LLShaderMgr::DEFERRED_DIFFUSE, src, false, LLTexUnit::TFO_POINT, bufferIndex);
 
     static LLStaticHashedString mipLevel("mipLevel");
     if (RenderBufferVisualization != 4)
@@ -7152,7 +7182,7 @@ void LLPipeline::generateExposure(LLRenderTarget* src, LLRenderTarget* dst, bool
         }
 
         dst->bindTarget("generateExposure", 1);
-        //dst->clear();
+        dst->clear();
 
         LLGLDepthTest depth(GL_FALSE, GL_FALSE);
 
@@ -7320,9 +7350,20 @@ void LLPipeline::gammaCorrect(LLRenderTarget* src, LLRenderTarget* dst)
         LLGLSLShader& shader = psky->getReflectionProbeAmbiance(should_auto_adjust) == 0.f ? gLegacyPostGammaCorrectProgram :
             gDeferredPostGammaCorrectProgram;
 
+        static LLCachedControl<F32> mp_hdr_boost(gSavedSettings, "MPHDRBoost", false);
+        static LLCachedControl<F32> mp_hdr_gamma(gSavedSettings, "MPHDRGamma", false);
+        if(mHDRDisplay) shader = gHDRGammaCorrectProgram;
+
         shader.bind();
         shader.bindTexture(LLShaderMgr::DEFERRED_DIFFUSE, src, false, LLTexUnit::TFO_POINT);
-        shader.uniform2f(LLShaderMgr::DEFERRED_SCREEN_RES, (GLfloat)src->getWidth(), (GLfloat)src->getHeight());
+        //screensize isn't a uniform int he shader, we comment out for now
+        //shader.uniform2f(LLShaderMgr::DEFERRED_SCREEN_RES, (GLfloat)src->getWidth(), (GLfloat)src->getHeight());
+
+        if(mHDRDisplay)
+        {
+            shader.uniform1f(LLShaderMgr::GAMMA, (GLfloat)mp_hdr_gamma);
+            shader.uniform1f(LLShaderMgr::MP_HDR_BOOST, (GLfloat)mp_hdr_boost);
+        }
 
         renderTriangle();
 
@@ -8046,6 +8087,9 @@ bool LLPipeline::renderBloom(LLRenderTarget* src, LLRenderTarget* dst)
     static LLCachedControl<F32> mp_bloom_metal(gSavedSettings, "MPBloomExtractMetal", 0.2);
     static LLCachedControl<F32> mp_bloom_nonmetal(gSavedSettings, "MPBloomExtractNonMetal", 0.2);
 
+    F32 clampValue = 1.0;
+    if(mHDRDisplay) clampValue = 11.0;
+
     LLGLDepthTest depth(GL_FALSE, GL_FALSE);
     LLGLDisable blend(GL_BLEND);
 
@@ -8055,7 +8099,7 @@ bool LLPipeline::renderBloom(LLRenderTarget* src, LLRenderTarget* dst)
     mBloomMap.clear();
 
     gBloomExtractProgram.bind();
-    gBloomExtractProgram.bindTexture(LLShaderMgr::DIFFUSE_MAP, src);
+    gBloomExtractProgram.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mRT->screen);
     gBloomExtractProgram.bindTexture(LLShaderMgr::BLOOM_EXTRACT_ORM, &mRT->deferredScreen, false, LLTexUnit::TFO_POINT, 1);
     gBloomExtractProgram.bindTexture(LLShaderMgr::BLOOM_EXTRACT_EMISSIVE, &mGlow[1], false, LLTexUnit::TFO_POINT, 0);
     gBloomExtractProgram.bindTexture(LLShaderMgr::BLOOM_EXTRACT_EMISSIVE2, &mRT->deferredScreen, false, LLTexUnit::TFO_POINT, 3);
@@ -8138,6 +8182,7 @@ bool LLPipeline::renderBloom(LLRenderTarget* src, LLRenderTarget* dst)
     gBloomCombineProgram.bindTexture(LLShaderMgr::DIFFUSE_MAP, src);
     gBloomCombineProgram.bindTexture(LLShaderMgr::BLOOM_BMAP, &mBloomBlur[1]);
     gBloomCombineProgram.uniform1f(LLShaderMgr::BLOOM_STRENGTH, mp_bloom_strength);
+    gBloomCombineProgram.uniform1f(LLShaderMgr::BLOOM_CLAMP, clampValue);
 
     renderTriangle();
 
@@ -8183,36 +8228,41 @@ void LLPipeline::renderFinalize()
     {
         copyScreenSpaceReflections(&mRT->screen, &mSceneMap);
 
-        generateLuminance(&mRT->screen, &mLuminanceMap);
+        if(!mHDRDisplay)
+        {
+            generateLuminance(&mRT->screen, &mLuminanceMap);
+            generateExposure(&mLuminanceMap, &mExposureMap);
 
-        generateExposure(&mLuminanceMap, &mExposureMap);
-
-        tonemap(&mRT->screen, &mRT->deferredLight);
-
-        postHDRBuffer = &mRT->deferredLight;
-
+            tonemap(&mRT->screen, &mRT->deferredLight);
+            postHDRBuffer = &mRT->deferredLight;
+        }
     }
 
-    gammaCorrect(postHDRBuffer, &mPostMaps[0]);
+    gammaCorrect(postHDRBuffer, &mPostMaps[activeRT]);
 
-    generateGlow(&mPostMaps[0]);
+
+    if(hdr)
+    {
+        generateGlow(&mPostMaps[activeRT]);
+    }
 
     LLVertexBuffer::unbind();
 
-    if(renderBloom(&mPostMaps[activeRT], &mPostMaps[1 - activeRT]))
+    if(hdr)
     {
-        activeRT = 1 - activeRT;
+        if(renderBloom(&mPostMaps[activeRT], &mPostMaps[1 - activeRT]))
+        {
+            activeRT = 1 - activeRT;
+        }
     }
 
-    combineGlow(&mPostMaps[activeRT], &mPostMaps[1 - activeRT]);
-    activeRT = 1 - activeRT;
+    if(hdr)
+    {
+        combineGlow(&mPostMaps[activeRT], &mPostMaps[1 - activeRT]);
+        activeRT = 1 - activeRT;
+    }
 
     if(applyFXAA(&mPostMaps[activeRT], &mPostMaps[1 - activeRT]))
-    {
-        activeRT = 1 - activeRT;
-    }
-
-    if(applyCAS(&mPostMaps[activeRT], &mPostMaps[1 - activeRT]))
     {
         activeRT = 1 - activeRT;
     }
@@ -8222,6 +8272,14 @@ void LLPipeline::renderFinalize()
         activeRT = 1 - activeRT;
     }
 
+    if(!mHDRDisplay)
+    {
+        //CAS breaks the hdr colors for now.
+        if(applyCAS(&mPostMaps[activeRT], &mPostMaps[1 - activeRT]))
+        {
+            activeRT = 1 - activeRT;
+        }
+    }
 
     if(renderDoF(&mPostMaps[activeRT], &mPostMaps[1 - activeRT]))
     {
@@ -8279,6 +8337,15 @@ void LLPipeline::renderFinalize()
             break;
         case 13:
             visualizeBuffers(&mSceneMap, finalBuffer, 0);
+            break;
+        case 14:
+            visualizeBuffers(&mRT->screen, finalBuffer, 0);
+            break;
+        case 15:
+            visualizeBuffers(&mRT->deferredLight, finalBuffer, 0);
+            break;
+        case 16:
+            visualizeBuffers(&mPostMaps[1-activeRT], finalBuffer, 0);
             break;
         default:
             break;
@@ -8699,7 +8766,7 @@ void LLPipeline::renderDeferredLighting()
         tc_moon = mat * tc_moon;
         mTransformedMoonDir.set(tc_moon);
 
-        if ((RenderDeferredSSAO && !gCubeSnapshot) || RenderShadowDetail > 0)
+        if ((RenderDeferredSSAO && !gCubeSnapshot) || (RenderShadowDetail > 0 && RenderShadowDetail < 4))
         {
             LL_PROFILE_GPU_ZONE("sun program");
             deferred_light_target->bindTarget("sun_shader", 1);
@@ -10357,7 +10424,7 @@ void LLPipeline::generateSunShadow(LLCamera& camera)
     // convenience array of 4 near clip plane distances
     F32 dist[] = { near_clip, mSunClipPlanes.mV[0], mSunClipPlanes.mV[1], mSunClipPlanes.mV[2], mSunClipPlanes.mV[3] };
 
-    if (mSunDiffuse == LLColor4::black)
+    if (mSunDiffuse == LLColor4::black || RenderShadowDetail == 3)
     { //sun diffuse is totally black shadows don't matter
         skipRenderingShadows();
     }

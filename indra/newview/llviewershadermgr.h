@@ -254,6 +254,7 @@ extern LLGLSLShader         gDeferredPostNoDoFProgram;
 extern LLGLSLShader         gDeferredPostNoDoFNoiseProgram;
 extern LLGLSLShader         gDeferredPostGammaCorrectProgram;
 extern LLGLSLShader         gLegacyPostGammaCorrectProgram;
+extern LLGLSLShader         gHDRGammaCorrectProgram;
 extern LLGLSLShader         gDeferredPostTonemapProgram;
 extern LLGLSLShader         gNoPostTonemapProgram;
 extern LLGLSLShader         gExposureProgram;

@@ -202,6 +202,7 @@ LLGLSLShader            gDeferredPostTonemapProgram;
 LLGLSLShader            gNoPostTonemapProgram;
 LLGLSLShader            gDeferredPostGammaCorrectProgram;
 LLGLSLShader            gLegacyPostGammaCorrectProgram;
+LLGLSLShader            gHDRGammaCorrectProgram;
 LLGLSLShader            gExposureProgram;
 LLGLSLShader            gExposureProgramNoFade;
 LLGLSLShader            gLuminanceProgram;
@@ -449,6 +450,7 @@ void LLViewerShaderMgr::finalizeShaderList()
     mShaderList.push_back(&gNoPostTonemapProgram);
     mShaderList.push_back(&gDeferredPostGammaCorrectProgram); // for gamma
     mShaderList.push_back(&gLegacyPostGammaCorrectProgram);
+    mShaderList.push_back(&gHDRGammaCorrectProgram);
     mShaderList.push_back(&gDeferredDiffuseProgram);
     mShaderList.push_back(&gDeferredBumpProgram);
     mShaderList.push_back(&gDeferredPBROpaqueProgram);
@@ -806,9 +808,12 @@ std::string LLViewerShaderMgr::loadBasicShaders()
 
     if (shadow_detail >= 1)
     {
-        attribs["SUN_SHADOW"] = "1";
+        if(shadow_detail < 3)
+        {
+            attribs["SUN_SHADOW"] = "1";
+        }
 
-        if (shadow_detail >= 2)
+        if (shadow_detail > 1)
         {
             attribs["SPOT_SHADOW"] = "1";
         }
@@ -906,8 +911,9 @@ bool LLViewerShaderMgr::loadShadersWater()
     bool success = true;
     bool terrainWaterSuccess = true;
 
+    S32 shadow_detail = gSavedSettings.getS32("RenderShadowDetail");
     bool use_sun_shadow = mShaderLevel[SHADER_DEFERRED] > 1 &&
-        gSavedSettings.getS32("RenderShadowDetail") > 0;
+        shadow_detail > 0 && shadow_detail < 3;
 
     if (mShaderLevel[SHADER_WATER] == 0)
     {
@@ -1157,6 +1163,7 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gLuminanceProgram.unload();
         gDeferredPostGammaCorrectProgram.unload();
         gLegacyPostGammaCorrectProgram.unload();
+        gHDRGammaCorrectProgram.unload();
         gDeferredPostTonemapProgram.unload();
         gNoPostTonemapProgram.unload();
         for (auto i = 0; i < 4; ++i)
@@ -2495,6 +2502,21 @@ bool LLViewerShaderMgr::loadShadersDeferred()
         gLegacyPostGammaCorrectProgram.mShaderFiles.push_back(make_pair("deferred/postDeferredGammaCorrect.glsl", GL_FRAGMENT_SHADER));
         gLegacyPostGammaCorrectProgram.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
         success = gLegacyPostGammaCorrectProgram.createShader();
+        llassert(success);
+    }
+
+    if (success)
+    {
+        gHDRGammaCorrectProgram.mName = "HDR Gamma Correction Post Process";
+        gHDRGammaCorrectProgram.mFeatures.hasSrgb = true;
+        gHDRGammaCorrectProgram.mFeatures.isDeferred = true;
+        gHDRGammaCorrectProgram.mShaderFiles.clear();
+        gHDRGammaCorrectProgram.clearPermutations();
+        //gHDRGammaCorrectProgram.addPermutation("HDR_GAMMA", "1");
+        gHDRGammaCorrectProgram.mShaderFiles.push_back(make_pair("deferred/postDeferredNoTCV.glsl", GL_VERTEX_SHADER));
+        gHDRGammaCorrectProgram.mShaderFiles.push_back(make_pair("deferred/MPHDRDisplayGammaF.glsl", GL_FRAGMENT_SHADER));
+        gHDRGammaCorrectProgram.mShaderLevel = mShaderLevel[SHADER_DEFERRED];
+        success = gHDRGammaCorrectProgram.createShader();
         llassert(success);
     }
 

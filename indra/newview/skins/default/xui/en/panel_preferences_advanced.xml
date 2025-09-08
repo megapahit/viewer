@@ -213,7 +213,6 @@
      layout="topleft"
      left="30"
      name="stream_notification_channel_enabled"
-     top_pad="10"
      width="256">
     </check_box>
     <spinner
@@ -251,7 +250,7 @@
      layout="topleft"
      left="30"
      name="allow_multiple_viewer_check"
-     top_pad="20"
+     top_pad="15"
      width="237"/>
     <check_box
      control_name="ForceShowGrid"

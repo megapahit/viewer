@@ -305,6 +305,7 @@ extern bool gDebugGL;
 
 #if LL_DARWIN
 extern bool gHiDPISupport;
+extern bool gHDRDisplaySupport;
 #endif
 
 ////////////////////////////////////////////////////////////
@@ -581,6 +582,7 @@ static void settings_to_globals()
     LLWindowMacOSX::sUseMultGL = gSavedSettings.getBOOL("RenderAppleUseMultGL");
 #endif // LL_SDL
     gHiDPISupport = gSavedSettings.getBOOL("RenderHiDPI");
+    gHDRDisplaySupport = gSavedSettings.getBOOL("MPHDRDisplay");
 #endif
 }
 
@@ -1297,11 +1299,15 @@ void LLAppViewer::initMaxHeapSize()
     //------------------------------------------------------------------------------------------
     //currently SL is built under 32-bit setting, we set its max heap size no more than 1.6 GB.
 
- #ifndef LL_X86_64
+/*
+#ifndef LL_X86_64
     F32Gigabytes max_heap_size_gb = (F32Gigabytes)gSavedSettings.getF32("MaxHeapSize") ;
 #else
+*/
     F32Gigabytes max_heap_size_gb = (F32Gigabytes)gSavedSettings.getF32("MaxHeapSize64");
+/*
 #endif
+*/
 
     LLMemory::initMaxHeapSizeGB(max_heap_size_gb);
 }

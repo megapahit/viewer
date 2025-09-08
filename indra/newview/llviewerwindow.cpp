@@ -1967,7 +1967,8 @@ LLViewerWindow::LLViewerWindow(const Params& p)
     LL_DEBUGS("Window") << "Loading feature tables." << LL_ENDL;
 
     // Initialize OpenGL Renderer
-    LLVertexBuffer::initClass(mWindow);
+    LLVertexBuffer::initClass(mWindow, gSavedSettings.getU32("MPVertexBufferMode"));
+
     LL_INFOS("RenderInit") << "LLVertexBuffer initialization done." << LL_ENDL ;
     if (!gGL.init(true))
     {
@@ -4829,13 +4830,21 @@ void LLViewerWindow::saveImageLocal(LLImageFormatted *image, const snapshot_save
     auto err = 0;
     auto extension("." + image->getExtension());
     auto now = LLDate::now();
+    static LLCachedControl<bool> snapshot_timestamp(gSavedSettings, "SnapshotTimestamp", true);
     do
     {
         filepath = sSnapshotDir;
         filepath += gDirUtilp->getDirDelimiter();
         filepath += sSnapshotBaseName;
+        if (snapshot_timestamp)
+        {
         filepath += now.toLocalDateString("_%Y-%m-%d_%H%M%S");
         filepath += llformat("%.2d", i);
+        }
+        else if (is_snapshot_name_loc_set)
+        {
+            filepath += llformat("_%.3d", i);
+        }
         filepath += extension;
 
         llstat stat_info;
@@ -5177,7 +5186,7 @@ bool LLViewerWindow::rawSnapshot(LLImageRaw *raw, S32 image_width, S32 image_hei
                             glReadPixels(
                                          subimage_x_offset, out_y + subimage_y_offset,
                                          read_width, 1,
-                                         GL_DEPTH_COMPONENT, GL_FLOAT,
+                                         GL_DEPTH_COMPONENT, GL_UNSIGNED_INT,
                                          depth_line_buffer->getData()// current output pixel is beginning of buffer...
                                          );
 
