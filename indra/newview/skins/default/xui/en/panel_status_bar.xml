@@ -188,15 +188,21 @@
      <button
      type="string"
      font="SansSerif"
+     image_unselected="mp_fpsButton"
+     image_selected="mp_fpsButton"
+     image_hover_unselected="mp_fpsButton"
+     image_pressed="mp_fpsButton"
+     image_pressed_selected="mp_fpsButton"
+     image_color="White"
      label_color="FpsTextColor"
      follows="right|top"
      halign="center"
      valign="center"
      height="18"
      top="1"
-     left_pad="4"
+     left_pad="2"
      name="FpsText"
-     tool_tip="fps"
+     tool_tip="fps: Color indicates frametime fluctuations (Green is optimal)"
      width="32">
      60
      </button>

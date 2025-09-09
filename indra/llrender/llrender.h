@@ -421,6 +421,7 @@ public:
     LLVector3 getUITranslation();
     LLVector3 getUIScale();
 
+    void flush(std::string comment_);
     void flush();
 
     // if list is set, will store buffers in list for later use, if list isn't set, will use cache
@@ -428,7 +429,7 @@ public:
     void endList();
 
     void begin(const GLuint& mode);
-    void end();
+    void end(std::string comment_ = "");
 
     U8 getMode() const { return mMode; }
 

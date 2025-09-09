@@ -33,6 +33,7 @@ class LLCharacter;
 class LLCheckBoxCtrl;
 class LLNameListCtrl;
 class LLTextBox;
+class LLSliderCtrl;
 
 class LLFloaterPerformance : public LLFloater
 {

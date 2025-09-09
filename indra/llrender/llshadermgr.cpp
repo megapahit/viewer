@@ -571,7 +571,7 @@ GLuint LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shader_lev
             }
             else
             {
-                shader_code_text[shader_code_count++] = strdup("#version 400\n");
+                shader_code_text[shader_code_count++] = strdup("#version 410\n");
             }
         }
         else if (major_version == 3)
@@ -1500,6 +1500,20 @@ void LLShaderMgr::initAttribsAndUniforms()
     mReservedUniforms.push_back("areaTex");
     mReservedUniforms.push_back("searchTex");
     mReservedUniforms.push_back("blendTex");
+
+    mReservedUniforms.push_back("bloomEMap");
+    mReservedUniforms.push_back("bloomBlurredMap");
+    mReservedUniforms.push_back("bloomHorizontal");
+    mReservedUniforms.push_back("bloomBlurRadius");
+    mReservedUniforms.push_back("bloomExtractBrightness");
+    mReservedUniforms.push_back("bloomStrength");
+    mReservedUniforms.push_back("bloomExtractEmissive");
+    mReservedUniforms.push_back("bloomExtractEmissive2");
+    mReservedUniforms.push_back("bloomExtractORM");
+    mReservedUniforms.push_back("bloomExtractMetal");
+    mReservedUniforms.push_back("bloomExtractNonMetal");
+    mReservedUniforms.push_back("bloomClampValue");
+    mReservedUniforms.push_back("mpHDRBoost");
 
     llassert(mReservedUniforms.size() == END_RESERVED_UNIFORMS);
 

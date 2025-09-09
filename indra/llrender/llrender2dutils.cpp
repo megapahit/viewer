@@ -833,8 +833,7 @@ void gl_line_3d( const LLVector3& start, const LLVector3& end, const LLColor4& c
 {
     gGL.color4f(color.mV[VRED], color.mV[VGREEN], color.mV[VBLUE], color.mV[VALPHA]);
 
-    gGL.flush();
-    glLineWidth(2.5f);
+    LLRender2D::setLineWidth(2.5f);
 
     gGL.begin(LLRender::LINES);
     {

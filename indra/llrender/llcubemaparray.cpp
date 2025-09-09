@@ -114,6 +114,8 @@ LLCubeMapArray::LLCubeMapArray(LLCubeMapArray& lhs, U32 width, U32 count) : mTex
     allocate(mWidth, lhs.mImage->getComponents(), count, lhs.mImage->getUseMipMaps(), lhs.mHDR);
 
     // Copy each cubemap from the incoming array to the new array
+    // The call to glTexSubImage3D causes an INVALID OPERATION OpenGL error. For now we comment this..
+    /*
     U32 min_count = std::min(count, lhs.mCount);
     for (U32 i = 0; i < min_count * 6; ++i)
     {
@@ -133,6 +135,7 @@ LLCubeMapArray::LLCubeMapArray(LLCubeMapArray& lhs, U32 width, U32 count) : mTex
             glTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, 0, 0, i, mWidth, mWidth, 1, components, GL_UNSIGNED_BYTE, scaled_image->getData());
         }
     }
+    */
 }
 
 LLCubeMapArray::~LLCubeMapArray()

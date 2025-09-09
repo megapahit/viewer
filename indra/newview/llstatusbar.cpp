@@ -304,9 +304,21 @@ void LLStatusBar::refresh()
         mFpsUpdateTimer->reset();
 
         S32 fps = (S32) llround(LLTrace::get_frame_recording().getPeriodMedianPerSec(LLStatViewer::FPS, 50));
+        if(fps < 1) fps = 1;
+
+        S32 minFps = (S32) llround(LLTrace::get_frame_recording().getPeriodMinPerSec(LLStatViewer::FPS, 50));
+        S32 maxFps = (S32) llround(LLTrace::get_frame_recording().getPeriodMaxPerSec(LLStatViewer::FPS, 50));
+
+        F32 fpsQuality = (F32)minFps / (F32)fps;
+
         std::string fpsStr = std::to_string(fps);
-        //mTextFps->setText(fpsStr);
+
         mTextFps->setLabel(fpsStr);
+
+        if(fpsQuality < 0.5) mTextFps->setColor(LLColor4(0.6,0.0,0.0));
+        else if(fpsQuality < 0.7) mTextFps->setColor(LLColor4(0.7,0.5,0.0));
+        else if(fpsQuality < 0.9) mTextFps->setColor(LLColor4(0.5,0.7,0.0));
+        else mTextFps->setColor(LLColor4(0.0, 0.7, 0.15));
     }
 
     // update clock every 10 seconds

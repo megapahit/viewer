@@ -29,7 +29,6 @@
 #include "llfasttimer.h"
 #include "llsys.h"
 #include "llvertexbuffer.h"
-// #include "llrender.h"
 #include "llglheaders.h"
 #include "llrender.h"
 #include "llvector4a.h"
@@ -272,13 +271,13 @@ static GLuint gen_buffer()
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_VERTEX("gen buffer");
         sIndex = pool_size;
-#if !LL_DARWIN
+//#if !LL_DARWIN
         if (!gGLManager.mIsAMD)
         {
             glGenBuffers(pool_size, sNamePool);
         }
         else
-#endif
+//#endif
         { // work around for AMD driver bug
             for (U32 i = 0; i < pool_size; ++i)
             {
@@ -345,7 +344,7 @@ public:
     void allocate(GLenum type, U32 size, GLuint& name, U8*& data) override
     {
         LL_PROFILE_ZONE_SCOPED_CATEGORY_VERTEX;
-        STOP_GLERROR;
+
         llassert(type == GL_ARRAY_BUFFER || type == GL_ELEMENT_ARRAY_BUFFER);
         llassert(name == 0); // non zero name indicates a gl name that wasn't freed
         llassert(data == nullptr);  // non null data indicates a buffer that wasn't freed
@@ -355,10 +354,18 @@ public:
 
         { //allocate a new buffer
             LL_PROFILE_GPU_ZONE("vbo alloc");
-            // ON OS X, we don't allocate a VBO until the last possible moment
-            // in unmapBuffer
             data = (U8*) ll_aligned_malloc_16(size);
-            STOP_GLERROR;
+
+            if (type == GL_ARRAY_BUFFER)
+            {
+                glGenBuffers(1, &name);
+                LLVertexBuffer::sGLRenderBuffer = name;
+            }
+            else
+            {
+                glGenBuffers(1, &name);
+                LLVertexBuffer::sGLRenderIndices = name;
+            }
         }
     }
 
@@ -374,12 +381,11 @@ public:
         }
 
         mAllocated -= size;
-        STOP_GLERROR;
         if (name)
         {
             delete_buffers(1, &name);
         }
-        STOP_GLERROR;
+        //LOG_GLERROR("LLAppleVBOPool::free()");
     }
 };
 
@@ -606,6 +612,8 @@ public:
 
 static LLVBOPool* sVBOPool = nullptr;
 
+static U32 sMPVertexBufferMode = 0;
+
 void LLVertexBufferData::drawWithMatrix()
 {
     if (!mVB)
@@ -783,7 +791,6 @@ void LLVertexBuffer::drawElements(U32 mode, const LLVector4a* pos, const LLVecto
     LL_PROFILE_ZONE_SCOPED_CATEGORY_VERTEX;
     llassert(LLGLSLShader::sCurBoundShaderPtr != NULL);
 
-    STOP_GLERROR;
 
     gGL.syncMatrices();
 
@@ -909,10 +916,8 @@ void LLVertexBuffer::drawRange(U32 mode, U32 start, U32 end, U32 count, U32 indi
     llassert(mGLBuffer == sGLRenderBuffer);
     llassert(mGLIndices == sGLRenderIndices);
     gGL.syncMatrices();
-    STOP_GLERROR;
     glDrawRangeElements(sGLMode[mode], start, end, count, mIndicesType,
         (GLvoid*) (indices_offset * (size_t) mIndicesStride));
-    STOP_GLERROR;
 }
 
 void LLVertexBuffer::drawRangeFast(U32 mode, U32 start, U32 end, U32 count, U32 indices_offset) const
@@ -935,17 +940,18 @@ void LLVertexBuffer::drawArrays(U32 mode, U32 first, U32 count) const
     llassert(mGLIndices == sGLRenderIndices);
 
     gGL.syncMatrices();
-    STOP_GLERROR;
     glDrawArrays(sGLMode[mode], first, count);
-    STOP_GLERROR;
+    LOG_GLERROR("LLVertexBuffer::drawArrays()");
 }
 
 //static
-void LLVertexBuffer::initClass(LLWindow* window)
+void LLVertexBuffer::initClass(LLWindow* window, U32 mode_)
 {
     llassert(sVBOPool == nullptr);
 
-    if (gGLManager.mIsApple)
+    sMPVertexBufferMode = mode_;
+
+    if (mode_ == 0 && gGLManager.mIsApple)
     {
         LL_INFOS() << "VBO Pooling Disabled" << LL_ENDL;
         sVBOPool = new LLAppleVBOPool();
@@ -968,12 +974,16 @@ void LLVertexBuffer::initClass(LLWindow* window)
 }
 
 //static
+U32 LLVertexBuffer::getVertexBufferMode()
+{
+    return sMPVertexBufferMode;
+}
+
+//static
 void LLVertexBuffer::unbind()
 {
-    STOP_GLERROR;
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    STOP_GLERROR;
     sGLRenderBuffer = 0;
     sGLRenderIndices = 0;
 }
@@ -1288,7 +1298,7 @@ U8* LLVertexBuffer::mapVertexBuffer(LLVertexBuffer::AttributeType type, U32 inde
         count = mNumVerts - index;
     }
 
-    if (!gGLManager.mIsApple)
+    if (!gGLManager.mIsApple || sMPVertexBufferMode == 1)
     {
         U32 start = mOffsets[type] + sTypeSize[type] * index;
         U32 end = start + sTypeSize[type] * count-1;
@@ -1325,7 +1335,7 @@ U8* LLVertexBuffer::mapIndexBuffer(U32 index, S32 count)
         count = mNumIndices-index;
     }
 
-    if (!gGLManager.mIsApple)
+    if (!gGLManager.mIsApple || sMPVertexBufferMode == 1)
     {
         U32 start = sizeof(U16) * index;
         U32 end = start + sizeof(U16) * count-1;
@@ -1362,13 +1372,35 @@ void LLVertexBuffer::flush_vbo(GLenum target, U32 start, U32 end, void* data, U8
 {
     if (gGLManager.mIsApple)
     {
+        if(sMPVertexBufferMode == 1)
+        {
+            //LL_WARNS() << "flush_vbo mode 1" << LL_ENDL;
+
+            U32 MapBits = GL_MAP_WRITE_BIT;
+            //U32 MapBits = GL_MAP_READ_BIT;
+            U32 buffer_size = end-start+1;
+
+            U8 * mptr = NULL;
+            mptr = (U8*) glMapBufferRange( target, start, end-start+1, MapBits);
+
+            if (mptr)
+            {
+                std::memcpy(mptr, (U8*) data, buffer_size);
+                if(!glUnmapBuffer(target)) LL_WARNS() << "glUnmapBuffer() failed" << LL_ENDL;
+            }
+            else LL_WARNS() << "glMapBufferRange() returned NULL" << LL_ENDL;
+
+        }
+        else
+        {
+            //LL_WARNS() << "flush_vbo mode 0" << LL_ENDL;
         // on OS X, flush_vbo doesn't actually write to the GL buffer, so be sure to call
         // _mapBuffer to tag the buffer for flushing to GL
         _mapBuffer();
         LL_PROFILE_ZONE_NAMED_CATEGORY_VERTEX("vb memcpy");
-        STOP_GLERROR;
         // copy into mapped buffer
         memcpy(dst+start, data, end-start+1);
+        }
     }
     else
     {
@@ -1412,7 +1444,6 @@ void LLVertexBuffer::_mapBuffer()
 
 void LLVertexBuffer::_unmapBuffer()
 {
-    STOP_GLERROR;
     if (!mMapped)
     {
         return;
@@ -1426,16 +1457,16 @@ void LLVertexBuffer::_unmapBuffer()
         }
     };
 
-    if (gGLManager.mIsApple)
+    if (gGLManager.mIsApple && sMPVertexBufferMode == 0)
     {
-        STOP_GLERROR;
+        LOG_GLERROR("LLVertexBuffer::_unmapBuffer() - apple 1");
         if (mMappedData)
         {
-            if (mGLBuffer)
+            if(mGLBuffer == 0)
             {
-                delete_buffers(1, &mGLBuffer);
+                LL_WARNS() << "mGLBuffer is ZERO in unmapbuffer" << LL_ENDL;
+                glGenBuffers(1, &mGLBuffer);
             }
-            mGLBuffer = gen_buffer();
             glBindBuffer(GL_ARRAY_BUFFER, mGLBuffer);
             sGLRenderBuffer = mGLBuffer;
             glBufferData(GL_ARRAY_BUFFER, mSize, mMappedData, GL_STATIC_DRAW);
@@ -1445,16 +1476,16 @@ void LLVertexBuffer::_unmapBuffer()
             glBindBuffer(GL_ARRAY_BUFFER, mGLBuffer);
             sGLRenderBuffer = mGLBuffer;
         }
-        STOP_GLERROR;
+        LOG_GLERROR("LLVertexBuffer::_unmapBuffer() - apple 2");
 
         if (mMappedIndexData)
         {
-            if (mGLIndices)
+            if (mGLIndices == 0)
             {
-                delete_buffers(1, &mGLIndices);
+                LL_WARNS() << "mGLIndices is ZERO in unmapbuffer" << LL_ENDL;
+                glGenBuffers(1, &mGLIndices);
             }
 
-            mGLIndices = gen_buffer();
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mGLIndices);
             sGLRenderIndices = mGLIndices;
 
@@ -1465,7 +1496,7 @@ void LLVertexBuffer::_unmapBuffer()
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mGLIndices);
             sGLRenderIndices = mGLIndices;
         }
-        STOP_GLERROR;
+        LOG_GLERROR("LLVertexBuffer::_unmapBuffer() - apple 3");
     }
     else
     {
@@ -1656,11 +1687,10 @@ bool LLVertexBuffer::getClothWeightStrider(LLStrider<LLVector4>& strider, U32 in
 // Set for rendering
 void LLVertexBuffer::setBuffer()
 {
-    STOP_GLERROR;
 
     if (mMapped)
     {
-        LL_WARNS_ONCE() << "Missing call to unmapBuffer or flushBuffers" << LL_ENDL;
+        LL_WARNS() << "Missing call to unmapBuffer or flushBuffers" << LL_ENDL;
         _unmapBuffer();
     }
 
@@ -1680,6 +1710,11 @@ void LLVertexBuffer::setBuffer()
 
     if (sGLRenderBuffer != mGLBuffer)
     {
+        if(mGLBuffer == 0)
+        {
+            LL_WARNS() << "mGLBuffer is ZERO: sGLRenderBuffer=" << sGLRenderBuffer << LL_ENDL;
+        }
+
         glBindBuffer(GL_ARRAY_BUFFER, mGLBuffer);
         sGLRenderBuffer = mGLBuffer;
 
@@ -1697,113 +1732,141 @@ void LLVertexBuffer::setBuffer()
         sGLRenderIndices = mGLIndices;
     }
 
-    STOP_GLERROR;
+    LOG_GLERROR("LLVertexBuffer::setBuffer()");
 }
 
 
 // virtual (default)
 void LLVertexBuffer::setupVertexBuffer()
 {
-    STOP_GLERROR;
+    LOG_GLERROR("LLVertexBuffer::setupVertexBuffer()");
     U8* base = nullptr;
-
-    AttributeType loc;
-    void* ptr = nullptr;
 
     U32 data_mask = LLGLSLShader::sCurBoundShaderPtr->mAttributeMask;
 
     if (data_mask & MAP_NORMAL)
     {
-        loc = TYPE_NORMAL;
-        ptr = (void*)(base + mOffsets[TYPE_NORMAL]);
+        AttributeType loc = TYPE_NORMAL;
+        void* ptr = (void*)(base + mOffsets[TYPE_NORMAL]);
         glVertexAttribPointer(loc, 3, GL_FLOAT, GL_FALSE, LLVertexBuffer::sTypeSize[TYPE_NORMAL], ptr);
+
+        LOG_GLERROR("LLVertexBuffer::setupVertexBuffer TYPE_NORMAL");
     }
     if (data_mask & MAP_TEXCOORD3)
     {
-        loc = TYPE_TEXCOORD3;
-        ptr = (void*)(base + mOffsets[TYPE_TEXCOORD3]);
+        AttributeType loc = TYPE_TEXCOORD3;
+        void* ptr = (void*)(base + mOffsets[TYPE_TEXCOORD3]);
         glVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, LLVertexBuffer::sTypeSize[TYPE_TEXCOORD3], ptr);
+
+        LOG_GLERROR("LLVertexBuffer::setupVertexBuffer TYPE_TEXCOORD3");
     }
     if (data_mask & MAP_TEXCOORD2)
     {
-        loc = TYPE_TEXCOORD2;
-        ptr = (void*)(base + mOffsets[TYPE_TEXCOORD2]);
+        AttributeType loc = TYPE_TEXCOORD2;
+        void* ptr = (void*)(base + mOffsets[TYPE_TEXCOORD2]);
         glVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, LLVertexBuffer::sTypeSize[TYPE_TEXCOORD2], ptr);
+
+        LOG_GLERROR("LLVertexBuffer::setupVertexBuffer TYPE_TEXCOORD2");
     }
     if (data_mask & MAP_TEXCOORD1)
     {
-        loc = TYPE_TEXCOORD1;
-        ptr = (void*)(base + mOffsets[TYPE_TEXCOORD1]);
+        AttributeType loc = TYPE_TEXCOORD1;
+        void* ptr = (void*)(base + mOffsets[TYPE_TEXCOORD1]);
         glVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, LLVertexBuffer::sTypeSize[TYPE_TEXCOORD1], ptr);
+
+        LOG_GLERROR("LLVertexBuffer::setupVertexBuffer TYPE_TEXCOORD1");
     }
     if (data_mask & MAP_TANGENT)
     {
-        loc = TYPE_TANGENT;
-        ptr = (void*)(base + mOffsets[TYPE_TANGENT]);
+        AttributeType loc = TYPE_TANGENT;
+        void* ptr = (void*)(base + mOffsets[TYPE_TANGENT]);
         glVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, LLVertexBuffer::sTypeSize[TYPE_TANGENT], ptr);
+
+        LOG_GLERROR("LLVertexBuffer::setupVertexBuffer TYPE_TANGENT");
     }
     if (data_mask & MAP_TEXCOORD0)
     {
-        loc = TYPE_TEXCOORD0;
-        ptr = (void*)(base + mOffsets[TYPE_TEXCOORD0]);
+        AttributeType loc = TYPE_TEXCOORD0;
+        //glEnableVertexAttribArray(loc);
+        void* ptr = (void*)(base + mOffsets[TYPE_TEXCOORD0]);
         glVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, LLVertexBuffer::sTypeSize[TYPE_TEXCOORD0], ptr);
+
+        LOG_GLERROR("LLVertexBuffer::setupVertexBuffer TYPE_TEXCOORD0");
     }
     if (data_mask & MAP_COLOR)
     {
-        loc = TYPE_COLOR;
+        AttributeType loc = TYPE_COLOR;
         //bind emissive instead of color pointer if emissive is present
-        ptr = (data_mask & MAP_EMISSIVE) ? (void*)(base + mOffsets[TYPE_EMISSIVE]) : (void*)(base + mOffsets[TYPE_COLOR]);
+        void* ptr = (data_mask & MAP_EMISSIVE) ? (void*)(base + mOffsets[TYPE_EMISSIVE]) : (void*)(base + mOffsets[TYPE_COLOR]);
         glVertexAttribPointer(loc, 4, GL_UNSIGNED_BYTE, GL_TRUE, LLVertexBuffer::sTypeSize[TYPE_COLOR], ptr);
+
+        LOG_GLERROR("LLVertexBuffer::setupVertexBuffer TYPE_COLOR");
     }
     if (data_mask & MAP_EMISSIVE)
     {
-        loc = TYPE_EMISSIVE;
-        ptr = (void*)(base + mOffsets[TYPE_EMISSIVE]);
+        AttributeType loc = TYPE_EMISSIVE;
+        void* ptr = (void*)(base + mOffsets[TYPE_EMISSIVE]);
         glVertexAttribPointer(loc, 4, GL_UNSIGNED_BYTE, GL_TRUE, LLVertexBuffer::sTypeSize[TYPE_EMISSIVE], ptr);
+
+        LOG_GLERROR("LLVertexBuffer::setupVertexBuffer TYPE_EMISSIVE");
 
         if (!(data_mask & MAP_COLOR))
         { //map emissive to color channel when color is not also being bound to avoid unnecessary shader swaps
             loc = TYPE_COLOR;
             glVertexAttribPointer(loc, 4, GL_UNSIGNED_BYTE, GL_TRUE, LLVertexBuffer::sTypeSize[TYPE_EMISSIVE], ptr);
+
+            LOG_GLERROR("LLVertexBuffer::setupVertexBuffer TYPE_COLOR");
         }
     }
     if (data_mask & MAP_WEIGHT)
     {
-        loc = TYPE_WEIGHT;
-        ptr = (void*)(base + mOffsets[TYPE_WEIGHT]);
+        AttributeType loc = TYPE_WEIGHT;
+        void* ptr = (void*)(base + mOffsets[TYPE_WEIGHT]);
         glVertexAttribPointer(loc, 1, GL_FLOAT, GL_FALSE, LLVertexBuffer::sTypeSize[TYPE_WEIGHT], ptr);
+
+        LOG_GLERROR("LLVertexBuffer::setupVertexBuffer TYPE_WEIGHT");
     }
     if (data_mask & MAP_WEIGHT4)
     {
-        loc = TYPE_WEIGHT4;
-        ptr = (void*)(base + mOffsets[TYPE_WEIGHT4]);
+        AttributeType loc = TYPE_WEIGHT4;
+        void* ptr = (void*)(base + mOffsets[TYPE_WEIGHT4]);
         glVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, LLVertexBuffer::sTypeSize[TYPE_WEIGHT4], ptr);
+
+        LOG_GLERROR("LLVertexBuffer::setupVertexBuffer TYPE_WEIGHT4");
     }
     if (data_mask & MAP_JOINT)
     {
-        loc = TYPE_JOINT;
-        ptr = (void*)(base + mOffsets[TYPE_JOINT]);
+        AttributeType loc = TYPE_JOINT;
+        void* ptr = (void*)(base + mOffsets[TYPE_JOINT]);
         glVertexAttribIPointer(loc, 4, GL_UNSIGNED_SHORT, LLVertexBuffer::sTypeSize[TYPE_JOINT], ptr);
+
+        LOG_GLERROR("LLVertexBuffer::setupVertexBuffer TYPE_JOINT");
     }
     if (data_mask & MAP_CLOTHWEIGHT)
     {
-        loc = TYPE_CLOTHWEIGHT;
-        ptr = (void*)(base + mOffsets[TYPE_CLOTHWEIGHT]);
+        AttributeType loc = TYPE_CLOTHWEIGHT;
+        void* ptr = (void*)(base + mOffsets[TYPE_CLOTHWEIGHT]);
         glVertexAttribPointer(loc, 4, GL_FLOAT, GL_TRUE, LLVertexBuffer::sTypeSize[TYPE_CLOTHWEIGHT], ptr);
+
+        LOG_GLERROR("LLVertexBuffer::setupVertexBuffer TYPE_CLOTHWEIGHT");
     }
+
     if (data_mask & MAP_TEXTURE_INDEX)
     {
-        loc = TYPE_TEXTURE_INDEX;
-        ptr = (void*)(base + mOffsets[TYPE_VERTEX] + 12);
+        AttributeType loc = TYPE_TEXTURE_INDEX;
+        void* ptr = (void*)(base + mOffsets[TYPE_VERTEX] + 12);
         glVertexAttribIPointer(loc, 1, GL_UNSIGNED_INT, LLVertexBuffer::sTypeSize[TYPE_VERTEX], ptr);
+
+        LOG_GLERROR("LLVertexBuffer::setupVertexBuffer TYPE_TEXTURE_INDEX");
     }
     if (data_mask & MAP_VERTEX)
     {
-        loc = TYPE_VERTEX;
-        ptr = (void*)(base + mOffsets[TYPE_VERTEX]);
+        AttributeType loc = TYPE_VERTEX;
+        void* ptr = (void*)(base + mOffsets[TYPE_VERTEX]);
         glVertexAttribPointer(loc, 3, GL_FLOAT, GL_FALSE, LLVertexBuffer::sTypeSize[TYPE_VERTEX], ptr);
+
+        LOG_GLERROR("LLVertexBuffer::setupVertexBuffer TYPE_VERTEX");
     }
-    STOP_GLERROR;
 }
 
 void LLVertexBuffer::setPositionData(const LLVector4a* data)
@@ -1917,3 +1980,7 @@ void LLVertexBuffer::setIndexData(const U32* data, U32 offset, U32 count)
     }
     flush_vbo(GL_ELEMENT_ARRAY_BUFFER, offset * sizeof(U32), (offset + count) * sizeof(U32) - 1, (U8*)data, mMappedIndexData);
 }
+
+
+
+

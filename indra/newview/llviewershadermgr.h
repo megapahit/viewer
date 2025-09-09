@@ -254,6 +254,7 @@ extern LLGLSLShader         gDeferredPostNoDoFProgram;
 extern LLGLSLShader         gDeferredPostNoDoFNoiseProgram;
 extern LLGLSLShader         gDeferredPostGammaCorrectProgram;
 extern LLGLSLShader         gLegacyPostGammaCorrectProgram;
+extern LLGLSLShader         gHDRGammaCorrectProgram;
 extern LLGLSLShader         gDeferredPostTonemapProgram;
 extern LLGLSLShader         gNoPostTonemapProgram;
 extern LLGLSLShader         gExposureProgram;
@@ -297,6 +298,10 @@ extern LLGLSLShader         gHUDPBRAlphaProgram;
 
 // GLTF shaders
 extern LLGLSLShader         gGLTFPBRMetallicRoughnessProgram;
+
+extern LLGLSLShader         gBloomExtractProgram;
+extern LLGLSLShader         gBloomBlurProgram;
+extern LLGLSLShader         gBloomCombineProgram;
 
 // Encodes detail level for dropping textures, in accordance with the GLTF spec where possible
 // 0 is highest detail, -1 drops emissive, etc

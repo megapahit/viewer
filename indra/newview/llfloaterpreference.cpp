@@ -2378,6 +2378,7 @@ private:
 };
 
 static LLPanelInjector<LLPanelPreferenceGraphics> t_pref_graph("panel_preference_graphics");
+static LLPanelInjector<LLPanelPreferenceGraphics3> t_pref_graph3("panel_preference_graphics3");
 static LLPanelInjector<LLPanelPreferencePrivacy> t_pref_privacy("panel_preference_privacy");
 
 bool LLPanelPreferenceGraphics::postBuild()
@@ -2545,6 +2546,174 @@ void LLPanelPreferenceGraphics::saveSettings()
 void LLPanelPreferenceGraphics::setHardwareDefaults()
 {
     resetDirtyChilds();
+}
+
+// LLPanelPreferenceGraphics3 (Visuals Effects)
+
+bool LLPanelPreferenceGraphics3::postBuild()
+{
+    getChild<LLButton>("MPBalancedButton")->setCommitCallback(boost::bind(&LLPanelPreferenceGraphics3::onMPRecommanded, this));
+    return LLPanelPreference::postBuild();
+}
+
+void LLPanelPreferenceGraphics3::draw()
+{
+    LLPanelPreference::draw();
+}
+
+bool LLPanelPreferenceGraphics3::hasDirtyChilds()
+{
+    LLFloater* advanced = LLFloaterReg::findTypedInstance<LLFloater>("prefs_graphics_advanced");
+    std::list<LLView*> view_stack;
+    view_stack.push_back(this);
+    if (advanced)
+    {
+        view_stack.push_back(advanced);
+    }
+    while(!view_stack.empty())
+    {
+        // Process view on top of the stack
+        LLView* curview = view_stack.front();
+        view_stack.pop_front();
+
+        LLUICtrl* ctrl = dynamic_cast<LLUICtrl*>(curview);
+        if (ctrl)
+        {
+            if (ctrl->isDirty())
+            {
+                LLControlVariable* control = ctrl->getControlVariable();
+                if (control)
+                {
+                    std::string control_name = control->getName();
+                    if (!control_name.empty())
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        // Push children onto the end of the work stack
+        for (child_list_t::const_iterator iter = curview->getChildList()->begin();
+             iter != curview->getChildList()->end(); ++iter)
+        {
+            view_stack.push_back(*iter);
+        }
+    }
+
+    return false;
+}
+
+void LLPanelPreferenceGraphics3::resetDirtyChilds()
+{
+    LLFloater* advanced = LLFloaterReg::findTypedInstance<LLFloater>("prefs_graphics_advanced");
+    std::list<LLView*> view_stack;
+    view_stack.push_back(this);
+    if (advanced)
+    {
+        view_stack.push_back(advanced);
+    }
+    while(!view_stack.empty())
+    {
+        // Process view on top of the stack
+        LLView* curview = view_stack.front();
+        view_stack.pop_front();
+
+        LLUICtrl* ctrl = dynamic_cast<LLUICtrl*>(curview);
+        if (ctrl)
+        {
+            ctrl->resetDirty();
+        }
+        // Push children onto the end of the work stack
+        for (child_list_t::const_iterator iter = curview->getChildList()->begin();
+             iter != curview->getChildList()->end(); ++iter)
+        {
+            view_stack.push_back(*iter);
+        }
+    }
+}
+
+void LLPanelPreferenceGraphics3::cancel(const std::vector<std::string> settings_to_skip)
+{
+    LLPanelPreference::cancel(settings_to_skip);
+}
+void LLPanelPreferenceGraphics3::saveSettings()
+{
+    resetDirtyChilds();
+    std::string preset_graphic_active = gSavedSettings.getString("PresetGraphicActive");
+    if (preset_graphic_active.empty())
+    {
+        LLFloaterPreference* instance = LLFloaterReg::findTypedInstance<LLFloaterPreference>("preferences");
+        if (instance)
+        {
+            //don't restore previous preset after closing Preferences
+            instance->saveGraphicsPreset(preset_graphic_active);
+        }
+    }
+    LLPanelPreference::saveSettings();
+}
+
+void LLPanelPreferenceGraphics3::onMPRecommanded()
+{
+    //LL_WARNS() << "onClickMPRecommanded()" << LL_ENDL;
+
+    // LOD
+
+    gSavedSettings.setF32("RenderVolumeLODFactor", 3.5);
+    gSavedSettings.setF32("RenderAvatarPhysicsLODFactor", 1.0);
+
+    // AA
+
+    gSavedSettings.setU32("RenderFSAAType", 2);
+    gSavedSettings.setU32("RenderFSAASamples", 2);
+
+    gSavedSettings.setBOOL("RenderAnisotropic", false);
+
+    // Shadows
+
+    gSavedSettings.setS32("RenderShadowDetail", 0);
+    gSavedSettings.setF32("MPRenderShadowMaxDist", 40.0);
+    gSavedSettings.setF32("RenderShadowResolutionScale", 2.0);
+    gSavedSettings.setF32("RenderShadowBlurSize", 0.2);
+    gSavedSettings.setBOOL("RenderDeferredSSAO", 0);
+
+    // Bloom
+
+    gSavedSettings.setU32("MPRenderBloom", 0);
+    gSavedSettings.setF32("MPBloomBlurRadius", 1.2);
+    gSavedSettings.setF32("MPBloomBlurRadiusAdd", 1.2);
+    gSavedSettings.setF32("MPBloomExtractBrightness", 0.1);
+    gSavedSettings.setF32("MPBloomStrength", 1.0);
+
+    gSavedSettings.setF32("MPBloomExtractMetal", 0.4);
+    gSavedSettings.setF32("MPBloomExtractNonMetal", 0.0);
+
+    // Probes
+
+    gSavedSettings.setS32("RenderReflectionProbeDetail", 0);
+    gSavedSettings.setS32("RenderReflectionProbeLevel", 1);
+    gSavedSettings.setU32("RenderReflectionProbeCount", 32);
+    gSavedSettings.setU32("RenderReflectionProbeResolution", 128);
+    gSavedSettings.setF32("RenderReflectionProbeDrawDistance", 24.0);
+    gSavedSettings.setF32("RenderDefaultProbeUpdatePeriod", 20.0);
+    gSavedSettings.setF32("MPRenderProbeUpdatePeriod", 30.0);
+    gSavedSettings.setF32("MPRenderProbeSlowDown", 0.02);
+
+    // Misc
+
+    gSavedSettings.setBOOL("RenderDisableVintageMode", true);
+    gSavedSettings.setBOOL("RenderTransparentWater", true);
+    gSavedSettings.setU32("MPColorPrecision", 0);
+
+    gSavedSettings.setU32("RenderResolutionDivisor", 1.0);
+
+    gSavedSettings.setBOOL("RenderGLMultiThreadedTextures", false);
+    gSavedSettings.setBOOL("RenderAppleUseMultGL", false);
+    gSavedSettings.setBOOL("MPNoGLDebug", true);
+
+    gSavedSettings.setBOOL("MPHDRDisplay", false);
+    gSavedSettings.setF32("MPHDRBoost", 1.0);
+    gSavedSettings.setF32("MPHDRUIBoost", 1.0);
+    gSavedSettings.setF32("MPHDRGamma", 2.4);
 }
 
 //------------------------LLPanelPreferenceControls--------------------------------

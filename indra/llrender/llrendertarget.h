@@ -126,7 +126,7 @@ public:
     //  If an LLRenderTarget is currently bound, stores a reference to that LLRenderTarget
     //  and restores previous binding on flush() (maintains a stack of Render Targets)
     //  Asserts that this target is not currently bound in the stack
-    void bindTarget();
+    void bindTarget(std::string name_ = "nd", U32 mode_ = 0);
 
     //clear render targer, clears depth buffer if present,
     //uses scissor rect if in copy-to-texture mode
@@ -158,6 +158,7 @@ public:
     // If an LLRenderTarget was bound when bindTarget was called, binds that RenderTarget for rendering (maintains RT stack)
     // asserts  that this target is currently bound
     void flush();
+    void unbind();
 
     //Returns TRUE if target is ready to be rendered into.
     //That is, if the target has been allocated with at least
@@ -174,11 +175,15 @@ public:
 
     static LLRenderTarget* sBoundTarget;
 
+    U32 mMode;
+    std::string mName;
+
 protected:
     U32 mResX;
     U32 mResY;
     std::vector<U32> mTex;
     std::vector<U32> mInternalFormat;
+    std::vector<U32> mPixFormat;
     U32 mFBO;
     LLRenderTarget* mPreviousRT = nullptr;
 
@@ -188,6 +193,10 @@ protected:
     U32 mMipLevels;
 
     LLTexUnit::eTextureType mUsage;
+
+private:
+    U32 getTarget();
+
 };
 
 #endif

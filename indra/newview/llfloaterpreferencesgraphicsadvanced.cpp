@@ -274,9 +274,7 @@ void LLFloaterPreferenceGraphicsAdvanced::setMaxNonImpostorsText(U32 value, LLTe
 void LLFloaterPreferenceGraphicsAdvanced::disableUnavailableSettings()
 {
     LLComboBox* ctrl_shadows = getChild<LLComboBox>("ShadowDetail");
-    LLComboBox* ctrl_shadows_quality = getChild<LLComboBox>("MPShadowQuality");
     LLTextBox* shadows_text = getChild<LLTextBox>("RenderShadowDetailText");
-    LLTextBox* shadows_quality_text = getChild<LLTextBox>("RenderShadowQualityText");
     LLCheckBoxCtrl* ctrl_ssao = getChild<LLCheckBoxCtrl>("UseSSAO");
     LLCheckBoxCtrl* ctrl_dof = getChild<LLCheckBoxCtrl>("UseDoF");
     LLSliderCtrl* sky = getChild<LLSliderCtrl>("SkyMeshDetail");
@@ -292,9 +290,7 @@ void LLFloaterPreferenceGraphicsAdvanced::disableUnavailableSettings()
         //deferred needs windlight, disable deferred
         ctrl_shadows->setEnabled(false);
         ctrl_shadows->setValue(0);
-        ctrl_shadows_quality->setEnabled(false);
         shadows_text->setEnabled(false);
-        shadows_quality_text->setEnabled(false);
 
         ctrl_ssao->setEnabled(false);
         ctrl_ssao->setValue(false);
@@ -308,9 +304,7 @@ void LLFloaterPreferenceGraphicsAdvanced::disableUnavailableSettings()
     {
         ctrl_shadows->setEnabled(false);
         ctrl_shadows->setValue(0);
-        ctrl_shadows_quality->setEnabled(false);
         shadows_text->setEnabled(false);
-        shadows_quality_text->setEnabled(false);
 
         ctrl_ssao->setEnabled(false);
         ctrl_ssao->setValue(false);
@@ -331,9 +325,7 @@ void LLFloaterPreferenceGraphicsAdvanced::disableUnavailableSettings()
     {
         ctrl_shadows->setEnabled(false);
         ctrl_shadows->setValue(0);
-        ctrl_shadows_quality->setEnabled(false);
         shadows_text->setEnabled(false);
-        shadows_quality_text->setEnabled(false);
     }
 
     // Vintage mode
@@ -363,9 +355,7 @@ void LLFloaterPreferenceGraphicsAdvanced::refreshEnabledState()
     LLCheckBoxCtrl* ctrl_ssao = getChild<LLCheckBoxCtrl>("UseSSAO");
     LLCheckBoxCtrl* ctrl_dof = getChild<LLCheckBoxCtrl>("UseDoF");
     LLComboBox* ctrl_shadow = getChild<LLComboBox>("ShadowDetail");
-    LLComboBox* ctrl_shadow_quality = getChild<LLComboBox>("MPShadowQuality");
     LLTextBox* shadow_text = getChild<LLTextBox>("RenderShadowDetailText");
-    LLTextBox* shadows_quality_text = getChild<LLTextBox>("RenderShadowQualityText");
 
     // note, okay here to get from ctrl_deferred as it's twin, ctrl_deferred2 will alway match it
     enabled = enabled && LLFeatureManager::getInstance()->isFeatureAvailable("RenderDeferredSSAO");// && ctrl_deferred->get();
@@ -378,9 +368,7 @@ void LLFloaterPreferenceGraphicsAdvanced::refreshEnabledState()
     enabled = enabled && LLFeatureManager::getInstance()->isFeatureAvailable("RenderShadowDetail");
 
     ctrl_shadow->setEnabled(enabled);
-    ctrl_shadow_quality->setEnabled(enabled);
     shadow_text->setEnabled(enabled);
-    shadows_quality_text->setEnabled(enabled);
 
     // Hardware settings
 

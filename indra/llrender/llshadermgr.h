@@ -341,6 +341,20 @@ public:
         SMAA_SEARCH_TEX,                    //  "searchTex"
         SMAA_BLEND_TEX,                     //  "blendTex"
 
+        BLOOM_EMAP,                         //  "bloomEMap"
+        BLOOM_BMAP,                         //  "bloomBlurredMap"
+        BLOOM_BLURH,                        //  "bloomHorizontal"
+        BLOOM_BLUR_RADIUS,                  //  "bloomRadius"
+        BLOOM_EXTRACT_BRIGHTNESS,           //  "bloomExtractBrightness"
+        BLOOM_STRENGTH,                     //  "bloomStrength"
+        BLOOM_EXTRACT_EMISSIVE,             //  "bloomExtractEmissive"
+        BLOOM_EXTRACT_EMISSIVE2,            //  "bloomExtractEmissive2"
+        BLOOM_EXTRACT_ORM,                  //  "bloomExtractORM"
+        BLOOM_EXTRACT_METAL,                //  "bloomExtractMetal"
+        BLOOM_EXTRACT_NONMETAL,             //  "bloomExtractNonMetal"
+        BLOOM_CLAMP,                        //  "bloomClampValue"
+        MP_HDR_BOOST,                       //  "mpHDRBoost"
+
         END_RESERVED_UNIFORMS
     } eGLSLReservedUniforms;
     // clang-format on

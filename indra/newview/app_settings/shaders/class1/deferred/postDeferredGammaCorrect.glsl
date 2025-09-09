@@ -30,7 +30,7 @@ out vec4 frag_color;
 uniform sampler2D diffuseRect;
 
 uniform float gamma;
-uniform vec2 screen_res;
+//uniform vec2 screen_res;
 in vec2 vary_fragcoord;
 
 vec3 linear_to_srgb(vec3 cl);

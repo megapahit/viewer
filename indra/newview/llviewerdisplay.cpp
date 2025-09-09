@@ -709,6 +709,8 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
 
     if (!gDisconnected && !LLApp::isExiting())
     {
+        // =========== MIRRORS =============
+
         // Render mirrors and associated hero probes before we render the rest of the scene.
         // This ensures the scene state in the hero probes are exactly the same as the rest of the scene before we render it.
         if (gPipeline.RenderMirrors && !gSnapshot)
@@ -734,12 +736,14 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
         display_update_camera();
         stop_glerror();
 
+        // =========== ENV: SKY, WATER  =============
         {
             LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("Env Update");
             // update all the sky/atmospheric/water settings
             LLEnvironment::instance().update(LLViewerCamera::getInstance());
         }
 
+        // =========== EFFECTS (?)  =============
         // *TODO: merge these two methods
         {
             LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("HUD Update");
@@ -748,6 +752,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
             stop_glerror();
         }
 
+        // =========== GEOMETRY  =============
         {
             LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("Update Geom");
             const F32 max_geom_update_time = 0.005f*10.f*gFrameIntervalSeconds.value(); // 50 ms/second update time
@@ -778,6 +783,8 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
 
         LLGLState::checkStates();
 
+        // =========== OCCLUSION  =============
+
         static LLCullResult result;
         LLViewerCamera::sCurCameraID = LLViewerCamera::CAMERA_WORLD;
         LLPipeline::sUnderWaterRender = LLViewerCamera::getInstance()->cameraUnderWater();
@@ -803,11 +810,17 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
 
             if (!for_snapshot)
             {
-                if (gFrameCount > 1 && !for_snapshot)
-                { //for some reason, ATI 4800 series will error out if you
-                  //try to generate a shadow before the first frame is through
+
+                // =========== SHADOWS  =============
+
+                S32 RenderShadowDetail = gSavedSettings.getS32("RenderShadowDetail");
+
+                if(RenderShadowDetail > 0 && gFrameCount > 1)
+                {
                     gPipeline.generateSunShadow(*LLViewerCamera::getInstance());
                 }
+
+                // =========== IMPOSTORS  =============
 
                 LLVertexBuffer::unbind();
 
@@ -831,6 +844,9 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
             }
             glClear(GL_DEPTH_BUFFER_BIT);
         }
+
+
+        // =========== IMAGES  =============
 
         //////////////////////////////////////
         //
@@ -870,6 +886,9 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
 
         LLGLState::checkStates();
 
+
+        // =========== SORTING OBJECTS  =============
+
         ///////////////////////////////////
         //
         // StateSort
@@ -902,6 +921,9 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
         LLGLState::checkStates();
 
         LLPipeline::sUseOcclusion = occlusion;
+
+
+        // =========== SKY  =============
 
         {
             LLAppViewer::instance()->pingMainloopTimeout("Display:Sky");
@@ -954,6 +976,9 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
         //  gGL.popMatrix();
         //}
 
+
+        // =========== DEFERRED  =============
+
         LLPipeline::sUnderWaterRender = LLViewerCamera::getInstance()->cameraUnderWater();
 
         LLGLState::checkStates();
@@ -962,7 +987,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
 
         gGL.setColorMask(true, true);
 
-        gPipeline.mRT->deferredScreen.bindTarget();
+        gPipeline.mRT->deferredScreen.bindTarget("", 1);
         if (gUseWireframe)
         {
             constexpr F32 g = 0.5f;
@@ -974,6 +999,9 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
         }
         gPipeline.mRT->deferredScreen.clear();
 
+
+        // =========== RENDER GEOMETRY  =============
+
         gGL.setColorMask(true, false);
 
         LLAppViewer::instance()->pingMainloopTimeout("Display:RenderGeom");
@@ -984,7 +1012,11 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
             LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("display - 5")
             LLViewerCamera::sCurCameraID = LLViewerCamera::CAMERA_WORLD;
 
+
+            // =========== RENDER DEPTH PREPASS  (UNUSED) =============
+
             static LLCachedControl<bool> render_depth_pre_pass(gSavedSettings, "RenderDepthPrePass", false);
+
             if (render_depth_pre_pass)
             {
                 gGL.setColorMask(false, false);
@@ -1010,6 +1042,8 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
             gPipeline.renderGeomDeferred(*LLViewerCamera::getInstance(), true);
         }
 
+        // =========== UNBIND TEXTURES =============
+
         {
             LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("Texture Unbind");
             for (S32 i = 0; i < gGLManager.mNumTextureImageUnits; i++)
@@ -1022,10 +1056,14 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
             }
         }
 
+        // =========== FLUSH =============
+
         LLAppViewer::instance()->pingMainloopTimeout("Display:RenderFlush");
 
         LLRenderTarget &rt = (gPipeline.sRenderDeferred ? gPipeline.mRT->deferredScreen : gPipeline.mRT->screen);
         rt.flush();
+
+        // =========== RENDER DEFERRED =============
 
         if (LLPipeline::sRenderDeferred)
         {
@@ -1039,10 +1077,14 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
             LLSceneMonitor::getInstance()->capture();
         }
 
+        // =========== RENDER UI =============
+
         LLAppViewer::instance()->pingMainloopTimeout("Display:RenderUI");
         if (!for_snapshot)
         {
+            gGL.flush();
             render_ui();
+            gGL.flush();
             swap();
         }
 
@@ -1052,8 +1094,6 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
     }
 
     LLAppViewer::instance()->pingMainloopTimeout("Display:FrameStats");
-
-    stop_glerror();
 
     display_stats();
 
@@ -1204,7 +1244,7 @@ void display_cube_face()
     gGL.setColorMask(true, true);
 
     glClearColor(0.f, 0.f, 0.f, 0.f);
-    gPipeline.generateSunShadow(*LLViewerCamera::getInstance());
+    //gPipeline.generateSunShadow(*LLViewerCamera::getInstance());
 
     glClear(GL_DEPTH_BUFFER_BIT); // | GL_STENCIL_BUFFER_BIT);
 
@@ -1232,7 +1272,7 @@ void display_cube_face()
 
     gGL.setColorMask(true, true);
 
-    gPipeline.mRT->deferredScreen.bindTarget();
+    gPipeline.mRT->deferredScreen.bindTarget("", 1);
     if (gUseWireframe)
     {
         glClearColor(0.5f, 0.5f, 0.5f, 1.f);
@@ -1647,6 +1687,10 @@ void render_ui_3d()
     gUIProgram.bind();
     gGL.color4f(1.f, 1.f, 1.f, 1.f);
 
+    static LLCachedControl<bool> hdrDisplay(gSavedSettings, "MPHDRDisplay");
+    static LLCachedControl<F32> hdrUIBoost(gSavedSettings, "MPHDRUIBoost");
+    if(hdrDisplay) gUIProgram.uniform1f(LLShaderMgr::MP_HDR_BOOST, (GLfloat)hdrUIBoost);
+
     // Coordinate axes
     static LLCachedControl<bool> show_axes(gSavedSettings, "ShowAxes");
     if (show_axes())
@@ -1669,7 +1713,7 @@ void render_ui_3d()
         LLHUDObject::renderAllForTimer();
     }
 
-    stop_glerror();
+    LOG_GLERROR("render_ui_3d()");
 }
 
 void render_ui_2d()
@@ -1719,7 +1763,7 @@ void render_ui_2d()
         gl_rect_2d(-half_width, half_height, half_width, -half_height, false);
         gGL.popMatrix();
         gUIProgram.unbind();
-        stop_glerror();
+        LOG_GLERROR("");
     }
 
 
@@ -1730,7 +1774,7 @@ void render_ui_2d()
             LLView::sIsRectDirty = false;
             LLRect t_rect;
 
-            gPipeline.mUIScreen.bindTarget();
+            gPipeline.mUIScreen.bindTarget("", 1);
             gGL.setColorMask(true, true);
             {
                 constexpr S32 pad = 8;
@@ -1788,6 +1832,8 @@ void render_ui_2d()
 
     // reset current origin for font rendering, in case of tiling render
     LLFontGL::sCurOrigin.set(0, 0);
+
+    LOG_GLERROR("render_ui_2d()");
 }
 
 void render_disconnected_background()

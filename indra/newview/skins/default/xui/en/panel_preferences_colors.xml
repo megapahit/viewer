@@ -505,7 +505,6 @@
        Skin
    </text>
    <radio_group
-     control_name="skin_selection"
      height="20"
      layout="topleft"
      left="35"
@@ -537,6 +536,15 @@
          height="16"
          name="radio3"
          value="contrast"
+         width="75" />
+        <radio_item
+         label="contrast gold"
+         left_pad="0"
+         layout="topleft"
+         top_delta="0"
+         height="16"
+         name="radio2"
+         value="contrast_gold"
          width="75" />
         <radio_group.commit_callback
             function="Pref.SelectSkin" />

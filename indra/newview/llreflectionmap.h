@@ -103,12 +103,18 @@ public:
     // last time this probe was bound for rendering
     F32 mLastBindTime = 0.f;
 
+    // Next update time
+    F32 mNextUpdateTime = 0.f;
+
     // cube map used to sample this environment map
     LLPointer<LLCubeMapArray> mCubeArray;
     S32 mCubeIndex = -1; // index into cube map array or -1 if not currently stored in cube map array
 
     // probe has had at least one full update and is ready to render
     bool mComplete = false;
+
+    // number of tiees the probe has been completed
+    U32 mCompletedCount = 0;
 
     // fade in parameter for this probe
     F32 mFadeIn = 0.f;

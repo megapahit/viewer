@@ -119,7 +119,8 @@ void LLDrawPoolWater::beginPostDeferredPass(S32 pass)
         LLRenderTarget& depth_src = gPipeline.mRT->deferredScreen;
         LLRenderTarget& dst = gPipeline.mWaterDis;
 
-        dst.bindTarget();
+        dst.bindTarget("", 1);
+        //dst.clear();
         gCopyDepthProgram.bind();
 
         S32 diff_map = gCopyDepthProgram.getTextureChannel(LLShaderMgr::DIFFUSE_MAP);

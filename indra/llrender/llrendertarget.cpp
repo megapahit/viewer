@@ -158,6 +158,8 @@ void LLRenderTarget::setColorAttachment(LLImageGL* img, LLGLuint use_name)
     llassert(mTex.empty()); // mTex must be empty with this mode (binding target should be done via LLImageGL)
     llassert(!isBoundInStack());
 
+    U32 target = getTarget();
+
     if (mFBO == 0)
     {
         glGenFramebuffers(1, (GLuint*)&mFBO);
@@ -174,14 +176,14 @@ void LLRenderTarget::setColorAttachment(LLImageGL* img, LLGLuint use_name)
 
     mTex.push_back(use_name);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+    glBindFramebuffer(target, mFBO);
+    glFramebufferTexture2D(target, GL_COLOR_ATTACHMENT0,
             LLTexUnit::getInternalType(mUsage), use_name, 0);
         stop_glerror();
 
     check_framebuffer_status();
 
-    glBindFramebuffer(GL_FRAMEBUFFER, sCurFBO);
+    glBindFramebuffer(target, sCurFBO);
 }
 
 void LLRenderTarget::releaseColorAttachment()
@@ -194,6 +196,7 @@ void LLRenderTarget::releaseColorAttachment()
     glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, LLTexUnit::getInternalType(mUsage), 0, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, sCurFBO);
+    LOG_GLERROR(mName + " releaseColorAttachment()");
 
     mTex.clear();
 }
@@ -207,6 +210,8 @@ bool LLRenderTarget::addColorAttachment(U32 color_fmt)
     {
         return true;
     }
+
+    U32 target = getTarget();
 
     U32 offset = static_cast<U32>(mTex.size());
 
@@ -226,12 +231,76 @@ bool LLRenderTarget::addColorAttachment(U32 color_fmt)
     LLImageGL::generateTextures(1, &tex);
     gGL.getTexUnit(0)->bindManual(mUsage, tex);
 
-    stop_glerror();
-
+    U32 miplevel = mMipLevels;
+    U32 intformat = color_fmt;
+    U32 pixformat = GL_RGBA;
+    U32 pixtype = GL_UNSIGNED_BYTE;
 
     {
-        clear_glerror();
-        LLImageGL::setManualImage(LLTexUnit::getInternalType(mUsage), 0, color_fmt, mResX, mResY, GL_RGBA, GL_UNSIGNED_BYTE, NULL, false);
+        //clear_glerror();
+
+        if(color_fmt == GL_RGB10_A2)
+        {
+            pixformat = GL_RGBA;
+            pixtype = GL_UNSIGNED_BYTE;
+        }
+        else if(color_fmt == GL_R11F_G11F_B10F)
+        {
+            pixformat = GL_RGB;
+            pixtype = GL_HALF_FLOAT;
+        }
+        else if(color_fmt == GL_R8)
+        {
+            pixformat = GL_RED;
+            pixtype = GL_UNSIGNED_BYTE;
+        }
+        else if(color_fmt == GL_R16F)
+        {
+            pixformat = GL_RED;
+            pixtype = GL_HALF_FLOAT;
+        }
+        else if(color_fmt ==  GL_RG16F)
+        {
+            pixformat = GL_RG;
+            pixtype = GL_HALF_FLOAT;
+        }
+        else if(color_fmt == GL_RGBA16F)
+        {
+            pixformat = GL_RGBA;
+            pixtype = GL_HALF_FLOAT;
+        }
+        else if(color_fmt == GL_RGB16F)
+        {
+            pixformat = GL_RGB;
+            pixtype = GL_HALF_FLOAT;
+        }
+        else if(color_fmt == GL_RGB8)
+        {
+            pixformat = GL_RGB;
+            pixtype = GL_UNSIGNED_BYTE;
+        }
+        else if(color_fmt == GL_RGB)
+        {
+            pixformat = GL_RGB;
+            pixtype = GL_UNSIGNED_BYTE;
+        }
+        else if(color_fmt == GL_RGBA)
+        {
+            pixformat = GL_RGBA;
+            pixtype = GL_UNSIGNED_BYTE;
+        }
+        else if(color_fmt == GL_RGBA8)
+        {
+            pixformat = GL_RGBA;
+            pixtype = GL_UNSIGNED_BYTE;
+        }
+        else
+        {
+            pixformat = GL_RGBA;
+            pixtype = GL_UNSIGNED_BYTE;
+        }
+
+        LLImageGL::setManualImage(LLTexUnit::getInternalType(mUsage), 0, color_fmt, mResX, mResY, pixformat, pixtype, NULL, false);
         if (glGetError() != GL_NO_ERROR)
         {
             LL_WARNS() << "Could not allocate color buffer for render target." << LL_ENDL;
@@ -241,32 +310,29 @@ bool LLRenderTarget::addColorAttachment(U32 color_fmt)
 
     sBytesAllocated += mResX*mResY*4;
 
-    stop_glerror();
-
-
     if (offset == 0)
     { //use bilinear filtering on single texture render targets that aren't multisampled
         gGL.getTexUnit(0)->setTextureFilteringOption(LLTexUnit::TFO_BILINEAR);
-        stop_glerror();
+        LOG_GLERROR(mName + " setting filtering to TFO_BILINEAR");
     }
     else
     { //don't filter data attachments
         gGL.getTexUnit(0)->setTextureFilteringOption(LLTexUnit::TFO_POINT);
-        stop_glerror();
+        LOG_GLERROR(mName + " setting filtering to TFO_POINT");
     }
 
 #if GL_VERSION_3_1
     if (mUsage != LLTexUnit::TT_RECT_TEXTURE)
     {
         gGL.getTexUnit(0)->setTextureAddressMode(LLTexUnit::TAM_MIRROR);
-        stop_glerror();
+        LOG_GLERROR(mName + " setting address mode to TAM_MIRROR");
     }
     else
 #endif
     {
         // ATI doesn't support mirrored repeat for rectangular textures.
         gGL.getTexUnit(0)->setTextureAddressMode(LLTexUnit::TAM_CLAMP);
-        stop_glerror();
+        LOG_GLERROR(mName + " setting address mode to TAM_CLAMP");
     }
 
     if (mFBO)
@@ -285,7 +351,7 @@ bool LLRenderTarget::addColorAttachment(U32 color_fmt)
 
     if (gDebugGL)
     { //bind and unbind to validate target
-        bindTarget();
+        bindTarget(mName, mMode);
         flush();
     }
 
@@ -300,8 +366,6 @@ bool LLRenderTarget::allocateDepth()
     gGL.getTexUnit(0)->bindManual(mUsage, mDepth);
 
     U32 internal_type = LLTexUnit::getInternalType(mUsage);
-    stop_glerror();
-    clear_glerror();
     LLImageGL::setManualImage(internal_type, 0, GL_DEPTH_COMPONENT24, mResX, mResY, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL, false);
     gGL.getTexUnit(0)->setTextureFilteringOption(LLTexUnit::TFO_POINT);
 
@@ -309,7 +373,7 @@ bool LLRenderTarget::allocateDepth()
 
     if (glGetError() != GL_NO_ERROR)
     {
-        LL_WARNS() << "Unable to allocate depth buffer for render target." << LL_ENDL;
+        LL_WARNS() << "Unable to allocate depth buffer for render target " << mName << LL_ENDL;
         return false;
     }
 
@@ -344,6 +408,8 @@ void LLRenderTarget::shareDepthBuffer(LLRenderTarget& target)
         check_framebuffer_status();
 
         glBindFramebuffer(GL_FRAMEBUFFER, sCurFBO);
+
+        LOG_GLERROR(mName + " shareDepthBuffer()");
 
         target.mUseDepth = true;
     }
@@ -408,19 +474,32 @@ void LLRenderTarget::release()
         LLImageGL::deleteTextures(1, &mTex[0]);
     }
 
+    LOG_GLERROR(mName + " release()");
+
     mTex.clear();
     mInternalFormat.clear();
 
     mResX = mResY = 0;
 }
 
-void LLRenderTarget::bindTarget()
+void LLRenderTarget::bindTarget(std::string name_, U32 mode_)
 {
     LL_PROFILE_GPU_ZONE("bindTarget");
     llassert(mFBO);
     llassert(!isBoundInStack());
 
-    glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
+    //mode_ = 0;
+
+    mMode = mode_;
+    mName = name_;
+
+    U32 target = getTarget();
+
+    glBindFramebuffer(target, mFBO);
+    LOG_GLERROR(mName+" bindTarget()");
+
+    //attach();
+
     sCurFBO = mFBO;
 
     //setup multiple render targets
@@ -431,16 +510,33 @@ void LLRenderTarget::bindTarget()
 
     if (mTex.empty())
     { //no color buffer to draw to
+        if(!mUseDepth) LL_WARNS() << mName << " HAS NO COLOR BUFFER AND NO DEPTH!!" << LL_ENDL;
         GLenum buffers[] = {GL_NONE};
         glDrawBuffers(0, buffers);
         glReadBuffer(GL_NONE);
     }
-    else
+    else if(mMode == 0)
     {
         glDrawBuffers(static_cast<GLsizei>(mTex.size()), drawbuffers);
         glReadBuffer(GL_COLOR_ATTACHMENT0);
+        LOG_GLERROR(mName+" read and write buffers");
     }
+    else if(mMode == 1)
+    {
+        glDrawBuffers(static_cast<GLsizei>(mTex.size()), drawbuffers);
+        glReadBuffer(GL_NONE);
+        LOG_GLERROR(mName+" draw buffer");
+    }
+    else if(mMode == 2)
+    {
+        GLenum buffers[] = {GL_NONE};
+        glDrawBuffers(0, buffers);
+        glReadBuffer(GL_COLOR_ATTACHMENT0);
+        LOG_GLERROR(mName+" read buffer");
+    }
+
     check_framebuffer_status();
+    LOG_GLERROR(mName+" checked status");
 
     glViewport(0, 0, mResX, mResY);
     sCurResX = mResX;
@@ -454,7 +550,9 @@ void LLRenderTarget::clear(U32 mask_in)
 {
     LL_PROFILE_GPU_ZONE("clear");
     llassert(mFBO);
-    U32 mask = GL_COLOR_BUFFER_BIT;
+    U32 mask = 0;
+
+    if(!mTex.empty()) mask |= GL_COLOR_BUFFER_BIT;
     if (mUseDepth)
     {
         mask |= GL_DEPTH_BUFFER_BIT;
@@ -463,15 +561,14 @@ void LLRenderTarget::clear(U32 mask_in)
     if (mFBO)
     {
         check_framebuffer_status();
-        stop_glerror();
         glClear(mask & mask_in);
-        stop_glerror();
+        LOG_GLERROR(mName + "clear()");
     }
     else
     {
         LLGLEnable scissor(GL_SCISSOR_TEST);
         glScissor(0, 0, mResX, mResY);
-        stop_glerror();
+        LOG_GLERROR("");
         glClear(mask & mask_in);
     }
 }
@@ -514,29 +611,43 @@ void LLRenderTarget::bindTexture(U32 index, S32 channel, LLTexUnit::eTextureFilt
     }
 
     gGL.getTexUnit(channel)->setTextureFilteringOption(filter_options);
+
+    LOG_GLERROR(mName + " bindTexture()");
 }
 
 void LLRenderTarget::flush()
 {
     LL_PROFILE_GPU_ZONE("rt flush");
+
+    LOG_GLERROR(mName+" rt flush() A");
+
     gGL.flush();
     llassert(mFBO);
     llassert(sCurFBO == mFBO);
     llassert(sBoundTarget == this);
 
-    if (mGenerateMipMaps == LLTexUnit::TMG_AUTO)
+    if (mGenerateMipMaps == LLTexUnit::TMG_AUTO && mMode != 2)
     {
         LL_PROFILE_GPU_ZONE("rt generate mipmaps");
-        bindTexture(0, 0, LLTexUnit::TFO_TRILINEAR);
+        //bindTexture(0, 0, LLTexUnit::TFO_TRILINEAR);
+        bindTexture(0, 0, LLTexUnit::TFO_ANISOTROPIC);
         glGenerateMipmap(GL_TEXTURE_2D);
+        LOG_GLERROR(mName + " glGenerateMipmap()");
     }
 
+    LOG_GLERROR(mName + " rt flush() B");
+
+    unbind();
+}
+
+void LLRenderTarget::unbind()
+{
     if (mPreviousRT)
     {
         // a bit hacky -- pop the RT stack back two frames and push
         // the previous frame back on to play nice with the GL state machine
         sBoundTarget = mPreviousRT->mPreviousRT;
-        mPreviousRT->bindTarget();
+        mPreviousRT->bindTarget(mPreviousRT->mName, mPreviousRT->mMode);
     }
     else
     {
@@ -547,9 +658,10 @@ void LLRenderTarget::flush()
         sCurResX = gGLViewport[2];
         sCurResY = gGLViewport[3];
         glReadBuffer(GL_BACK);
-        GLenum drawbuffers[] = {GL_BACK};
-        glDrawBuffers(1, drawbuffers);
+        glDrawBuffer(GL_BACK);
     }
+
+    LOG_GLERROR(mName + " rt unbind()");
 }
 
 bool LLRenderTarget::isComplete() const
@@ -603,4 +715,14 @@ void LLRenderTarget::swapFBORefs(LLRenderTarget& other)
 
     std::swap(mFBO, other.mFBO);
     std::swap(mTex, other.mTex);
+}
+
+U32 LLRenderTarget::getTarget()
+{
+    U32 target = GL_FRAMEBUFFER;
+
+    if(mMode == 1) target = GL_DRAW_FRAMEBUFFER;
+    else if(mMode == 2) target = GL_READ_FRAMEBUFFER;
+
+    return target;
 }

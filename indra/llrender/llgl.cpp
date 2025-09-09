@@ -2279,26 +2279,28 @@ void rotate_quat(LLQuaternion& rotation)
 
 void flush_glerror()
 {
+    if(!gDebugGL) return;
     glGetError();
 }
 
-//this function outputs gl error to the log file, does not crash the code.
-void log_glerror()
+void log_glerror(std::string comment)
 {
+    if(!gDebugGL) return;
+
     if (LL_UNLIKELY(!gGLManager.mInited))
     {
         return ;
     }
-    //  Create or update texture to be used with this data
+
     GLenum error;
     error = glGetError();
-    while (LL_UNLIKELY(error))
+    if (error != GL_NO_ERROR)
     {
 #if GLU_VERSION_1_1
         GLubyte const * gl_error_msg = gluErrorString(error);
         if (NULL != gl_error_msg)
         {
-            LL_WARNS() << "GL Error: " << error << " GL Error String: " << gl_error_msg << LL_ENDL ;
+            LL_WARNS() << "GL Error (" << comment << ")" << error << ": " << gl_error_msg << LL_ENDL;
         }
         else
 #endif // GLU_VERSION_1_1
@@ -2307,7 +2309,6 @@ void log_glerror()
             // you'll probably have to grep for the number in glext.h.
             LL_WARNS() << "GL Error: UNKNOWN 0x" << std::hex << error << std::dec << LL_ENDL;
         }
-        error = glGetError();
     }
 }
 
@@ -2385,6 +2386,7 @@ void assert_glerror()
 
 void clear_glerror()
 {
+    if(!gDebugGL) return;
     glGetError();
     glGetError();
 }
