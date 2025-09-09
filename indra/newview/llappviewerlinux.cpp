@@ -129,7 +129,8 @@ int main( int argc, char **argv )
 #ifdef __aarch64__
     setenv("LD_PRELOAD", APP_PLUGIN_DIR"/libcef.so", 1);
 #else
-    unsetenv( "LD_PRELOAD" ); // <FS:ND/> Get rid of any preloading, we do not want this to happen during startup of plugins.
+    setenv("LD_PRELOAD", "libpthread.so.0 libGL.so.1", 1);
+    setenv("__GL_THREADED_OPTIMIZATIONS", "1", 0);
 #endif
 
     bool ok = viewer_app_ptr->init();

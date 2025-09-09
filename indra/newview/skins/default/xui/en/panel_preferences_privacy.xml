@@ -71,26 +71,15 @@
       width="350" />
 
   <check_box
-      control_name="ShowSelectionBeam"
-      height="16"
-      enabled="true"
-      label="Show selection particle beam when selecting or interacting with objects"
-      layout="topleft"
-      left="30"
-      name="selection_beam_visibility"
-      top_pad="15"
-      width="350" />
-
-   <check_box
       height="16"
       enabled="false"
       label="Only friends and groups know I'm online"
       layout="topleft"
       left="30"
       name="online_visibility"
-      top_pad="15"
+      top_pad="30"
       width="350" />
-    
+
     <check_box
      enabled_control="EnableVoiceChat"
      control_name="AutoDisengageMic"
@@ -99,6 +88,37 @@
      layout="topleft"
      left="30"
      name="auto_disengage_mic_check"
+     top_pad="10"
+     width="350" />
+    <check_box
+     control_name="EnableLookAtTarget"
+     height="16"
+     label="Enable LookAt"
+     tool_tip="Enable tracking cursor position with avatar head's rotation"
+     layout="topleft"
+     left="30"
+     name="enable_lookat_target"
+     top_pad="10"
+     width="350" />
+    <check_box
+     enabled_control="EnableLookAtTarget"
+     control_name="LimitLookAtTarget"
+     height="16"
+     label="Limit LookAt Distance"
+     tool_tip="Limit the look at target's distance by restricting it around the avatar's head"
+     layout="topleft"
+     left="50"
+     name="limit_lookat_distance"
+     top_pad="10"
+     width="350" />
+    <check_box
+     control_name="EnableSelectionHints"
+     height="16"
+     label="Enable Selection Hints"
+     tool_tip="Enable reporting and tracking current selection using 'beam' particles and character animations"
+     layout="topleft"
+     left="30"
+     name="enable_selection_hints"
      top_pad="10"
      width="350" />
     <button

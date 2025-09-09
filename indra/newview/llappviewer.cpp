@@ -467,13 +467,28 @@ static bool app_metrics_qa_mode = false;
 
 void idle_afk_check()
 {
+    // Don't check AFK status during startup states
+    if (LLStartUp::getStartupState() < STATE_STARTED)
+    {
+        return;
+    }
+
     // check idle timers
     F32 current_idle = gAwayTriggerTimer.getElapsedTimeF32();
     static LLCachedControl<S32> afk_timeout(gSavedSettings, "AFKTimeout", 300);
-    if (afk_timeout() && (current_idle > (F32)afk_timeout()) && !gAgent.getAFK())
+    if (afk_timeout() && (current_idle > afk_timeout()))
     {
-        LL_INFOS("IdleAway") << "Idle more than " << afk_timeout << " seconds: automatically changing to Away status" << LL_ENDL;
-        gAgent.setAFK();
+        if (!gAgent.getAFK())
+        {
+            LL_INFOS("IdleAway") << "Idle more than " << afk_timeout << " seconds: automatically changing to Away status" << LL_ENDL;
+            gAgent.setAFK();
+        }
+        else
+        {
+            // Refresh timer so that random one click or hover won't clear the status.
+            // But expanding the window still should lift afk status
+            gAwayTimer.reset();
+        }
     }
 }
 
@@ -1915,36 +1930,6 @@ bool LLAppViewer::cleanup()
     // Clean up before GL is shut down because we might be holding on to objects with texture references
     LLSelectMgr::cleanupGlobals();
 
-    LL_INFOS() << "Shutting down OpenGL" << LL_ENDL;
-
-    // Shut down OpenGL
-    if( gViewerWindow)
-    {
-        gViewerWindow->shutdownGL();
-
-        // Destroy window, and make sure we're not fullscreen
-        // This may generate window reshape and activation events.
-        // Therefore must do this before destroying the message system.
-        delete gViewerWindow;
-        gViewerWindow = NULL;
-        LL_INFOS() << "ViewerWindow deleted" << LL_ENDL;
-    }
-
-    LLSplashScreen::show();
-    LLSplashScreen::update(LLTrans::getString("ShuttingDown"));
-
-    LL_INFOS() << "Cleaning up Keyboard & Joystick" << LL_ENDL;
-
-    // viewer UI relies on keyboard so keep it aound until viewer UI isa gone
-    delete gKeyboard;
-    gKeyboard = NULL;
-
-    if (LLViewerJoystick::instanceExists())
-    {
-        // Turn off Space Navigator and similar devices
-        LLViewerJoystick::getInstance()->terminate();
-    }
-
     LL_INFOS() << "Cleaning up Objects" << LL_ENDL;
 
     LLViewerObject::cleanupVOClasses();
@@ -2104,6 +2089,36 @@ bool LLAppViewer::cleanup()
 
     sTextureFetch->shutDownTextureCacheThread() ;
     LLLFSThread::sLocal->shutdown();
+
+    LL_INFOS() << "Shutting down OpenGL" << LL_ENDL;
+
+    // Shut down OpenGL
+    if (gViewerWindow)
+    {
+        gViewerWindow->shutdownGL();
+
+        // Destroy window, and make sure we're not fullscreen
+        // This may generate window reshape and activation events.
+        // Therefore must do this before destroying the message system.
+        delete gViewerWindow;
+        gViewerWindow = NULL;
+        LL_INFOS() << "ViewerWindow deleted" << LL_ENDL;
+    }
+
+    LLSplashScreen::show();
+    LLSplashScreen::update(LLTrans::getString("ShuttingDown"));
+
+    LL_INFOS() << "Cleaning up Keyboard & Joystick" << LL_ENDL;
+
+    // viewer UI relies on keyboard so keep it aound until viewer UI isa gone
+    delete gKeyboard;
+    gKeyboard = NULL;
+
+    if (LLViewerJoystick::instanceExists())
+    {
+        // Turn off Space Navigator and similar devices
+        LLViewerJoystick::getInstance()->terminate();
+    }
 
     LL_INFOS() << "Shutting down message system" << LL_ENDL;
     end_messaging_system();
@@ -3173,7 +3188,15 @@ bool LLAppViewer::initWindow()
         .height(gSavedSettings.getU32("WindowHeight"))
         .min_width(gSavedSettings.getU32("MinWindowWidth"))
         .min_height(gSavedSettings.getU32("MinWindowHeight"))
+#ifdef LL_DARWIN
+        // Setting it to true causes black screen with no UI displayed.
+        // Given that it's a DEBUG settings and application goes fullscreen
+        // on mac simply by expanding it, it was decided to not support/use
+        // this setting on mac.
+        .fullscreen(false)
+#else // LL_DARWIN
         .fullscreen(gSavedSettings.getBOOL("FullScreen"))
+#endif
         .ignore_pixel_depth(ignorePixelDepth)
         .first_run(mIsFirstRun);
 
@@ -4360,8 +4383,8 @@ bool LLAppViewer::initCache()
     const std::string cache_dir_name = gSavedSettings.getString("DiskCacheDirName");
 
     const U32 MB = 1024 * 1024;
-    const uintmax_t MIN_CACHE_SIZE = 256 * MB;
-    const uintmax_t MAX_CACHE_SIZE = 9984ll * MB;
+    const uintmax_t MIN_CACHE_SIZE = 896 * MB;
+    const uintmax_t MAX_CACHE_SIZE = 32768ll * MB;
     const uintmax_t setting_cache_total_size = uintmax_t(gSavedSettings.getU32("CacheSize")) * MB;
     const uintmax_t cache_total_size = llclamp(setting_cache_total_size, MIN_CACHE_SIZE, MAX_CACHE_SIZE);
     const F64 disk_cache_percent = gSavedSettings.getF32("DiskCachePercentOfTotal");

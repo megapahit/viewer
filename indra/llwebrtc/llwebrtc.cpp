@@ -672,7 +672,10 @@ LLWebRTCPeerConnectionInterface *LLWebRTCImpl::newPeerConnection()
     peerConnection->init(this);
 
     mPeerConnections.emplace_back(peerConnection);
-    peerConnection->enableSenderTracks(!mMute);
+    // Should it really start disabled?
+    // Seems like something doesn't get the memo and senders need to be reset later
+    // to remove the voice indicator from taskbar
+    peerConnection->enableSenderTracks(false);
     if (mPeerConnections.empty())
     {
         setRecording(true);
@@ -706,7 +709,7 @@ void LLWebRTCImpl::freePeerConnection(LLWebRTCPeerConnectionInterface* peer_conn
 LLWebRTCPeerConnectionImpl::LLWebRTCPeerConnectionImpl() :
     mWebRTCImpl(nullptr),
     mPeerConnection(nullptr),
-    mMute(true),
+    mMute(MUTE_INITIAL),
     mAnswerReceived(false)
 {
 }
@@ -740,6 +743,19 @@ void LLWebRTCPeerConnectionImpl::terminate()
                         mDataChannel = nullptr;
                     }
                 }
+
+                // to remove 'Secondlife is recording' icon from taskbar
+                // if user was speaking
+                auto senders = mPeerConnection->GetSenders();
+                for (auto& sender : senders)
+                {
+                    auto track = sender->track();
+                    if (track)
+                    {
+                        track->set_enabled(false);
+                    }
+                }
+                mPeerConnection->SetAudioRecording(false);
 
                 mPeerConnection->Close();
                 if (mLocalStream)
@@ -830,6 +846,7 @@ bool LLWebRTCPeerConnectionImpl::initializeConnection(const LLWebRTCPeerConnecti
             audioOptions.auto_gain_control = true;
             audioOptions.echo_cancellation = true;
             audioOptions.noise_suppression = true;
+            audioOptions.init_recording_on_send = false;
 
             mLocalStream = mPeerConnectionFactory->CreateLocalMediaStream("SLStream");
 
@@ -889,6 +906,7 @@ void LLWebRTCPeerConnectionImpl::enableSenderTracks(bool enable)
     // set_enabled shouldn't be done on the worker thread.
     if (mPeerConnection)
     {
+        mPeerConnection->SetAudioRecording(enable);
         auto senders = mPeerConnection->GetSenders();
         for (auto &sender : senders)
         {
@@ -934,12 +952,23 @@ void LLWebRTCPeerConnectionImpl::AnswerAvailable(const std::string &sdp)
 
 void LLWebRTCPeerConnectionImpl::setMute(bool mute)
 {
-    mMute = mute;
+    EMicMuteState new_state = mute ? MUTE_MUTED : MUTE_UNMUTED;
+    if (new_state == mMute)
+    {
+        return; // no change
+    }
+    bool force_reset = mMute == MUTE_INITIAL && mute;
+    bool enable = !mute;
+    mMute = new_state;
+
     mWebRTCImpl->PostSignalingTask(
-        [this]()
+        [this, force_reset, enable]()
         {
         if (mPeerConnection)
         {
+            // SetAudioRecording must be called before enabling/disabling tracks.
+            mPeerConnection->SetAudioRecording(enable);
+
             auto senders = mPeerConnection->GetSenders();
 
             RTC_LOG(LS_INFO) << __FUNCTION__ << (mMute ? "disabling" : "enabling") << " streams count " << senders.size();
@@ -948,7 +977,14 @@ void LLWebRTCPeerConnectionImpl::setMute(bool mute)
                 auto track = sender->track();
                 if (track)
                 {
-                    track->set_enabled(!mMute);
+                    if (force_reset)
+                    {
+                        // Force notify observers
+                        // Was it disabled too early?
+                        // Without this microphone icon in Win's taskbar will stay
+                        track->set_enabled(true);
+                    }
+                    track->set_enabled(enable);
                 }
             }
         }
@@ -957,7 +993,17 @@ void LLWebRTCPeerConnectionImpl::setMute(bool mute)
 
 void LLWebRTCPeerConnectionImpl::resetMute()
 {
-    setMute(mMute);
+    switch(mMute)
+    {
+    case MUTE_MUTED:
+         setMute(true);
+         break;
+    case MUTE_UNMUTED:
+         setMute(false);
+         break;
+    default:
+        break;
+    }
 }
 
 void LLWebRTCPeerConnectionImpl::setReceiveVolume(float volume)
