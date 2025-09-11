@@ -1721,8 +1721,8 @@ height="16"
 left_delta="150"
 top_delta="-1"
 initial_value="1.0"
-increment="0.1"
-min_val="0.8"
+increment="0.05"
+min_val="0.75"
 max_val="2.0"
 decimal_digits="2"
 label_width="2">
@@ -1752,7 +1752,7 @@ Advanced settings:
 <check_box
 name="MultiTexCtrl"
 control_name="RenderGLMultiThreadedTextures"
-label="Multithreaded Textures"
+label="Multithreaded Textures (needs restart)"
 layout="topleft"
 width="400"
 height="16"
@@ -1764,8 +1764,8 @@ initial_value="false"
 
 <icon
 name="mp_multitex_bullet"
-tool_tip="Improves textures loading performance on certain hardware. But can be unstable."
-image_name="mp_yellow_bullet"
+tool_tip="Improves textures loading performance on certain hardware. But can be unstable!! Don't enable this on Linux and don't use it with Apple Multithreaded OpenGL activated."
+image_name="mp_red_bullet"
 follows="left|top"
 width="16"
 height="16"
@@ -1776,7 +1776,7 @@ top_delta="-2"
 
 <icon
 name="mp_multitex_info_bullet"
-tool_tip="Enables loading textures using multiple threads."
+tool_tip="Enables loading textures using multiple threads. Use with extreme caution! it's unstable."
 image_name="mp_info_bullet"
 follows="left|top"
 width="16"
@@ -1873,7 +1873,7 @@ top_delta="-2"
 
 <icon
 name="mp_lowcolor_info_bullet"
-tool_tip="Sets the internal color resolution. Improves the speed or quality."
+tool_tip="Sets the internal color resolution. Influences the speed or quality. Set this to high if you want to use HDR Display."
 image_name="mp_info_bullet"
 follows="left|top"
 width="16"
@@ -1924,15 +1924,39 @@ Warning: HDR shows extreme luminosity contrast. Use carefully!
 <check_box
 name="HDRDisplayCtrl"
 control_name="MPHDRDisplay"
-label="HDR Display (Mac)"
+label="HDR Display (Mac) - needs restart"
 layout="topleft"
-width="250"
+width="400"
 height="16"
 left="20"
 top_delta="32"
 initial_value="true"
 >
 </check_box>
+
+<icon
+name="mp_hdrd2_bullet"
+tool_tip="Medium performance impact"
+image_name="mp_yellow_bullet"
+follows="left|top"
+width="16"
+height="16"
+layout="topleft"
+left_pad="5"
+top_delta="-2"
+/>
+
+<icon
+name="mp_hdrd2_info_bullet"
+tool_tip="Make sure your color profile is Apple XDR"
+image_name="mp_info_bullet"
+follows="left|top"
+width="16"
+height="16"
+layout="topleft"
+left_pad="5"
+top_delta="0"
+/>
 
 <text
 name="mp_hdrd_gamma_lbl"
@@ -1959,35 +1983,6 @@ initial_value="2.2"
 increment="0.05"
 min_val="1.8"
 max_val="2.6"
-decimal_digits="2"
-label_width="2">
-</slider>
-
-<text
-name="mp_hdrd_uiboost_lbl"
-follows="left|top"
-layout="topleft"
-width="140"
-height="18"
-left="32"
-top_pad="16"
-font="SansSerifSmall"
->
-UI Luminosity Boost
-</text>
-
-<slider
-control_name="MPHDRUIBoost"
-follows="left|top"
-layout="topleft"
-width="200"
-height="16"
-left_delta="150"
-top_delta="-1"
-initial_value="1.0"
-increment="0.1"
-min_val="1.0"
-max_val="1.4"
 decimal_digits="2"
 label_width="2">
 </slider>
@@ -2045,7 +2040,7 @@ top_delta="0"
 <check_box
 name="MPAppleVBModeCtrl"
 control_name="MPVertexBufferMode"
-label="Megapahit Vertex Buffer Mode (needs restart)"
+label="Alternative Vertex Buffer Mode (needs restart)"
 layout="topleft"
 width="400"
 height="16"

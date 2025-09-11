@@ -223,12 +223,11 @@ void LLReflectionMapManager::update()
         resume();
     }
 
-    static LLCachedControl<S32> sDetail(gSavedSettings, "RenderReflectionProbeDetail", -1);
-    static LLCachedControl<S32> sLevel(gSavedSettings, "RenderReflectionProbeLevel", 3);
-    static LLCachedControl<U32> sReflectionProbeCount(gSavedSettings, "RenderReflectionProbeCount", 256U);
-    static LLCachedControl<S32> sProbeDynamicAllocation(gSavedSettings, "RenderReflectionProbeDynamicAllocation", -1);
-
-    static LLCachedControl<F32> sProbeUpdateSlowDown(gSavedSettings, "MPRenderProbeSlowDown", 0.f);
+    S32 sDetail = gSavedSettings.getS32("RenderReflectionProbeDetail");
+    S32 sLevel = gSavedSettings.getS32("RenderReflectionProbeLevel");
+    U32 sReflectionProbeCount = gSavedSettings.getU32("RenderReflectionProbeCount");
+    S32 sProbeDynamicAllocation = gSavedSettings.getS32("RenderReflectionProbeDynamicAllocation");
+    F32 sProbeUpdateSlowDown = gSavedSettings.getF32("MPRenderProbeSlowDown");
 
     bool realtime = sDetail >= (S32)LLReflectionMapManager::DetailLevel::REALTIME;
 
@@ -293,11 +292,12 @@ void LLReflectionMapManager::update()
 
     initReflectionMaps();
 
-    static LLCachedControl<bool> render_hdr(gSavedSettings, "RenderHDREnabled", true);
+    bool render_hdr = gSavedSettings.getBOOL("RenderHDREnabled");
 
     U32 color_fmt = render_hdr ? GL_R11F_G11F_B10F : GL_RGB8;
 
-    static LLCachedControl<U32> MPColorPrecision(gSavedSettings, "MPColorPrecision", 0);
+    U32 MPColorPrecision = gSavedSettings.getU32("MPColorPrecision");
+
     if(MPColorPrecision == 1)
     {
         color_fmt = GL_RGB8;
@@ -413,8 +413,8 @@ void LLReflectionMapManager::update()
 
     mResetFade = llmin((F32)(mResetFade + gFrameIntervalSeconds * 2.f), 1.f);
 
-    static LLCachedControl<F32> sDefaultUpdatePeriod(gSavedSettings, "RenderDefaultProbeUpdatePeriod", 2.f);
-    static LLCachedControl<F32> sMPUpdatePeriod(gSavedSettings, "MPRenderProbeUpdatePeriod", 2.f);
+    F32 sDefaultUpdatePeriod = gSavedSettings.getF32("RenderDefaultProbeUpdatePeriod");
+    //F32 sMPUpdatePeriod = gSavedSettings.getF32("MPRenderProbeUpdatePeriod");
 
     for (unsigned int i = 0; i < mProbes.size(); ++i)
     {
@@ -561,16 +561,7 @@ void LLReflectionMapManager::update()
         sUpdateCount++;
         mUpdatingProbe = probe;
 
-            if(probe->mCompletedCount < 2)
-            {
-                probe->mNextUpdateTime = gFrameTimeSeconds + fmax( ((F32)sMPUpdatePeriod / 2.0), 0.25);
-            }
-            else
-            {
-                probe->mNextUpdateTime = gFrameTimeSeconds + fmax( (F32)sMPUpdatePeriod, 0.25);
-            }
-
-        doProbeUpdate();
+            doProbeUpdate();
         }
     }
 
@@ -779,26 +770,14 @@ void LLReflectionMapManager::doProbeUpdate()
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DISPLAY;
     llassert(mUpdatingProbe != nullptr);
 
-    static LLCachedControl<bool> mp_progressive(gSavedSettings, "MPRenderProbeProgressive", false);
-
     if(mUpdatingFace < 6)
     {
-        updateProbeFace(mUpdatingProbe, mUpdatingFace, mp_progressive);
-    }
-    else if(mp_progressive)
-    {
-        if(isRadiancePass())
-        {
-            //updateProbeRadiance(mUpdatingProbe);
-        }
-        else updateProbeIrradiance(mUpdatingProbe);
+        LL_WARNS() << "updating face " << mUpdatingFace << LL_ENDL;
+        updateProbeFace(mUpdatingProbe, mUpdatingFace);
     }
     else
     {
-        if(isRadiancePass())
-        {
-            updateProbeRadiance(mUpdatingProbe);
-        }
+        if(isRadiancePass()) updateProbeRadiance(mUpdatingProbe);
         else updateProbeIrradiance(mUpdatingProbe);
     }
 
@@ -814,8 +793,23 @@ void LLReflectionMapManager::doProbeUpdate()
         mUpdatingFace = 0;
         if (isRadiancePass())
         {
+            F32 sMPUpdatePeriod = gSavedSettings.getF32("MPRenderProbeUpdatePeriod");
+
             mUpdatingProbe->mComplete = true;
             mUpdatingProbe->mCompletedCount++;
+
+            LL_WARNS() << "Probe updated (" << mUpdatingProbe->mCompletedCount << ")" << LL_ENDL;
+
+            if(mUpdatingProbe->mCompletedCount < 5)
+            {
+                //probe->mNextUpdateTime = gFrameTimeSeconds + fmax( ((F32)sMPUpdatePeriod / 2.0), 0.25);
+                mUpdatingProbe->mNextUpdateTime = gFrameTimeSeconds + 1.0;
+            }
+            else
+            {
+                mUpdatingProbe->mNextUpdateTime = gFrameTimeSeconds + fmax( (F32)sMPUpdatePeriod, 0.10);
+            }
+
             mUpdatingProbe = nullptr;
             mRadiancePass = false;
         }
@@ -843,13 +837,14 @@ void LLReflectionMapManager::doProbeUpdate()
 // The next six passes render the scene with both radiance and irradiance into the same scratch space cube map and generate a simple mip chain.
 // At the end of these passes, a radiance map is generated for this probe and placed into the radiance cube map array at the index for this probe.
 // In effect this simulates single-bounce lighting.
-void LLReflectionMapManager::updateProbeFace(LLReflectionMap* probe, U32 face, bool progressive)
+void LLReflectionMapManager::updateProbeFace(LLReflectionMap* probe, U32 face)
 {
     // hacky hot-swap of camera specific render targets
     gPipeline.mRT = &gPipeline.mAuxillaryRT;
 
     mLightScale = 1.f;
-    static LLCachedControl<F32> max_local_light_ambiance(gSavedSettings, "RenderReflectionProbeMaxLocalLightAmbiance", 8.f);
+    F32 max_local_light_ambiance = gSavedSettings.getF32("RenderReflectionProbeMaxLocalLightAmbiance");
+
     if (!isRadiancePass() && probe->getAmbiance() > max_local_light_ambiance)
     {
         mLightScale = max_local_light_ambiance / probe->getAmbiance();
@@ -990,14 +985,6 @@ void LLReflectionMapManager::updateProbeFace(LLReflectionMap* probe, U32 face, b
         gGL.getTexUnit(diffuseChannel)->unbind(LLTexUnit::TT_TEXTURE);
         gReflectionMipProgram.unbind();
     }
-
-    if(progressive)
-    {
-        if(isRadiancePass()) updateProbeRadianceOnFace(probe, face, sourceIdx);
-    }
-
-    //  if(isRadiancePass()) updateProbeRadianceOnFace(probe, face, sourceIdx);
-    //  else updateProbeIrradianceOnFace(probe, face, sourceIdx);
 }
 
 // ===================== IRRADIANCE ================================
@@ -1026,7 +1013,7 @@ void LLReflectionMapManager::updateProbeIrradiance(LLReflectionMap* probe)
 
 
     mMipChain[0].bindTarget("irradiance", 0);
-    mMipChain[0].clear(0);
+    mMipChain[0].clear();
 
     gIrradianceGenProgram.bind();
 
@@ -1157,140 +1144,6 @@ void LLReflectionMapManager::updateProbeRadiance(LLReflectionMap* probe)
     //mTexture->unbind();
 }
 
-// ================== PER FACE =======================
-
-void LLReflectionMapManager::updateProbeIrradianceOnFace(LLReflectionMap* probe, U32 face, S32 sourceIdx)
-{
-    LL_PROFILE_GPU_ZONE("probe irradiance gen");
-
-    static LLStaticHashedString sMipLevel("mipLevel");
-    static LLStaticHashedString sRoughness("roughness");
-    static LLStaticHashedString sWidth("u_width");
-
-    gGL.setColorMask(true, false);
-    LLGLDepthTest depth(GL_FALSE, GL_FALSE);
-    LLGLDisable cull(GL_CULL_FACE);
-    LLGLDisable blend(GL_BLEND);
-
-    static LLStaticHashedString sSourceIdx("sourceIdx");
-
-    //LL_WARNS() << "IRRADIANCE" << LL_ENDL;
-
-    mMipChain[0].bindTarget("irradiance", 0);
-    //mMipChain[0].clear();
-
-            gIrradianceGenProgram.bind();
-
-#if GL_VERSION_4_0
-            S32 channel = gIrradianceGenProgram.enableTexture(LLShaderMgr::REFLECTION_PROBES, LLTexUnit::TT_CUBE_MAP_ARRAY);
-            mTexture->bind(channel);
-#endif
-
-            gIrradianceGenProgram.uniform1i(sSourceIdx, sourceIdx);
-            gIrradianceGenProgram.uniform1f(LLShaderMgr::REFLECTION_PROBE_MAX_LOD, mMaxProbeLOD);
-
-            mVertexBuffer->setBuffer();
-            int start_mip = 0;
-            // find the mip target to start with based on irradiance map resolution
-            for (start_mip = 0; start_mip < mMipChain.size(); ++start_mip)
-            {
-                if (mMipChain[start_mip].getWidth() == LL_IRRADIANCE_MAP_RESOLUTION)
-                {
-                    break;
-                }
-            }
-
-                int i = start_mip;
-                glViewport(0, 0, mMipChain[i].getWidth(), mMipChain[i].getHeight());
-
-            int cf = face;
-            {
-                    LLCoordFrame frame;
-                    frame.lookAt(LLVector3(0, 0, 0), LLCubeMapArray::sClipToCubeLookVecs[cf], LLCubeMapArray::sClipToCubeUpVecs[cf]);
-
-                    F32 mat[16];
-                    frame.getOpenGLRotation(mat);
-                    gGL.loadMatrix(mat);
-
-                    mVertexBuffer->drawArrays(gGL.TRIANGLE_STRIP, 0, 4);
-
-#if GL_VERSION_4_0
-                    S32 res = mMipChain[i].getWidth();
-                    mIrradianceMaps->bind(channel);
-                    glCopyTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, i - start_mip, 0, 0, probe->mCubeIndex * 6 + cf, 0, 0, res, res);
-#endif
-            }
-
-        mMipChain[0].flush();
-
-        gIrradianceGenProgram.unbind();
-        mTexture->unbind();
-}
-
-void LLReflectionMapManager::updateProbeRadianceOnFace(LLReflectionMap* probe, U32 face, S32 sourceIdx)
-{
-    LL_PROFILE_GPU_ZONE("probe radiance gen");
-    static LLStaticHashedString sMipLevel("mipLevel");
-    static LLStaticHashedString sRoughness("roughness");
-    static LLStaticHashedString sWidth("u_width");
-
-    gGL.setColorMask(true, false);
-    LLGLDepthTest depth(GL_FALSE, GL_FALSE);
-    LLGLDisable cull(GL_CULL_FACE);
-    LLGLDisable blend(GL_BLEND);
-
-    static LLStaticHashedString sSourceIdx("sourceIdx");
-
-    mMipChain[0].bindTarget("radiance", 0);
-    mMipChain[0].clear(0);
-
-    gRadianceGenProgram.bind();
-    mVertexBuffer->setBuffer();
-
-    S32 channel = gRadianceGenProgram.enableTexture(LLShaderMgr::REFLECTION_PROBES, LLTexUnit::TT_CUBE_MAP_ARRAY);
-    mTexture->bind(channel);
-
-    gRadianceGenProgram.uniform1i(sSourceIdx, sourceIdx);
-    gRadianceGenProgram.uniform1f(LLShaderMgr::REFLECTION_PROBE_MAX_LOD, mMaxProbeLOD);
-    gRadianceGenProgram.uniform1f(LLShaderMgr::REFLECTION_PROBE_STRENGTH, 1.f);
-    gRadianceGenProgram.uniform1i(sWidth, mProbeResolution);
-
-    U32 res = mMipChain[0].getWidth();
-
-    for (int i = 0; i < mMipChain.size(); ++i)
-    {
-        glViewport(0, 0, res, res);
-
-        gRadianceGenProgram.uniform1f(sMipLevel, (GLfloat)i);
-        gRadianceGenProgram.uniform1f(sRoughness, (F32)i / (F32)(mMipChain.size() - 1));
-
-        int cf = face;
-        {
-            LLCoordFrame frame;
-            frame.lookAt(LLVector3(0, 0, 0), LLCubeMapArray::sClipToCubeLookVecs[cf], LLCubeMapArray::sClipToCubeUpVecs[cf]);
-
-            F32 mat[16];
-            frame.getOpenGLRotation(mat);
-            gGL.loadMatrix(mat);
-
-            mVertexBuffer->drawArrays(gGL.TRIANGLE_STRIP, 0, 4);
-
-            glCopyTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, i, 0, 0, probe->mCubeIndex * 6 + cf, 0, 0, res, res);
-            LOG_GLERROR("glCopyTexSubImage3D");
-            //mMipChain[0].clear(0);
-        }
-
-        if (i != mMipChain.size() - 1)
-        {
-            res /= 2;
-        }
-    }
-
-    gRadianceGenProgram.unbind();
-    mMipChain[0].flush();
-    mTexture->unbind();
-}
-
 void LLReflectionMapManager::reset()
 {
     mReset = true;
@@ -1390,7 +1243,7 @@ void LLReflectionMapManager::updateUniforms()
     LLEnvironment& environment = LLEnvironment::instance();
     LLSettingsSky::ptr_t psky = environment.getCurrentSky();
 
-    static LLCachedControl<bool> should_auto_adjust(gSavedSettings, "RenderSkyAutoAdjustLegacy", false);
+    bool should_auto_adjust = gSavedSettings.getBOOL("RenderSkyAutoAdjustLegacy");
     F32 minimum_ambiance = psky->getReflectionProbeAmbiance(should_auto_adjust);
 
     bool is_ambiance_pass = gCubeSnapshot && !isRadiancePass();
@@ -1706,8 +1559,8 @@ void LLReflectionMapManager::renderDebug()
 
 void LLReflectionMapManager::initReflectionMaps()
 {
-    static LLCachedControl<U32> ref_probe_res(gSavedSettings, "RenderReflectionProbeResolution", 128U);
-    U32 probe_resolution = nhpo2(llclamp(ref_probe_res(), (U32)64, (U32)512));
+    U32 ref_probe_res = gSavedSettings.getU32("RenderReflectionProbeResolution");
+    U32 probe_resolution = nhpo2(llclamp(ref_probe_res, (U32)64, (U32)512));
 
     bool shouldInit = mTexture.isNull() || mReflectionProbeCount != mDynamicProbeCount || mProbeResolution != probe_resolution || mReset;
 
@@ -1731,7 +1584,7 @@ void LLReflectionMapManager::initReflectionMaps()
             mTexture->getWidth() != mProbeResolution ||
             mReflectionProbeCount + 2 != mTexture->getCount())
         {
-            static LLCachedControl<bool> render_hdr(gSavedSettings, "RenderHDREnabled", true);
+            bool render_hdr = gSavedSettings.getBOOL("RenderHDREnabled");
 
             if (mTexture)
             {

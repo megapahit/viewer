@@ -204,7 +204,7 @@ bool LLViewerDynamicTexture::updateAllInstances()
     llassert(bake_target.getHeight() >= (U32) LLAvatarAppearanceDefines::SCRATCH_TEX_HEIGHT);
 
     preview_target.bindTarget();
-    preview_target.clear();
+    //preview_target.clear();
 
     LLGLSLShader::unbind();
     LLVertexBuffer::unbind();
@@ -249,7 +249,7 @@ bool LLViewerDynamicTexture::updateAllInstances()
 
     // ORDER_LAST is baked skin preview, ORDER_RESET resets appearance parameters and does not render.
     bake_target.bindTarget();
-    bake_target.clear();
+    //bake_target.clear();
 
     result = false;
     ret = false;

@@ -14417,7 +14417,7 @@
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <integer>1.5</integer>
+      <integer>1.0</integer>
     </map>
     <key>MPHDRGamma</key>
     <map>
@@ -14439,7 +14439,7 @@
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <integer>1.5</integer>
+      <integer>1.0</integer>
     </map>
     <key>MPColorPrecision</key>
     <map>

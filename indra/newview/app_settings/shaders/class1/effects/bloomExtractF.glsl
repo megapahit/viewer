@@ -2,7 +2,7 @@ out vec4 frag_color;
 
 uniform sampler2D diffuseMap;
 uniform sampler2D bloomExtractORM; // orm
-uniform sampler2D bloomExtractEmissive; // emissive
+//uniform sampler2D bloomExtractEmissive; // emissive
 uniform sampler2D bloomExtractEmissive2; // emissive 2
 
 uniform float bloomExtractBrightness = 0.9;
@@ -15,6 +15,12 @@ void main()
 {
     vec4 col = texture(diffuseMap, vary_texcoord0.xy);
 
+    if(col.a > 0.001)
+    {
+        discard;
+        return;
+    }
+
     //int valid = 0;
     //float brightness = dot(col.rgb, vec3(0.2126, 0.7152, 0.0722));
     float brightness = dot(col.rgb, vec3(0.3, 0.5, 0.2));
@@ -25,14 +31,16 @@ void main()
         return;
     }
 
+    /*
     vec3 emi = texture(bloomExtractEmissive, vary_texcoord0.xy).rgb;
     if(emi.r + emi.g + emi.b > 0.01)
     {
         discard;
         return;
     }
+    */
 
-    emi = texture(bloomExtractEmissive2, vary_texcoord0.xy).rgb;
+    vec3 emi = texture(bloomExtractEmissive2, vary_texcoord0.xy).rgb;
     if(emi.r + emi.g + emi.b > 0.01)
     {
         discard;

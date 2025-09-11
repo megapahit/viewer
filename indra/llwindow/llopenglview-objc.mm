@@ -160,8 +160,18 @@ attributedStringInfo getSegments(NSAttributedString *str)
 
 - (void)viewWillMoveToWindow:(nullable NSWindow *)newWindow
 {
-    if(mHDRDisplay) self.wantsExtendedDynamicRangeOpenGLSurface = YES;
-    //else self.wantsExtendedDynamicRangeOpenGLSurface = NO;
+    if(mHDRDisplay)
+    {
+        self.wantsExtendedDynamicRangeOpenGLSurface = YES;
+        NSLog(@"Wants Extended Dynamic Range OpenGL", nil);
+    }
+    /*
+    else
+    {
+        self.wantsExtendedDynamicRangeOpenGLSurface = NO;
+        NSLog(@"Wants Standard Color Range OpenGL", nil);
+    }
+    */
 }
 
 - (void)viewDidMoveToWindow
@@ -257,27 +267,35 @@ attributedStringInfo getSegments(NSAttributedString *str)
 	// Initialize with a default "safe" pixel format that will work with versions dating back to OS X 10.6.
 	// Any specialized pixel formats, i.e. a core profile pixel format, should be initialized through rebuildContextWithFormat.
 	// 10.7 and 10.8 don't really care if we're defining a profile or not.  If we don't explicitly request a core or legacy profile, it'll always assume a legacy profile (for compatibility reasons).
-    NSOpenGLPixelFormatAttribute SDRAttrs[] = {
+
+	NSOpenGLPixelFormatAttribute SDRAttrs[] = {
+        NSOpenGLPFANoRecovery,
 		NSOpenGLPFADoubleBuffer,
+		NSOpenGLPFAClosestPolicy,
+		NSOpenGLPFAAccelerated,
 		NSOpenGLPFASampleBuffers, 0,
 		NSOpenGLPFASamples, 0,
-		NSOpenGLPFAStencilSize, 8,
 		NSOpenGLPFADepthSize, 24,
+		NSOpenGLPFAAlphaSize, 8,
+		NSOpenGLPFAColorSize, 32,
 		NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion4_1Core,
 		0
     };
-	
-	
+
+
     NSOpenGLPixelFormatAttribute HDRAttrs[] = {
-    NSOpenGLPFADoubleBuffer,
-    NSOpenGLPFASampleBuffers, 0,
-    NSOpenGLPFASamples, 0,
-    NSOpenGLPFAStencilSize, 8,
-    NSOpenGLPFAColorFloat,
-    NSOpenGLPFAColorSize, 64,
-    NSOpenGLPFADepthSize, 24,
-    NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion4_1Core,
-    0};
+        NSOpenGLPFANoRecovery,
+        NSOpenGLPFADoubleBuffer,
+        NSOpenGLPFAClosestPolicy,
+        NSOpenGLPFAAccelerated,
+        NSOpenGLPFASampleBuffers, 0,
+        NSOpenGLPFASamples, 0,
+        NSOpenGLPFAColorFloat,
+        NSOpenGLPFAColorSize, 64,
+        NSOpenGLPFADepthSize, 24,
+        NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion4_1Core,
+        0
+    };
 
 	NSOpenGLPixelFormat *pixelFormat = nil;
 
@@ -293,6 +311,7 @@ attributedStringInfo getSegments(NSAttributedString *str)
         }
         else
         {
+            NSLog(@"pixel format created successfully for HDR Display", nil);
             mHDRDisplay = YES;
         }
     }
@@ -326,6 +345,8 @@ attributedStringInfo getSegments(NSAttributedString *str)
 
         self.window.colorSpace = extended_ns_color_space;
         CGColorSpaceRelease(color_space_extended);
+
+        NSLog(@"Extended color space applied for HDR Display", nil);
     }
 
 	//for retina support
