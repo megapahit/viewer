@@ -5039,7 +5039,7 @@ bool LLViewerWindow::rawSnapshot(LLImageRaw *raw, S32 image_width, S32 image_hei
                     mWorldViewRectRaw.set(0, image_height, image_width, 0);
                     LLViewerCamera::getInstance()->setViewHeightInPixels( mWorldViewRectRaw.getHeight() );
                     LLViewerCamera::getInstance()->setAspect( getWorldViewAspectRatio() );
-                    scratch_space.bindTarget("", 0);
+                    scratch_space.bindTarget();
                 }
                 else
                 {
@@ -5306,7 +5306,7 @@ bool LLViewerWindow::simpleSnapshot(LLImageRaw* raw, S32 image_width, S32 image_
         {
             mWorldViewRectRaw.set(0, image_height, image_width, 0);
 
-            scratch_space.bindTarget("", 0);
+            scratch_space.bindTarget();
         }
         else
         {

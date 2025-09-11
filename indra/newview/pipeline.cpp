@@ -356,14 +356,12 @@ bool addDeferredAttachments(LLRenderTarget& target, bool for_impostor = false)
     static LLCachedControl<bool> has_emissive(gSavedSettings, "RenderEnableEmissiveBuffer", false);
     static LLCachedControl<bool> has_hdr(gSavedSettings, "RenderHDREnabled", true);
     static LLCachedControl<U32> MPColorPrecision(gSavedSettings, "MPColorPrecision", 0);
+    static LLCachedControl<bool> MPHDRDisplay(gSavedSettings, "MPHDRDisplay", false);
 
     bool hdr = has_hdr() && gGLManager.mGLVersion > 4.05f;
 
-    if (!hdr || MPColorPrecision < 2)
-    {
-        norm = GL_RGB10_A2;
-        emissive = GL_RGB8;
-    }
+    if (!hdr || MPColorPrecision != 2) norm = GL_RGB10_A2;
+    if (!hdr || (!MPHDRDisplay && MPColorPrecision == 1)) emissive = GL_RGB8;
 
     bool valid = true;
     valid      = valid && target.addColorAttachment(orm);    // frag-data[1] specular OR PBR ORM
@@ -874,15 +872,15 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY, U32 type_)
     //allocate deferred rendering color buffers
 
     GLuint deferredScreenFormat = GL_RGBA8;
-    if((hdr || mHDRDisplay) && MPColorPrecision == 2) deferredScreenFormat = GL_RGBA16F;
+    if((hdr && MPColorPrecision == 2)) deferredScreenFormat = GL_RGBA16F;
 
     if (!mRT->deferredScreen.allocate(resX, resY, deferredScreenFormat, true)) return false;
     if (!addDeferredAttachments(mRT->deferredScreen)) return false;
 
-    GLuint screenFormat = GL_RGBA8;
-    if(hdr || mHDRDisplay) screenFormat = GL_RGBA16F;
+    GLuint screenFormat = GL_RGBA16F;
+    if(!hdr && !mHDRDisplay && MPColorPrecision == 1) screenFormat = GL_RGB8;
 
-    if (!mRT->screen.allocate(resX, resY, GL_RGBA16F)) return false;
+    if (!mRT->screen.allocate(resX, resY, screenFormat)) return false;
 
     mRT->deferredScreen.shareDepthBuffer(mRT->screen);
 
@@ -901,7 +899,7 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY, U32 type_)
     if (!gCubeSnapshot) // hack to not re-allocate various targets for cube snapshots
     {
         GLuint UIFormat = GL_RGBA8;
-        if(mHDRDisplay && MPColorPrecision == 2) UIFormat = GL_RGBA16F;
+        //if(mHDRDisplay && MPColorPrecision == 2) UIFormat = GL_RGBA16F;
 
         if (RenderUIBuffer)
         {
@@ -914,7 +912,15 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY, U32 type_)
         if (RenderFSAAType > 0)
         {
             GLuint AAFormat = GL_RGBA8;
-            if(mHDRDisplay && MPColorPrecision == 2) AAFormat = GL_RGBA16F;
+            if(mHDRDisplay && MPColorPrecision == 2)
+            {
+                LL_WARNS() << "AA SET TO GL_RGBA16F" << LL_ENDL;
+                AAFormat = GL_RGBA16F;
+            }
+            else
+            {
+                LL_WARNS() << "AA SET TO GL_RGBA8" << LL_ENDL;
+            }
 
             if (!mFXAAMap.allocate(resX, resY, AAFormat)) return false;
             if (RenderFSAAType == 2)
@@ -3891,9 +3897,6 @@ void render_hud_elements()
     gGL.color4f(1, 1, 1, 1);
     LLGLDepthTest depth(GL_TRUE, GL_FALSE);
 
-    static LLCachedControl<bool> HDRDisplay(gSavedSettings, "MPHDRDisplay");
-    static LLCachedControl<F32> hdrUIBoost(gSavedSettings, "MPHDRUIBoost");
-    if(HDRDisplay) gUIProgram.uniform1f(LLShaderMgr::MP_HDR_BOOST, (GLfloat)hdrUIBoost);
 
     if (!LLPipeline::sReflectionRender && gPipeline.hasRenderDebugFeatureMask(LLPipeline::RENDER_DEBUG_FEATURE_UI))
     {
@@ -7363,7 +7366,7 @@ void LLPipeline::gammaCorrect(LLRenderTarget* src, LLRenderTarget* dst)
         if(mHDRDisplay)
         {
             shader.uniform1f(LLShaderMgr::GAMMA, (GLfloat)mp_hdr_gamma);
-            shader.uniform1f(LLShaderMgr::MP_HDR_BOOST, (GLfloat)mp_hdr_boost);
+            shader.uniform1f(LLShaderMgr::MP_HDR_BOOST, 1.0);
         }
 
         renderTriangle();
@@ -7682,14 +7685,14 @@ void LLPipeline::generateSMAABuffers(LLRenderTarget* src)
             edge_shader.bind();
             edge_shader.uniform4fv(sSmaaRTMetrics, 1, rt_metrics);
 
-            S32 channel = edge_shader.enableTexture(LLShaderMgr::DEFERRED_DIFFUSE, src->getUsage());
+            S32 channel = edge_shader.enableTexture(LLShaderMgr::DEFERRED_DIFFUSE);
+
             if (channel > -1)
             {
                 if (!use_sample)
                 {
-                    //src->bindTexture(0, channel, LLTexUnit::TFO_POINT);
-                    //gGL.getTexUnit(channel)->setTextureAddressMode(LLTexUnit::TAM_CLAMP);
                     src->bindTexture(0, channel, LLTexUnit::TFO_BILINEAR);
+                    gGL.getTexUnit(channel)->setTextureAddressMode(LLTexUnit::TAM_CLAMP);
                 }
                 else
                 {
@@ -7787,7 +7790,6 @@ bool LLPipeline::applySMAA(LLRenderTarget* src, LLRenderTarget* dst)
 
     LL_PROFILE_GPU_ZONE("aa");
 
-    generateSMAABuffers(src);
 
 
     static LLCachedControl<U32> aa_quality(gSavedSettings, "RenderFSAASamples", 0U);
@@ -8094,7 +8096,7 @@ bool LLPipeline::renderBloom(LLRenderTarget* src, LLRenderTarget* dst)
     gBloomExtractProgram.bind();
     gBloomExtractProgram.bindTexture(LLShaderMgr::DIFFUSE_MAP, &mRT->screen);
     gBloomExtractProgram.bindTexture(LLShaderMgr::BLOOM_EXTRACT_ORM, &mRT->deferredScreen, false, LLTexUnit::TFO_POINT, 1);
-    gBloomExtractProgram.bindTexture(LLShaderMgr::BLOOM_EXTRACT_EMISSIVE, &mGlow[1], false, LLTexUnit::TFO_POINT, 0);
+    //gBloomExtractProgram.bindTexture(LLShaderMgr::BLOOM_EXTRACT_EMISSIVE, &mGlow[1], false, LLTexUnit::TFO_POINT, 0);
     gBloomExtractProgram.bindTexture(LLShaderMgr::BLOOM_EXTRACT_EMISSIVE2, &mRT->deferredScreen, false, LLTexUnit::TFO_POINT, 3);
 
     gBloomExtractProgram.uniform1f(LLShaderMgr::BLOOM_EXTRACT_BRIGHTNESS, 1.0 - mp_bloom_extract_brightness);
@@ -8216,6 +8218,8 @@ void LLPipeline::renderFinalize()
     U16 activeRT = 0;
 
     LLRenderTarget* postHDRBuffer = &mRT->screen;
+
+    generateSMAABuffers(&mRT->screen);
 
     if (hdr)
     {

@@ -210,14 +210,10 @@ private:
     void doProbeUpdate();
 
     // update the specified face of the specified probe
-    void updateProbeFace(LLReflectionMap* probe, U32 face, bool progressive = false);
+    void updateProbeFace(LLReflectionMap* probe, U32 face);
 
     void updateProbeIrradiance(LLReflectionMap* probe);
     void updateProbeRadiance(LLReflectionMap* probe);
-
-    void updateProbeIrradianceOnFace(LLReflectionMap* probe, U32 face, S32 sourceIdx);
-    void updateProbeRadianceOnFace(LLReflectionMap* probe, U32 face, S32 sourceIdx);
-
 
     // list of active reflection maps
     std::vector<LLPointer<LLReflectionMap> > mProbes;
