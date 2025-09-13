@@ -223,11 +223,11 @@ void LLReflectionMapManager::update()
         resume();
     }
 
-    S32 sDetail = gSavedSettings.getS32("RenderReflectionProbeDetail");
-    S32 sLevel = gSavedSettings.getS32("RenderReflectionProbeLevel");
-    U32 sReflectionProbeCount = gSavedSettings.getU32("RenderReflectionProbeCount");
-    S32 sProbeDynamicAllocation = gSavedSettings.getS32("RenderReflectionProbeDynamicAllocation");
-    F32 sProbeUpdateSlowDown = gSavedSettings.getF32("MPRenderProbeSlowDown");
+    static LLCachedControl<S32> sDetail(gSavedSettings, "RenderReflectionProbeDetail", -1);
+    static LLCachedControl<S32> sLevel(gSavedSettings, "RenderReflectionProbeLevel", 3);
+    static LLCachedControl<U32> sReflectionProbeCount(gSavedSettings, "RenderReflectionProbeCount", 256U);
+    static LLCachedControl<S32> sProbeDynamicAllocation(gSavedSettings, "RenderReflectionProbeDynamicAllocation", -1);
+    static LLCachedControl<F32> sProbeUpdateSlowDown(gSavedSettings, "MPRenderProbeSlowDown", 0.05);
 
     bool realtime = sDetail >= (S32)LLReflectionMapManager::DetailLevel::REALTIME;
 
@@ -292,11 +292,10 @@ void LLReflectionMapManager::update()
 
     initReflectionMaps();
 
-    bool render_hdr = gSavedSettings.getBOOL("RenderHDREnabled");
+    static LLCachedControl<bool> render_hdr(gSavedSettings, "RenderHDREnabled", true);
+    static LLCachedControl<U32> MPColorPrecision(gSavedSettings, "MPColorPrecision", 0);
 
     U32 color_fmt = render_hdr ? GL_R11F_G11F_B10F : GL_RGB8;
-
-    U32 MPColorPrecision = gSavedSettings.getU32("MPColorPrecision");
 
     if(MPColorPrecision == 1)
     {
@@ -413,8 +412,7 @@ void LLReflectionMapManager::update()
 
     mResetFade = llmin((F32)(mResetFade + gFrameIntervalSeconds * 2.f), 1.f);
 
-    F32 sDefaultUpdatePeriod = gSavedSettings.getF32("RenderDefaultProbeUpdatePeriod");
-    //F32 sMPUpdatePeriod = gSavedSettings.getF32("MPRenderProbeUpdatePeriod");
+    static LLCachedControl<F32> sDefaultUpdatePeriod(gSavedSettings, "RenderDefaultProbeUpdatePeriod", 2.0);
 
     for (unsigned int i = 0; i < mProbes.size(); ++i)
     {
@@ -560,8 +558,7 @@ void LLReflectionMapManager::update()
 
         sUpdateCount++;
         mUpdatingProbe = probe;
-
-            doProbeUpdate();
+        doProbeUpdate();
         }
     }
 
@@ -793,7 +790,7 @@ void LLReflectionMapManager::doProbeUpdate()
         mUpdatingFace = 0;
         if (isRadiancePass())
         {
-            F32 sMPUpdatePeriod = gSavedSettings.getF32("MPRenderProbeUpdatePeriod");
+            static LLCachedControl<F32> sMPUpdatePeriod(gSavedSettings, "MPRenderProbeUpdatePeriod", 15.0);
 
             mUpdatingProbe->mComplete = true;
             mUpdatingProbe->mCompletedCount++;
@@ -843,8 +840,7 @@ void LLReflectionMapManager::updateProbeFace(LLReflectionMap* probe, U32 face)
     gPipeline.mRT = &gPipeline.mAuxillaryRT;
 
     mLightScale = 1.f;
-    F32 max_local_light_ambiance = gSavedSettings.getF32("RenderReflectionProbeMaxLocalLightAmbiance");
-
+    static LLCachedControl<F32> max_local_light_ambiance(gSavedSettings, "RenderReflectionProbeMaxLocalLightAmbiance", 8.f);
     if (!isRadiancePass() && probe->getAmbiance() > max_local_light_ambiance)
     {
         mLightScale = max_local_light_ambiance / probe->getAmbiance();
@@ -866,7 +862,7 @@ void LLReflectionMapManager::updateProbeFace(LLReflectionMap* probe, U32 face)
     }
     else
     {
-        llassert(gSavedSettings.getS32("RenderReflectionProbeLevel") > 0); // should never update a probe that's not the default probe if reflection coverage is none
+        //llassert(gSavedSettings.getS32("RenderReflectionProbeLevel") > 0); // should never update a probe that's not the default probe if reflection coverage is none
         probe->update(mRenderTarget.getWidth(), face);
     }
 
@@ -1243,7 +1239,7 @@ void LLReflectionMapManager::updateUniforms()
     LLEnvironment& environment = LLEnvironment::instance();
     LLSettingsSky::ptr_t psky = environment.getCurrentSky();
 
-    bool should_auto_adjust = gSavedSettings.getBOOL("RenderSkyAutoAdjustLegacy");
+    static LLCachedControl<bool> should_auto_adjust(gSavedSettings, "RenderSkyAutoAdjustLegacy", false);
     F32 minimum_ambiance = psky->getReflectionProbeAmbiance(should_auto_adjust);
 
     bool is_ambiance_pass = gCubeSnapshot && !isRadiancePass();
@@ -1559,8 +1555,8 @@ void LLReflectionMapManager::renderDebug()
 
 void LLReflectionMapManager::initReflectionMaps()
 {
-    U32 ref_probe_res = gSavedSettings.getU32("RenderReflectionProbeResolution");
-    U32 probe_resolution = nhpo2(llclamp(ref_probe_res, (U32)64, (U32)512));
+    static LLCachedControl<U32> ref_probe_res(gSavedSettings, "RenderReflectionProbeResolution", 128U);
+    U32 probe_resolution = nhpo2(llclamp(ref_probe_res(), (U32)64, (U32)512));
 
     bool shouldInit = mTexture.isNull() || mReflectionProbeCount != mDynamicProbeCount || mProbeResolution != probe_resolution || mReset;
 
@@ -1584,7 +1580,7 @@ void LLReflectionMapManager::initReflectionMaps()
             mTexture->getWidth() != mProbeResolution ||
             mReflectionProbeCount + 2 != mTexture->getCount())
         {
-            bool render_hdr = gSavedSettings.getBOOL("RenderHDREnabled");
+            static LLCachedControl<bool> render_hdr(gSavedSettings, "RenderHDREnabled", true);
 
             if (mTexture)
             {
