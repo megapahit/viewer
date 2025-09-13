@@ -162,8 +162,9 @@ public:
     void gammaCorrect(LLRenderTarget* src, LLRenderTarget* dst);
     void generateGlow(LLRenderTarget* src);
     bool applyCAS(LLRenderTarget* src, LLRenderTarget* dst);
+    bool generateFXAABuffer(LLRenderTarget* src);
     bool applyFXAA(LLRenderTarget* src, LLRenderTarget* dst);
-    void generateSMAABuffers(LLRenderTarget* src);
+    bool generateSMAABuffers(LLRenderTarget* src);
     bool applySMAA(LLRenderTarget* src, LLRenderTarget* dst);
     bool renderDoF(LLRenderTarget* src, LLRenderTarget* dst);
     void copyRenderTarget(LLRenderTarget* src, LLRenderTarget* dst);
@@ -744,6 +745,8 @@ public:
     // FXAA helper target
     LLRenderTarget          mFXAAMap;
     LLRenderTarget          mSMAABlendBuffer;
+
+    LLRenderTarget          mDummyRT;
 
     // render ui to buffer target
     LLRenderTarget          mUIScreen;
