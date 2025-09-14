@@ -592,24 +592,6 @@ U32 LLRenderTarget::getNumTextures() const
 void LLRenderTarget::bindTexture(U32 index, S32 channel, LLTexUnit::eTextureFilterOptions filter_options)
 {
     gGL.getTexUnit(channel)->bindManual(mUsage, getTexture(index), filter_options == LLTexUnit::TFO_TRILINEAR || filter_options == LLTexUnit::TFO_ANISOTROPIC);
-
-    bool isSRGB = false;
-    llassert(mInternalFormat.size() > index);
-    switch (mInternalFormat[index])
-    {
-        case GL_SRGB:
-        case GL_SRGB8:
-#if GL_VERSION_2_1
-        case GL_SRGB_ALPHA:
-#endif
-        case GL_SRGB8_ALPHA8:
-            isSRGB = true;
-            break;
-
-        default:
-            break;
-    }
-
     gGL.getTexUnit(channel)->setTextureFilteringOption(filter_options);
 
     LOG_GLERROR(mName + " bindTexture()");

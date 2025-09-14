@@ -54,7 +54,6 @@ if (DARWIN)
 
     install(FILES
         ${SCRIPTS_DIR}/messages/message_template.msg
-        ${SCRIPTS_DIR}/../etc/message.xml
         ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
         DESTINATION app_settings
         )
@@ -109,7 +108,6 @@ elseif (WINDOWS)
 
     install(FILES
         ${SCRIPTS_DIR}/messages/message_template.msg
-        ${SCRIPTS_DIR}/../etc/message.xml
         ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
         DESTINATION app_settings
         )
@@ -250,7 +248,6 @@ endif (IS_ARTWORK_PRESENT)
         )
 
 install(FILES ${SCRIPTS_DIR}/messages/message_template.msg
-        ${SCRIPTS_DIR}/../etc/message.xml
         ${CMAKE_CURRENT_BINARY_DIR}/contributors.txt
         DESTINATION share/${VIEWER_BINARY_NAME}/app_settings
         )
