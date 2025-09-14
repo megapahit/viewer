@@ -296,7 +296,7 @@ left="55"
 top_pad="40"
 font="SansSerifSmall"
 >
-Beware: SMAA + Sharpness currently causes a slow down on Mac.
+Beware: some combinations cause a slow down on Mac.
 </text>
 
 <text
