@@ -44,6 +44,9 @@
     bool mSimulatedRightClick;
     bool mOldResize;
 
+    NSOpenGLPixelFormat *pixelFormat;
+    NSOpenGLContext *glContext;
+
     bool mHDRDisplay;
 }
 - (id) initWithSamples:(NSUInteger)samples;

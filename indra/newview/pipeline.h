@@ -314,6 +314,7 @@ public:
 
     void renderGeomDeferred(LLCamera& camera, bool do_occlusion = false);
     void renderGeomPostDeferred(LLCamera& camera);
+    void renderGeomPostDeferredOnlyHud(LLCamera& camera);
     void renderGeomShadow(LLCamera& camera);
     void bindLightFunc(LLGLSLShader& shader);
 
@@ -746,7 +747,7 @@ public:
     LLRenderTarget          mFXAAMap;
     LLRenderTarget          mSMAABlendBuffer;
 
-    LLRenderTarget          mDummyRT;
+    //LLRenderTarget          mDummyRT;
 
     // render ui to buffer target
     LLRenderTarget          mUIScreen;
@@ -1104,6 +1105,7 @@ public:
 };
 
 void render_bbox(const LLVector3 &min, const LLVector3 &max);
+
 void render_hud_elements();
 
 extern LLPipeline gPipeline;

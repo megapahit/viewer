@@ -1190,22 +1190,22 @@ S32 LLGLSLShader::bindTexture(S32 uniform, LLRenderTarget* texture, bool depth, 
         return -1;
     }
 
-    uniform = getTextureChannel(uniform);
+    S32 channel = getTextureChannel(uniform);
 
-    if (uniform > -1)
+    if (channel > -1)
     {
         if (depth) {
-            gGL.getTexUnit(uniform)->bind(texture, true);
+            gGL.getTexUnit(channel)->bind(texture, true);
         }
         else {
             bool has_mips = mode == LLTexUnit::TFO_TRILINEAR || mode == LLTexUnit::TFO_ANISOTROPIC;
-            gGL.getTexUnit(uniform)->bindManual(texture->getUsage(), texture->getTexture(index), has_mips);
+            gGL.getTexUnit(channel)->bindManual(texture->getUsage(), texture->getTexture(index), has_mips);
         }
 
-        gGL.getTexUnit(uniform)->setTextureFilteringOption(mode);
+        gGL.getTexUnit(channel)->setTextureFilteringOption(mode);
     }
 
-    return uniform;
+    return channel;
 }
 
 S32 LLGLSLShader::bindTexture(const std::string& uniform, LLRenderTarget* texture, bool depth, LLTexUnit::eTextureFilterOptions mode)

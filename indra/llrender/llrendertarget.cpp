@@ -524,13 +524,12 @@ void LLRenderTarget::bindTarget(std::string name_, U32 mode_)
     else if(mMode == 1)
     {
         glDrawBuffers(static_cast<GLsizei>(mTex.size()), drawbuffers);
-        glReadBuffer(GL_NONE);
+        //glReadBuffer(GL_NONE);
         LOG_GLERROR(mName+" draw buffer");
     }
     else if(mMode == 2)
     {
-        GLenum buffers[] = {GL_NONE};
-        glDrawBuffers(0, buffers);
+        //glDrawBuffer(GL_NONE);
         glReadBuffer(GL_COLOR_ATTACHMENT0);
         LOG_GLERROR(mName+" read buffer");
     }

@@ -229,7 +229,7 @@ const F32 DEFERRED_LIGHT_FALLOFF = 0.5f;
 const U32 DEFERRED_VB_MASK = LLVertexBuffer::MAP_VERTEX | LLVertexBuffer::MAP_TEXCOORD0 | LLVertexBuffer::MAP_TEXCOORD1;
 
 const U32 SHADOWS_RESX = 1024;
-const U32 SHADOWS_RESY = 768;
+const U32 SHADOWS_RESY = 512;
 
 extern S32 gBoxFrame;
 extern bool gDisplaySwapBuffers;
@@ -914,7 +914,7 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY, U32 type_)
         if (RenderFSAAType > 0)
         {
             GLuint AAFormat = GL_RGBA8;
-            if(mHDRDisplay && MPColorPrecision == 2)
+            if(mHDRDisplay && MPColorPrecision != 1)
             {
                 AAFormat = GL_RGBA16F;
             }
@@ -931,7 +931,7 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY, U32 type_)
             mSMAABlendBuffer.release();
         }
 
-        mDummyRT.allocate(8, 8, GL_RGBA8, false);
+        //mDummyRT.allocate(8, 8, GL_RGBA8, false);
 
         //water reflection texture (always needed as scratch space whether or not transparent water is enabled)
         mWaterDis.allocate(resX, resY, screenFormat, true);
@@ -1230,7 +1230,7 @@ void LLPipeline::releaseGLBuffers()
         mSMAASearchMap = 0;
     }
 
-    mDummyRT.release();
+    //mDummyRT.release();
 
     releaseLUTBuffers();
 
@@ -3881,7 +3881,6 @@ void LLPipeline::postSort(LLCamera &camera)
     LL_PUSH_CALLSTACKS();
 }
 
-
 void render_hud_elements()
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_UI; //LL_RECORD_BLOCK_TIME(FTM_RENDER_UI);
@@ -4176,6 +4175,84 @@ void LLPipeline::renderGeomDeferred(LLCamera& camera, bool do_occlusion)
     }
 }
 
+// Render the geometry for the attached huds
+// This fixes the slow down due to attached huds
+void LLPipeline::renderGeomPostDeferredOnlyHud(LLCamera& camera)
+{
+    LL_PROFILE_ZONE_SCOPED_CATEGORY_DRAWPOOL;
+    LL_PROFILE_GPU_ZONE("renderGeomPostDeferred");
+    LL_RECORD_BLOCK_TIME(FTM_RENDER_DEFERRED);
+
+    U32 cur_type = 0;
+
+    LLGLEnable cull(GL_CULL_FACE);
+
+    gGL.setSceneBlendType(LLRender::BT_ALPHA);
+    gGL.setColorMask(true, false);
+
+    pool_set_t::iterator iter1 = mPools.begin();
+
+    while ( iter1 != mPools.end() )
+    {
+        LLDrawPool *poolp = *iter1;
+
+        cur_type = poolp->getType();
+
+        pool_set_t::iterator iter2 = iter1;
+        if (hasRenderType(poolp->getType()) && poolp->getNumPostDeferredPasses() > 0)
+        {
+            LL_PROFILE_ZONE_NAMED_CATEGORY_DRAWPOOL("deferred poolrender");
+
+            gGLLastMatrix = NULL;
+            gGL.loadMatrix(gGLModelView);
+
+            for( S32 i = 0; i < poolp->getNumPostDeferredPasses(); i++ )
+            {
+                LLVertexBuffer::unbind();
+                poolp->beginPostDeferredPass(i);
+                for (iter2 = iter1; iter2 != mPools.end(); iter2++)
+                {
+                    LLDrawPool *p = *iter2;
+                    if (p->getType() != cur_type)
+                    {
+                        break;
+                    }
+
+                    p->renderPostDeferred(i);
+                }
+                poolp->endPostDeferredPass(i);
+                LLVertexBuffer::unbind();
+
+                if (gDebugGL || gDebugPipeline)
+                {
+                    LLGLState::checkStates(GL_FALSE);
+                }
+            }
+        }
+        else
+        {
+            // Skip all pools of this type
+            for (iter2 = iter1; iter2 != mPools.end(); iter2++)
+            {
+                LLDrawPool *p = *iter2;
+                if (p->getType() != cur_type)
+                {
+                    break;
+                }
+            }
+        }
+        iter1 = iter2;
+        LOG_GLERROR("after pools");
+    }
+
+    gGLLastMatrix = NULL;
+    gGL.matrixMode(LLRender::MM_MODELVIEW);
+    gGL.loadMatrix(gGLModelView);
+
+    LOG_GLERROR("LLPipeline::renderGeomPostDeferredOnlyHud()");
+}
+
+
 // Render all of our geometry that's required after our deferred pass.
 // This is gonna be stuff like alpha, water, etc.
 void LLPipeline::renderGeomPostDeferred(LLCamera& camera)
@@ -4211,8 +4288,11 @@ void LLPipeline::renderGeomPostDeferred(LLCamera& camera)
     // do water haze just before pre water alpha
     U32 water_haze_pass = LLDrawPool::POOL_ALPHA_PRE_WATER;
 
-    calcNearbyLights(camera);
-    setupHWLights();
+    if(!done_atmospherics)
+    {
+        calcNearbyLights(camera);
+        setupHWLights();
+    }
 
     gGL.setSceneBlendType(LLRender::BT_ALPHA);
     gGL.setColorMask(true, false);
@@ -5830,19 +5910,19 @@ void LLPipeline::setupHWLights()
 
         if(!mHDRDisplay)
         {
-        F32 max_color = llmax(mSunDiffuse.mV[0], mSunDiffuse.mV[1], mSunDiffuse.mV[2]);
-        if (max_color > 1.f)
-        {
-            mSunDiffuse *= 1.f/max_color;
-        }
-        mSunDiffuse.clamp();
+            F32 max_color = llmax(mSunDiffuse.mV[0], mSunDiffuse.mV[1], mSunDiffuse.mV[2]);
+            if (max_color > 1.f)
+            {
+                mSunDiffuse *= 1.f/max_color;
+            }
+            mSunDiffuse.clamp();
 
-        max_color = llmax(mMoonDiffuse.mV[0], mMoonDiffuse.mV[1], mMoonDiffuse.mV[2]);
-        if (max_color > 1.f)
-        {
-            mMoonDiffuse *= 1.f/max_color;
-        }
-        mMoonDiffuse.clamp();
+            max_color = llmax(mMoonDiffuse.mV[0], mMoonDiffuse.mV[1], mMoonDiffuse.mV[2]);
+            if (max_color > 1.f)
+            {
+                mMoonDiffuse *= 1.f/max_color;
+            }
+            mMoonDiffuse.clamp();
         }
 
         // prevent underlighting from having neither lightsource facing us
@@ -7160,9 +7240,6 @@ void LLPipeline::generateLuminance(LLRenderTarget* src, LLRenderTarget* dst)
 
         renderTriangle();
 
-        gLuminanceProgram.unbindTexture(LLShaderMgr::DEFERRED_DIFFUSE);
-        gLuminanceProgram.unbindTexture(LLShaderMgr::DEFERRED_EMISSIVE);
-        gLuminanceProgram.unbindTexture(LLShaderMgr::NORMAL_MAP);
         gLuminanceProgram.unbind();
 
         dst->flush();
@@ -7278,11 +7355,11 @@ void LLPipeline::generateExposure(LLRenderTarget* src, LLRenderTarget* dst, bool
 
         if (use_history)
         {
-            //gGL.getTexUnit(channel)->unbind(mLastExposure.getUsage());
+            gGL.getTexUnit(channel)->unbind(mLastExposure.getUsage());
         }
 
-        shader->unbindTexture(LLShaderMgr::DEFERRED_DIFFUSE);
-        shader->unbindTexture(LLShaderMgr::EXPOSURE_MAP);
+        //shader->unbindTexture(LLShaderMgr::DEFERRED_DIFFUSE);
+        //shader->unbindTexture(LLShaderMgr::EXPOSURE_MAP);
         shader->unbind();
         dst->flush();
     }
@@ -7338,8 +7415,8 @@ void LLPipeline::tonemap(LLRenderTarget* src, LLRenderTarget* dst)
 
         renderTriangle();
 
-        shader.unbindTexture(LLShaderMgr::DEFERRED_DIFFUSE);
-        shader.unbindTexture(LLShaderMgr::EXPOSURE_MAP);
+        //shader.unbindTexture(LLShaderMgr::DEFERRED_DIFFUSE);
+        //shader.unbindTexture(LLShaderMgr::EXPOSURE_MAP);
         shader.unbind();
     }
     dst->flush();
@@ -7381,7 +7458,7 @@ void LLPipeline::gammaCorrect(LLRenderTarget* src, LLRenderTarget* dst)
 
         renderTriangle();
 
-        shader.unbindTexture(LLShaderMgr::DEFERRED_DIFFUSE);
+        //shader.unbindTexture(LLShaderMgr::DEFERRED_DIFFUSE);
         shader.unbind();
 
         dst->flush();
@@ -7465,7 +7542,7 @@ void LLPipeline::generateGlow(LLRenderTarget* src)
             gPipeline.enableLightsFullbright();
 
             renderTriangle();
-            gGlowExtractProgram.unbindTexture(LLShaderMgr::DIFFUSE_MAP);
+            //gGlowExtractProgram.unbindTexture(LLShaderMgr::DIFFUSE_MAP);
             gGlowExtractProgram.unbindTexture(LLShaderMgr::GLOW_NOISE_MAP);
             gGlowExtractProgram.unbind();
             mGlow[2].flush();
@@ -7564,7 +7641,7 @@ bool LLPipeline::applyCAS(LLRenderTarget* src, LLRenderTarget* dst)
 
     S32 channel = sharpen_shader->bindTexture(LLShaderMgr::DEFERRED_DIFFUSE, src, false, LLTexUnit::TFO_POINT);
     renderTriangle();
-    sharpen_shader->unbindTexture(channel);
+    //sharpen_shader->unbindTexture(channel);
     sharpen_shader->unbind();
 
     dst->flush();
@@ -7599,15 +7676,10 @@ bool LLPipeline::generateFXAABuffer(LLRenderTarget* src)
         renderTriangle();
     }
 
-    shader->disableTexture(LLShaderMgr::DEFERRED_DIFFUSE, src->getUsage());
+    //shader->disableTexture(LLShaderMgr::DEFERRED_DIFFUSE, src->getUsage());
     shader->unbind();
 
     mFXAAMap.flush();
-
-    LLGLDepthTest depth(GL_FALSE, GL_FALSE);
-    mDummyRT.bindTarget("dummy",1);
-    mDummyRT.clear(GL_COLOR_BUFFER_BIT);
-    mDummyRT.flush();
 
     return true;
 }
@@ -8233,30 +8305,12 @@ void LLPipeline::renderFinalize()
     LL_RECORD_BLOCK_TIME(FTM_RENDER_BLOOM);
     LL_PROFILE_GPU_ZONE("renderFinalize");
 
-#if LL_DARWIN
-    //gGL.debugTexUnits();
 
-    // Aims to fix the slowdowns in the post processing
-    for (S32 i = 0; i < 16; i++)
-    {
-        if (gGL.getTexUnit(i)->getCurrType() != LLTexUnit::TT_NONE)
-        {
-            gGL.getTexUnit(i)->unbind(gGL.getTexUnit(i)->getCurrType());
-            gGL.getTexUnit(i)->disable();
-        }
-    }
-#endif
 
     gGL.color4f(1, 1, 1, 1);
     LLGLDepthTest depth(GL_FALSE);
     LLGLDisable blend(GL_BLEND);
     LLGLDisable cull(GL_CULL_FACE);
-
-    gGLViewport[0] = gViewerWindow->getWorldViewRectRaw().mLeft;
-    gGLViewport[1] = gViewerWindow->getWorldViewRectRaw().mBottom;
-    gGLViewport[2] = gViewerWindow->getWorldViewRectRaw().getWidth();
-    gGLViewport[3] = gViewerWindow->getWorldViewRectRaw().getHeight();
-    glViewport(gGLViewport[0], gGLViewport[1], gGLViewport[2], gGLViewport[3]);
 
     gGL.setColorMask(true, true);
     glClearColor(0, 0, 0, 0);
@@ -8266,13 +8320,10 @@ void LLPipeline::renderFinalize()
 
     U16 activeRT = 0;
 
-    LLRenderTarget* postHDRBuffer = &mRT->screen;
+    LLRenderTarget* postHDRTarget = &mRT->screen;
 
     if (hdr)
     {
-        if(generateFXAABuffer(postHDRBuffer));
-        else generateSMAABuffers(postHDRBuffer);
-
         copyScreenSpaceReflections(&mRT->screen, &mSceneMap);
 
         if(!mHDRDisplay)
@@ -8282,36 +8333,14 @@ void LLPipeline::renderFinalize()
         generateExposure(&mLuminanceMap, &mExposureMap);
 
             tonemap(&mRT->screen, &mRT->deferredLight);
-            postHDRBuffer = &mRT->deferredLight;
+            postHDRTarget = &mRT->deferredLight;
         }
     }
 
-    gammaCorrect(postHDRBuffer, &mPostMaps[1 - activeRT]);
+    gammaCorrect(postHDRTarget, &mPostMaps[1 - activeRT]);
     activeRT = 1 - activeRT;
 
     generateGlow(&mPostMaps[activeRT]);
-
-    if(!hdr)
-    {
-        if(generateFXAABuffer(postHDRBuffer))
-        {
-        }
-        else if(generateSMAABuffers(postHDRBuffer))
-        {
-        }
-        else
-        {
-        }
-    }
-
-    if(applyFXAA(&mPostMaps[activeRT], &mPostMaps[1 - activeRT]))
-    {
-        activeRT = 1 - activeRT;
-    }
-    else if(applySMAA(&mPostMaps[activeRT], &mPostMaps[1 - activeRT]))
-    {
-        activeRT = 1 - activeRT;
-    }
 
     if(hdr)
     {
@@ -8333,7 +8362,21 @@ void LLPipeline::renderFinalize()
         }
     }
 
+    {
+        generateFXAABuffer(&mPostMaps[activeRT]);
+        generateSMAABuffers(&mPostMaps[activeRT]);
+    }
+
     if(renderDoF(&mPostMaps[activeRT], &mPostMaps[1 - activeRT]))
+    {
+        activeRT = 1 - activeRT;
+    }
+
+    if(applyFXAA(&mPostMaps[activeRT], &mPostMaps[1 - activeRT]))
+    {
+        activeRT = 1 - activeRT;
+    }
+    else if(applySMAA(&mPostMaps[activeRT], &mPostMaps[1 - activeRT]))
     {
         activeRT = 1 - activeRT;
     }
@@ -8406,6 +8449,12 @@ void LLPipeline::renderFinalize()
 
     // Present the screen target.
 
+    gGLViewport[0] = gViewerWindow->getWorldViewRectRaw().mLeft;
+    gGLViewport[1] = gViewerWindow->getWorldViewRectRaw().mBottom;
+    gGLViewport[2] = gViewerWindow->getWorldViewRectRaw().getWidth();
+    gGLViewport[3] = gViewerWindow->getWorldViewRectRaw().getHeight();
+    glViewport(gGLViewport[0], gGLViewport[1], gGLViewport[2], gGLViewport[3]);
+
     gDeferredPostNoDoFNoiseProgram.bind(); // Add noise as part of final render to screen pass to avoid damaging other post effects
 
     // Whatever is last in the above post processing chain should _always_ be rendered directly here.  If not, expect problems.
@@ -8423,7 +8472,7 @@ void LLPipeline::renderFinalize()
     gDeferredPostNoDoFNoiseProgram.unbindTexture(LLShaderMgr::DEFERRED_DEPTH);
     gDeferredPostNoDoFNoiseProgram.unbind();
 
-    gGL.flush();
+    //gGL.flush();
 
     gGL.setSceneBlendType(LLRender::BT_ALPHA);
 
@@ -9830,11 +9879,12 @@ void LLPipeline::renderShadow(const glm::mat4& view, const glm::mat4& proj, LLCa
 
     LLGLDepthTest depth_test(GL_TRUE, GL_TRUE, GL_LESS);
 
+    //static LLCachedControl<bool> sShadowAlternative(gSavedSettings, "MPShadowAlternative", false);
+
     updateCull(shadow_cam, result);
 
     stateSort(shadow_cam, result);
 
-    //generate shadow map
     gGL.matrixMode(LLRender::MM_PROJECTION);
     gGL.pushMatrix();
     gGL.loadMatrix(glm::value_ptr(proj));

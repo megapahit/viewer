@@ -1388,7 +1388,7 @@ void render_hud_attachments()
 
         gPipeline.stateSort(hud_cam, result);
 
-        gPipeline.renderGeomPostDeferred(hud_cam);
+        gPipeline.renderGeomPostDeferredOnlyHud(hud_cam);
 
         LLSpatialGroup::sNoDelete = false;
         //gPipeline.clearReferences();
@@ -1533,6 +1533,7 @@ void render_ui(F32 zoom_factor, int subfield)
     {
         LLGLState::checkStates();
 
+        gPipeline.disableLights();
 
         LL_PROFILE_ZONE_NAMED_CATEGORY_UI("HUD");
         render_hud_elements();
@@ -1552,7 +1553,8 @@ void render_ui(F32 zoom_factor, int subfield)
         {
             if (!gDisconnected)
             {
-                LL_PROFILE_ZONE_NAMED_CATEGORY_UI("UI 3D"); //LL_RECORD_BLOCK_TIME(FTM_RENDER_UI_3D);
+                LL_PROFILE_ZONE_NAMED_CATEGORY_UI("UI 3D");
+                LL_RECORD_BLOCK_TIME(FTM_RENDER_UI_3D);
                 LLGLState::checkStates();
                 render_ui_3d();
                 LLGLState::checkStates();
@@ -1565,7 +1567,8 @@ void render_ui(F32 zoom_factor, int subfield)
 
         if (render_ui)
         {
-            LL_PROFILE_ZONE_NAMED_CATEGORY_UI("UI 2D"); //LL_RECORD_BLOCK_TIME(FTM_RENDER_UI_2D);
+            LL_PROFILE_ZONE_NAMED_CATEGORY_UI("UI 2D");
+            LL_RECORD_BLOCK_TIME(FTM_RENDER_UI_2D);
             LLHUDObject::renderAll();
             render_ui_2d();
         }
