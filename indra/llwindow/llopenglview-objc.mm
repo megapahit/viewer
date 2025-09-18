@@ -287,7 +287,7 @@ attributedStringInfo getSegments(NSAttributedString *str)
 		//NSOpenGLPFASamples, 0,
 		NSOpenGLPFADepthSize, 24,
 		//NSOpenGLPFAAlphaSize, 8,
-		NSOpenGLPFAColorSize, 24,
+		NSOpenGLPFAColorSize, 32,
 		NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion4_1Core,
 		0
     };
@@ -368,19 +368,17 @@ attributedStringInfo getSegments(NSAttributedString *str)
 	
 	[glContext makeCurrentContext];
 	
-/*
 	if (vsync)
 	{
 		GLint value = 1;
 		[glContext setValues:&value forParameter:NSOpenGLCPSwapInterval];
 	} else {
-    */
 		// supress this error after move to Xcode 7:
 		// error: null passed to a callee that requires a non-null argument [-Werror,-Wnonnull]
 		// Tried using ObjC 'nonnull' keyword as per SO article but didn't build
 		GLint swapInterval=0;
 		[glContext setValues:&swapInterval forParameter:NSOpenGLCPSwapInterval];
-	//}
+	}
 	
     GLint opacity = 1;
     [glContext setValues:&opacity forParameter:NSOpenGLCPSurfaceOpacity];
