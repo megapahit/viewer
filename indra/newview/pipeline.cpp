@@ -360,7 +360,10 @@ bool addDeferredAttachments(LLRenderTarget& target, bool for_impostor = false)
 
     bool hdr = has_hdr() && gGLManager.mGLVersion > 4.05f;
 
-    if (!hdr || MPColorPrecision != 2) norm = GL_RGB10_A2;
+    if (!hdr || MPColorPrecision != 2)
+    {
+        norm = GL_RGB10_A2;
+    }
     if (!hdr || (!MPHDRDisplay && MPColorPrecision == 1)) emissive = GL_RGB8;
 
     bool valid = true;
@@ -3881,6 +3884,7 @@ void LLPipeline::postSort(LLCamera &camera)
     LL_PUSH_CALLSTACKS();
 }
 
+
 void render_hud_elements()
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_UI; //LL_RECORD_BLOCK_TIME(FTM_RENDER_UI);
@@ -4290,8 +4294,8 @@ void LLPipeline::renderGeomPostDeferred(LLCamera& camera)
 
     if(!done_atmospherics)
     {
-        calcNearbyLights(camera);
-        setupHWLights();
+    calcNearbyLights(camera);
+    setupHWLights();
     }
 
     gGL.setSceneBlendType(LLRender::BT_ALPHA);
@@ -5910,19 +5914,19 @@ void LLPipeline::setupHWLights()
 
         if(!mHDRDisplay)
         {
-            F32 max_color = llmax(mSunDiffuse.mV[0], mSunDiffuse.mV[1], mSunDiffuse.mV[2]);
-            if (max_color > 1.f)
-            {
-                mSunDiffuse *= 1.f/max_color;
-            }
-            mSunDiffuse.clamp();
+        F32 max_color = llmax(mSunDiffuse.mV[0], mSunDiffuse.mV[1], mSunDiffuse.mV[2]);
+        if (max_color > 1.f)
+        {
+            mSunDiffuse *= 1.f/max_color;
+        }
+        mSunDiffuse.clamp();
 
-            max_color = llmax(mMoonDiffuse.mV[0], mMoonDiffuse.mV[1], mMoonDiffuse.mV[2]);
-            if (max_color > 1.f)
-            {
-                mMoonDiffuse *= 1.f/max_color;
-            }
-            mMoonDiffuse.clamp();
+        max_color = llmax(mMoonDiffuse.mV[0], mMoonDiffuse.mV[1], mMoonDiffuse.mV[2]);
+        if (max_color > 1.f)
+        {
+            mMoonDiffuse *= 1.f/max_color;
+        }
+        mMoonDiffuse.clamp();
         }
 
         // prevent underlighting from having neither lightsource facing us
@@ -8304,8 +8308,6 @@ void LLPipeline::renderFinalize()
 
     LL_RECORD_BLOCK_TIME(FTM_RENDER_BLOOM);
     LL_PROFILE_GPU_ZONE("renderFinalize");
-
-
 
     gGL.color4f(1, 1, 1, 1);
     LLGLDepthTest depth(GL_FALSE);
