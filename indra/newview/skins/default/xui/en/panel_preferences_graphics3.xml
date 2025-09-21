@@ -288,30 +288,6 @@ top_delta="0"
 />
 
 <text
-follows="left|top"
-layout="topleft"
-width="400"
-height="18"
-left="55"
-top_pad="40"
-font="SansSerifSmall"
->
-Beware: some combinations cause a slow down on Mac.
-</text>
-
-<text
-follows="left|top"
-layout="topleft"
-width="400"
-height="18"
-left="55"
-top_pad="12"
-font="SansSerifSmall"
->
-Disabling HUDS (Option + Shift + H) fixes the issue.
-</text>
-
-<text
 name="aniso_lbl"
 follows="left|top"
 layout="topleft"
@@ -701,7 +677,7 @@ width="140"
 height="16"
 layout="topleft"
 left="32"
-top_pad="10"
+top_pad="20"
 text_readonly_color="LabelDisabledColor"
 >
 Bloom level:
@@ -766,7 +742,7 @@ layout="topleft"
 width="140"
 height="18"
 left="32"
-top_pad="10"
+top_pad="20"
 font="SansSerifSmall"
 >
 Bloom Radius
@@ -822,7 +798,7 @@ layout="topleft"
 width="140"
 height="18"
 left="32"
-top_pad="10"
+top_pad="20"
 font="SansSerifSmall"
 >
 Bloom Radius addition
@@ -877,7 +853,7 @@ layout="topleft"
 width="140"
 height="18"
 left="32"
-top_pad="10"
+top_pad="20"
 font="SansSerifSmall"
 >
 Bloom Range
@@ -933,7 +909,7 @@ layout="topleft"
 width="140"
 height="18"
 left="32"
-top_pad="10"
+top_pad="20"
 font="SansSerifSmall">
 Bloom Strength
 </text>
@@ -987,7 +963,7 @@ layout="topleft"
 width="140"
 height="18"
 left="32"
-top_pad="10"
+top_pad="20"
 font="SansSerifSmall"
 >
 Bloom Metal
@@ -1042,7 +1018,7 @@ layout="topleft"
 width="140"
 height="18"
 left="32"
-top_pad="10"
+top_pad="20"
 font="SansSerifSmall">
 Bloom Non Metal
 </text>
@@ -1131,7 +1107,7 @@ layout="topleft"
 width="140"
 height="18"
 left="32"
-top_pad="10"
+top_pad="20"
 font="SansSerifSmall"
 >
 Reflection Detail:
@@ -1192,7 +1168,7 @@ layout="topleft"
 width="140"
 height="18"
 left="32"
-top_pad="10"
+top_pad="20"
 font="SansSerifSmall"
 >
 Reflection Coverage:
@@ -1256,7 +1232,7 @@ layout="topleft"
 width="140"
 height="18"
 left="32"
-top_pad="10"
+top_pad="20"
 font="SansSerifSmall"
 >
 Max Reflection Probes:
@@ -1326,7 +1302,7 @@ layout="topleft"
 width="140"
 height="18"
 left="32"
-top_pad="10"
+top_pad="20"
 font="SansSerifSmall"
 >
 Reflection Resolution:
@@ -1390,7 +1366,7 @@ layout="topleft"
 width="140"
 height="18"
 left="32"
-top_pad="10"
+top_pad="20"
 font="SansSerifSmall"
 >
 Draw Distance
@@ -1443,7 +1419,7 @@ layout="topleft"
 width="140"
 height="18"
 left="32"
-top_pad="10"
+top_pad="32"
 font="SansSerifSmall"
 >
 Default Probe Update
@@ -1497,7 +1473,7 @@ layout="topleft"
 width="140"
 height="18"
 left="32"
-top_pad="10"
+top_pad="20"
 font="SansSerifSmall"
 >
 Other Probes delay
@@ -1552,7 +1528,7 @@ layout="topleft"
 width="140"
 height="18"
 left="32"
-top_pad="10"
+top_pad="20"
 font="SansSerifSmall"
 >
 Refresh delay
@@ -1626,7 +1602,7 @@ name="VintageCtrl"
 control_name="RenderDisableVintageMode"
 label="HDR and Emissive"
 layout="topleft"
-width="300"
+width="360"
 height="16"
 left="20"
 top_delta="32"
@@ -1665,7 +1641,7 @@ name="mp_transparent_water"
 control_name="RenderTransparentWater"
 label="Transparent Water"
 layout="topleft"
-width="300"
+width="360"
 height="16"
 left="20"
 top_delta="32"
@@ -1700,12 +1676,126 @@ top_delta="0"
 />
 
 <text
-name="mp_resdiv_lbl"
+name="mp_texlod_lbl"
 follows="left|top"
 layout="topleft"
 width="140"
 height="18"
-left="32"
+left="24"
+top_pad="20"
+font="SansSerifSmall"
+>
+Texture Max Resolution:
+</text>
+
+<combo_box
+name="MaxTextureResolutionCtrl"
+control_name="RenderMaxTextureResolution"
+height="19"
+layout="topleft"
+left_delta="150"
+top_delta="0"
+width="90">
+<combo_box.item
+label="512x512"
+name="512"
+value="512"/>
+<combo_box.item
+label="1024x1024"
+name="1024"
+value="1024"/>
+<combo_box.item
+label="2048x2048"
+name="2048"
+value="2048"/>
+</combo_box>
+
+<icon
+name="mp_texlod_bullet"
+tool_tip="Lowering this value will greatly help with gpus with lower vram."
+image_name="mp_yellow_bullet"
+follows="left|top"
+width="16"
+height="16"
+layout="topleft"
+left_pad="124"
+top_delta="-2"
+/>
+
+<icon
+name="mp_texlod_info_bullet"
+tool_tip="Set this to a lower value if you have stutter in texture heavy sims."
+image_name="mp_info_bullet"
+follows="left|top"
+width="16"
+height="16"
+layout="topleft"
+left_pad="5"
+top_delta="0"
+/>
+
+<text
+name="mp_meshlod_lbl"
+follows="left|top"
+layout="topleft"
+width="140"
+height="18"
+left="24"
+top_pad="20"
+font="SansSerifSmall"
+>
+Object Mesh LOD:
+</text>
+
+<slider
+name="MeshLoadCtrl"
+control_name="RenderVolumeLODFactor"
+follows="left|top"
+layout="topleft"
+width="200"
+height="16"
+left_delta="156"
+top_delta="-1"
+initial_value="160"
+increment="0.125"
+min_val="0.125"
+max_val="4"
+show_text="true"
+decimal_digits="3"
+>
+</slider>
+
+<icon
+name="mp_meshlod_bullet"
+tool_tip="Better make this value higher than making the draw distance higher"
+image_name="mp_green_bullet"
+follows="left|top"
+width="16"
+height="16"
+layout="topleft"
+left_pad="8"
+top_delta="-2"
+/>
+
+<icon
+name="mp_meshlod_info_bullet"
+tool_tip="Controls the mesh complexity calculation vs the view distance"
+image_name="mp_info_bullet"
+follows="left|top"
+width="16"
+height="16"
+layout="topleft"
+left_pad="5"
+top_delta="0"
+/>
+
+<text
+name="mp_resdiv_lbl"
+follows="left|top"
+layout="topleft"
+width="400"
+height="18"
+left="24"
 top_pad="30"
 font="SansSerifSmall"
 >
@@ -1718,7 +1808,7 @@ follows="left|top"
 layout="topleft"
 width="200"
 height="16"
-left_delta="150"
+left_delta="156"
 top_delta="-1"
 initial_value="1.0"
 increment="0.05"
@@ -1727,6 +1817,31 @@ max_val="2.0"
 decimal_digits="2"
 label_width="2">
 </slider>
+
+<icon
+name="mp_resdiv_bullet"
+tool_tip="Move to the right to improve performance. Set to 1.0 for default."
+image_name="mp_green_bullet"
+follows="left|top"
+width="16"
+height="16"
+layout="topleft"
+left_pad="8"
+top_delta="-2"
+/>
+
+<icon
+name="mp_resdiv_info_bullet"
+tool_tip="Moving this to a value superior to 1.0 will lower the rendering resolution. Set to 1.0 for default."
+image_name="mp_info_bullet"
+follows="left|top"
+width="16"
+height="16"
+layout="topleft"
+left_pad="5"
+top_delta="0"
+/>
+
 
 </panel>
 
