@@ -1697,6 +1697,14 @@ left_delta="150"
 top_delta="0"
 width="90">
 <combo_box.item
+label="128x128"
+name="128"
+value="128"/>
+<combo_box.item
+label="256x256"
+name="256"
+value="256"/>
+<combo_box.item
 label="512x512"
 name="512"
 value="512"/>
