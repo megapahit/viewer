@@ -525,11 +525,8 @@ void LLReflectionMapManager::update()
 
     if ((gFrameTimeSeconds - mDefaultProbe->mLastUpdateTime) < sDefaultUpdatePeriod)
     {
-//<<<<<<< HEAD
 //      if (sLevel == 0 && mDefaultProbe->mComplete)
-//=======
         if (mRenderReflectionProbeLevel == 0)
-//>>>>>>> Second_Life_Release#17540023-2025.07
         { // when probes are disabled don't update the default probe more often than the prescribed update period
             oldestProbe = nullptr;
         }
