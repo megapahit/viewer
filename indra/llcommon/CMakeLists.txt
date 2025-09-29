@@ -11,7 +11,6 @@ include(LLSharedLibs)
 include(ZLIBNG)
 include(Tracy)
 
-
 set(llcommon_SOURCE_FILES
     apply.cpp
     commoncontrol.cpp

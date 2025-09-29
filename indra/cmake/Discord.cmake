@@ -47,4 +47,8 @@ if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKIN
 endif ()
 
 target_include_directories(ll::discord_sdk SYSTEM INTERFACE ${LIBS_PREBUILT_DIR}/include/discord_sdk)
-target_link_libraries(ll::discord_sdk INTERFACE discord_partner_sdk)
+find_library(DISCORD_LIBRARY
+    NAMES
+    discord_partner_sdk
+    PATHS "${ARCH_PREBUILT_DIRS_RELEASE}" REQUIRED NO_DEFAULT_PATH)
+target_link_libraries(ll::discord_sdk INTERFACE ${DISCORD_LIBRARY})

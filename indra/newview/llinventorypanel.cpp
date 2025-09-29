@@ -188,6 +188,7 @@ LLInventoryPanel::LLInventoryPanel(const LLInventoryPanel::Params& p) :
     mCommitCallbackRegistrar.add("Inventory.Share",  boost::bind(&LLAvatarActions::shareWithAvatars, this));
     mCommitCallbackRegistrar.add("Inventory.FileUploadLocation", boost::bind(&LLInventoryPanel::fileUploadLocation, this, _2));
     mCommitCallbackRegistrar.add("Inventory.SetFavoriteFolder", boost::bind(&LLInventoryPanel::setFavoriteFolder, this));
+    mEnableCallbackRegistrar.add("Inventory.FileUploadLocation.Check", boost::bind(&LLInventoryPanel::isUploadLocationSelected, this, _2));
     mCommitCallbackRegistrar.add("Inventory.OpenNewFolderWindow", boost::bind(&LLInventoryPanel::openSingleViewInventory, this, LLUUID()));
 }
 
@@ -1838,6 +1839,13 @@ void LLInventoryPanel::setFavoriteFolder()
     gSavedPerAccountSettings.setString("FavoriteFolder", LLFolderBridge::sSelf.get()->getUUID().asString());
 }
 
+bool LLInventoryPanel::isUploadLocationSelected(const LLSD& userdata)
+{
+    const std::string param = userdata.asString();
+    const LLUUID dest = LLFolderBridge::sSelf.get()->getUUID();
+    return LLInventoryAction::isFileUploadLocation(dest, param);
+}
+
 void LLInventoryPanel::openSingleViewInventory(LLUUID folder_id)
 {
     LLPanelMainInventory::newFolderWindow(folder_id.isNull() ? LLFolderBridge::sSelf.get()->getUUID() : folder_id);
@@ -2103,7 +2111,7 @@ void LLInventoryPanel::removeItemID(const LLUUID& id)
         ++it)
     {
         mItemMap.erase((*it)->getUUID());
-    }
+}
 
     for (LLInventoryModel::item_array_t::iterator it = items.begin(),   end_it  = items.end();
         it != end_it;

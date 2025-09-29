@@ -680,14 +680,14 @@ public:
         setInfo(eFrequency, (F64)frequency  / (F64)1000000);
     }
 
-    virtual ~LLProcessorInfoDarwinImpl() {}
+    virtual ~LLProcessorInfoDarwinImpl() = default;
 
 private:
     int getSysctlInt(const char* name)
     {
         int result = 0;
         size_t len = sizeof(int);
-        int error = sysctlbyname(name, (void*)&result, &len, NULL, 0);
+        int error = sysctlbyname(name, (void*)&result, &len, nullptr, 0);
         return error == -1 ? 0 : result;
     }
 
@@ -695,7 +695,7 @@ private:
     {
         uint64_t value = 0;
         size_t size = sizeof(value);
-        int result = sysctlbyname(name, (void*)&value, &size, NULL, 0);
+        int result = sysctlbyname(name, (void*)&value, &size, nullptr, 0);
         if ( result == 0 )
         {
             if ( size == sizeof( uint64_t ) )

@@ -158,7 +158,7 @@ public:
     void copyScreenSpaceReflections(LLRenderTarget* src, LLRenderTarget* dst);
     void generateLuminance(LLRenderTarget* src, LLRenderTarget* dst);
     void generateExposure(LLRenderTarget* src, LLRenderTarget* dst, bool use_history = true);
-    void tonemap(LLRenderTarget* src, LLRenderTarget* dst);
+    void tonemap(LLRenderTarget* src, LLRenderTarget* dst, bool gamma_correct);
     void gammaCorrect(LLRenderTarget* src, LLRenderTarget* dst);
     void generateGlow(LLRenderTarget* src);
     bool applyCAS(LLRenderTarget* src, LLRenderTarget* dst);
@@ -740,7 +740,10 @@ public:
     LLRenderTarget          mBloomBlur[2];
 
     // tonemapped and gamma corrected render ready for post
-    //LLRenderTarget          mPostMap;
+/*
+    LLRenderTarget          mPostPingMap;
+    LLRenderTarget          mPostPongMap;
+*/
     LLRenderTarget          mPostMaps[2];
 
     // FXAA helper target

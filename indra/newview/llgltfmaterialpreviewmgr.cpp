@@ -530,12 +530,21 @@ bool LLGLTFPreviewTexture::render()
     gPipeline.copyScreenSpaceReflections(&screen, &gPipeline.mSceneMap);
     gPipeline.generateLuminance(&screen, &gPipeline.mLuminanceMap);
     gPipeline.generateExposure(&gPipeline.mLuminanceMap, &gPipeline.mExposureMap, /*use_history = */ false);
+/*
+    gPipeline.gammaCorrect(&screen, &gPipeline.mPostPingMap);
+*/
     }
 
     U16 activeRT = 0;
     gPipeline.gammaCorrect(&screen, &gPipeline.mPostMaps[activeRT]);
 
     LLVertexBuffer::unbind();
+/*
+    gPipeline.generateGlow(&gPipeline.mPostPingMap);
+    gPipeline.combineGlow(&gPipeline.mPostPingMap, &screen);
+    gPipeline.renderDoF(&screen, &gPipeline.mPostPingMap);
+    gPipeline.applyFXAA(&gPipeline.mPostPingMap, &screen);
+*/
 
     gPipeline.generateGlow(&gPipeline.mPostMaps[activeRT]);
     gPipeline.combineGlow(&gPipeline.mPostMaps[activeRT], &gPipeline.mPostMaps[1-activeRT]);

@@ -31,7 +31,9 @@
 #include "llerror.h"
 #include "llexception.h"
 
+#if !(LL_DARWIN && defined(__arm64__))
 jmp_buf LLImageJPEG::sSetjmpBuffer ;
+#endif
 LLImageJPEG::LLImageJPEG(S32 quality)
 :   LLImageFormatted(IMG_CODEC_JPEG),
     mOutputBuffer( NULL ),
@@ -435,7 +437,6 @@ void LLImageJPEG::errorExit( j_common_ptr cinfo )
 
     // Let the memory manager delete any temp files
     jpeg_destroy(cinfo);
-
     // Return control to the setjmp point
 #if !(LL_DARWIN && defined(__arm64__))
     longjmp(sSetjmpBuffer, 1) ;
@@ -569,7 +570,6 @@ bool LLImageJPEG::encode( const LLImageRaw* raw_image, F32 encode_time )
         return false;
     }
 #endif
-
     try
     {
 

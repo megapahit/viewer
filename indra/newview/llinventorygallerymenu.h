@@ -47,6 +47,7 @@ protected:
     void updateMenuItemsVisibility(LLContextMenu* menu);
 
     void fileUploadLocation(const LLSD& userdata);
+    bool isUploadLocationSelected(const LLSD& userdata);
     bool canSetUploadLocation(const LLSD& userdata);
 
     void setFavoriteFolder();

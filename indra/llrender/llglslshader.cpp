@@ -450,8 +450,11 @@ bool LLGLSLShader::createShader()
     llassert_always(!mShaderFiles.empty());
 
 #if LL_DARWIN
-    // work-around missing mix(vec3,vec3,bvec3)
-    mDefines["OLD_SELECT"] = "1";
+    if(!gGLManager.mIsApple)
+    {
+        // work-around missing mix(vec3,vec3,bvec3)
+        mDefines["OLD_SELECT"] = "1";
+    }
 #endif
 
     mShaderHash = hash();
@@ -572,7 +575,7 @@ bool LLGLSLShader::createShader()
         }
     }
 
-#ifdef LL_PROFILER_ENABLE_RENDER_DOC
+#if LL_PROFILER_ENABLE_RENDER_DOC
     setLabel(mName.c_str());
 #endif
 
@@ -2116,7 +2119,7 @@ LLUUID LLGLSLShader::hash()
     return hash_obj.digest();
 }
 
-#ifdef LL_PROFILER_ENABLE_RENDER_DOC
+#if LL_PROFILER_ENABLE_RENDER_DOC
 void LLGLSLShader::setLabel(const char* label) {
     LL_LABEL_OBJECT_GL(GL_PROGRAM, mProgramObject, strlen(label), label);
 }

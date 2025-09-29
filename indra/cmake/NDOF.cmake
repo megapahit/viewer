@@ -76,12 +76,13 @@ if (NDOF)
     endif ()
   endif ()
 
-  if (WINDOWS)
-    target_link_libraries( ll::ndof INTERFACE libndofdev)
-  elseif (DARWIN OR LINUX)
-    target_link_libraries( ll::ndof INTERFACE ndofdev)
-  endif (WINDOWS)
-  target_compile_definitions( ll::ndof INTERFACE LIB_NDOF=1)
-else()
-  add_compile_options(-ULIB_NDOF)
+  find_library(NDOF_LIBRARY
+      NAMES
+      libndofdev
+      ndofdev
+      PATHS "${ARCH_PREBUILT_DIRS_RELEASE}" REQUIRED NO_DEFAULT_PATH)
+
+  target_link_libraries(ll::ndof INTERFACE ${NDOF_LIBRARY})
+
+  target_compile_definitions(ll::ndof INTERFACE LIB_NDOF=1)
 endif (NDOF)

@@ -139,6 +139,7 @@ fixup_bundle(${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/
 
 file(CHMOD
     "${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/DullahanHelper.app/Contents/MacOS/DullahanHelper"
+    "${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/DullahanHelper (Alerts).app/Contents/MacOS/DullahanHelper (Alerts)"
     "${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/DullahanHelper (GPU).app/Contents/MacOS/DullahanHelper (GPU)"
     "${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/DullahanHelper (Plugin).app/Contents/MacOS/DullahanHelper (Plugin)"
     "${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/DullahanHelper (Renderer).app/Contents/MacOS/DullahanHelper (Renderer)"
@@ -276,6 +277,7 @@ execute_process(
     COMMAND sudo codesign -f -s ${SIGNING_IDENTITY} --timestamp -o runtime --runtime-version ${CMAKE_OSX_DEPLOYMENT_TARGET}
         Frameworks/Chromium\ Embedded\ Framework.framework/Libraries/libEGL.dylib
         Frameworks/Chromium\ Embedded\ Framework.framework/Libraries/libGLESv2.dylib
+        Frameworks/Chromium\ Embedded\ Framework.framework/Libraries/libcef_sandbox.dylib
         Frameworks/Chromium\ Embedded\ Framework.framework/Libraries/libvk_swiftshader.dylib
         Frameworks/Chromium\ Embedded\ Framework.framework
         Frameworks/libalut.0.dylib
@@ -672,6 +674,7 @@ execute_process(
         Resources/llplugin/plugins/libyuy2_i422_plugin.dylib
         Resources/llplugin/plugins/libzvbi_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/DullahanHelper.app
+        Resources/SLPlugin.app/Contents/Frameworks/DullahanHelper\ \(Alerts\).app/Contents/MacOS/DullahanHelper\ \(Alerts\)
         Resources/SLPlugin.app/Contents/Frameworks/DullahanHelper\ \(GPU\).app/Contents/MacOS/DullahanHelper\ \(GPU\)
         Resources/SLPlugin.app/Contents/Frameworks/DullahanHelper\ \(Plugin\).app/Contents/MacOS/DullahanHelper\ \(Plugin\)
         WORKING_DIRECTORY ${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents
@@ -682,6 +685,7 @@ execute_process(
         DullahanHelper\ \(Renderer\).app/Contents/MacOS/DullahanHelper\ \(Renderer\)
     COMMAND sudo codesign -f -s ${SIGNING_IDENTITY} --timestamp -o runtime --runtime-version ${CMAKE_OSX_DEPLOYMENT_TARGET}
         --deep
+        DullahanHelper\ \(Alerts\).app
         DullahanHelper\ \(GPU\).app
         DullahanHelper\ \(Plugin\).app
     WORKING_DIRECTORY ${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks

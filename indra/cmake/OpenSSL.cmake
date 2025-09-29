@@ -9,6 +9,21 @@ if ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
 use_system_binary(openssl)
 elseif (LINUX AND CMAKE_SYSTEM_PROCESSOR MATCHES x86_64 OR DARWIN OR WINDOWS)
 use_prebuilt_binary(openssl)
+
+find_library(SSL_LIBRARY
+    NAMES
+    libssl.lib
+    libssl.a
+    PATHS "${ARCH_PREBUILT_DIRS_RELEASE}" REQUIRED NO_DEFAULT_PATH)
+
+find_library(CRYPTO_LIBRARY
+    NAMES
+    libcrypto.lib
+    libcrypto.a
+    PATHS "${ARCH_PREBUILT_DIRS_RELEASE}" REQUIRED NO_DEFAULT_PATH)
+
+target_link_libraries(ll::openssl INTERFACE ${SSL_LIBRARY} ${CRYPTO_LIBRARY})
+
   if (DARWIN)
     execute_process(
       COMMAND lipo -archs libcrypto.a
@@ -68,13 +83,8 @@ elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRA
   file(WRITE ${PREBUILD_TRACKING_DIR}/openssl_installed "${openssl_installed}")
 endif ()
 if (WINDOWS)
-  target_link_libraries(ll::openssl INTERFACE ${ARCH_PREBUILT_DIRS_RELEASE}/libssl.lib ${ARCH_PREBUILT_DIRS_RELEASE}/libcrypto.lib Crypt32.lib)
-elseif (LINUX)
-  target_link_libraries(ll::openssl INTERFACE ${ARCH_PREBUILT_DIRS_RELEASE}/libssl.a ${ARCH_PREBUILT_DIRS_RELEASE}/libcrypto.a dl)
-else()
-  target_link_libraries(ll::openssl INTERFACE ssl crypto)
+  target_link_libraries(ll::openssl INTERFACE Crypt32.lib)
 endif (WINDOWS)
-if (NOT WINDOWS)
-target_include_directories( ll::openssl SYSTEM INTERFACE ${LIBS_PREBUILT_DIR}/include)
-endif ()
+
+target_include_directories(ll::openssl SYSTEM INTERFACE ${LIBS_PREBUILT_DIR}/include)
 

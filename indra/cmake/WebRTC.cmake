@@ -1,12 +1,12 @@
 # -*- cmake -*-
+include_guard()
+
 include(Linking)
 include(Prebuilt)
 
-include_guard()
-
 add_library( ll::webrtc INTERFACE IMPORTED )
 target_include_directories( ll::webrtc SYSTEM INTERFACE "${LIBS_PREBUILT_DIR}/include/webrtc" "${LIBS_PREBUILT_DIR}/include/webrtc/third_party/abseil-cpp")
-if (CMAKE_OSX_ARCHITECTURES MATCHES x86_64 OR WINDOWS)
+if (DARWIN OR WINDOWS)
 use_prebuilt_binary(webrtc)
 elseif (NOT (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES aarch64) OR (${LINUX_DISTRO} MATCHES debian AND CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)))
     target_compile_definitions(ll::webrtc INTERFACE CM_WEBRTC=1)
@@ -20,7 +20,7 @@ elseif (NOT (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES a
         endif ()
         if (NOT EXISTS ${CMAKE_BINARY_DIR}/libwebrtc-${WEBRTC_PLATFORM}.tar.xz)
             file(DOWNLOAD
-                https://github.com/crow-misia/libwebrtc-bin/releases/download/114.5735.6.1/libwebrtc-${WEBRTC_PLATFORM}.tar.xz
+                https://github.com/crow-misia/libwebrtc-bin/releases/download/137.7151.3.1/libwebrtc-${WEBRTC_PLATFORM}.tar.xz
                 ${CMAKE_BINARY_DIR}/libwebrtc-${WEBRTC_PLATFORM}.tar.xz
                 SHOW_PROGRESS
                 )
@@ -79,25 +79,17 @@ elseif (NOT (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES a
     endif ()
 endif ()
 
-if (WINDOWS)
-    target_link_libraries( ll::webrtc INTERFACE webrtc.lib )
-elseif (DARWIN)
-    FIND_LIBRARY(COREAUDIO_LIBRARY CoreAudio)
-    FIND_LIBRARY(COREGRAPHICS_LIBRARY CoreGraphics)
-    FIND_LIBRARY(AUDIOTOOLBOX_LIBRARY AudioToolbox)
-    FIND_LIBRARY(COREFOUNDATION_LIBRARY CoreFoundation)
-    FIND_LIBRARY(COCOA_LIBRARY Cocoa)
+find_library(WEBRTC_LIBRARY
+    NAMES
+    webrtc
+    PATHS "${ARCH_PREBUILT_DIRS_RELEASE}" REQUIRED NO_DEFAULT_PATH)
 
-    target_link_libraries( ll::webrtc INTERFACE
-        libwebrtc.a
-        ${COREAUDIO_LIBRARY}
-        ${AUDIOTOOLBOX_LIBRARY}
-        ${COREGRAPHICS_LIBRARY}
-        ${COREFOUNDATION_LIBRARY}
-        ${COCOA_LIBRARY}
-    )
+target_link_libraries( ll::webrtc INTERFACE ${WEBRTC_LIBRARY} )
+
+if (DARWIN)
+    target_link_libraries( ll::webrtc INTERFACE ll::oslibraries )
 elseif (LINUX)
-    target_link_libraries( ll::webrtc INTERFACE libwebrtc.a X11 )
-endif (WINDOWS)
+    target_link_libraries( ll::webrtc INTERFACE X11 )
+endif ()
 
 
