@@ -263,6 +263,7 @@ bool LLShaderMgr::attachShaderFeatures(LLGLSLShader * shader)
         }
     }
 
+    /*
     if (features->hasGamma || features->isDeferred)
     {
         if (!shader->attachFragmentObject("windlight/gammaF.glsl"))
@@ -270,6 +271,7 @@ bool LLShaderMgr::attachShaderFeatures(LLGLSLShader * shader)
             return false;
         }
     }
+    */
 
     if (features->hasAtmospherics || features->isDeferred)
     {
