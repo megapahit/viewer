@@ -775,7 +775,6 @@ void LLReflectionMapManager::doProbeUpdate()
 
     if(mUpdatingFace < 6)
     {
-        LL_WARNS() << "updating face " << mUpdatingFace << LL_ENDL;
         updateProbeFace(mUpdatingProbe, mUpdatingFace);
     }
     else
