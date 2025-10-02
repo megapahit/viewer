@@ -1373,7 +1373,7 @@ float4 SMAANeighborhoodBlendingPS(float2 texcoord,
     SMAA_BRANCH
     if (dot(a, float4(1.0, 1.0, 1.0, 1.0)) < 1e-5) {
         float4 color = SMAASampleLevelZero(colorTex, texcoord);
-        color.rgb = srgb_to_linear(color.rgb);
+        //color.rgb = srgb_to_linear(color.rgb);
 
         #if SMAA_REPROJECTION
         float2 velocity = SMAA_DECODE_VELOCITY(SMAASampleLevelZero(velocityTex, texcoord));
@@ -1382,7 +1382,7 @@ float4 SMAANeighborhoodBlendingPS(float2 texcoord,
         color.a = sqrt(5.0 * length(velocity));
         #endif
 
-        color.rgb = linear_to_srgb(color.rgb);
+        //color.rgb = linear_to_srgb(color.rgb);
         return color;
     } else {
         bool h = max(a.x, a.z) > max(a.y, a.w); // max(horizontal) > max(vertical)
@@ -1400,11 +1400,11 @@ float4 SMAANeighborhoodBlendingPS(float2 texcoord,
         // We exploit bilinear filtering to mix current pixel with the chosen
         // neighbor:
         float4 color = SMAASampleLevelZero(colorTex, blendingCoord.xy);
-        color.rgb = srgb_to_linear(color.rgb);
+        //color.rgb = srgb_to_linear(color.rgb);
         color = blendingWeight.x * color;
 
         float4 color2 = SMAASampleLevelZero(colorTex, blendingCoord.zw);
-        color2.rgb = srgb_to_linear(color2.rgb);
+        //color2.rgb = srgb_to_linear(color2.rgb);
         color += blendingWeight.y * color2;
 
         #if SMAA_REPROJECTION
@@ -1416,7 +1416,7 @@ float4 SMAANeighborhoodBlendingPS(float2 texcoord,
         color.a = sqrt(5.0 * length(velocity));
         #endif
 
-        color.rgb = linear_to_srgb(color.rgb);
+        //color.rgb = linear_to_srgb(color.rgb);
         return color;
     }
 }

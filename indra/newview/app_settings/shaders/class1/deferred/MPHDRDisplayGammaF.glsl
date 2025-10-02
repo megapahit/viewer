@@ -30,7 +30,7 @@ out vec4 frag_color;
 uniform sampler2D diffuseRect;
 
 uniform float gamma = 2.2;
-uniform float mpHDRBoost;
+uniform float mpHDRBoost = 1.0;
 
 in vec2 vary_fragcoord;
 

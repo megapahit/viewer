@@ -228,7 +228,7 @@ const F32 ALPHA_BLEND_CUTOFF = 0.598f;
 const F32 DEFERRED_LIGHT_FALLOFF = 0.5f;
 const U32 DEFERRED_VB_MASK = LLVertexBuffer::MAP_VERTEX | LLVertexBuffer::MAP_TEXCOORD0 | LLVertexBuffer::MAP_TEXCOORD1;
 
-const U32 SHADOWS_RESX = 1024;
+const U32 SHADOWS_RESX = 512;
 const U32 SHADOWS_RESY = 512;
 
 extern S32 gBoxFrame;
@@ -7484,7 +7484,6 @@ void LLPipeline::gammaCorrect(LLRenderTarget* src, LLRenderTarget* dst)
         LLGLSLShader& shader = psky->getReflectionProbeAmbiance(should_auto_adjust) == 0.f ? gLegacyPostGammaCorrectProgram :
             gDeferredPostGammaCorrectProgram;
 
-        static LLCachedControl<F32> mp_hdr_boost(gSavedSettings, "MPHDRBoost", false);
         static LLCachedControl<F32> mp_hdr_gamma(gSavedSettings, "MPHDRGamma", false);
         if(mHDRDisplay) shader = gHDRGammaCorrectProgram;
 
@@ -7654,12 +7653,9 @@ void LLPipeline::generateGlow(LLRenderTarget* src)
 
 bool LLPipeline::applyCAS(LLRenderTarget* src, LLRenderTarget* dst)
 {
-    static LLCachedControl<F32> cas_sharpness(gSavedSettings, "RenderCASSharpness", 0.4f);
     LL_PROFILE_GPU_ZONE("cas");
-    if (cas_sharpness == 0.0f || !gCASProgram.isComplete() || !gCASLegacyGammaProgram.isComplete())
-    {
-        return false;
-    }
+
+    static LLCachedControl<F32> cas_sharpness(gSavedSettings, "RenderCASSharpness", 0.0f);
 
     LLGLSLShader* sharpen_shader = &gCASProgram;
     static LLCachedControl<bool> should_auto_adjust(gSavedSettings, "RenderSkyAutoAdjustLegacy", false);
@@ -8378,46 +8374,37 @@ void LLPipeline::renderFinalize()
     static LLCachedControl<bool> has_hdr(gSavedSettings, "RenderHDREnabled", true);
     bool hdr = gGLManager.mGLVersion > 4.05f && has_hdr();
 
+    bool apply_cas = false;
+    static LLCachedControl<F32> cas_sharpness(gSavedSettings, "RenderCASSharpness", 0.0f);
+    if (cas_sharpness > 0.0f && gCASProgram.isComplete() && gCASLegacyGammaProgram.isComplete() && !mHDRDisplay) apply_cas = true;
+
     U16 activeRT = 0;
 
-    LLRenderTarget* postHDRTarget = &mRT->screen;
-
-    if (hdr)
+    if (hdr && !mHDRDisplay)
     {
         copyScreenSpaceReflections(&mRT->screen, &mSceneMap);
 
-        if(!mHDRDisplay)
-        {
         generateLuminance(&mRT->screen, &mLuminanceMap);
-
         generateExposure(&mLuminanceMap, &mExposureMap);
-
-/*
-        static LLCachedControl<F32> cas_sharpness(gSavedSettings, "RenderCASSharpness", 0.4f);
-        bool apply_cas = cas_sharpness != 0.0f && gCASProgram.isComplete() && gCASLegacyGammaProgram.isComplete();
-
-        tonemap(&mRT->screen, apply_cas ? &mRT->deferredLight : &mPostPingMap, !apply_cas);
 
         if (apply_cas)
         {
-            // Gamma Corrects
-            applyCAS(&mRT->deferredLight, &mPostPingMap);
-        }
-*/
-
             tonemap(&mRT->screen, &mRT->deferredLight, false);
-            postHDRTarget = &mRT->deferredLight;
+            applyCAS(&mRT->deferredLight, &mPostMaps[activeRT]);
+        }
+        else
+        {
+            tonemap(&mRT->screen, &mPostMaps[activeRT], true);
         }
     }
-/*
     else
     {
-        gammaCorrect(&mRT->screen, &mPostPingMap);
+        if(mHDRDisplay) copyScreenSpaceReflections(&mRT->screen, &mSceneMap);
+        gammaCorrect(&mRT->screen, &mPostMaps[activeRT]);
     }
-*/
 
-    gammaCorrect(postHDRTarget, &mPostMaps[1 - activeRT]);
-    activeRT = 1 - activeRT;
+    generateFXAABuffer(&mRT->screen);
+    generateSMAABuffers(&mRT->screen);
 
     generateGlow(&mPostMaps[activeRT]);
 
@@ -8429,16 +8416,7 @@ void LLPipeline::renderFinalize()
         }
     }
 
-/*
     LLVertexBuffer::unbind();
-
-    generateGlow(&mPostPingMap);
-
-    LLRenderTarget* sourceBuffer = &mPostPingMap;
-    LLRenderTarget* targetBuffer = &mPostPongMap;
-
-    combineGlow(sourceBuffer, targetBuffer);
-    std::swap(sourceBuffer, targetBuffer);
 
     gGLViewport[0] = gViewerWindow->getWorldViewRectRaw().mLeft;
     gGLViewport[1] = gViewerWindow->getWorldViewRectRaw().mBottom;
@@ -8446,43 +8424,8 @@ void LLPipeline::renderFinalize()
     gGLViewport[3] = gViewerWindow->getWorldViewRectRaw().getHeight();
     glViewport(gGLViewport[0], gGLViewport[1], gGLViewport[2], gGLViewport[3]);
 
-    if((RenderDepthOfFieldInEditMode || !LLToolMgr::getInstance()->inBuildMode()) &&
-        RenderDepthOfField &&
-        !gCubeSnapshot)
-    {
-        renderDoF(sourceBuffer, targetBuffer);
-        std::swap(sourceBuffer, targetBuffer);
-    }
-
-     if (RenderFSAAType == 1)
-    {
-        applyFXAA(sourceBuffer, targetBuffer);
-        std::swap(sourceBuffer, targetBuffer);
-    }
-    else if (RenderFSAAType == 2)
-    {
-        generateSMAABuffers(sourceBuffer);
-        applySMAA(sourceBuffer, targetBuffer);
-        std::swap(sourceBuffer, targetBuffer);
-    }
-*/
-
     combineGlow(&mPostMaps[activeRT], &mPostMaps[1 - activeRT]);
     activeRT = 1 - activeRT;
-
-    if(!mHDRDisplay)
-    {
-        //CAS breaks the hdr colors for now.
-        if(applyCAS(&mPostMaps[activeRT], &mPostMaps[1 - activeRT]))
-        {
-            activeRT = 1 - activeRT;
-        }
-    }
-
-    {
-        generateFXAABuffer(&mPostMaps[activeRT]);
-        generateSMAABuffers(&mPostMaps[activeRT]);
-    }
 
     if(renderDoF(&mPostMaps[activeRT], &mPostMaps[1 - activeRT]))
     {
@@ -8566,12 +8509,6 @@ void LLPipeline::renderFinalize()
 
     // Present the screen target.
 
-    gGLViewport[0] = gViewerWindow->getWorldViewRectRaw().mLeft;
-    gGLViewport[1] = gViewerWindow->getWorldViewRectRaw().mBottom;
-    gGLViewport[2] = gViewerWindow->getWorldViewRectRaw().getWidth();
-    gGLViewport[3] = gViewerWindow->getWorldViewRectRaw().getHeight();
-    glViewport(gGLViewport[0], gGLViewport[1], gGLViewport[2], gGLViewport[3]);
-
     gDeferredPostNoDoFNoiseProgram.bind(); // Add noise as part of final render to screen pass to avoid damaging other post effects
 
     // Whatever is last in the above post processing chain should _always_ be rendered directly here.  If not, expect problems.
@@ -8648,15 +8585,18 @@ void LLPipeline::bindShadowMaps(LLGLSLShader& shader)
 
     LOG_GLERROR("bindShadowMaps() 2");
 
-    for (U32 i = 4; i < 6; i++)
+    if(RenderShadowDetail > 1)
     {
-        S32 channel = shader.enableTexture(LLShaderMgr::DEFERRED_SHADOW0 + i);
-        if (channel > -1)
+        for (U32 i = 4; i < 6; i++)
         {
-            LLRenderTarget* shadow_target = getSpotShadowTarget(i - 4);
-            if (shadow_target)
+            S32 channel = shader.enableTexture(LLShaderMgr::DEFERRED_SHADOW0 + i);
+            if (channel > -1)
             {
-                gGL.getTexUnit(channel)->bind(shadow_target, true);
+                LLRenderTarget* shadow_target = getSpotShadowTarget(i - 4);
+                if (shadow_target)
+                {
+                    gGL.getTexUnit(channel)->bind(shadow_target, true);
+                }
             }
         }
     }
@@ -8988,7 +8928,7 @@ void LLPipeline::renderDeferredLighting()
         tc_moon = mat * tc_moon;
         mTransformedMoonDir.set(tc_moon);
 
-        if ((RenderDeferredSSAO && !gCubeSnapshot) || (RenderShadowDetail > 0 && RenderShadowDetail < 4))
+        if ((RenderDeferredSSAO && !gCubeSnapshot) || (!gCubeSnapshot && RenderShadowDetail > 0 && RenderShadowDetail < 4))
         {
             LL_PROFILE_GPU_ZONE("sun program");
             deferred_light_target->bindTarget("sun_shader", 1);

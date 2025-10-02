@@ -259,10 +259,7 @@ attributedStringInfo getSegments(NSAttributedString *str)
 		NSOpenGLPFADoubleBuffer,
 		NSOpenGLPFAClosestPolicy,
 		NSOpenGLPFAAccelerated,
-		//NSOpenGLPFASampleBuffers, samples,
-		//NSOpenGLPFASamples, 0,
 		NSOpenGLPFADepthSize, 24,
-		//NSOpenGLPFAAlphaSize, 8,
 		NSOpenGLPFAColorSize, 32,
 		NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion4_1Core,
 		0
@@ -273,16 +270,12 @@ attributedStringInfo getSegments(NSAttributedString *str)
         NSOpenGLPFADoubleBuffer,
         NSOpenGLPFAClosestPolicy,
         NSOpenGLPFAAccelerated,
-        //NSOpenGLPFASampleBuffers, samples,
-        //NSOpenGLPFASamples, 0,
         NSOpenGLPFAColorFloat,
         NSOpenGLPFAColorSize, 64,
         NSOpenGLPFADepthSize, 24,
         NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion4_1Core,
         0
     };
-
-	//NSOpenGLPixelFormat *pixelFormat = nil;
 
     mHDRDisplay = NO;
 

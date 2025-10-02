@@ -207,13 +207,13 @@
     decimal_digits="0"
     follows="left|top"
     height="16"
-    increment="32"
-    initial_value="160"
+    increment="8"
+    initial_value="128"
     label="Draw distance:"
     label_width="187"
     layout="topleft"
     left="30"
-    min_val="32"
+    min_val="8"
     max_val="512"
     name="DrawDistance"
     top_delta="40"
@@ -346,8 +346,8 @@
     name="IndirectMaxNonImpostorsText"
     width="65">
       0
-  </text> 
-    
+  </text>
+
   <button
     height="23"
     label="Exceptions..."
