@@ -203,10 +203,12 @@
 #define LL_PRETTY_FUNCTION __PRETTY_FUNCTION__
 #endif
 
+#ifndef _M_ARM64
 #if LL_ARM64
 #define GLM_FORCE_NEON 1
 #else
 #define GLM_FORCE_SSE2 1
+#endif
 #endif
 
 #if LL_ARM64
