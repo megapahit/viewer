@@ -90,6 +90,10 @@ target_link_libraries(media_plugin_cef
         ll::glib_headers
 )
 
+if (LINUX)
+  target_link_libraries(${PROJECT_NAME} glib-2.0)
+endif ()
+
 if (WINDOWS)
   set_target_properties(
     media_plugin_cef
