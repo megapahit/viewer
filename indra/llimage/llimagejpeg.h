@@ -78,7 +78,7 @@ protected:
 
     S32             mEncodeQuality;     // on a scale from 1 to 100
 private:
-#if !LL_ARM64
+#if !(LL_DARWIN && defined(__arm64__))
     static jmp_buf  sSetjmpBuffer;      // To allow the library to abort.
 #endif
 };
