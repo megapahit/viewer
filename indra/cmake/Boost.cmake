@@ -18,7 +18,7 @@ elseif (WINDOWS)
     set(sfx -vc143-mt-x64-1_88)
   endif ()
 else ()
-  find_package( Boost REQUIRED )
+  find_package( Boost )
 endif ()
 target_link_libraries( ll::boost INTERFACE
   boost_context${sfx}
