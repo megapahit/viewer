@@ -217,7 +217,7 @@ public:
     void setTextureAddressMode(eTextureAddressMode mode);
 /*
     // MUST already be active and bound
-    void setTextureAddressModeFast(eTextureAddressMode mode);
+    void setTextureAddressModeFast(eTextureAddressMode mode, eTextureType tex_type);
 */
 
     // Sets the filtering options used to sample the texture
@@ -226,7 +226,7 @@ public:
     void setTextureFilteringOption(LLTexUnit::eTextureFilterOptions option);
 /*
     // MUST already be active and bound
-    void setTextureFilteringOptionFast(LLTexUnit::eTextureFilterOptions option);
+    void setTextureFilteringOptionFast(LLTexUnit::eTextureFilterOptions option, eTextureType tex_type);
 */
 
     static U32 getInternalType(eTextureType type);

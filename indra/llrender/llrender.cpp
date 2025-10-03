@@ -218,8 +218,8 @@ void LLTexUnit::bindFast(LLTexture* texture)
     if (gl_tex->mTexOptionsDirty)
     {
         gl_tex->mTexOptionsDirty = false;
-        setTextureAddressModeFast(gl_tex->mAddressMode);
-        setTextureFilteringOptionFast(gl_tex->mFilterOption);
+        setTextureAddressModeFast(gl_tex->mAddressMode, gl_tex->getTarget());
+        setTextureFilteringOptionFast(gl_tex->mFilterOption, gl_tex->getTarget());
     }
 */
 }
@@ -477,17 +477,23 @@ void LLTexUnit::setTextureAddressMode(eTextureAddressMode mode)
     activate();
 
 /*
-    setTextureAddressModeFast(mode);
+    setTextureAddressModeFast(mode, mCurrTexType);
 }
 
-void LLTexUnit::setTextureAddressModeFast(eTextureAddressMode mode)
+void LLTexUnit::setTextureAddressModeFast(eTextureAddressMode mode, eTextureType tex_type)
 {
+    glTexParameteri(sGLTextureType[tex_type], GL_TEXTURE_WRAP_S, sGLAddressMode[mode]);
+    glTexParameteri(sGLTextureType[tex_type], GL_TEXTURE_WRAP_T, sGLAddressMode[mode]);
+    if (tex_type == TT_CUBE_MAP || tex_type == TT_CUBE_MAP_ARRAY || tex_type == TT_TEXTURE_3D)
+    {
+        glTexParameteri(sGLTextureType[tex_type], GL_TEXTURE_WRAP_R, sGLAddressMode[mode]);
+    }
 */
     glTexParameteri(sGLTextureType[mCurrTexType], GL_TEXTURE_WRAP_S, sGLAddressMode[mode]);
     glTexParameteri(sGLTextureType[mCurrTexType], GL_TEXTURE_WRAP_T, sGLAddressMode[mode]);
     if (mCurrTexType == TT_CUBE_MAP)
     {
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, sGLAddressMode[mode]);
+        glTexParameteri(sGLTextureType[mCurrTexType], GL_TEXTURE_WRAP_R, sGLAddressMode[mode]);
     }
 }
 
@@ -506,14 +512,21 @@ void LLTexUnit::setTextureFilteringOption(LLTexUnit::eTextureFilterOptions optio
     gGL.flush();
 
 /*
-    setTextureFilteringOptionFast(option);
+    setTextureFilteringOptionFast(option, mCurrTexType);
 }
 
-void LLTexUnit::setTextureFilteringOptionFast(LLTexUnit::eTextureFilterOptions option)
+void LLTexUnit::setTextureFilteringOptionFast(LLTexUnit::eTextureFilterOptions option, eTextureType tex_type)
 {
 */
     if (option == TFO_POINT)
     {
+/*
+        glTexParameteri(sGLTextureType[tex_type], GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
+    else
+    {
+        glTexParameteri(sGLTextureType[tex_type], GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+*/
         glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
     else
@@ -523,12 +536,22 @@ void LLTexUnit::setTextureFilteringOptionFast(LLTexUnit::eTextureFilterOptions o
 
     if (option >= TFO_TRILINEAR && mHasMipMaps)
     {
+/*
+        glTexParameteri(sGLTextureType[tex_type], GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+*/
         glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     }
     else if (option >= TFO_BILINEAR)
     {
         if (mHasMipMaps)
         {
+/*
+            glTexParameteri(sGLTextureType[tex_type], GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+        }
+        else
+        {
+            glTexParameteri(sGLTextureType[tex_type], GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+*/
             glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
         }
         else
@@ -540,6 +563,13 @@ void LLTexUnit::setTextureFilteringOptionFast(LLTexUnit::eTextureFilterOptions o
     {
         if (mHasMipMaps)
         {
+/*
+            glTexParameteri(sGLTextureType[tex_type], GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+        }
+        else
+        {
+            glTexParameteri(sGLTextureType[tex_type], GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+*/
             glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
         }
         else
@@ -552,6 +582,13 @@ void LLTexUnit::setTextureFilteringOptionFast(LLTexUnit::eTextureFilterOptions o
     {
         if (LLImageGL::sGlobalUseAnisotropic && option == TFO_ANISOTROPIC)
         {
+/*
+            glTexParameterf(sGLTextureType[tex_type], GL_TEXTURE_MAX_ANISOTROPY, gGLManager.mMaxAnisotropy);
+        }
+        else
+        {
+            glTexParameterf(sGLTextureType[tex_type], GL_TEXTURE_MAX_ANISOTROPY, 1.f);
+*/
             //glTexParameterf(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, gGLManager.mMaxAnisotropy);
             //We plan to add a setting. For now we stick to a low value.
             glTexParameterf(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, 4.0);
