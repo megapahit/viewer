@@ -84,6 +84,10 @@ elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRA
 endif ()
 if (WINDOWS)
   target_link_libraries(ll::openssl INTERFACE Crypt32.lib)
+elseif (LINUX)
+  target_link_libraries(ll::openssl INTERFACE ${ARCH_PREBUILT_DIRS_RELEASE}/libssl.a ${ARCH_PREBUILT_DIRS_RELEASE}/libcrypto.a dl)
+elseif (NOT DARWIN)
+  target_link_libraries(ll::openssl INTERFACE ssl crypto)
 endif (WINDOWS)
 
 target_include_directories(ll::openssl SYSTEM INTERFACE ${LIBS_PREBUILT_DIR}/include)
