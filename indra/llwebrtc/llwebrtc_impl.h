@@ -316,9 +316,11 @@ public:
     virtual int GetRecordAudioParameters(AudioParameters* params) override { return inner_->GetRecordAudioParameters(params); }
 #endif // WEBRTC_IOS
 
+#if !CM_WEBRTC
     virtual int32_t GetPlayoutDevice() const override { return inner_->GetPlayoutDevice(); }
     virtual int32_t GetRecordingDevice() const override { return inner_->GetRecordingDevice(); }
     virtual int32_t SetObserver(webrtc::AudioDeviceObserver* observer) override { return inner_->SetObserver(observer); }
+#endif
 
     // tuning microphone energy calculations
     float GetMicrophoneEnergy() { return audio_transport_.GetMicrophoneEnergy(); }

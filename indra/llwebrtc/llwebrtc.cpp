@@ -292,7 +292,9 @@ void LLWebRTCImpl::init()
             webrtc::scoped_refptr<webrtc::AudioDeviceModule> realADM =
                 webrtc::AudioDeviceModule::Create(webrtc::AudioDeviceModule::AudioLayer::kPlatformDefaultAudio, mTaskQueueFactory.get());
             mDeviceModule = webrtc::make_ref_counted<LLWebRTCAudioDeviceModule>(realADM);
+#if !CM_WEBRTC
             mDeviceModule->SetObserver(this);
+#endif
         });
 
     // The custom processor allows us to retrieve audio data (and levels)
