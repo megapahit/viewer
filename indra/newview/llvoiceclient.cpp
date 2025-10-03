@@ -302,10 +302,12 @@ void LLVoiceClient::setHidden(bool hidden)
 
 void LLVoiceClient::terminate()
 {
+#if !__FreeBSD__ && !_M_ARM64
     if (LLVivoxVoiceClient::instanceExists())
     {
         LLWebRTCVoiceClient::getInstance()->terminate();
     }
+#endif
     if (LLVivoxVoiceClient::instanceExists())
     {
         LLVivoxVoiceClient::getInstance()->terminate();
