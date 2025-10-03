@@ -27,20 +27,20 @@ use_prebuilt_binary(curl)
     endif ()
   endif ()
 elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/curl_installed OR NOT ${curl_installed} EQUAL 0)
-  if (NOT EXISTS ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r1.tar.gz)
+  if (NOT EXISTS ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r3.tar.gz)
     file(DOWNLOAD
-      https://github.com/secondlife/3p-curl/archive/refs/tags/v7.54.1-r1.tar.gz
-      ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r1.tar.gz
+      https://github.com/secondlife/3p-curl/archive/refs/tags/v7.54.1-r3.tar.gz
+      ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r3.tar.gz
       )
   endif ()
   file(ARCHIVE_EXTRACT
-    INPUT ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r1.tar.gz
+    INPUT ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r3.tar.gz
     DESTINATION ${CMAKE_BINARY_DIR}
     )
   if (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
     execute_process(
       COMMAND sed -i netrc.c -e "s/defined(HAVE_GETPWUID_R)/0/g" netrc.c
-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r1/curl/lib
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r3/curl/lib
       )
   endif ()
   file(
@@ -60,16 +60,16 @@ elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRA
   set(ENV{CFLAGS} "-std=c90")
   execute_process(
     COMMAND ./configure --disable-alt-svc --disable-dict --disable-doh --disable-file --disable-gopher --disable-headers-api --disable-hsts --disable-imap --disable-ldap --disable-ldaps --disable-libcurl-option --disable-manual --disable-mqtt --disable-ntlm --disable-ntlm-wb --disable-pop3 --disable-rtsp --disable-shared --disable-smb --disable-smtp --disable-sspi --disable-telnet --disable-tftp --disable-tls-srp --disable-unix-sockets --disable-verbose --disable-versioned-symbols --enable-threaded-resolver --with-ssl=${LIBS_PREBUILT_DIR} --without-libidn2 --without-libpsl --without-libssh2 --prefix=${LIBS_PREBUILT_DIR} --libdir=${ARCH_PREBUILT_DIRS_RELEASE}
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r1/curl
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r3/curl
     )
   execute_process(
     COMMAND make -j${MAKE_JOBS}
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r1/curl
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r3/curl
     )
   unset(ENV{CFLAGS})
   execute_process(
     COMMAND make install
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r1/curl
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-curl-7.54.1-r3/curl
     RESULT_VARIABLE curl_installed
     )
   if (CMAKE_SYSTEM_NAME MATCHES FreeBSD)
