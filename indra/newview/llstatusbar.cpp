@@ -41,6 +41,7 @@
 #include "llpanelpresetscamerapulldown.h"
 #include "llpanelpresetspulldown.h"
 #include "llpanelvolumepulldown.h"
+#include "llfloatermarketplace.h"
 #include "llfloaterregioninfo.h"
 #include "llfloaterscriptdebug.h"
 #include "llhints.h"
@@ -551,7 +552,11 @@ void LLStatusBar::onClickBuyCurrency()
 
 void LLStatusBar::onClickShop()
 {
-    LLFloaterReg::toggleInstanceOrBringToFront("marketplace");
+    LLFloaterReg::showInstanceOrBringToFront("marketplace");
+    if (LLFloaterMarketplace* marketplace = LLFloaterReg::getTypedInstance<LLFloaterMarketplace>("marketplace"))
+    {
+        marketplace->openMarketplace();
+    }
 }
 
 void LLStatusBar::onMouseEnterPresetsCamera()
