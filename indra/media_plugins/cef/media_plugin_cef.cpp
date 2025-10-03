@@ -955,6 +955,7 @@ void MediaPluginCEF::receiveMessage(const char* message_string)
             {
                 authResponse(message_in);
             }
+#if !LL_LINUX
             if (message_name == "edit_undo")
             {
                 mCEFLib->editUndo();
@@ -963,6 +964,7 @@ void MediaPluginCEF::receiveMessage(const char* message_string)
             {
                 mCEFLib->editRedo();
             }
+#endif
             if (message_name == "edit_cut")
             {
                 mCEFLib->editCut();
@@ -975,6 +977,7 @@ void MediaPluginCEF::receiveMessage(const char* message_string)
             {
                 mCEFLib->editPaste();
             }
+#if !LL_LINUX
             if (message_name == "edit_delete")
             {
                 mCEFLib->editDelete();
@@ -987,6 +990,7 @@ void MediaPluginCEF::receiveMessage(const char* message_string)
             {
                 mCEFLib->viewSource();
             }
+#endif
         }
         else if (message_class == LLPLUGIN_MESSAGE_CLASS_MEDIA_BROWSER)
         {
@@ -1170,19 +1174,28 @@ void MediaPluginCEF::unicodeInput(std::string event, LLSD native_key_data = LLSD
 //
 void MediaPluginCEF::checkEditState()
 {
+#if !LL_LINUX
     bool can_undo = mCEFLib->editCanUndo();
     bool can_redo = mCEFLib->editCanRedo();
+#endif
     bool can_cut = mCEFLib->editCanCut();
     bool can_copy = mCEFLib->editCanCopy();
     bool can_paste = mCEFLib->editCanPaste();
+#if !LL_LINUX
     bool can_delete = mCEFLib->editCanDelete();
     bool can_select_all = mCEFLib->editCanSelectAll();
+#endif
 
+#if LL_LINUX
+    if ((can_cut != mCanCut) || (can_copy != mCanCopy) || (can_paste != mCanPaste))
+#else
     if ((can_undo != mCanUndo) || (can_redo != mCanRedo) || (can_cut != mCanCut) || (can_copy != mCanCopy)
         || (can_paste != mCanPaste) || (can_delete != mCanDelete) || (can_select_all != mCanSelectAll))
+#endif
     {
         LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA, "edit_state");
 
+#if !LL_LINUX
         if (can_undo != mCanUndo)
         {
             mCanUndo = can_undo;
@@ -1194,6 +1207,7 @@ void MediaPluginCEF::checkEditState()
             mCanRedo = can_redo;
             message.setValueBoolean("redo", can_redo);
         }
+#endif
 
         if (can_cut != mCanCut)
         {
@@ -1213,6 +1227,7 @@ void MediaPluginCEF::checkEditState()
             message.setValueBoolean("paste", can_paste);
         }
 
+#if !LL_LINUX
         if (can_delete != mCanDelete)
         {
             mCanDelete = can_delete;
@@ -1224,6 +1239,7 @@ void MediaPluginCEF::checkEditState()
             mCanSelectAll = can_select_all;
             message.setValueBoolean("select_all", can_select_all);
         }
+#endif
 
         sendMessage(message);
     }
