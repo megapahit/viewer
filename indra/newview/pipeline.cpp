@@ -886,7 +886,7 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY, U32 type_)
     if (!addDeferredAttachments(mRT->deferredScreen)) return false;
 
     GLuint screenFormat = GL_RGBA16F;
-    if(!hdr && !mHDRDisplay && MPColorPrecision == 1) screenFormat = GL_RGB8;
+    if(!hdr && !mHDRDisplay && MPColorPrecision == 1) screenFormat = GL_RGB10_A2;
 
     if (!mRT->screen.allocate(resX, resY, GL_RGBA16F)) return false;
 

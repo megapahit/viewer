@@ -326,7 +326,7 @@ void main()
     radiance *= df2.y;
     //radiance = toneMapNoExposure(radiance);
     vec3 color = vec3(0);
-    color = mix(fb.rgb, radiance, min(1.0, df2.x)) + punctual.rgb;
+    color = mix(fb.rgb, radiance, min(5.0, df2.x)) + punctual.rgb;
 
     float water_haze_scale = 4.0;
 
@@ -344,6 +344,5 @@ void main()
 
     float spec = min(max(max(punctual.r, punctual.g), punctual.b), 0.0);
 
-    frag_color = min(vec4(1),max(vec4(color.rgb, spec * water_mask), vec4(0)));
+    frag_color = min(vec4(5),max(vec4(color.rgb, spec * water_mask), vec4(0)));
 }
-
