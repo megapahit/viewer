@@ -88,6 +88,12 @@ target_link_libraries( ll::webrtc INTERFACE ${WEBRTC_LIBRARY} )
 
 if (DARWIN)
     target_link_libraries( ll::webrtc INTERFACE ll::oslibraries )
+    execute_process(
+        COMMAND lipo libwebrtc.a
+            -thin ${CMAKE_OSX_ARCHITECTURES}
+            -output libwebrtc.a
+        WORKING_DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE}
+    )
 elseif (LINUX)
     target_link_libraries( ll::webrtc INTERFACE X11 )
 endif ()

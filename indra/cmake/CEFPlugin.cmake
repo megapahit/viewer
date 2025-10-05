@@ -88,6 +88,46 @@ elseif (DARWIN)
         ${APPKIT_LIBRARY}
        )
 
+    execute_process(
+        COMMAND lipo Chromium\ Embedded\ Framework.framework/Chromium\ Embedded\ Framework
+            -thin ${CMAKE_OSX_ARCHITECTURES}
+            -output Chromium\ Embedded\ Framework.framework/Chromium\ Embedded\ Framework
+        COMMAND lipo Chromium\ Embedded\ Framework.framework/Libraries/libEGL.dylib
+            -thin ${CMAKE_OSX_ARCHITECTURES}
+            -output Chromium\ Embedded\ Framework.framework/Libraries/libEGL.dylib
+        COMMAND lipo Chromium\ Embedded\ Framework.framework/Libraries/libGLESv2.dylib
+            -thin ${CMAKE_OSX_ARCHITECTURES}
+            -output Chromium\ Embedded\ Framework.framework/Libraries/libGLESv2.dylib
+        COMMAND lipo Chromium\ Embedded\ Framework.framework/Libraries/libcef_sandbox.dylib
+            -thin ${CMAKE_OSX_ARCHITECTURES}
+            -output Chromium\ Embedded\ Framework.framework/Libraries/libcef_sandbox.dylib
+        COMMAND lipo Chromium\ Embedded\ Framework.framework/Libraries/libvk_swiftshader.dylib
+            -thin ${CMAKE_OSX_ARCHITECTURES}
+            -output Chromium\ Embedded\ Framework.framework/Libraries/libvk_swiftshader.dylib
+        COMMAND lipo DullahanHelper\ \(Alerts\).app/Contents/MacOS/DullahanHelper\ \(Alerts\)
+            -thin ${CMAKE_OSX_ARCHITECTURES}
+            -output DullahanHelper\ \(Alerts\).app/Contents/MacOS/DullahanHelper\ \(Alerts\)
+        COMMAND lipo DullahanHelper\ \(GPU\).app/Contents/MacOS/DullahanHelper\ \(GPU\)
+            -thin ${CMAKE_OSX_ARCHITECTURES}
+            -output DullahanHelper\ \(GPU\).app/Contents/MacOS/DullahanHelper\ \(GPU\)
+        COMMAND lipo DullahanHelper\ \(Plugin\).app/Contents/MacOS/DullahanHelper\ \(Plugin\)
+            -thin ${CMAKE_OSX_ARCHITECTURES}
+            -output DullahanHelper\ \(Plugin\).app/Contents/MacOS/DullahanHelper\ \(Plugin\)
+        COMMAND lipo DullahanHelper\ \(Renderer\).app/Contents/MacOS/DullahanHelper\ \(Renderer\)
+            -thin ${CMAKE_OSX_ARCHITECTURES}
+            -output DullahanHelper\ \(Renderer\).app/Contents/MacOS/DullahanHelper\ \(Renderer\)
+        COMMAND lipo DullahanHelper.app/Contents/MacOS/DullahanHelper
+            -thin ${CMAKE_OSX_ARCHITECTURES}
+            -output DullahanHelper.app/Contents/MacOS/DullahanHelper
+        COMMAND lipo libcef_dll_wrapper.a
+            -thin ${CMAKE_OSX_ARCHITECTURES}
+            -output libcef_dll_wrapper.a
+        COMMAND lipo libdullahan.a
+            -thin ${CMAKE_OSX_ARCHITECTURES}
+            -output libdullahan.a
+        WORKING_DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE}
+    )
+
 elseif (LINUX)
     target_link_libraries( ll::cef INTERFACE
         libdullahan.a
