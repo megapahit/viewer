@@ -39,6 +39,20 @@
 #include "modules/audio_mixer/audio_mixer_impl.h"
 #include "api/environment/environment_factory.h"
 
+#if CM_WEBRTC
+
+#include "modules/congestion_controller/goog_cc/loss_based_bwe_v2.h"
+
+webrtc::RtpStreamConfig::Rtx::Rtx()
+{
+}
+
+webrtc::LossBasedBweV2::Config::Config()
+{
+}
+
+#endif
+
 namespace llwebrtc
 {
 #if WEBRTC_WIN
