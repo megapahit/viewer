@@ -6,16 +6,16 @@ include_guard()
 add_library( ll::boost INTERFACE IMPORTED )
 
 if (DARWIN)
-  target_include_directories( ll::boost SYSTEM INTERFACE /opt/local/libexec/boost/1.87/include)
-  target_link_directories( ll::boost INTERFACE /opt/local/libexec/boost/1.87/lib)
+  target_include_directories( ll::boost SYSTEM INTERFACE /opt/local/libexec/boost/1.88/include)
+  target_link_directories( ll::boost INTERFACE /opt/local/libexec/boost/1.88/lib)
   set(sfx -mt)
 elseif (WINDOWS)
   target_include_directories( ll::boost SYSTEM INTERFACE ${prefix_result}/../include)
   target_link_directories( ll::boost INTERFACE ${prefix_result})
   if ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
-    set(sfx -vc143-mt-a64-1_88)
+    set(sfx -vc143-mt-a64-1_89)
   else ()
-    set(sfx -vc143-mt-x64-1_88)
+    set(sfx -vc143-mt-x64-1_89)
   endif ()
 else ()
   find_package( Boost )
@@ -25,7 +25,6 @@ target_link_libraries( ll::boost INTERFACE
   boost_fiber${sfx}
   boost_filesystem${sfx}
   boost_program_options${sfx}
-  boost_system${sfx}
   boost_thread${sfx}
   boost_url${sfx}
   )
@@ -33,6 +32,9 @@ if (WINDOWS)
   target_link_libraries( ll::boost INTERFACE boost_json${sfx})
 else ()
   target_link_libraries( ll::boost INTERFACE boost_regex${sfx})
+endif ()
+if (NOT (${LINUX_DISTRO} MATCHES opensuse-tumbleweed OR WINDOWS))
+  target_link_libraries( ll::boost INTERFACE boost_system${sfx})
 endif ()
 target_compile_definitions( ll::boost INTERFACE BOOST_BIND_GLOBAL_PLACEHOLDERS )
 return()
