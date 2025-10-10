@@ -114,6 +114,7 @@ private:
     bool mCanDelete;
     bool mCanSelectAll;
     std::string mRootCachePath;
+    std::string mCachePath;
     std::string mCefLogFile;
     bool mCefLogVerbose;
     std::vector<std::string> mPickedFiles;
