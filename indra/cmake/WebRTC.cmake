@@ -87,6 +87,10 @@ find_library(WEBRTC_LIBRARY
 target_link_libraries( ll::webrtc INTERFACE ${WEBRTC_LIBRARY} )
 
 if (DARWIN)
+    if (CMAKE_OSX_ARCHITECTURES MATCHES x86_64)
+        target_link_directories( ll::webrtc INTERFACE ${ARCH_PREBUILT_DIRS_RELEASE} )
+        target_link_libraries( ll::webrtc INTERFACE webrtc )
+    endif ()
     target_link_libraries( ll::webrtc INTERFACE ll::oslibraries )
     execute_process(
         COMMAND lipo libwebrtc.a
