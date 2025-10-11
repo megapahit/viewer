@@ -236,6 +236,8 @@ LLWindowMacOSX::LLWindowMacOSX(LLWindowCallbacks* callbacks,
         allowLanguageTextInput(NULL, false);
     }
 
+    setUseMultGL(sUseMultGL);
+
     mCallbacks = callbacks;
     stop_glerror();
 
