@@ -1511,6 +1511,10 @@ void freePeerConnection(LLWebRTCPeerConnectionInterface* peer_connection)
 
 void init(LLWebRTCLogCallback* logCallback)
 {
+    if (gWebRTCImpl)
+    {
+        return;
+    }
     gWebRTCImpl = new LLWebRTCImpl(logCallback);
     gWebRTCImpl->init();
 }
