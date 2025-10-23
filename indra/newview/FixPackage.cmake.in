@@ -193,9 +193,9 @@ execute_process(
     COMMAND lipo libbz2.1.0.8.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libbz2.1.0.8.dylib
-    COMMAND lipo libexpat.1.10.2.dylib
+    COMMAND lipo libexpat.1.11.1.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libexpat.1.10.2.dylib
+        -output libexpat.1.11.1.dylib
     COMMAND lipo libfreetype.6.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libfreetype.6.dylib
@@ -296,7 +296,7 @@ execute_process(
         Frameworks/libbrotlidec.1.1.0.dylib
         Frameworks/libbz2.1.0.8.dylib
         Frameworks/libdiscord_partner_sdk.dylib
-        Frameworks/libexpat.1.10.2.dylib
+        Frameworks/libexpat.1.11.1.dylib
         Frameworks/libfreetype.6.dylib
         Frameworks/libhunspell-1.7.0.dylib
         Frameworks/libiconv.2.dylib
