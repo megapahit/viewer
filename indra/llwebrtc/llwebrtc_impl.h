@@ -428,6 +428,9 @@ class LLWebRTCImpl : public LLWebRTCDeviceInterface, public webrtc::AudioDeviceO
     ~LLWebRTCImpl()
     {
         delete mLogSink;
+
+        // Explicit cleanup for the sake of debugging and crash stacks
+        mPeerCustomProcessor = nullptr;
     }
 
     void init();
@@ -679,6 +682,8 @@ class LLWebRTCPeerConnectionImpl : public LLWebRTCPeerConnectionInterface,
     // data
     std::vector<LLWebRTCDataObserver *> mDataObserverList;
     webrtc::scoped_refptr<webrtc::DataChannelInterface> mDataChannel;
+
+    std::atomic<int> mPendingJobs;
 };
 
 }

@@ -64,7 +64,7 @@ $ megapahit
 ### Fedora
 
 ```
-$ sudo dnf install cmake gcc-c++ patch patchelf rpm-build perl-FindBin apr-util-devel boost-devel boost-url expat-devel fltk-devel glm-devel mesa-libGLU-devel hunspell-devel minizip-ng-compat-devel libnghttp2-devel nanosvg-devel openjpeg-devel pipewire-devel pulseaudio-libs-devel SDL2-devel vlc-devel libvorbis-devel libXcursor-devel libXfixes-devel libXinerama-devel xxhash-devel
+$ sudo dnf install cmake gcc-c++ patch patchelf rpm-build perl-FindBin apr-util-devel boost-devel boost-url expat-devel fltk-devel glm-devel mesa-libGLU-devel hunspell-devel minizip-ng-compat-devel libnghttp2-devel nanosvg-devel openjpeg-devel pipewire-devel pulseaudio-libs-devel SDL2-devel v-hacd-devel vlc-devel libvorbis-devel libXcursor-devel libXfixes-devel libXinerama-devel xxhash-devel
 $ export LL_BUILD="-O3 -std=c++20 -fPIC -DLL_LINUX=1"
 ```
 build with FMOD Studio: ([register with fmod to get linux package][fmod] and then place the `.tar.gz` in `~/Downloads`)

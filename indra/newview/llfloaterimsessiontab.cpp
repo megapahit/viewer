@@ -618,9 +618,21 @@ void LLFloaterIMSessionTab::deleteAllChildren()
 
 std::string LLFloaterIMSessionTab::appendTime()
 {
-    std::string timeStr = "[" + LLTrans::getString("TimeHour") + "]:"
-                          "[" + LLTrans::getString("TimeMin") + "]:"
-                          "[" + LLTrans::getString("TimeSec") + "]";
+    std::string timeStr;
+    static bool use_24h = gSavedSettings.getBOOL("Use24HourClock");
+    if (use_24h)
+    {
+        timeStr = "[" + LLTrans::getString("TimeHour") + "]:"
+            "[" + LLTrans::getString("TimeMin") + "]:"
+            "[" + LLTrans::getString("TimeSec") + "]";
+    }
+    else
+    {
+        timeStr = "[" + LLTrans::getString("TimeHour12") + "]:"
+            "[" + LLTrans::getString("TimeMin") + "]:"
+            "[" + LLTrans::getString("TimeSec") + "] ["
+            + LLTrans::getString("TimeAMPM") + "]";
+    }
 
     LLSD substitution;
     substitution["datetime"] = (S32)time_corrected();
