@@ -25,6 +25,7 @@
 * $/LicenseInfo$
 */
 
+#include <unordered_map>
 #include "linden_common.h"
 
 #include "llconvexdecompositionvhacd.h"
