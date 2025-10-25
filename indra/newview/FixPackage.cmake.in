@@ -241,9 +241,9 @@ execute_process(
     COMMAND lipo libopenal.1.24.2.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libopenal.1.24.2.dylib
-    COMMAND lipo libopenjp2.2.5.3.dylib
+    COMMAND lipo libopenjp2.2.5.4.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libopenjp2.2.5.3.dylib
+        -output libopenjp2.2.5.4.dylib
     COMMAND lipo libpng16.16.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libpng16.16.dylib
@@ -312,7 +312,7 @@ execute_process(
         Frameworks/libnghttp2.14.dylib
         Frameworks/libogg.0.dylib
         Frameworks/libopenal.1.24.2.dylib
-        Frameworks/libopenjp2.2.5.3.dylib
+        Frameworks/libopenjp2.2.5.4.dylib
         Frameworks/libpng16.16.dylib
         Frameworks/libvlc.5.dylib
         Frameworks/libvlccore.9.dylib
