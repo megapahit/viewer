@@ -300,7 +300,7 @@
    layout="topleft"
    left="83"
    name="sound_on_collisions"
-   top_pad="10"
+   top_pad="0"
    width="200" />
   <check_box
    control_name="DoubleClickZoomIn"
@@ -309,7 +309,7 @@
    layout="topleft"
    left="83"
    name="double_click_zoom_in"
-   top_pad="10"
+   top_pad="0"
    width="200" />
   <button
    height="23"
