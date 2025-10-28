@@ -202,7 +202,7 @@ pull requests and more. See the [CONTRIBUTING][] and the [open source portal][] 
 [download]: https://megapahit.net
 [tpv]: http://wiki.secondlife.com/wiki/Third_Party_Viewer_Directory/Megapahit
 [open source portal]: http://wiki.secondlife.com/wiki/Open_Source_Portal
-[contributing]: https://megapahit.org/viewer.git/tree/CONTRIBUTING.md
+[contributing]: https://github.com/megapahit/viewer/blob/main/CONTRIBUTING.md
 [in-world group]: https://world.secondlife.com/group/1142646c-5fb2-162c-ecf8-c5e422ab5c6d
 [Discord]: https://discord.gg/jpt33HPVEK
 [fmod]: https://www.fmod.com/studio
