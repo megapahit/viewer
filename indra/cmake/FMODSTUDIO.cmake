@@ -34,7 +34,7 @@ if (USE_FMODSTUDIO)
       file(MAKE_DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE})
       if (DARWIN)
         execute_process(
-          COMMAND hdiutil attach -noverify fmodstudioapi20230mac-installer.dmg
+          COMMAND hdiutil attach -noverify fmodstudioapi20231mac-installer.dmg
           WORKING_DIRECTORY $ENV{HOME}/Downloads
           )
         file(
@@ -64,36 +64,36 @@ if (USE_FMODSTUDIO)
         file(WRITE ${PREBUILD_TRACKING_DIR}/fmodstudio_installed "${fmodstudio_installed}")
       else ()
         file(ARCHIVE_EXTRACT
-          INPUT $ENV{HOME}/Downloads/fmodstudioapi20230linux.tar.gz
+          INPUT $ENV{HOME}/Downloads/fmodstudioapi20231linux.tar.gz
           DESTINATION ${CMAKE_BINARY_DIR}
           )
         file(
           COPY
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20230linux/api/core/inc/fmod.h
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20230linux/api/core/inc/fmod.hpp
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20230linux/api/core/inc/fmod_codec.h
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20230linux/api/core/inc/fmod_common.h
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20230linux/api/core/inc/fmod_dsp.h
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20230linux/api/core/inc/fmod_dsp_effects.h
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20230linux/api/core/inc/fmod_errors.h
-            ${CMAKE_BINARY_DIR}/fmodstudioapi20230linux/api/core/inc/fmod_output.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20231linux/api/core/inc/fmod.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20231linux/api/core/inc/fmod.hpp
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20231linux/api/core/inc/fmod_codec.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20231linux/api/core/inc/fmod_common.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20231linux/api/core/inc/fmod_dsp.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20231linux/api/core/inc/fmod_dsp_effects.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20231linux/api/core/inc/fmod_errors.h
+            ${CMAKE_BINARY_DIR}/fmodstudioapi20231linux/api/core/inc/fmod_output.h
           DESTINATION ${LIBS_PREBUILT_DIR}/include/fmodstudio
           )
         if (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
           file(
             COPY
-              ${CMAKE_BINARY_DIR}/fmodstudioapi20230linux/api/core/lib/arm64/libfmod.so
-              ${CMAKE_BINARY_DIR}/fmodstudioapi20230linux/api/core/lib/arm64/libfmod.so.13
-              ${CMAKE_BINARY_DIR}/fmodstudioapi20230linux/api/core/lib/arm64/libfmod.so.13.30
+              ${CMAKE_BINARY_DIR}/fmodstudioapi20231linux/api/core/lib/arm64/libfmod.so
+              ${CMAKE_BINARY_DIR}/fmodstudioapi20231linux/api/core/lib/arm64/libfmod.so.13
+              ${CMAKE_BINARY_DIR}/fmodstudioapi20231linux/api/core/lib/arm64/libfmod.so.13.31
             DESTINATION ${ARCH_PREBUILT_DIRS_RELEASE}
             FOLLOW_SYMLINK_CHAIN
             )
         else ()
           file(
             COPY
-              ${CMAKE_BINARY_DIR}/fmodstudioapi20230linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so
-              ${CMAKE_BINARY_DIR}/fmodstudioapi20230linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so.13
-              ${CMAKE_BINARY_DIR}/fmodstudioapi20230linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so.13.30
+              ${CMAKE_BINARY_DIR}/fmodstudioapi20231linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so
+              ${CMAKE_BINARY_DIR}/fmodstudioapi20231linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so.13
+              ${CMAKE_BINARY_DIR}/fmodstudioapi20231linux/api/core/lib/${CMAKE_SYSTEM_PROCESSOR}/libfmod.so.13.31
             DESTINATION ${ARCH_PREBUILT_DIRS_RELEASE}
             FOLLOW_SYMLINK_CHAIN
             )
