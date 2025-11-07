@@ -3,34 +3,12 @@
 project(llprimitive)
 
 include(00-Common)
-include(Prebuilt)
 include(LLCommon)
 include(LLCoreHttp)
 include(LLPhysicsExtensions)
 include(LLPrimitive)
 include(GLM)
 include(TinyGLTF)
-
-if (LINUX AND NOT (${LINUX_DISTRO} MATCHES debian AND CMAKE_SYSTEM_PROCESSOR MATCHES aarch64) OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
-  set_property(DIRECTORY APPEND
-    PROPERTY CMAKE_CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/../patches/collada-dom-v2.3-r8.patch)
-  prepare_thirdparty(
-    "https://github.com/secondlife/3p-colladadom/archive/refs/tags/v2.3-r8.tar.gz"
-    "colladadom-v2.3-r8.tar.gz"
-    "3p-colladadom-2.3-r8"
-    "collada-dom-v2.3-r8.patch"
-    "b36dce3b7be4b49f3c8e4d6c9dbf3529f7ed1f28e64ee45be0e77805f06376b95079798616529302d771ab2b76bf06d2f894ca11e6f7f3097c3f7a05a78c474f"
-  )
-  set(OPT_COLLADA14 TRUE)
-  add_subdirectory(
-	  "${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r8" "colladadom")
-  target_include_directories(
-	  ll::colladadom INTERFACE
-	  ${colladadom_SOURCE_DIR}/include
-	  ${colladadom_SOURCE_DIR}/include/1.4
-  )
-  target_link_libraries( ll::colladadom INTERFACE collada14dom )
-endif ()
 
 set(llprimitive_SOURCE_FILES
     lldaeloader.cpp
