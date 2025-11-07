@@ -31,7 +31,7 @@ if (DARWIN)
         )
 
     install(FILES
-        SecondLife.nib
+        ${CMAKE_CURRENT_BINARY_DIR}/SecondLife.nib
         ${AUTOBUILD_INSTALL_DIR}/ca-bundle.crt
         cube.dae
         featuretable_mac.txt

@@ -96,7 +96,7 @@ $ cd ..
 $ mv -i indra/newview/app_settings/windlight ..
 $ cd -
 $ sudo cpack -G FREEBSD
-$ sudo pkg add megapahit-`cat newview/viewer_version.txt`-`uname -s`.pkg
+$ sudo pkg install megapahit-`cat newview/viewer_version.txt`-`uname -s`.pkg
 $ cd ..
 $ mv -i ../windlight indra/newview/app_settings/
 $ sudo pkg set -yA 1 freealut apr1 boost-libs fltk hunspell meshoptimizer minizip libnghttp2 openjpeg sdl20 vlc libvorbis
