@@ -2424,6 +2424,11 @@ elseif (CMAKE_SYSTEM_NAME MATCHES FreeBSD AND PACKAGE)
 endif (LINUX)
 
 if (DARWIN)
+  execute_process(
+    COMMAND ibtool --compile
+      ${CMAKE_CURRENT_BINARY_DIR}/SecondLife.nib
+      ${CMAKE_CURRENT_SOURCE_DIR}/SecondLife.xib
+    )
   # These all get set with PROPERTIES. It's not that the property names are
   # magically known to CMake -- it's that these names are referenced in the
   # Info-SecondLife.plist file in the configure_file() directive below.
