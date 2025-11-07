@@ -113,37 +113,32 @@ if (DARWIN)
     LINK_FLAGS "-exported_symbols_list ${CMAKE_CURRENT_SOURCE_DIR}/../base/media_plugin_base.exp"
   )
 
-  add_custom_command(TARGET media_plugin_cef
-    POST_BUILD COMMAND ${CMAKE_INSTALL_NAME_TOOL} -change "@executable_path/Chromium Embedded Framework"
-        "@executable_path/../../../../Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework"
-        -change "/opt/local/lib/libopenjp2.7.dylib" "@loader_path/../../Frameworks/libopenjp2.7.dylib"
-        -change "/opt/local/lib/libpng16.16.dylib" "@loader_path/../../Frameworks/libpng16.16.dylib"
-        -change "/opt/local/lib/libjpeg.8.dylib" "@loader_path/../../Frameworks/libjpeg.8.dylib"
-        -change "/opt/local/lib/libfreetype.6.dylib" "@loader_path/../../Frameworks/libfreetype.6.dylib"
-        -change "/opt/local/lib/libaprutil-1.0.dylib" "@loader_path/../../Frameworks/libaprutil-1.0.dylib"
-        -change "/opt/local/lib/libiconv.2.dylib" "@loader_path/../../Frameworks/libiconv.2.dylib"
-        -change "/opt/local/lib/libapr-1.0.dylib" "@loader_path/../../Frameworks/libapr-1.0.dylib"
-        -change "/opt/local/lib/libexpat.1.dylib" "@loader_path/../../Frameworks/libexpat.1.dylib"
-        -change "/opt/local/libexec/boost/1.88/lib/libboost_context-mt.dylib" "@loader_path/../../Frameworks/libboost_context-mt.dylib"
-        -change "/opt/local/libexec/boost/1.88/lib/libboost_fiber-mt.dylib" "@loader_path/../../Frameworks/libboost_fiber-mt.dylib"
-        -change "/opt/local/libexec/boost/1.88/lib/libboost_filesystem-mt.dylib" "@loader_path/../../Frameworks/libboost_filesystem-mt.dylib"
-        -change "/opt/local/libexec/boost/1.88/lib/libboost_program_options-mt.dylib" "@loader_path/../../Frameworks/libboost_program_options-mt.dylib"
-        -change "/opt/local/libexec/boost/1.88/lib/libboost_regex-mt.dylib" "@loader_path/../../Frameworks/libboost_regex-mt.dylib"
-        -change "/opt/local/libexec/boost/1.88/lib/libboost_system-mt.dylib" "@loader_path/../../Frameworks/libboost_system-mt.dylib"
-        -change "/opt/local/libexec/boost/1.88/lib/libboost_thread-mt.dylib" "@loader_path/../../Frameworks/libboost_thread-mt.dylib"
-        -change "/opt/local/libexec/boost/1.88/lib/libboost_url-mt.dylib" "@loader_path/../../Frameworks/libboost_url-mt.dylib"
-        -change "/opt/local/lib/libz.1.dylib" "@loader_path/../../Frameworks/libz.1.dylib"
-        -change "/opt/local/lib/libnghttp2.14.dylib" "@loader_path/../../Frameworks/libnghttp2.14.dylib"
-        "$<TARGET_FILE:media_plugin_cef>"
+  add_custom_command(TARGET ${PROJECT_NAME}
+    POST_BUILD COMMAND ${CMAKE_INSTALL_NAME_TOOL}
+        -change "/opt/local/lib/libnghttp2.14.dylib" "@loader_path/libnghttp2.14.dylib"
+        -change "/opt/local/lib/libaprutil-1.0.dylib" "@loader_path/libaprutil-1.0.dylib"
+        -change "/opt/local/lib/libiconv.2.dylib" "@loader_path/libiconv.2.dylib"
+        -change "/opt/local/lib/libapr-1.0.dylib" "@loader_path/libapr-1.0.dylib"
+        -change "/opt/local/lib/libz.1.dylib" "@loader_path/libz.1.dylib"
+        -change "/opt/local/libexec/boost/1.88/lib/libboost_context-mt.dylib" "@loader_path/libboost_context-mt.dylib"
+        -change "/opt/local/libexec/boost/1.88/lib/libboost_fiber-mt.dylib" "@loader_path/libboost_fiber-mt.dylib"
+        -change "/opt/local/libexec/boost/1.88/lib/libboost_filesystem-mt.dylib" "@loader_path/libboost_filesystem-mt.dylib"
+        -change "/opt/local/libexec/boost/1.88/lib/libboost_program_options-mt.dylib" "@loader_path/libboost_program_options-mt.dylib"
+        -change "/opt/local/libexec/boost/1.88/lib/libboost_thread-mt.dylib" "@loader_path/libboost_thread-mt.dylib"
+        -change "/opt/local/libexec/boost/1.88/lib/libboost_url-mt.dylib" "@loader_path/libboost_url-mt.dylib"
+        -change "/opt/local/libexec/boost/1.88/lib/libboost_regex-mt.dylib" "@loader_path/libboost_regex-mt.dylib"
+        -change "/opt/local/libexec/boost/1.88/lib/libboost_system-mt.dylib" "@loader_path/libboost_system-mt.dylib"
+        -change "/opt/local/lib/libexpat.1.dylib" "@loader_path/libexpat.1.dylib"
+        "$<TARGET_FILE:${PROJECT_NAME}>"
     VERBATIM
-    COMMENT "Fixing path to CEF Framework"
+    COMMENT "Fixing paths to CEF media plugin dependencies"
   )
 
 endif (DARWIN)
 
 if (INSTALL)
     if (DARWIN)
-        set(_LIB llplugin)
+        set(_LIB SLPlugin.app/Contents/Frameworks)
         install(
             DIRECTORY "${ARCH_PREBUILT_DIRS_RELEASE}/Chromium Embedded Framework.framework"
             DESTINATION ../Frameworks
@@ -155,7 +150,7 @@ if (INSTALL)
                 "${ARCH_PREBUILT_DIRS_RELEASE}/DullahanHelper (GPU).app"
                 "${ARCH_PREBUILT_DIRS_RELEASE}/DullahanHelper (Plugin).app"
                 "${ARCH_PREBUILT_DIRS_RELEASE}/DullahanHelper (Renderer).app"
-            DESTINATION SLPlugin.app/Contents/Frameworks
+            DESTINATION ${_LIB}
             )
     elseif (LINUX)
         if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
