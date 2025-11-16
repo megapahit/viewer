@@ -134,7 +134,11 @@ int main( int argc, char **argv )
 #ifdef __aarch64__
     setenv("LD_PRELOAD", APP_PLUGIN_DIR"/libcef.so", 1);
 #else
+# if LL_LINUX
     setenv("LD_PRELOAD", "libpthread.so.0 libGL.so.1", 1);
+# else
+    setenv("LD_PRELOAD", "libpthread.so libGL.so.1", 1);
+# endif
     setenv("__GL_THREADED_OPTIMIZATIONS", "1", 0);
 #endif
 
