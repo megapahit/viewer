@@ -12,6 +12,12 @@ if (LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
     return()
   endif()
 
+  if (${LINUX_DISTRO} MATCHES debian)
+    include(FindPkgConfig)
+    pkg_check_modules(Cairo REQUIRED cairo)
+    target_include_directories(ll::uilibraries SYSTEM INTERFACE ${Cairo_INCLUDE_DIRS})
+  endif ()
+
   target_link_libraries( ll::uilibraries INTERFACE
           fltk
           Xrender
