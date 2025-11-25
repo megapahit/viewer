@@ -49,6 +49,7 @@
 #include "llviewerregion.h"
 #include "llviewerstats.h"
 #include "llviewerstatsrecorder.h"
+#include "llviewerthrottle.h"
 #include "llviewerassetstats.h"
 #include "llworld.h"
 #include "llsdparam.h"
@@ -1294,10 +1295,19 @@ bool LLTextureFetchWorker::doWork(S32 param)
                 else
                 {
                     mCanUseCapability = false;
-                    mRegionRetryAttempt++;
-                    mRegionRetryTimer.setTimerExpirySec(CAP_MISSING_EXPIRATION_DELAY);
-                    // ex: waiting for caps
-                    LL_INFOS_ONCE(LOG_TXT) << "Texture not available via HTTP: empty URL." << LL_ENDL;
+                    if (gDisconnected)
+                    {
+                        // We lost connection or are shutting down.
+                        mCanUseHTTP = false;
+                        return true; // abort
+                    }
+                    else
+                    {
+                        // Ex: waiting for caps
+                        mRegionRetryAttempt++;
+                        mRegionRetryTimer.setTimerExpirySec(CAP_MISSING_EXPIRATION_DELAY);
+                        LL_INFOS_ONCE(LOG_TXT) << "Texture not available via HTTP: empty URL." << LL_ENDL;
+                    }
                 }
             }
             else
@@ -1693,10 +1703,10 @@ bool LLTextureFetchWorker::doWork(S32 param)
             mHttpReplyOffset = 0;
 
             mLoadedDiscard = mRequestedDiscard;
-            if (mLoadedDiscard < 0)
+            if (mLoadedDiscard < 0 || (mLoadedDiscard > MAX_DISCARD_LEVEL && mFormattedImage->getCodec() == IMG_CODEC_J2C))
             {
                 LL_WARNS(LOG_TXT) << mID << " mLoadedDiscard is " << mLoadedDiscard
-                                  << ", should be >=0" << LL_ENDL;
+                                  << ", should be >=0 and <=" << MAX_DISCARD_LEVEL << LL_ENDL;
             }
             setState(DECODE_IMAGE);
             if (mWriteToCacheState != NOT_WRITE)
@@ -1758,14 +1768,27 @@ bool LLTextureFetchWorker::doWork(S32 param)
             LL_DEBUGS(LOG_TXT) << mID << " DECODE_IMAGE abort: mLoadedDiscard < 0" << LL_ENDL;
             return true;
         }
+
+        llassert_always(mFormattedImage.notNull());
+        S32 discard = mHaveAllData && mFormattedImage->getCodec() != IMG_CODEC_J2C ? 0 : mLoadedDiscard;
+        if (discard > MAX_DISCARD_LEVEL) // only warn for j2c
+        {
+            // We encode j2c with fixed amount of discard levels,
+            // Trying to decode beyound that will fail.
+            LL_WARNS(LOG_TXT) << "Decode entered with invalid discard. ID = " << mID << LL_ENDL;
+
+            //abort, don't decode
+            setState(DONE);
+            LL_DEBUGS(LOG_TXT) << mID << " DECODE_IMAGE abort: mLoadedDiscard > MAX_DISCARD_LEVEL" << LL_ENDL;
+            return true;
+        }
+
         mDecodeTimer.reset();
         mRawImage = NULL;
         mAuxImage = NULL;
-        llassert_always(mFormattedImage.notNull());
 
         // if we have the entire image data (and the image is not J2C), decode the full res image
         // DO NOT decode a higher res j2c than was requested.  This is a waste of time and memory.
-        S32 discard = mHaveAllData && mFormattedImage->getCodec() != IMG_CODEC_J2C ? 0 : mLoadedDiscard;
         mDecoded  = false;
         setState(DECODE_IMAGE_UPDATE);
         LL_DEBUGS(LOG_TXT) << mID << ": Decoding. Bytes: " << mFormattedImage->getDataSize() << " Discard: " << discard
@@ -2434,7 +2457,7 @@ LLTextureFetch::LLTextureFetch(LLTextureCache* cache, bool threaded, bool qa_mod
       mOriginFetchSource(LLTextureFetch::FROM_ALL),
       mTextureInfoMainThread(false)
 {
-    mMaxBandwidth = gSavedSettings.getF32("ThrottleBandwidthKBPS");
+    mMaxBandwidth = LLViewerThrottle::getMaxBandwidthKbps();
     mTextureInfo.setLogging(true);
 
     LLAppCoreHttp & app_core_http(LLAppViewer::instance()->getAppCoreHttp());
@@ -2484,7 +2507,7 @@ LLTextureFetch::~LLTextureFetch()
 }
 
 S32 LLTextureFetch::createRequest(FTType f_type, const std::string& url, const LLUUID& id, const LLHost& host, F32 priority,
-                                   S32 w, S32 h, S32 c, S32 desired_discard, bool needs_aux, bool can_use_http)
+    S32 w, S32 h, S32 c, S32 desired_discard, bool needs_aux, bool can_use_http)
 {
     LL_PROFILE_ZONE_SCOPED;
     if (mDebugPause)
@@ -2496,13 +2519,13 @@ S32 LLTextureFetch::createRequest(FTType f_type, const std::string& url, const L
     {
         LL_DEBUGS("Avatar") << " requesting " << id << " " << w << "x" << h << " discard " << desired_discard << " type " << f_type << LL_ENDL;
     }
-    LLTextureFetchWorker* worker = getWorker(id) ;
+    LLTextureFetchWorker* worker = getWorker(id);
     if (worker)
     {
         if (worker->mHost != host)
         {
             LL_WARNS(LOG_TXT) << "LLTextureFetch::createRequest " << id << " called with multiple hosts: "
-                              << host << " != " << worker->mHost << LL_ENDL;
+                << host << " != " << worker->mHost << LL_ENDL;
             removeRequest(worker, true);
             worker = NULL;
             return CREATE_REQUEST_ERROR_MHOSTS;
@@ -2538,7 +2561,7 @@ S32 LLTextureFetch::createRequest(FTType f_type, const std::string& url, const L
         // we really do get it.)
         desired_size = MAX_IMAGE_DATA_SIZE;
     }
-    else if (w*h*c > 0)
+    else if (w * h * c > 0)
     {
         // If the requester knows the dimensions of the image,
         // this will calculate how much data we need without having to parse the header
@@ -2596,14 +2619,15 @@ S32 LLTextureFetch::createRequest(FTType f_type, const std::string& url, const L
         worker->lockWorkMutex();                                        // +Mw
         worker->mActiveCount++;
         worker->mNeedsAux = needs_aux;
-        worker->setCanUseHTTP(can_use_http) ;
+        worker->setCanUseHTTP(can_use_http);
         worker->unlockWorkMutex();                                      // -Mw
     }
 
     LL_DEBUGS(LOG_TXT) << "REQUESTED: " << id << " f_type " << fttype_to_string(f_type)
-                       << " Discard: " << desired_discard << " size " << desired_size << LL_ENDL;
+        << " Discard: " << desired_discard << " size " << desired_size << LL_ENDL;
     return desired_discard;
 }
+
 // Threads:  T*
 //
 // protected
@@ -2952,11 +2976,10 @@ void LLTextureFetch::commonUpdate()
 size_t LLTextureFetch::update(F32 max_time_ms)
 {
     LL_PROFILE_ZONE_SCOPED;
-    static LLCachedControl<F32> band_width(gSavedSettings,"ThrottleBandwidthKBPS", 3000.0);
 
     {
         mNetworkQueueMutex.lock();                                      // +Mfnq
-        mMaxBandwidth = band_width();
+        mMaxBandwidth = LLViewerThrottle::getMaxBandwidthKbps();
 
         add(LLStatViewer::TEXTURE_NETWORK_DATA_RECEIVED, mHTTPTextureBits);
         mHTTPTextureBits = (U32Bits)0;

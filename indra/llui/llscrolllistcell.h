@@ -105,7 +105,7 @@ public:
     virtual const LLSD      getAltValue() const;
     virtual void            setValue(const LLSD& value) { }
     virtual void            setAltValue(const LLSD& value) { }
-    virtual const std::string &getToolTip() const { return mToolTip; }
+    virtual const std::string& getToolTip() const { return mToolTip; }
     virtual void            setToolTip(const std::string &str) { mToolTip = str; }
     virtual bool            getVisible() const { return true; }
     virtual void            setWidth(S32 width) { mWidth = width; }
@@ -197,11 +197,13 @@ public:
     /*virtual*/ const LLSD      getValue() const;
     /*virtual*/ void    setColor(const LLColor4&);
     /*virtual*/ void    setValue(const LLSD& value);
+    void                setIconSize(S32 size);
 
 private:
     LLPointer<LLUIImage>    mIcon;
     LLColor4                mColor;
     LLFontGL::HAlign        mAlignment;
+    S32                     mIconSize;
 };
 
 

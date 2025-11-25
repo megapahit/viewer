@@ -249,6 +249,9 @@ public:
     // Accessor functions
     LLViewerRegion* getRegion() const               { return mRegionp; }
 
+    // Check if object is reachable from agent region by traversing loaded neighboring regions
+    bool isReachable();
+
     bool isSelected() const                         { return mUserSelected; }
     // Check whole linkset
     bool isAnySelected() const;
@@ -389,6 +392,7 @@ public:
     /*virtual*/ S32     setTEGlow(const U8 te, const F32 glow);
     /*virtual*/ S32     setTEMaterialID(const U8 te, const LLMaterialID& pMaterialID);
     /*virtual*/ S32     setTEMaterialParams(const U8 te, const LLMaterialPtr pMaterialParams);
+    S32 initRenderMaterial(const U8 te);
     virtual     S32     setTEGLTFMaterialOverride(U8 te, LLGLTFMaterial* mat);
 
     // Used by Materials update functions to properly kick off rebuilds
@@ -404,6 +408,8 @@ public:
     LLViewerTexture     *getTEImage(const U8 te) const;
     LLViewerTexture     *getTENormalMap(const U8 te) const;
     LLViewerTexture     *getTESpecularMap(const U8 te) const;
+
+    void clearTEWaterExclusion(const U8 te);
 
     bool                        isImageAlphaBlended(const U8 te) const;
 
@@ -688,6 +694,7 @@ private:
     // forms task inventory request after some time passed, marks request as pending
     void fetchInventoryDelayed(const F64 &time_seconds);
     static void fetchInventoryDelayedCoro(const LLUUID task_inv, const F64 time_seconds);
+    static void fetchInventoryFromCapCoro(const LLUUID task_inv);
 
 public:
     //
@@ -826,6 +833,7 @@ protected:
 
     static void processTaskInvFile(void** user_data, S32 error_code, LLExtStat ext_status);
     bool loadTaskInvFile(const std::string& filename);
+    void loadTaskInvLLSD(const LLSD &inv_result);
     void doInventoryCallback();
 
     bool isOnMap();

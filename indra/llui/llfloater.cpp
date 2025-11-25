@@ -2165,7 +2165,7 @@ void LLFloater::setCanDrag(bool can_drag)
     }
 }
 
-bool LLFloater::getCanDrag()
+bool LLFloater::getCanDrag() const
 {
     return mDragHandle->getEnabled();
 }
@@ -2274,7 +2274,7 @@ void LLFloater::drawConeToOwner(F32 &context_cone_opacity,
         LLRect local_rect = getLocalRect();
 
         gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
-        LLGLEnable(GL_CULL_FACE);
+        LLGLEnable cull_face(GL_CULL_FACE);
         gGL.begin(LLRender::TRIANGLE_STRIP);
         {
             gGL.color4f(0.f, 0.f, 0.f, contex_cone_in_alpha * context_cone_opacity);

@@ -153,8 +153,10 @@ void LLPanelClassifiedInfo::reshape(S32 width, S32 height, bool called_from_pare
 
 void LLPanelClassifiedInfo::onOpen(const LLSD& key)
 {
+    bool from_search = key.has("from_search") ? key["from_search"].asBoolean() : false;
+
     LLUUID avatar_id = key["classified_creator_id"];
-    if(avatar_id.isNull())
+    if(avatar_id.isNull() && !from_search)
     {
         return;
     }
@@ -264,6 +266,15 @@ void LLPanelClassifiedInfo::processProperties(void* data, EAvatarProcessorType t
             LLAvatarPropertiesProcessor::getInstance()->removeObserver(getAvatarId(), this);
         }
     }
+}
+
+void LLPanelClassifiedInfo::setAvatarId(const LLUUID& avatar_id)
+{
+    if (mAvatarId.notNull())
+    {
+        LLAvatarPropertiesProcessor::getInstance()->removeObserver(mAvatarId, this);
+    }
+    mAvatarId = avatar_id;
 }
 
 void LLPanelClassifiedInfo::resetData()

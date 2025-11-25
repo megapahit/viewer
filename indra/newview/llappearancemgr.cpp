@@ -31,6 +31,7 @@
 #include "llagent.h"
 #include "llagentcamera.h"
 #include "llagentwearables.h"
+#include "llappearancelistener.h"
 #include "llappearancemgr.h"
 #include "llattachmentsmgr.h"
 #include "llcommandhandler.h"
@@ -65,6 +66,8 @@
 #include "lluiusage.h"
 
 #include "llavatarpropertiesprocessor.h"
+
+LLAppearanceListener sAppearanceListener;
 
 namespace
 {
@@ -853,7 +856,7 @@ void LLWearableHoldingPattern::checkMissingWearables()
             // was requested but none was found, create a default asset as a replacement.
             // In all other cases, don't do anything.
             // For critical types (shape/hair/skin/eyes), this will keep the avatar as a cloud
-            // due to logic in LLVOAvatarSelf::getIsCloud().
+            // due to logic in LLVOAvatarSelf::getHasMissingParts().
             // For non-critical types (tatoo, socks, etc.) the wearable will just be missing.
             (requested_by_type[type] > 0) &&
             ((type == LLWearableType::WT_PANTS) || (type == LLWearableType::WT_SHIRT) || (type == LLWearableType::WT_SKIRT)))
@@ -1497,6 +1500,27 @@ void wear_on_avatar_cb(const LLUUID& inv_item, bool do_replace = false)
     }
 }
 
+bool needs_to_replace(LLViewerInventoryItem* item_to_wear, bool & first_for_object, std::vector<bool>& first_for_type, bool replace)
+{
+    bool res = false;
+    LLAssetType::EType type = item_to_wear->getType();
+    if (type == LLAssetType::AT_OBJECT)
+    {
+        res = first_for_object && replace;
+        first_for_object = false;
+    }
+    else if (type == LLAssetType::AT_CLOTHING)
+    {
+        LLWearableType::EType wtype = item_to_wear->getWearableType();
+        if (wtype >= 0 && wtype < LLWearableType::WT_COUNT)
+        {
+            res = first_for_type[wtype] && replace;
+            first_for_type[wtype] = false;
+        }
+    }
+    return res;
+}
+
 void LLAppearanceMgr::wearItemsOnAvatar(const uuid_vec_t& item_ids_to_wear,
                                         bool do_update,
                                         bool replace,
@@ -1505,7 +1529,8 @@ void LLAppearanceMgr::wearItemsOnAvatar(const uuid_vec_t& item_ids_to_wear,
     LL_DEBUGS("UIUsage") << "wearItemsOnAvatar" << LL_ENDL;
     LLUIUsage::instance().logCommand("Avatar.WearItem");
 
-    bool first = true;
+    bool first_for_object = true;
+    std::vector<bool> first_for_type(LLWearableType::WT_COUNT, true);
 
     LLInventoryObject::const_object_list_t items_to_link;
 
@@ -1513,9 +1538,6 @@ void LLAppearanceMgr::wearItemsOnAvatar(const uuid_vec_t& item_ids_to_wear,
          it != item_ids_to_wear.end();
          ++it)
     {
-        replace = first && replace;
-        first = false;
-
         const LLUUID& item_id_to_wear = *it;
 
         if (item_id_to_wear.isNull())
@@ -1534,8 +1556,9 @@ void LLAppearanceMgr::wearItemsOnAvatar(const uuid_vec_t& item_ids_to_wear,
         if (gInventory.isObjectDescendentOf(item_to_wear->getUUID(), gInventory.getLibraryRootFolderID()))
         {
             LL_DEBUGS("Avatar") << "inventory item in library, will copy and wear "
-                                << item_to_wear->getName() << " id " << item_id_to_wear << LL_ENDL;
-            LLPointer<LLInventoryCallback> cb = new LLBoostFuncInventoryCallback(boost::bind(wear_on_avatar_cb,_1,replace));
+                << item_to_wear->getName() << " id " << item_id_to_wear << LL_ENDL;
+            bool replace_item = needs_to_replace(item_to_wear, first_for_object, first_for_type, replace);
+            LLPointer<LLInventoryCallback> cb = new LLBoostFuncInventoryCallback(boost::bind(wear_on_avatar_cb, _1, replace_item));
             copy_inventory_item(gAgent.getID(), item_to_wear->getPermissions().getOwner(),
                                 item_to_wear->getUUID(), LLUUID::null, std::string(), cb);
             continue;
@@ -1573,7 +1596,8 @@ void LLAppearanceMgr::wearItemsOnAvatar(const uuid_vec_t& item_ids_to_wear,
                     }
                     LLWearableType::EType type = item_to_wear->getWearableType();
                     S32 wearable_count = gAgentWearables.getWearableCount(type);
-                    if ((replace && wearable_count != 0) || !gAgentWearables.canAddWearable(type))
+                    bool replace_item = needs_to_replace(item_to_wear, first_for_object, first_for_type, replace);
+                    if ((replace_item && wearable_count != 0) || !gAgentWearables.canAddWearable(type))
                     {
                         LLUUID item_id = gAgentWearables.getWearableItemID(item_to_wear->getWearableType(),
                                                                            wearable_count-1);
@@ -1602,7 +1626,13 @@ void LLAppearanceMgr::wearItemsOnAvatar(const uuid_vec_t& item_ids_to_wear,
 
             case LLAssetType::AT_OBJECT:
             {
-                rez_attachment(item_to_wear, NULL, replace);
+                // Note that this will replace only first attachment regardless of attachment point,
+                // so if user is wearing two items over other two on different attachment points,
+                // only one will be replaced.
+                // Unfortunately we have no way to determine attachment point from inventory item.
+                // We might want to forbid wearing multiple objects with replace option in future.
+                bool replace_item = needs_to_replace(item_to_wear, first_for_object, first_for_type, replace);
+                rez_attachment(item_to_wear, NULL, replace_item);
             }
             break;
 
@@ -2042,7 +2072,7 @@ bool LLAppearanceMgr::getCanReplaceCOF(const LLUUID& outfit_cat_id)
 }
 
 // Moved from LLWearableList::ContextMenu for wider utility.
-bool LLAppearanceMgr::canAddWearables(const uuid_vec_t& item_ids) const
+bool LLAppearanceMgr::canAddWearables(const uuid_vec_t& item_ids, bool warn_on_type_mismatch) const
 {
     // TODO: investigate wearables may not be loaded at this point EXT-8231
 
@@ -2072,7 +2102,10 @@ bool LLAppearanceMgr::canAddWearables(const uuid_vec_t& item_ids) const
         }
         else
         {
+            if (warn_on_type_mismatch)
+            {
             LL_WARNS() << "Unexpected wearable type" << LL_ENDL;
+            }
             return false;
         }
     }
@@ -2263,7 +2296,7 @@ void LLAppearanceMgr::updateCOF(const LLUUID& category, bool append)
     }
     if (gSavedSettings.getBOOL("DebugAvatarAppearanceMessage"))
     {
-        dump_sequential_xml(gAgentAvatarp->getFullname() + "_slam_request", contents);
+        dump_sequential_xml(gAgentAvatarp->getDebugName() + "_slam_request", contents);
     }
     slam_inventory_folder(getCOF(), contents, link_waiter);
 
@@ -3956,7 +3989,7 @@ void LLAppearanceMgr::serverAppearanceUpdateCoro(LLCoreHttpUtil::HttpCoroutineAd
         LL_DEBUGS("Avatar") << "succeeded" << LL_ENDL;
         if (gSavedSettings.getBOOL("DebugAvatarAppearanceMessage"))
         {
-            dump_sequential_xml(gAgentAvatarp->getFullname() + "_appearance_request_ok", result);
+            dump_sequential_xml(gAgentAvatarp->getDebugName() + "_appearance_request_ok", result);
         }
 
     } while (bRetry);
@@ -3965,7 +3998,7 @@ void LLAppearanceMgr::serverAppearanceUpdateCoro(LLCoreHttpUtil::HttpCoroutineAd
 /*static*/
 void LLAppearanceMgr::debugAppearanceUpdateCOF(const LLSD& content)
 {
-    dump_sequential_xml(gAgentAvatarp->getFullname() + "_appearance_request_error", content);
+    dump_sequential_xml(gAgentAvatarp->getDebugName() + "_appearance_request_error", content);
 
     LL_INFOS("Avatar") << "AIS COF, version received: " << content["expected"].asInteger()
         << " ================================= " << LL_ENDL;
@@ -4212,37 +4245,54 @@ bool LLAppearanceMgr::moveWearable(LLViewerInventoryItem* item, bool closer_to_b
     if (item->getType() != LLAssetType::AT_CLOTHING) return false;
     if (!gInventory.isObjectDescendentOf(item->getUUID(), getCOF())) return false;
 
+    S32 pos = gAgentWearables.getWearableIdxFromItem(item);
+    if (pos < 0) return false; // Not found
+
+    U32 count = gAgentWearables.getWearableCount(item->getWearableType());
+    if (count < 2) return false; // Nothing to swap with
+    if (closer_to_body)
+    {
+        if (pos == 0) return false; // already first
+    }
+    else
+    {
+        if (pos == count - 1)  return false; // already last
+    }
+
+    U32 old_pos = (U32)pos;
+    U32 swap_with = closer_to_body ? old_pos - 1 : old_pos + 1;
+    LLUUID swap_item_id = gAgentWearables.getWearableItemID(item->getWearableType(), swap_with);
+
+    // Find link item from item id.
     LLInventoryModel::cat_array_t cats;
     LLInventoryModel::item_array_t items;
     LLFindWearablesOfType filter_wearables_of_type(item->getWearableType());
     gInventory.collectDescendentsIf(getCOF(), cats, items, true, filter_wearables_of_type);
     if (items.empty()) return false;
 
-    // We assume that the items have valid descriptions.
-    std::sort(items.begin(), items.end(), WearablesOrderComparator(item->getWearableType()));
+    LLViewerInventoryItem* swap_item = nullptr;
+    for (auto iter : items)
+    {
+        if (iter->getLinkedUUID() == swap_item_id)
+        {
+            swap_item = iter.get();
+            break;
+        }
+    }
+    if (!swap_item)
+    {
+        return false;
+    }
 
-    if (closer_to_body && items.front() == item) return false;
-    if (!closer_to_body && items.back() == item) return false;
+    // Description is supposed to hold sort index, but user could have changed
+    // order rapidly and there might be a state mismatch between description
+    // and gAgentWearables, trust gAgentWearables over description.
+    // Generate new description.
+    std::string new_desc = build_order_string(item->getWearableType(), old_pos);
+    swap_item->setDescription(new_desc);
+    new_desc = build_order_string(item->getWearableType(), swap_with);
+    item->setDescription(new_desc);
 
-    LLInventoryModel::item_array_t::iterator it = std::find(items.begin(), items.end(), item);
-    if (items.end() == it) return false;
-
-
-    //swapping descriptions
-    closer_to_body ? --it : ++it;
-    LLViewerInventoryItem* swap_item = *it;
-    if (!swap_item) return false;
-    std::string tmp = swap_item->getActualDescription();
-    swap_item->setDescription(item->getActualDescription());
-    item->setDescription(tmp);
-
-    // LL_DEBUGS("Inventory") << "swap, item "
-    //                     << ll_pretty_print_sd(item->asLLSD())
-    //                     << " swap_item "
-    //                     << ll_pretty_print_sd(swap_item->asLLSD()) << LL_ENDL;
-
-    // FIXME switch to use AISv3 where supported.
-    //items need to be updated on a dataserver
     item->setComplete(true);
     item->updateServer(false);
     gInventory.updateItem(item);
@@ -4722,48 +4772,69 @@ void wear_multiple(const uuid_vec_t& ids, bool replace)
     LLAppearanceMgr::instance().wearItemsOnAvatar(ids, true, replace, cb);
 }
 
-// SLapp for easy-wearing of a stock (library) avatar
-//
+bool wear_category(const LLSD& query_map, bool append)
+{
+    LLUUID folder_uuid;
+
+    if (query_map.has("folder_name"))
+    {
+        std::string outfit_folder_name = query_map["folder_name"];
+        folder_uuid = findDescendentCategoryIDByName(gInventory.getLibraryRootFolderID(), outfit_folder_name);
+        if (folder_uuid.isNull())
+            LL_WARNS() << "Couldn't find " << std::quoted(outfit_folder_name) << " in the Library" << LL_ENDL;
+    }
+    if (folder_uuid.isNull() && query_map.has("folder_id"))
+    {
+        folder_uuid = query_map["folder_id"].asUUID();
+    }
+
+    if (folder_uuid.notNull())
+    {
+        if (LLViewerInventoryCategory* cat = gInventory.getCategory(folder_uuid))
+        {
+            if (bool is_library = gInventory.isObjectDescendentOf(folder_uuid, gInventory.getRootFolderID()))
+            {
+                LLPointer<LLInventoryCategory> new_category = new LLInventoryCategory(folder_uuid, LLUUID::null, LLFolderType::FT_CLOTHING, "Quick Appearance");
+                LLAppearanceMgr::getInstance()->wearInventoryCategory(new_category, true, append);
+            }
+            else
+            {
+                LLAppearanceMgr::getInstance()->wearInventoryCategory(cat, true, append);
+            }
+            return true;
+        }
+        else
+        {
+            LL_WARNS() << "Couldn't find folder id" << folder_uuid << " in Inventory" << LL_ENDL;
+        }
+    }
+
+    return false;
+}
+
+bool LLAppearanceMgr::wearOutfit(const LLSD& query_map, bool append)
+{
+    return wear_category(query_map, append);
+}
+
 class LLWearFolderHandler : public LLCommandHandler
 {
 public:
     // not allowed from outside the app
-    LLWearFolderHandler() : LLCommandHandler("wear_folder", UNTRUSTED_BLOCK) { }
+    LLWearFolderHandler() : LLCommandHandler("wear_folder", UNTRUSTED_BLOCK) {}
 
     bool handle(const LLSD& tokens,
                 const LLSD& query_map,
                 const std::string& grid,
                 LLMediaCtrl* web)
     {
-        LLSD::UUID folder_uuid;
-
-        if (folder_uuid.isNull() && query_map.has("folder_name"))
+        if (wear_category(query_map, false))
         {
-            std::string outfit_folder_name = query_map["folder_name"];
-            folder_uuid = findDescendentCategoryIDByName(
-                gInventory.getLibraryRootFolderID(),
-                outfit_folder_name);
-        }
-        if (folder_uuid.isNull() && query_map.has("folder_id"))
-        {
-            folder_uuid = query_map["folder_id"].asUUID();
-        }
+            // Assume this is coming from the predefined avatars web floater
+            LLUIUsage::instance().logCommand("Avatar.WearPredefinedAppearance");
 
-        if (folder_uuid.notNull())
-        {
-            LLPointer<LLInventoryCategory> category = new LLInventoryCategory(folder_uuid,
-                                                                              LLUUID::null,
-                                                                              LLFolderType::FT_CLOTHING,
-                                                                              "Quick Appearance");
-            if ( gInventory.getCategory( folder_uuid ) != NULL )
-            {
-                // Assume this is coming from the predefined avatars web floater
-                LLUIUsage::instance().logCommand("Avatar.WearPredefinedAppearance");
-                LLAppearanceMgr::getInstance()->wearInventoryCategory(category, true, false);
-
-                // *TODOw: This may not be necessary if initial outfit is chosen already -- josh
-                gAgent.setOutfitChosen(true);
-            }
+            // *TODOw: This may not be necessary if initial outfit is chosen already -- josh
+            gAgent.setOutfitChosen(true);
         }
 
         // release avatar picker keyboard focus
@@ -4773,4 +4844,46 @@ public:
     }
 };
 
+class LLAddFolderHandler : public LLCommandHandler
+{
+public:
+    // not allowed from outside the app
+    LLAddFolderHandler() : LLCommandHandler("add_folder", UNTRUSTED_BLOCK) {}
+
+    bool handle(const LLSD& tokens, const LLSD& query_map, const std::string& grid, LLMediaCtrl* web)
+    {
+        wear_category(query_map, true);
+
+        return true;
+    }
+};
+
+class LLRemoveFolderHandler : public LLCommandHandler
+{
+public:
+    LLRemoveFolderHandler() : LLCommandHandler("remove_folder", UNTRUSTED_BLOCK) {}
+
+    bool handle(const LLSD& tokens, const LLSD& query_map, const std::string& grid, LLMediaCtrl* web)
+    {
+        if (query_map.has("folder_id"))
+        {
+            LLUUID folder_id = query_map["folder_id"].asUUID();
+            if (folder_id.notNull())
+            {
+                if (LLViewerInventoryCategory* cat = gInventory.getCategory(folder_id))
+                {
+                    LLAppearanceMgr::instance().takeOffOutfit(cat->getLinkedUUID());
+                }
+                else
+                {
+                    LL_WARNS() << "Couldn't find folder id" << folder_id << " in Inventory" << LL_ENDL;
+                }
+            }
+        }
+        return true;
+    }
+};
+
 LLWearFolderHandler gWearFolderHandler;
+LLAddFolderHandler gAddFolderHandler;
+LLRemoveFolderHandler gRemoveFolderHandler;

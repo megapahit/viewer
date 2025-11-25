@@ -283,6 +283,7 @@ bool LLPolyMeshSharedData::loadMesh( const std::string& fileName )
         LLFILE* fp = LLFile::fopen(fileName, "rb");                     /*Flawfinder: ignore*/
         if (!fp)
         {
+                LLError::LLUserWarningMsg::showMissingFiles();
                 LL_ERRS() << "can't open: " << fileName << LL_ENDL;
                 return false;
         }
@@ -981,7 +982,7 @@ void LLPolyMesh::initializeForMorph()
     LLVector4a::memcpyNonAliased16((F32*) mScaledNormals, (F32*) mSharedData->mBaseNormals, sizeof(LLVector4a) * mSharedData->mNumVertices);
     LLVector4a::memcpyNonAliased16((F32*) mBinormals, (F32*) mSharedData->mBaseNormals, sizeof(LLVector4a) * mSharedData->mNumVertices);
     LLVector4a::memcpyNonAliased16((F32*) mScaledBinormals, (F32*) mSharedData->mBaseNormals, sizeof(LLVector4a) * mSharedData->mNumVertices);
-    LLVector4a::memcpyNonAliased16((F32*) mTexCoords, (F32*) mSharedData->mTexCoords, sizeof(LLVector2) * (mSharedData->mNumVertices + mSharedData->mNumVertices%2));
+    memcpy((F32*) mTexCoords, (F32*) mSharedData->mTexCoords, sizeof(LLVector2) * (mSharedData->mNumVertices)); // allocated in LLPolyMeshSharedData::allocateVertexData
 
     for (S32 i = 0; i < mSharedData->mNumVertices; ++i)
     {

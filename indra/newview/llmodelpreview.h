@@ -204,6 +204,7 @@ public:
     std::vector<S32> mLodsQuery;
     std::vector<S32> mLodsWithParsingError;
     bool mHasDegenerate;
+    bool areTexturesReady() { return !mNumOfFetchingTextures; }
 
 protected:
 
@@ -213,6 +214,7 @@ protected:
     static LLJoint* lookupJointByName(const std::string&, void* opaque);
     static U32          loadTextures(LLImportMaterial& material, LLHandle<LLModelPreview> handle);
 
+    void warnTextureScaling();
     void lookupLODModelFiles(S32 lod);
 
 private:
@@ -241,6 +243,9 @@ private:
     /// It is reset when such a name is not found, and when resetting the modelpreview.
     /// Not read unless mWarnOfUnmatchedPhyicsMeshes is true.
     LLPointer<LLModel> mDefaultPhysicsShapeP;
+
+    S32 mNumOfFetchingTextures;
+    bool mTexturesNeedScaling;
 
     typedef enum
     {
@@ -314,7 +319,7 @@ protected:
     // Amount of triangles in original(base) model
     U32 mMaxTriangleLimit;
 
-    LLMeshUploadThread::instance_list mUploadData;
+    LLMeshUploadThread::instance_list_t mUploadData;
     std::set<LLViewerFetchedTexture * > mTextureSet;
     LLLoadedCallbackEntry::source_callback_list_t mCallbackTextureList;
 

@@ -46,6 +46,7 @@
 #include "llfocusmgr.h"
 #include "llcoord.h"
 #include "llwindow.h"
+#include "llemojihelper.h"
 #include "llcriticaldamp.h"
 #include "lluictrlfactory.h"
 
@@ -508,7 +509,7 @@ void LLMenuItemGL::draw( void )
 
     // Highlight if needed
     if( ll::ui::SearchableControl::getHighlighted() )
-        color = ll::ui::SearchableControl::getHighlightColor();
+        color = ll::ui::SearchableControl::getHighlightFontColor();
 
     // Draw the text on top.
     if (mBriefItem)
@@ -1411,6 +1412,7 @@ void LLMenuItemBranchDownGL::openMenu( void )
     }
     else
     {
+        LLEmojiHelper::instance().hideHelper(nullptr, true);
         if (branch->getTornOff())
         {
             LLFloater * branch_parent = dynamic_cast<LLFloater *>(branch->getParent());

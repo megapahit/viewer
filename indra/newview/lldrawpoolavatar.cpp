@@ -491,7 +491,6 @@ void LLDrawPoolAvatar::beginImpostor()
 
     if (!LLPipeline::sReflectionRender)
     {
-        LLVOAvatar::sRenderDistance = llclamp(LLVOAvatar::sRenderDistance, 16.f, 256.f);
         LLVOAvatar::sNumVisibleAvatars = 0;
     }
 
@@ -547,7 +546,6 @@ void LLDrawPoolAvatar::beginDeferredImpostor()
 
     if (!LLPipeline::sReflectionRender)
     {
-        LLVOAvatar::sRenderDistance = llclamp(LLVOAvatar::sRenderDistance, 16.f, 256.f);
         LLVOAvatar::sNumVisibleAvatars = 0;
     }
 
@@ -796,7 +794,7 @@ void LLDrawPoolAvatar::renderAvatars(LLVOAvatar* single_avatar, S32 pass)
         return;
     }
 
-    if ((sShaderLevel >= SHADER_LEVEL_CLOTH))
+    if (LLPipeline::RenderAvatarCloth)
     {
         LLMatrix4 rot_mat;
         LLViewerCamera::getInstance()->getMatrixToLocal(rot_mat);

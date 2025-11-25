@@ -21,8 +21,12 @@
         Bandwidth
     </panel.string>
     <panel.string
-     name="time">
+     name="time_ampm">
         [hour12, datetime, slt]:[min, datetime, slt] [ampm, datetime, slt] [timezone,datetime, slt]
+    </panel.string>
+    <panel.string
+     name="time">
+        [hour, datetime, slt]:[min, datetime, slt] [timezone,datetime, slt]
     </panel.string>
     <panel.string
      name="timeTooltip">
@@ -86,7 +90,7 @@
      height="18"
      left="0" 
      name="balance"
-     tool_tip="Click to refresh your L$ balance"
+     tool_tip="L$ [AMT]&#10;Click to refresh your L$ balance.&#10;Double-click to display or hide your L$ balance."
      v_pad="4"
      top="0"
      wrap="false" 

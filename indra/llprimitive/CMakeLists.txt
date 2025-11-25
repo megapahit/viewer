@@ -12,7 +12,6 @@ include(TinyGLTF)
 
 set(llprimitive_SOURCE_FILES
     lldaeloader.cpp
-    llgltfloader.cpp
     llgltfmaterial.cpp
     llmaterialid.cpp
     llmaterial.cpp
@@ -32,7 +31,6 @@ set(llprimitive_SOURCE_FILES
 set(llprimitive_HEADER_FILES
     CMakeLists.txt
     lldaeloader.h
-    llgltfloader.h
     llgltfmaterial.h
     llgltfmaterial_templates.h
     legacy_object_types.h
@@ -67,10 +65,19 @@ target_link_libraries(llprimitive
         llxml
         llcharacter
         llrender
-        llphysicsextensions_impl
         ll::colladadom
         ll::glm
         )
+
+if (HAVOK OR HAVOK_TPV)
+    target_link_libraries(llprimitive
+        llphysicsextensions_impl
+        )
+else()
+    target_link_libraries(llprimitive
+        llphysicsextensionsos
+        )
+endif ()
 
 #add unit tests
 if (LL_TESTS)

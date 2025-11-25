@@ -460,7 +460,7 @@ void LLFloaterIMContainer::processParticipantsStyleUpdate()
         LLFolderViewModelItemCommon::child_list_t::const_iterator end_participant_model = session_model->getChildrenEnd();
         while (current_participant_model != end_participant_model)
         {
-            LLConversationItemParticipant* participant_model = dynamic_cast<LLConversationItemParticipant*>(*current_participant_model);
+            LLConversationItemParticipant* participant_model = dynamic_cast<LLConversationItemParticipant*>((*current_participant_model).get());
             if (participant_model)
             {
                 // Get the avatar name for this participant id from the cache and update the model
@@ -511,7 +511,7 @@ void LLFloaterIMContainer::idleUpdate()
                 bool can_ban = haveAbilityToBan();
                 while (current_participant_model != end_participant_model)
                 {
-                    LLConversationItemParticipant* participant_model = dynamic_cast<LLConversationItemParticipant*>(*current_participant_model);
+                    LLConversationItemParticipant* participant_model = dynamic_cast<LLConversationItemParticipant*>((*current_participant_model).get());
                     if (participant_model)
                     {
                         participant_model->setModeratorOptionsVisible(is_moderator);
@@ -1540,6 +1540,10 @@ bool LLFloaterIMContainer::enableContextMenuItem(const std::string& item, uuid_v
     // Beyond that point, if only the user agent is selected, everything is disabled
     if (is_single_select && (single_id == gAgentID))
     {
+        if ("can_zoom_in" == item)
+        {
+            return true;
+        }
         if (is_moderator_option)
         {
             return enableModerateContextMenuItem(item, true);
@@ -1694,6 +1698,11 @@ void LLFloaterIMContainer::showConversation(const LLUUID& session_id)
     if (session_floater)
     {
         session_floater->restoreFloater();
+        if (session_floater->isTornOff() && session_floater->isMinimized())
+        {
+            session_floater->setMinimized(false);
+            session_floater->setFocus(true);
+        }
     }
 }
 
@@ -1874,7 +1883,7 @@ LLConversationItem* LLFloaterIMContainer::addConversationListItem(const LLUUID& 
         LLFolderViewModelItemCommon::child_list_t::const_iterator end_participant_model = item->getChildrenEnd();
         while (current_participant_model != end_participant_model)
         {
-            LLConversationItem* participant_model = dynamic_cast<LLConversationItem*>(*current_participant_model);
+            LLConversationItem* participant_model = dynamic_cast<LLConversationItem*>((*current_participant_model).get());
             LLConversationViewParticipant* participant_view = createConversationViewParticipant(participant_model);
             participant_view->addToFolder(widget);
             current_participant_model++;
@@ -1939,7 +1948,7 @@ bool LLFloaterIMContainer::removeConversationListItem(const LLUUID& uuid, bool c
     mConversationEventQueue.erase(uuid);
 
     // Don't let the focus fall IW, select and refocus on the first conversation in the list
-    if (change_focus)
+    if (change_focus && isInVisibleChain())
     {
         setFocus(true);
         if (new_selection)
@@ -1958,6 +1967,10 @@ bool LLFloaterIMContainer::removeConversationListItem(const LLUUID& uuid, bool c
                 }
             }
         }
+    }
+    else
+    {
+        LL_INFOS() << "Conversation widgets: " << (S32)mConversationsWidgets.size() << LL_ENDL;
     }
     return is_widget_selected;
 }
@@ -2298,14 +2311,14 @@ bool LLFloaterIMContainer::isConversationLoggingAllowed()
     return gSavedPerAccountSettings.getS32("KeepConversationLogTranscripts") > 0;
 }
 
-void LLFloaterIMContainer::flashConversationItemWidget(const LLUUID& session_id, bool is_flashes)
+void LLFloaterIMContainer::flashConversationItemWidget(const LLUUID& session_id, bool is_flashes, bool alternate_color)
 {
     //Finds the conversation line item to flash using the session_id
     LLConversationViewSession * widget = dynamic_cast<LLConversationViewSession *>(get_ptr_in_map(mConversationsWidgets,session_id));
 
     if (widget)
     {
-        widget->setFlashState(is_flashes);
+        widget->setFlashState(is_flashes, alternate_color);
     }
 }
 

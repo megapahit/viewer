@@ -149,6 +149,12 @@ public:
     std::string getWindowTitle() const; // The window display name.
 
     void forceDisconnect(const std::string& msg); // Force disconnection, with a message to the user.
+
+    // sendSimpleLogoutRequest does not create a marker file.
+    // Meant for lost network case, and for forced shutdowns,
+    // to at least attempt to remove the ghost from the world.
+    void sendSimpleLogoutRequest();
+
     void badNetworkHandler(); // Cause a crash state due to bad network packet.
 
     bool hasSavedFinalSnapshot() { return mSavedFinalSnapshot; }
@@ -156,9 +162,6 @@ public:
 
     void loadNameCache();
     void saveNameCache();
-
-    void loadExperienceCache();
-    void saveExperienceCache();
 
     void removeMarkerFiles();
     void recordSessionToMarker();
@@ -175,7 +178,10 @@ public:
     virtual void forceErrorOSSpecificException();
     virtual void forceErrorDriverCrash();
     virtual void forceErrorCoroutineCrash();
+    virtual void forceErrorCoroprocedureCrash();
+    virtual void forceErrorWorkQueueCrash();
     virtual void forceErrorThreadCrash();
+    virtual void forceExceptionThreadCrash();
 
     // The list is found in app_settings/settings_files.xml
     // but since they are used explicitly in code,
@@ -198,11 +204,11 @@ public:
     // For thread debugging.
     // llstartup needs to control init.
     // llworld, send_agent_pause() also controls pause/resume.
-    void initMainloopTimeout(const std::string& state, F32 secs = -1.0f);
+    void initMainloopTimeout(std::string_view state, F32 secs = -1.0f);
     void destroyMainloopTimeout();
     void pauseMainloopTimeout();
-    void resumeMainloopTimeout(const std::string& state = "", F32 secs = -1.0f);
-    void pingMainloopTimeout(const std::string& state, F32 secs = -1.0f);
+    void resumeMainloopTimeout(std::string_view state = "", F32 secs = -1.0f);
+    void pingMainloopTimeout(std::string_view state, F32 secs = -1.0f);
 
     // Handle the 'login completed' event.
     // *NOTE:Mani Fix this for login abstraction!!
@@ -220,6 +226,7 @@ public:
 
     void initGeneralThread();
     void purgeUserDataOnExit() { mPurgeUserDataOnExit = true; }
+    void purgeCefStaleCaches();  // Remove old, stale CEF cache folders
     void purgeCache(); // Clear the local cache.
     void purgeCacheImmediate(); //clear local cache immediately.
     S32  updateTextureThreads(F32 max_time);
@@ -244,12 +251,20 @@ public:
 
     // Writes an error code into the error_marker file for use on next startup.
     void createErrorMarker(eLastExecEvent error_code) const;
+    bool errorMarkerExists() const;
 
     // Attempt a 'soft' quit with disconnect and saving of settings/cache.
     // Intended to be thread safe.
     // Good chance of viewer crashing either way, but better than alternatives.
     // Note: mQuitRequested can be aborted by user.
     void outOfMemorySoftQuit();
+
+#ifdef LL_DISCORD
+    static void initDiscordSocial();
+    static void updateDiscordActivity();
+    static void updateDiscordPartyCurrentSize(int32_t size);
+    static void updateDiscordPartyMaxSize(int32_t size);
+#endif
 
 protected:
     virtual bool initWindow(); // Initialize the viewer's window.
@@ -411,11 +426,10 @@ extern std::string gLastVersionChannel;
 
 extern LLVector3 gWindVec;
 extern LLVector3 gRelativeWindVec;
-extern U32  gPacketsIn;
-extern bool gPrintMessagesThisFrame;
 
 extern bool gRandomizeFramerate;
 extern bool gPeriodicSlowFrame;
+extern bool gDoDisconnect;
 
 extern bool gSimulateMemLeak;
 

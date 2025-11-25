@@ -76,7 +76,7 @@ void LLSpeaker::lookupName()
 {
     if (mDisplayName.empty())
     {
-        LLAvatarNameCache::get(mID, boost::bind(&LLSpeaker::onNameCache, this, _1, _2)); // todo: can be group???
+        mAvatarNameCacheConnection = LLAvatarNameCache::get(mID, boost::bind(&LLSpeaker::onNameCache, this, _1, _2)); // todo: can be group???
     }
 }
 
@@ -1026,6 +1026,10 @@ void LLLocalSpeakerMgr::updateSpeakerList()
     uuid_vec_t avatar_ids;
     std::vector<LLVector3d> positions;
     LLWorld::getInstance()->getAvatars(&avatar_ids, &positions, gAgent.getPositionGlobal(), CHAT_NORMAL_RADIUS);
+#ifdef LL_DISCORD
+    if (gSavedSettings.getBOOL("EnableDiscord"))
+        LLAppViewer::updateDiscordPartyCurrentSize((S32)avatar_ids.size());
+#endif
     for(U32 i=0; i<avatar_ids.size(); i++)
     {
         setSpeaker(avatar_ids[i]);

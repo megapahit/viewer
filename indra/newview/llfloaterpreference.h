@@ -117,6 +117,7 @@ protected:
     void        onClickClearCache();            // Clear viewer texture cache, file cache on next startup
     void        onClickBrowserClearCache();     // Clear web history and caches as well as viewer caches above
     void        onLanguageChange();
+    void        onTimeFormatChange();
     void        onNotificationsChange(const std::string& OptionName);
     void        onNameTagOpacityChange(const LLSD& newvalue);
 
@@ -206,6 +207,9 @@ private:
     void onDeleteTranscripts();
     void onDeleteTranscriptsResponse(const LLSD& notification, const LLSD& response);
     void updateDeleteTranscriptsButton();
+    void updateMaxNonImpostors();
+    void updateIndirectMaxNonImpostors(const LLSD& newvalue);
+    void setMaxNonImpostorsText(U32 value, LLTextBox* text_box);
     void updateMaxComplexity();
     void updateComplexityText();
     static bool loadFromFilename(const std::string& filename, std::map<std::string, std::string> &label_map);
@@ -215,6 +219,7 @@ private:
     bool mGotPersonalInfo;
     bool mLanguageChanged;
     bool mAvatarDataInitialized;
+    U32 mLastQualityLevel = 0;
     std::string mPriorInstantMessageLogPath;
 
     bool mOriginalHideOnlineStatus;
@@ -231,9 +236,11 @@ private:
     LLButton*       mDeleteTranscriptsBtn = nullptr;
     LLButton*       mEnablePopupBtn = nullptr;
     LLButton*       mDisablePopupBtn = nullptr;
+    LLComboBox*     mTimeFormatCombobox = nullptr;
     std::unique_ptr< ll::prefs::SearchData > mSearchData;
     bool mSearchDataDirty;
 
+    boost::signals2::connection mImpostorsChangedSignal;
     boost::signals2::connection mComplexityChangedSignal;
 
     void onUpdateFilterTerm( bool force = false );

@@ -199,6 +199,7 @@ bool LLFetchedGLTFMaterial::replaceLocalTexture(const LLUUID& tracking_id, const
     {
         mTrackingIdToLocalTexture.erase(tracking_id);
     }
+    updateLocalTexDataDigest();
 
     return res;
 }
@@ -219,6 +220,14 @@ void LLFetchedGLTFMaterial::updateTextureTracking()
     {
         LLLocalBitmapMgr::getInstance()->associateGLTFMaterial(val.first, this);
     }
+}
+
+void LLFetchedGLTFMaterial::clearFetchedTextures()
+{
+    mBaseColorTexture = nullptr;
+    mNormalTexture = nullptr;
+    mMetallicRoughnessTexture = nullptr;
+    mEmissiveTexture = nullptr;
 }
 
 void LLFetchedGLTFMaterial::materialBegin()

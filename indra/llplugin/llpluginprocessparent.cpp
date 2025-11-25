@@ -400,9 +400,14 @@ void LLPluginProcessParent::idle(void)
                 apr_sockaddr_t* addr = NULL;
                 mListenSocket = LLSocket::create(gAPRPoolp, LLSocket::STREAM_TCP);
                 mBoundPort = 0;
+                if (!mListenSocket)
+                {
+                    killSockets();
+                    errorState();
+                    break;
+                }
 
                 // This code is based on parts of LLSocket::create() in lliosocket.cpp.
-
                 status = apr_sockaddr_info_get(
                     &addr,
                     "127.0.0.1",
@@ -570,7 +575,7 @@ void LLPluginProcessParent::idle(void)
                             params.args.add("-e");
                             params.args.add("tell application \"Terminal\"");
                             params.args.add("-e");
-                            params.args.add(STRINGIZE("set win to do script \"lldb -pid "
+                            params.args.add(STRINGIZE("set win to do script \"lldb -p "
                                                       << mProcess->getProcessID() << "\""));
                             params.args.add("-e");
                             params.args.add("do script \"continue\" in win");
@@ -978,6 +983,7 @@ void LLPluginProcessParent::poll(F64 timeout)
     }
 
     // Remove instances in the done state from the sInstances map.
+    LLCoros::LockType lock(*sInstancesMutex);
     mapInstances_t::iterator itClean = sInstances.begin();
     while (itClean != sInstances.end())
     {

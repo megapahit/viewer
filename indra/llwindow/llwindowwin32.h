@@ -70,6 +70,7 @@ public:
     /*virtual*/ bool setCursorPosition(LLCoordWindow position);
     /*virtual*/ bool getCursorPosition(LLCoordWindow *position);
     /*virtual*/ bool getCursorDelta(LLCoordCommon* delta);
+    /*virtual*/ bool isWrapMouse() const override { return !mAbsoluteCursorPosition; };
     /*virtual*/ void showCursor();
     /*virtual*/ void hideCursor();
     /*virtual*/ void showCursorFromMouseMove();
@@ -150,7 +151,7 @@ protected:
     virtual LLSD    getNativeKeyData();
 
     // Changes display resolution. Returns true if successful
-    bool    setDisplayResolution(S32 width, S32 height, S32 bits, S32 refresh);
+    bool    setDisplayResolution(S32 width, S32 height, S32 refresh);
 
     // Go back to last fullscreen display resolution.
     bool    setFullscreenResolution();
@@ -195,6 +196,7 @@ protected:
 
     HCURSOR     mCursor[ UI_CURSOR_COUNT ];  // Array of all mouse cursors
     LLCoordWindow mCursorPosition;  // mouse cursor position, should only be mutated on main thread
+    bool        mAbsoluteCursorPosition; // true if last position was received in absolute coordinates.
     LLMutex mRawMouseMutex;
     RAWINPUTDEVICE mRawMouse;
     LLCoordWindow mLastCursorPosition; // mouse cursor position from previous frame
@@ -214,6 +216,7 @@ protected:
     bool        mCustomGammaSet;
 
     LPWSTR      mIconResource;
+    LPWSTR      mIconSmallResource;
     bool        mInputProcessingPaused;
 
     // The following variables are for Language Text Input control.
@@ -245,6 +248,11 @@ protected:
     void updateWindowRect();
     RECT mRect;
     RECT mClientRect;
+
+    void updateWindowTheme();
+    bool isSystemAppDarkMode();
+    void setCustomIcon();
+    bool mCurrentDarkMode { false };
 
     struct LLWindowWin32Thread;
     LLWindowWin32Thread* mWindowThread = nullptr;
@@ -281,6 +289,7 @@ private:
 
 extern LLW32MsgCallback gAsyncMsgCallback;
 extern LPWSTR gIconResource;
+extern LPWSTR gIconSmallResource;
 
 S32 OSMessageBoxWin32(const std::string& text, const std::string& caption, U32 type);
 

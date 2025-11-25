@@ -30,6 +30,7 @@
 #include "llaisapi.h"
 #include "llagent.h"
 #include "llappviewer.h"
+#include "llappearancemgr.h"
 #include "llcallbacklist.h"
 #include "llinventorymodel.h"
 #include "llinventorypanel.h"
@@ -470,6 +471,22 @@ void LLInventoryModelBackgroundFetch::fetchCOF(nullary_func_t callback)
                          callback();
                          LLUUID cat_id = gInventory.findCategoryUUIDForType(LLFolderType::FT_CURRENT_OUTFIT);
                          LLInventoryModelBackgroundFetch::getInstance()->onAISFolderCalback(cat_id, id, FT_DEFAULT);
+
+                         if (id.notNull())
+                         {
+                             // COF might have fetched base outfit folder through a link, but it hasn't
+                             // fetched base outfit's content, which doesn't nessesary match COF,
+                             // so make sure it's up to date
+                             LLUUID baseoutfit_id = LLAppearanceMgr::getInstance()->getBaseOutfitUUID();
+                             if (baseoutfit_id.notNull())
+                             {
+                                 LLViewerInventoryCategory* cat = gInventory.getCategory(baseoutfit_id);
+                                 if (!cat || cat->getVersion() == LLViewerInventoryCategory::VERSION_UNKNOWN)
+                                 {
+                                     LLInventoryModelBackgroundFetch::getInstance()->fetchFolderAndLinks(baseoutfit_id, no_op);
+                                 }
+                             }
+                         }
                      });
 
     // start idle loop to track completion
@@ -869,31 +886,34 @@ void LLInventoryModelBackgroundFetch::bulkFetchViaAis(const FetchQueueInfo& fetc
                     static LLCachedControl<S32> ais_batch(gSavedSettings, "BatchSizeAIS3", 20);
                     S32 batch_limit = llclamp(ais_batch(), 1, 40);
 
-                    for (LLInventoryModel::cat_array_t::iterator it = categories->begin();
-                         it != categories->end();
-                         ++it)
+                    if (categories)
                     {
-                        LLViewerInventoryCategory* child_cat = (*it);
-                        if (LLViewerInventoryCategory::VERSION_UNKNOWN != child_cat->getVersion()
-                            || child_cat->getFetching() >= target_state)
+                        for (LLInventoryModel::cat_array_t::iterator it = categories->begin();
+                             it != categories->end();
+                             ++it)
                         {
-                            continue;
-                        }
+                            LLViewerInventoryCategory* child_cat = (*it);
+                            if (LLViewerInventoryCategory::VERSION_UNKNOWN != child_cat->getVersion()
+                                || child_cat->getFetching() >= target_state)
+                            {
+                                continue;
+                            }
 
-                        if (child_cat->getPreferredType() == LLFolderType::FT_MARKETPLACE_LISTINGS)
-                        {
-                            // special case, marketplace will fetch that as needed
-                            continue;
-                        }
+                            if (child_cat->getPreferredType() == LLFolderType::FT_MARKETPLACE_LISTINGS)
+                            {
+                                // special case, marketplace will fetch that as needed
+                                continue;
+                            }
 
-                        children.emplace_back(child_cat->getUUID());
-                        mExpectedFolderIds.emplace_back(child_cat->getUUID());
-                        child_cat->setFetching(target_state);
+                            children.emplace_back(child_cat->getUUID());
+                            mExpectedFolderIds.emplace_back(child_cat->getUUID());
+                            child_cat->setFetching(target_state);
 
-                        if (children.size() >= batch_limit)
-                        {
-                            content_done = false;
-                            break;
+                            if (children.size() >= batch_limit)
+                            {
+                                content_done = false;
+                                break;
+                            }
                         }
                     }
 
@@ -923,14 +943,17 @@ void LLInventoryModelBackgroundFetch::bulkFetchViaAis(const FetchQueueInfo& fetc
                         // This will have a bit of overlap with onAISContentCalback,
                         // but something else might have downloaded folders, so verify
                         // every child that is complete has it's children done as well
-                        for (LLInventoryModel::cat_array_t::iterator it = categories->begin();
-                             it != categories->end();
-                             ++it)
+                        if (categories)
                         {
-                            LLViewerInventoryCategory* child_cat = (*it);
-                            if (LLViewerInventoryCategory::VERSION_UNKNOWN != child_cat->getVersion())
+                            for (LLInventoryModel::cat_array_t::iterator it = categories->begin();
+                                 it != categories->end();
+                                 ++it)
                             {
-                                mFetchFolderQueue.emplace_back(child_cat->getUUID(), FT_RECURSIVE);
+                                LLViewerInventoryCategory* child_cat = (*it);
+                                if (LLViewerInventoryCategory::VERSION_UNKNOWN != child_cat->getVersion())
+                                {
+                                    mFetchFolderQueue.emplace_back(child_cat->getUUID(), FT_RECURSIVE);
+                                }
                             }
                         }
                     }
@@ -981,12 +1004,15 @@ void LLInventoryModelBackgroundFetch::bulkFetchViaAis(const FetchQueueInfo& fetc
                         LLInventoryModel::cat_array_t* categories(NULL);
                         LLInventoryModel::item_array_t* items(NULL);
                         gInventory.getDirectDescendentsOf(cat_id, categories, items);
-                        for (LLInventoryModel::cat_array_t::const_iterator it = categories->begin();
-                            it != categories->end();
-                            ++it)
+                        if (categories)
                         {
-                            // not emplace_front to not cause an infinite loop
-                            mFetchFolderQueue.emplace_back((*it)->getUUID(), FT_RECURSIVE);
+                            for (LLInventoryModel::cat_array_t::const_iterator it = categories->begin();
+                                 it != categories->end();
+                                 ++it)
+                            {
+                                // not emplace_front to not cause an infinite loop
+                                mFetchFolderQueue.emplace_back((*it)->getUUID(), FT_RECURSIVE);
+                            }
                         }
                     }
                 }
