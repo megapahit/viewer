@@ -229,6 +229,8 @@ extern LLTrace::EventStatHandle<F64Seconds >    AVATAR_EDIT_TIME,
 
 extern LLTrace::EventStatHandle<LLUnit<F32, LLUnits::Percent> > OBJECT_CACHE_HIT_RATE;
 
+extern LLTrace::SampleStatHandle<U32> WEBRTC_PACKETS_IN_LOST, WEBRTC_PACKETS_IN_RECEIVED, WEBRTC_PACKETS_OUT_SENT, WEBRTC_PACKETS_OUT_LOST;
+extern LLTrace::SampleStatHandle<F32> WEBRTC_JITTER_OUT, WEBRTC_JITTER_IN, WEBRTC_LATENCY, WEBRTC_UPLOAD_BANDWIDTH, WEBRTC_JITTER_BUFFER;
 }
 
 class LLViewerStats : public LLSingleton<LLViewerStats>

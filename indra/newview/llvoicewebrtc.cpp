@@ -61,6 +61,7 @@
 #include "llrand.h"
 #include "llviewerwindow.h"
 #include "llviewercamera.h"
+#include "llviewerstats.h"
 #include "llversioninfo.h"
 
 #include "llviewernetwork.h"
@@ -80,6 +81,8 @@
 #include "boost/json.hpp"
 
 const std::string WEBRTC_VOICE_SERVER_TYPE = "webrtc";
+
+const F32 STATS_TIMER_DELAY = 2.0;
 
 namespace {
 
@@ -2905,6 +2908,7 @@ bool LLVoiceWebRTCConnection::connectionStateMachine()
             }
             mWebRTCAudioInterface->setReceiveVolume(mSpeakerVolume);
             LLWebRTCVoiceClient::getInstance()->OnConnectionEstablished(mChannelID, mRegionID);
+            resetConnectionStats();
             setVoiceConnectionState(VOICE_STATE_WAIT_FOR_DATA_CHANNEL);
             break;
         }
@@ -2953,6 +2957,13 @@ bool LLVoiceWebRTCConnection::connectionStateMachine()
                         }
                         sendJoin();
                     }
+                }
+
+                static LLTimer stats_timer;
+                if (stats_timer.getElapsedTimeF32() > STATS_TIMER_DELAY)
+                {
+                    mWebRTCPeerConnectionInterface->gatherConnectionStats();
+                    stats_timer.reset();
                 }
             }
             break;
@@ -3286,6 +3297,112 @@ void LLVoiceWebRTCConnection::sendJoin()
     root["j"]             = join_obj;
     std::string json_data = boost::json::serialize(root);
     mWebRTCDataInterface->sendData(json_data, false);
+}
+
+void LLVoiceWebRTCConnection::OnStatsDelivered(const llwebrtc::LLWebRTCStatsMap& stats_data)
+{
+    LL::WorkQueue::postMaybe(mMainQueue, [=, this]
+    {
+        if (mShutDown)
+        {
+            return;
+        }
+        for (const auto& [stats_id, attributes] : stats_data)
+        {
+            if (attributes.contains("currentRoundTripTime"))
+            {
+                F32 rtt_seconds = 0.0f;
+                LLStringUtil::convertToF32(attributes.at("currentRoundTripTime"), rtt_seconds);
+                sample(LLStatViewer::WEBRTC_LATENCY, rtt_seconds * 1000.0f);
+            }
+            if (attributes.contains("availableOutgoingBitrate"))
+            {
+                F32 bitrate_bps = 0.0f;
+                LLStringUtil::convertToF32(attributes.at("availableOutgoingBitrate"), bitrate_bps);
+                sample(LLStatViewer::WEBRTC_UPLOAD_BANDWIDTH, bitrate_bps / 1000.0f);
+            }
+
+            // Stat type detection below is heuristic-based.
+            // It's relied on specific fields to distinguish outbound-rtp, remote-inbound-rtp, and inbound-rtp.
+            // This approach works with current WebRTC stats but may need updating later.
+
+            // Outbound RTP
+            if (attributes.contains("mediaSourceId"))
+            {
+                U32 out_packets_sent = 0;
+                LLStringUtil::convertToU32(attributes.at("packetsSent"), out_packets_sent);
+                sample(LLStatViewer::WEBRTC_PACKETS_OUT_SENT, out_packets_sent);
+            }
+            // Remote-Inbound RTP
+            else if (attributes.contains("localId"))
+            {
+                if (attributes.contains("packetsLost"))
+                {
+                    U32 out_packets_lost = 0;
+                    LLStringUtil::convertToU32(attributes.at("packetsLost"), out_packets_lost);
+                    sample(LLStatViewer::WEBRTC_PACKETS_OUT_LOST, out_packets_lost);
+                }
+                if (attributes.contains("jitter"))
+                {
+                    F32 jitter_seconds = 0.0f;
+                    LLStringUtil::convertToF32(attributes.at("jitter"), jitter_seconds);
+                    sample(LLStatViewer::WEBRTC_JITTER_OUT, jitter_seconds * 1000.0f);
+                }
+            }
+            // Inbound RTP
+            else if (attributes.contains("jitterBufferDelay"))
+            {
+                if (attributes.contains("packetsLost"))
+                {
+                    U32 in_packets_lost = 0;
+                    LLStringUtil::convertToU32(attributes.at("packetsLost"), in_packets_lost);
+                    sample(LLStatViewer::WEBRTC_PACKETS_IN_LOST, in_packets_lost);
+                }
+                if (attributes.contains("packetsReceived"))
+                {
+                    U32 in_packets_recv = 0;
+                    LLStringUtil::convertToU32(attributes.at("packetsReceived"), in_packets_recv);
+                    sample(LLStatViewer::WEBRTC_PACKETS_IN_RECEIVED, in_packets_recv);
+                }
+                if (attributes.contains("jitter"))
+                {
+                    F32 jitter_seconds = 0.0f;
+                    LLStringUtil::convertToF32(attributes.at("jitter"), jitter_seconds);
+                    sample(LLStatViewer::WEBRTC_JITTER_IN, jitter_seconds * 1000.0f);
+                }
+                if (attributes.contains("jitterBufferDelay") && attributes.contains("jitterBufferEmittedCount"))
+                {
+                    F32 total_delay_seconds = 0.0f;
+                    F32 emitted_count_f = 0.0f;
+
+                    // total delay in seconds
+                    LLStringUtil::convertToF32(attributes.at("jitterBufferDelay"), total_delay_seconds);
+
+                    // number of packets played out
+                    LLStringUtil::convertToF32(attributes.at("jitterBufferEmittedCount"), emitted_count_f);
+                    if (emitted_count_f > 0.0f)
+                    {
+                        F32 avg_delay_seconds = total_delay_seconds / emitted_count_f;
+                        F32 avg_delay_ms = avg_delay_seconds * 1000.0f;
+                        sample(LLStatViewer::WEBRTC_JITTER_BUFFER, avg_delay_seconds * 1000.0f);
+                    }
+                }
+            }
+        }
+    });
+}
+
+void LLVoiceWebRTCConnection::resetConnectionStats()
+{
+    sample(LLStatViewer::WEBRTC_JITTER_BUFFER, 0);
+    sample(LLStatViewer::WEBRTC_JITTER_IN, 0);
+    sample(LLStatViewer::WEBRTC_JITTER_OUT, 0);
+    sample(LLStatViewer::WEBRTC_LATENCY, 0);
+    sample(LLStatViewer::WEBRTC_PACKETS_IN_LOST, 0);
+    sample(LLStatViewer::WEBRTC_PACKETS_IN_RECEIVED, 0);
+    sample(LLStatViewer::WEBRTC_PACKETS_OUT_SENT, 0);
+    sample(LLStatViewer::WEBRTC_PACKETS_OUT_LOST, 0);
+    sample(LLStatViewer::WEBRTC_UPLOAD_BANDWIDTH, 0);
 }
 
 /////////////////////////////
