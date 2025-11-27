@@ -194,7 +194,19 @@ bool LLNearbyVoiceModeration::showMutedNotification(bool is_muted)
 
 bool LLNearbyVoiceModeration::isNearbyChatModerator()
 {
-    return gAgent.getRegion() && gAgent.getRegion()->isRegionWebRTCEnabled() &&
-           (gAgent.canManageEstate() || LLViewerParcelMgr::getInstance()->allowVoiceModeration());
-}
+    // Region doesn't support WebRTC voice
+    if (!gAgent.getRegion() || !gAgent.getRegion()->isRegionWebRTCEnabled())
+    {
+        return false;
+    }
 
+    if (LLViewerParcelMgr::getInstance()->isVoiceRestricted())
+    {
+        // Only the parcel owner should have access to moderate parcel voice space
+        return LLViewerParcelMgr::getInstance()->allowVoiceModeration();
+    }
+    else
+    {
+        return gAgent.canManageEstate();
+    }
+}
