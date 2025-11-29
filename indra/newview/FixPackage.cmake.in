@@ -149,12 +149,12 @@ execute_process(
     COMMAND lipo libboost_url-mt.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libboost_url-mt.dylib
-    COMMAND lipo libbrotlicommon.1.1.0.dylib
+    COMMAND lipo libbrotlicommon.1.2.0.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libbrotlicommon.1.1.0.dylib
-    COMMAND lipo libbrotlidec.1.1.0.dylib
+        -output libbrotlicommon.1.2.0.dylib
+    COMMAND lipo libbrotlidec.1.2.0.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libbrotlidec.1.1.0.dylib
+        -output libbrotlidec.1.2.0.dylib
     COMMAND lipo libbz2.1.0.8.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libbz2.1.0.8.dylib
@@ -257,8 +257,8 @@ execute_process(
         Frameworks/libboost_system-mt.dylib
         Frameworks/libboost_thread-mt.dylib
         Frameworks/libboost_url-mt.dylib
-        Frameworks/libbrotlicommon.1.1.0.dylib
-        Frameworks/libbrotlidec.1.1.0.dylib
+        Frameworks/libbrotlicommon.1.2.0.dylib
+        Frameworks/libbrotlidec.1.2.0.dylib
         Frameworks/libbz2.1.0.8.dylib
         Frameworks/libdiscord_partner_sdk.dylib
         Frameworks/libexpat.1.11.1.dylib
