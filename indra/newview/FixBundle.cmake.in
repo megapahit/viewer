@@ -638,7 +638,7 @@ execute_process(
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libyuy2_i420_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libyuy2_i422_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libzvbi_plugin.dylib
-        Resources/SLPlugin.app/Contents/Frameworks/DullahanHelper\ \(GPU\).app/Contents/MacOS/DullahanHelper\ \(Alerts\)
+        Resources/SLPlugin.app/Contents/Frameworks/DullahanHelper\ \(Alerts\).app/Contents/MacOS/DullahanHelper\ \(Alerts\)
         Resources/SLPlugin.app/Contents/Frameworks/DullahanHelper\ \(GPU\).app/Contents/MacOS/DullahanHelper\ \(GPU\)
         Resources/SLPlugin.app/Contents/Frameworks/DullahanHelper\ \(Plugin\).app/Contents/MacOS/DullahanHelper\ \(Plugin\)
         WORKING_DIRECTORY ${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents
