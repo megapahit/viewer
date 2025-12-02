@@ -5749,7 +5749,9 @@ void process_script_question(LLMessageSystem *msg, void **user_data)
         args["NAME"] = clean_owner_name;
         S32 known_questions = 0;
         bool has_not_only_debit = questions ^ SCRIPT_PERMISSIONS[SCRIPT_PERMISSION_DEBIT].permbit;
+        bool caution_enabled    = gSavedSettings.getBOOL("PermissionsCautionEnabled");
         // check the received permission flags against each permission
+        std::string warning_msg;
         for (const script_perm_t& script_perm : SCRIPT_PERMISSIONS)
         {
             if (questions & script_perm.permbit)
@@ -5759,8 +5761,11 @@ void process_script_question(LLMessageSystem *msg, void **user_data)
                 // check whether permission question should cause special caution dialog
                 caution |= (script_perm.caution);
 
-                if (("ScriptTakeMoney" == script_perm.question) && has_not_only_debit)
+                if (caution_enabled && script_perm.caution)
+                {
+                    warning_msg += "\n" + LLTrans::getString(script_perm.question + "Caution") + "\n";
                     continue;
+                }
 
                 if (LLTrans::getString(script_perm.question).empty())
                 {
@@ -5769,6 +5774,12 @@ void process_script_question(LLMessageSystem *msg, void **user_data)
 
                 script_question += "    " + LLTrans::getString(script_perm.question) + "\n";
             }
+        }
+
+        if (!warning_msg.empty())
+        {
+            LLStringUtil::format(warning_msg, args);
+            args["WARNINGS"] = warning_msg;
         }
 
         args["QUESTIONS"] = script_question;
@@ -5795,12 +5806,12 @@ void process_script_question(LLMessageSystem *msg, void **user_data)
             // check whether cautions are even enabled or not
             const char* notification = "ScriptQuestion";
 
-            if(caution && gSavedSettings.getBOOL("PermissionsCautionEnabled"))
+            if (caution && caution_enabled)
             {
                 args["FOOTERTEXT"] = (count > 1) ? LLTrans::getString("AdditionalPermissionsRequestHeader") + "\n\n" + script_question : "";
                 notification = "ScriptQuestionCaution";
             }
-            else if(experienceid.notNull())
+            else if (experienceid.notNull())
             {
                 payload["experience"]=experienceid;
                 LLExperienceCache::instance().get(experienceid, boost::bind(process_script_experience_details, _1, args, payload));
