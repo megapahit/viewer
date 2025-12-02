@@ -29,6 +29,7 @@
 #include "llnotificationsutil.h"
 #include "llviewerregion.h"
 #include "llvoavatar.h"
+#include "llvoicechannel.h"
 #include "llvoiceclient.h"
 #include "llviewerobjectlist.h"
 #include "llviewerparcelmgr.h"
@@ -196,6 +197,13 @@ bool LLNearbyVoiceModeration::isNearbyChatModerator()
 {
     // Region doesn't support WebRTC voice
     if (!gAgent.getRegion() || !gAgent.getRegion()->isRegionWebRTCEnabled())
+    {
+        return false;
+    }
+
+    // Only show moderator options when connected to spatial voice chat
+    LLVoiceChannel* channel = LLVoiceChannel::getCurrentVoiceChannel();
+    if (!channel || channel->getSessionID().notNull() || !LLAgent::isActionAllowed("speak"))
     {
         return false;
     }
