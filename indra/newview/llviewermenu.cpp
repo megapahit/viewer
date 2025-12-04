@@ -6531,7 +6531,7 @@ bool handle_zoom_to_object(const LLUUID& object_id)
 
     LLViewerObject* object = gObjectList.findObject(object_id);
 
-    if (object)
+    if (object && object->isReachable())
     {
         gAgentCamera.setFocusOnAvatar(false, ANIMATE);
 

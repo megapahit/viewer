@@ -65,10 +65,19 @@ target_link_libraries(llprimitive
         llxml
         llcharacter
         llrender
-        llphysicsextensions_impl
         ll::colladadom
         ll::glm
         )
+
+if (HAVOK OR HAVOK_TPV)
+    target_link_libraries(llprimitive
+        llphysicsextensions_impl
+        )
+else()
+    target_link_libraries(llprimitive
+        llphysicsextensionsos
+        )
+endif ()
 
 include(LibraryInstall)
 
