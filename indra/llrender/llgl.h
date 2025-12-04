@@ -29,6 +29,7 @@
 
 // This file contains various stuff for handling gl extensions and other gl related stuff.
 
+#include <functional>
 #include <string>
 #include <boost/unordered_map.hpp>
 #include <list>
@@ -232,8 +233,6 @@ void clear_glerror();
 
 */
 
-#include "boost/function.hpp"
-
 class LLGLState
 {
 public:
@@ -281,7 +280,7 @@ public:
 class LLGLEnableFunc : LLGLState
 {
 public:
-    LLGLEnableFunc(LLGLenum state, bool enable, boost::function<void()> func)
+    LLGLEnableFunc(LLGLenum state, bool enable, std::function<void()> func)
         : LLGLState(state, enable)
     {
         if (enable)

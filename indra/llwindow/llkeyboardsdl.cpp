@@ -23,6 +23,7 @@
  * $/LicenseInfo$
  */
 
+#include <set>
 #include "linden_common.h"
 #include "llkeyboardsdl.h"
 #include "llwindowcallbacks.h"
