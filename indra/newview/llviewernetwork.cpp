@@ -629,18 +629,6 @@ bool LLGridManager::isInProductionGrid()
     return mIsInProductionGrid;
 }
 
-bool LLGridManager::isInSecondlife()
-{
-    //return (isInSLMain() || isInSLBeta());
-    return true;
-}
-
-bool LLGridManager::isInOpenSim()
-{
-    // FIX THIS TO SUPPORT OPENSIM
-    return false;
-}
-
 bool LLGridManager::isSystemGrid(const std::string& grid)
 {
     std::string grid_name = getGrid(grid);
