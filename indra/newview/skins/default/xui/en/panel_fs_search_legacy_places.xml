@@ -36,16 +36,16 @@
 		 left_delta="0"
 		 name="places_edit"
 		 top="29"
-		 width="650" />
+		 width="651" />
 		<combo_box
 		 follows="right|top"
 		 layout="topleft"
 		 height="23"
 		 allow_text_entry="false"
 		 top_delta="0"
-		 left_pad="1"
+		 left_pad="2"
 		 name="places_category"
-		 width="120">
+		 width="122">
 			<combo_box.commit_callback
 			 function="CommitSearch" />
 		</combo_box>
