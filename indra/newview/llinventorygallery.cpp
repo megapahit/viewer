@@ -1816,8 +1816,8 @@ void LLInventoryGallery::paste(const LLUUID& dest,
                                const LLUUID& marketplacelistings_id)
 {
     LLHandle<LLPanel> handle = getHandle();
-    std::function <void(const LLUUID)> on_copy_callback = NULL;
-    LLPointer<LLInventoryCallback> cb = NULL;
+    std::function<void(const LLUUID)> on_copy_callback = nullptr;
+    LLPointer<LLInventoryCallback> cb = nullptr;
     if (dest == mFolderID)
     {
         on_copy_callback = [handle](const LLUUID& inv_item)
@@ -2119,6 +2119,30 @@ void LLInventoryGallery::pasteAsLink()
 
     std::vector<LLUUID> objects;
     LLClipboard::instance().pasteFromClipboard(objects);
+
+    if (objects.size() == 0)
+    {
+        LLClipboard::instance().setCutMode(false);
+        return;
+    }
+
+    LLUUID& first_id = objects[0];
+    LLInventoryItem* item = gInventory.getItem(first_id);
+    if (item && item->getAssetUUID().isNull())
+    {
+        if (item->getActualType() == LLAssetType::AT_NOTECARD)
+        {
+            LLNotificationsUtil::add("CantLinkNotecard");
+            LLClipboard::instance().setCutMode(false);
+            return;
+        }
+        else if (item->getActualType() == LLAssetType::AT_MATERIAL)
+        {
+            LLNotificationsUtil::add("CantLinkMaterial");
+            LLClipboard::instance().setCutMode(false);
+            return;
+        }
+    }
 
     bool paste_into_root = mSelectedItemIDs.empty();
     for (LLUUID& dest : mSelectedItemIDs)
@@ -3558,12 +3582,12 @@ bool dragItemIntoFolder(LLUUID folder_id, LLInventoryItem* inv_item, bool drop, 
 
         if (accept && drop)
         {
-            std::shared_ptr<LLMoveInv> move_inv (new LLMoveInv());
+            std::shared_ptr<LLMoveInv> move_inv = std::make_shared<LLMoveInv>();
             move_inv->mObjectID = inv_item->getParentUUID();
             std::pair<LLUUID, LLUUID> item_pair(folder_id, inv_item->getUUID());
             move_inv->mMoveList.push_back(item_pair);
-            move_inv->mCallback = NULL;
-            move_inv->mUserData = NULL;
+            move_inv->mCallback = nullptr;
+            move_inv->mUserData = nullptr;
             if (is_move)
             {
                 warn_move_inventory(object, move_inv);

@@ -6516,7 +6516,7 @@ bool handle_zoom_to_object(const LLUUID& object_id)
 
     LLViewerObject* object = gObjectList.findObject(object_id);
 
-    if (object)
+    if (object && object->isReachable())
     {
         gAgentCamera.setFocusOnAvatar(false, ANIMATE);
 
@@ -8999,6 +8999,17 @@ class LLViewHighlightTransparent : public view_listener_t
     }
 };
 
+class LLViewHighlightTransparentProbe : public view_listener_t
+{
+    bool handleEvent(const LLSD& userdata)
+    {
+        gSavedSettings.setBOOL("RenderReflectionProbeShowTransparent", !gSavedSettings.getBOOL("RenderReflectionProbeShowTransparent"));
+        // invisible objects skip building their render batches unless sShowDebugAlpha is true, so rebuild batches whenever toggling this flag
+        gPipeline.rebuildDrawInfo();
+        return true;
+    }
+};
+
 class LLViewCheckHighlightTransparent : public view_listener_t
 {
     bool handleEvent(const LLSD& userdata)
@@ -9742,6 +9753,7 @@ void initialize_menus()
     view_listener_t::addMenu(new LLViewLookAtLastChatter(), "View.LookAtLastChatter");
     view_listener_t::addMenu(new LLViewShowHoverTips(), "View.ShowHoverTips");
     view_listener_t::addMenu(new LLViewHighlightTransparent(), "View.HighlightTransparent");
+    view_listener_t::addMenu(new LLViewHighlightTransparentProbe(), "View.HighlightTransparentProbe");
     view_listener_t::addMenu(new LLViewToggleRenderType(), "View.ToggleRenderType");
     view_listener_t::addMenu(new LLViewShowHUDAttachments(), "View.ShowHUDAttachments");
     view_listener_t::addMenu(new LLZoomer(1.2f), "View.ZoomOut");

@@ -41,6 +41,7 @@
 #include "llpanelpresetscamerapulldown.h"
 #include "llpanelpresetspulldown.h"
 #include "llpanelvolumepulldown.h"
+#include "llfloatermarketplace.h"
 #include "llfloaterregioninfo.h"
 #include "llfloaterscriptdebug.h"
 #include "llhints.h"
@@ -304,7 +305,9 @@ void LLStatusBar::refresh()
         time_t utc_time;
         utc_time = time_corrected();
 
-        std::string timeStr = getString("time");
+        static bool use_24h = gSavedSettings.getBOOL("Use24HourClock");
+        std::string timeStr = use_24h ? getString("time") : getString("time_ampm");
+
         LLSD substitution;
         substitution["datetime"] = (S32) utc_time;
         LLStringUtil::format (timeStr, substitution);
@@ -523,7 +526,11 @@ void LLStatusBar::onClickBuyCurrency()
 
 void LLStatusBar::onClickShop()
 {
-    LLFloaterReg::toggleInstanceOrBringToFront("marketplace");
+    LLFloaterReg::showInstanceOrBringToFront("marketplace");
+    if (LLFloaterMarketplace* marketplace = LLFloaterReg::getTypedInstance<LLFloaterMarketplace>("marketplace"))
+    {
+        marketplace->openMarketplace();
+    }
 }
 
 void LLStatusBar::onMouseEnterPresetsCamera()
@@ -708,7 +715,7 @@ void collectChildren( LLMenuGL *aMenu, ll::statusbar::SearchableItemPtr aParentM
     {
         LLMenuItemGL *pMenu = aMenu->getItem( i );
 
-        ll::statusbar::SearchableItemPtr pItem( new ll::statusbar::SearchableItem );
+        ll::statusbar::SearchableItemPtr pItem = std::make_shared<ll::statusbar::SearchableItem>();
         pItem->mCtrl = pMenu;
         pItem->mMenu = pMenu;
         pItem->mLabel = utf8str_to_wstring( pMenu->ll::ui::SearchableControl::getSearchText() );
@@ -724,8 +731,8 @@ void collectChildren( LLMenuGL *aMenu, ll::statusbar::SearchableItemPtr aParentM
 
 void LLStatusBar::collectSearchableItems()
 {
-    mSearchData.reset( new ll::statusbar::SearchData );
-    ll::statusbar::SearchableItemPtr pItem( new ll::statusbar::SearchableItem );
+    mSearchData = std::make_unique<ll::statusbar::SearchData>();
+    ll::statusbar::SearchableItemPtr pItem = std::make_shared<ll::statusbar::SearchableItem>();
     mSearchData->mRootMenu = pItem;
     collectChildren( gMenuBarView, pItem );
 }

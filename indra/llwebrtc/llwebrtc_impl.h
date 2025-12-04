@@ -75,7 +75,7 @@ public:
     LLWebRTCLogSink(LLWebRTCLogCallback* callback) : mCallback(callback) {}
 
     // Destructor: close the log file
-    ~LLWebRTCLogSink() override {}
+    ~LLWebRTCLogSink() override { mCallback = nullptr; }
 
     void OnLogMessage(const std::string& msg, webrtc::LoggingSeverity severity) override
     {
@@ -239,8 +239,10 @@ public:
         return 0;
     }
     int32_t StopRecording() override {
-        if (tuning_) return 0;  // if we're tuning, disregard the StopRecording we get from disabling the streams
-        return inner_->StopRecording();
+        // ignore stop recording as webrtc.lib will send one when streams shut down,
+        // even if there are other streams in place.  Start/Stop recording are entirely
+        // controlled by the app
+        return 0;
     }
     int32_t ForceStartRecording() { return inner_->StartRecording(); }
     int32_t ForceStopRecording() { return inner_->StopRecording(); }
@@ -420,6 +422,9 @@ class LLWebRTCImpl : public LLWebRTCDeviceInterface, public webrtc::AudioDeviceO
     ~LLWebRTCImpl()
     {
         delete mLogSink;
+
+        // Explicit cleanup for the sake of debugging and crash stacks
+        mPeerCustomProcessor = nullptr;
     }
 
     void init();
@@ -667,6 +672,8 @@ class LLWebRTCPeerConnectionImpl : public LLWebRTCPeerConnectionInterface,
     // data
     std::vector<LLWebRTCDataObserver *> mDataObserverList;
     webrtc::scoped_refptr<webrtc::DataChannelInterface> mDataChannel;
+
+    std::atomic<int> mPendingJobs;
 };
 
 }
