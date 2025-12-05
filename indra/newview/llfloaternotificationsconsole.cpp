@@ -34,7 +34,7 @@
 #include "llpanel.h"
 #include "llcombobox.h"
 
-const S32 NOTIFICATION_PANEL_HEADER_HEIGHT = 40;
+const S32 NOTIFICATION_PANEL_HEADER_HEIGHT = 20;
 const S32 HEADER_PADDING = 38;
 
 class LLNotificationChannelPanel : public LLLayoutPanel
