@@ -8585,11 +8585,10 @@ Scripts associated with this experience will be able to do the following on regi
    priority="critical"
    persist="true"
    type="notify">
-Warning: 
+Warning:
 [WARNINGS]
-  
-Do not allow access if you do not fully understand why it wants access to your account.
 
+Do not allow access if you do not fully understand why it wants access to your account.
   <tag>confirm</tag>
     <form name="form">
       <button
@@ -8602,9 +8601,7 @@ Do not allow access if you do not fully understand why it wants access to your a
        name="Deny"
        text="Deny"/>
     </form>
-    <footer>
-[FOOTERTEXT]
-    </footer>
+    <footer>[FOOTERTEXT]</footer>
   </notification>
 
 	<notification

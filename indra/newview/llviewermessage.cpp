@@ -5756,11 +5756,11 @@ void process_script_question(LLMessageSystem *msg, void **user_data)
         {
             if (questions & script_perm.permbit)
             {
-                count++;
                 known_questions |= script_perm.permbit;
                 // check whether permission question should cause special caution dialog
                 caution |= (script_perm.caution);
 
+                // Caustions go into top part of the dialog, questions go into the footer
                 if (caution_enabled && script_perm.caution)
                 {
                     warning_msg += "\n" + LLTrans::getString(script_perm.question + "Caution") + "\n";
@@ -5772,7 +5772,8 @@ void process_script_question(LLMessageSystem *msg, void **user_data)
                     continue;
                 }
 
-                script_question += "    " + LLTrans::getString(script_perm.question) + "\n";
+                count++;
+                script_question += "\n    " + LLTrans::getString(script_perm.question);
             }
         }
 
@@ -5806,9 +5807,9 @@ void process_script_question(LLMessageSystem *msg, void **user_data)
             // check whether cautions are even enabled or not
             const char* notification = "ScriptQuestion";
 
-            if (caution && caution_enabled)
+            if(caution && caution_enabled)
             {
-                args["FOOTERTEXT"] = (count > 1) ? LLTrans::getString("AdditionalPermissionsRequestHeader") + "\n\n" + script_question : "";
+                args["FOOTERTEXT"] = (count > 0) ? LLTrans::getString("AdditionalPermissionsRequestHeader") + "\n" + script_question : "";
                 notification = "ScriptQuestionCaution";
             }
             else if (experienceid.notNull())
