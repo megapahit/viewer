@@ -49,8 +49,10 @@ LLExternalEditor::EErrorCode LLExternalEditor::setCommand(const std::string& env
         static const std::string os_cmd = "%SystemRoot%\\explorer.exe \"%s\"";
 #elif LL_DARWIN
         static const std::string os_cmd = "/usr/bin/open \"%s\"";
-#elif LL_LINUX || __FreeBSD__
+#elif LL_LINUX
         static const std::string os_cmd = "/usr/bin/xdg-open \"%s\"";
+#elif __FreeBSD__
+        static const std::string os_cmd = "/usr/local/bin/xdg-open \"%s\"";
 #endif
         cmd = findCommand("", os_cmd);
         if (cmd.empty())
