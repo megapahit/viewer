@@ -2693,10 +2693,10 @@ void LLVOVolume::mediaNavigateBounceBack(U8 texture_index)
     if (mep && impl)
     {
         std::string url = mep->getCurrentURL();
-        // Look for a ":", if not there, assume "http://"
+        // Look for a ":", if not there, assume "https://"
         if (!url.empty() && std::string::npos == url.find(':'))
         {
-            url = "http://" + url;
+            url = "https://" + url;
         }
         // If the url we're trying to "bounce back" to is either empty or not
         // allowed by the whitelist, try the home url.  If *that* doesn't work,
@@ -2704,10 +2704,10 @@ void LLVOVolume::mediaNavigateBounceBack(U8 texture_index)
         if (url.empty() || !mep->checkCandidateUrl(url))
         {
             url = mep->getHomeURL();
-            // Look for a ":", if not there, assume "http://"
+            // Look for a ":", if not there, assume "https://"
             if (!url.empty() && std::string::npos == url.find(':'))
             {
-                url = "http://" + url;
+                url = "https://" + url;
             }
         }
         if (url.empty() || !mep->checkCandidateUrl(url))
@@ -3842,11 +3842,12 @@ void LLVOVolume::onReparent(LLViewerObject *old_parent, LLViewerObject *new_pare
     }
     if (old_volp && old_volp->isAnimatedObject())
     {
-        if (old_volp->getControlAvatar())
+        LLControlAvatar* cav = old_volp->getControlAvatar();
+        if (cav)
         {
             // We have been removed from an animated object, need to do cleanup.
-            old_volp->getControlAvatar()->updateAttachmentOverrides();
-            old_volp->getControlAvatar()->updateAnimations();
+            cav->updateAttachmentOverrides();
+            cav->updateAnimations();
         }
     }
 }
@@ -5131,7 +5132,7 @@ U32 LLVOVolume::getPartitionType() const
     {
         return LLViewerRegion::PARTITION_HUD;
     }
-    if (isAnimatedObject() && getControlAvatar())
+    if (isAnimatedObjectFast() && getControlAvatar())
     {
         return LLViewerRegion::PARTITION_CONTROL_AV;
     }
@@ -5757,11 +5758,18 @@ void LLVolumeGeometryManager::rebuildGeom(LLSpatialGroup* group)
             }
 
             // Standard rigged mesh attachments:
-            bool rigged = !vobj->isAnimatedObject() && skinInfo && vobj->isAttachment();
+            bool is_animated = vobj->isAnimatedObject();
+            bool rigged = !is_animated && skinInfo && vobj->isAttachment();
             // Animated objects. Have to check for isRiggedMesh() to
             // exclude static objects in animated object linksets.
-            rigged = rigged || (vobj->isAnimatedObject() && vobj->isRiggedMesh() &&
-                vobj->getControlAvatar() && vobj->getControlAvatar()->mPlaying);
+            if (!rigged && is_animated && vobj->isRiggedMesh())
+            {
+                LLControlAvatar* cav = vobj->getControlAvatar();
+                if (cav)
+                {
+                    rigged = cav->mPlaying;
+                }
+            }
 
             bool any_rigged_face = false;
 
