@@ -97,7 +97,7 @@ void LLToastScriptQuestion::snapToMessageHeight()
         S32 required_text_height = new_message_height + new_footer_height + FOOTER_PADDING;
         S32 new_text_height = llmin(required_text_height, max_text_height);
 
-        // Footer was invisibe, so use old_message_height for old height
+        // Footer was invisible, so use old_message_height for old height
         height_delta = new_text_height - old_message_height;
 
         reshape( getRect().getWidth(), llmax(getRect().getHeight() + height_delta, MIN_PANEL_HEIGHT));

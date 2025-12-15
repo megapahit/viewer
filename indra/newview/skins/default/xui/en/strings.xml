@@ -537,7 +537,7 @@ http://secondlife.com/support for help fixing this problem.
 	<string name="ChangeYourDefaultAnimations">Change your default animations</string>
 	<string name="ForceSitAvatar">Force your avatar to sit</string>
 	<string name="ChangeEnvSettings">Change your environment settings</string>
-    <string name="PrivilegedLandAccess">Sell land on your behalf.</string>
+	<string name="PrivilegedLandAccess">Sell land on your behalf.</string>
 	
 	<string name="NotConnected">Not Connected</string>
 	<string name="AgentNameSubst">(You)</string> <!-- Substitution for agent name -->
