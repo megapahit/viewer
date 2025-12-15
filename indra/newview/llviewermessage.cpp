@@ -5760,7 +5760,7 @@ void process_script_question(LLMessageSystem *msg, void **user_data)
                 // check whether permission question should cause special caution dialog
                 caution |= (script_perm.caution);
 
-                // Caustions go into top part of the dialog, questions go into the footer
+                // Cautions go into top part of the dialog, questions go into the footer
                 if (caution_enabled && script_perm.caution)
                 {
                     warning_msg += "\n" + LLTrans::getString(script_perm.question + "Caution") + "\n";
