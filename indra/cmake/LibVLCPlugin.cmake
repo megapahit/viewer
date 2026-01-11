@@ -12,16 +12,16 @@ if (DARWIN)
         set(ARCHITECTURE ${CMAKE_OSX_ARCHITECTURES})
     endif ()
     if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/vlc_installed OR NOT ${vlc_installed} EQUAL 0)
-        if (NOT EXISTS ${CMAKE_BINARY_DIR}/vlc-3.0.21-${ARCHITECTURE}.dmg)
+        if (NOT EXISTS ${CMAKE_BINARY_DIR}/vlc-3.0.23-${ARCHITECTURE}.dmg)
             file(DOWNLOAD
-                https://get.videolan.org/vlc/3.0.21/macosx/vlc-3.0.21-${ARCHITECTURE}.dmg
-                ${CMAKE_BINARY_DIR}/vlc-3.0.21-${ARCHITECTURE}.dmg
+                https://get.videolan.org/vlc/3.0.23/macosx/vlc-3.0.23-${ARCHITECTURE}.dmg
+                ${CMAKE_BINARY_DIR}/vlc-3.0.23-${ARCHITECTURE}.dmg
                 )
         endif ()
         file(WRITE ${PREBUILD_TRACKING_DIR}/vlc_installed "0")
     endif ()
     execute_process(
-        COMMAND hdiutil attach -noverify vlc-3.0.21-${ARCHITECTURE}.dmg
+        COMMAND hdiutil attach -noverify vlc-3.0.23-${ARCHITECTURE}.dmg
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         )
     target_include_directories( ll::libvlc SYSTEM INTERFACE /Volumes/VLC\ media\ player/VLC.app/Contents/MacOS/include)

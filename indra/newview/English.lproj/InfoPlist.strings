@@ -3,5 +3,5 @@
 CFBundleName = "Megapahit";
 
 CFBundleShortVersionString = "Megapahit version ${MACOSX_BUNDLE_SHORT_VERSION_STRING}";
-CFBundleGetInfoString = "Megapahit version ${MACOSX_BUNDLE_SHORT_VERSION_STRING}, Copyright 2025 Megapahit.";
+CFBundleGetInfoString = "Megapahit version ${MACOSX_BUNDLE_SHORT_VERSION_STRING}, Copyright 2026 Megapahit.";
 

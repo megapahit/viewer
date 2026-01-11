@@ -157,7 +157,7 @@ BEGIN
             VALUE "FileDescription", "Megapahit viewer"
             VALUE "FileVersion", "${VIEWER_VERSION_MAJOR}.${VIEWER_VERSION_MINOR}.${VIEWER_VERSION_PATCH}.${VIEWER_VERSION_REVISION}"
             VALUE "InternalName", "Megapahit"
-            VALUE "LegalCopyright", "Copyright (c) 2025, Megapahit."
+            VALUE "LegalCopyright", "Copyright (c) 2026, Megapahit."
             VALUE "OriginalFilename", "Megapahit.exe"
             VALUE "ProductName", "Megapahit viewer"
             VALUE "ProductVersion", "${VIEWER_VERSION_MAJOR}.${VIEWER_VERSION_MINOR}.${VIEWER_VERSION_PATCH}.${VIEWER_VERSION_REVISION}"

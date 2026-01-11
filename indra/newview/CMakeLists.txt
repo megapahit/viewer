@@ -2400,7 +2400,7 @@ if (LINUX)
         set(CPACK_RPM_PACKAGE_REQUIRES "apr-util, boost-fiber, boost-program-options, boost-regex, boost-thread, boost-url, expat, fltk, mesa-libGLU, hunspell, libnghttp2, openjpeg2, SDL2, vlc-libs, vlc-plugins-base, libvorbis"
           CACHE STRING "RPM package requirements.")
       else ()
-        set(CPACK_RPM_PACKAGE_REQUIRES "libapr-util1-0, libboost_fiber1_89_0, libboost_program_options1_89_0, libboost_regex1_89_0, libboost_thread1_89_0, libboost_url1_89_0, libboost_url1_89_0-x86-64-v3, libpng16-16 expat, libfltk1_3, libGLU1, libhunspell-1_7-0, libnghttp2-14, openjpeg2, libSDL2-2_0-0, libvlc5, vlc-codecs, libvorbis0"
+        set(CPACK_RPM_PACKAGE_REQUIRES "libapr-util1-0, libboost_fiber1_90_0, libboost_program_options1_90_0, libboost_regex1_90_0, libboost_thread1_90_0, libboost_url1_90_0, libboost_url1_90_0-x86-64-v3, libpng16-16 expat, libfltk1_3, libGLU1, libhunspell-1_7-0, libnghttp2-14, openjpeg2, libSDL2-2_0-0, libvlc5, vlc-codecs, libvorbis0"
           CACHE STRING "RPM package requirements.")
       endif ()
     endif ()
@@ -2480,7 +2480,7 @@ if (DARWIN)
   set(MACOSX_BUNDLE_BUNDLE_NAME "Megapahit")
   set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${VIEWER_SHORT_VERSION}.${VIEWER_VERSION_REVISION}")
   set(MACOSX_BUNDLE_BUNDLE_VERSION "${VIEWER_SHORT_VERSION}${VIEWER_MACOSX_PHASE}${VIEWER_REVISION}")
-  set(MACOSX_BUNDLE_COPYRIGHT "Copyright © Megapahit 2025")
+  set(MACOSX_BUNDLE_COPYRIGHT "Copyright © Megapahit 2026")
   set(MACOSX_BUNDLE_NSMAIN_NIB_FILE "SecondLife.nib")
   set(MACOSX_BUNDLE_NSPRINCIPAL_CLASS "LLApplication")
 
