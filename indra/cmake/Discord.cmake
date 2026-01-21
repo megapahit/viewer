@@ -9,7 +9,7 @@ target_compile_definitions(ll::discord_sdk INTERFACE LL_DISCORD=1)
 
 if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/discord_sdk_installed OR NOT ${discord_sdk_installed} EQUAL 0)
     file(ARCHIVE_EXTRACT
-        INPUT $ENV{HOME}/Downloads/DiscordSocialSdk-1.4.9649.zip
+        INPUT $ENV{HOME}/Downloads/DiscordSocialSdk-1.8.13395.zip
         DESTINATION ${CMAKE_BINARY_DIR}
         )
     file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/include/discord_sdk)
