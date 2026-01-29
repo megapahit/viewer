@@ -289,7 +289,6 @@ execute_process(
         Resources/libndofdev.dylib
         Resources/SLPlugin.app/Contents/Frameworks/media_plugin_cef.dylib
         Resources/SLPlugin.app/Contents/Frameworks/media_plugin_libvlc.dylib
-        Resources/SLPlugin.app/Contents/Frameworks/plugins/liba52_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libaccess_concat_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libaccess_imem_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libaccess_mms_plugin.dylib
@@ -338,8 +337,8 @@ execute_process(
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libblend_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libblendbench_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libbluescreen_plugin.dylib
-        Resources/SLPlugin.app/Contents/Frameworks/plugins/libbluray-awt-j2se-1.3.2.jar
-        Resources/SLPlugin.app/Contents/Frameworks/plugins/libbluray-j2se-1.3.2.jar
+        Resources/SLPlugin.app/Contents/Frameworks/plugins/libbluray-awt-j2se-1.4.0.jar
+        Resources/SLPlugin.app/Contents/Frameworks/plugins/libbluray-j2se-1.4.0.jar
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libbonjour_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libcache_block_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libcache_read_plugin.dylib
@@ -360,7 +359,6 @@ execute_process(
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libcvdsub_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libcvpx_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libdav1d_plugin.dylib
-        Resources/SLPlugin.app/Contents/Frameworks/plugins/libdca_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libdcp_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libddummy_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libdecomp_plugin.dylib
@@ -371,6 +369,7 @@ execute_process(
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libdemuxdump_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libdiracsys_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libdirectory_demux_plugin.dylib
+        Resources/SLPlugin.app/Contents/Frameworks/plugins/libdmxmus_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libdolby_surround_decoder_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libdummy_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libdvbsub_plugin.dylib
@@ -441,7 +440,6 @@ execute_process(
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libkeychain_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/liblibass_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/liblibbluray_plugin.dylib
-        Resources/SLPlugin.app/Contents/Frameworks/plugins/liblibmpeg2_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/liblive555_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/liblogger_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/liblogo_plugin.dylib
