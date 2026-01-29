@@ -107,6 +107,7 @@ if (USE_FMODSTUDIO)
       target_link_libraries( ll::fmodstudio INTERFACE  fmod_vc)
     elseif (DARWIN)
       #despite files being called libfmod.dylib, we are searching for fmod
+      target_link_directories( ll::fmodstudio INTERFACE  ${ARCH_PREBUILT_DIRS_RELEASE})
       target_link_libraries( ll::fmodstudio INTERFACE  fmod)
     elseif (LINUX)
       target_link_libraries( ll::fmodstudio INTERFACE  fmod)
