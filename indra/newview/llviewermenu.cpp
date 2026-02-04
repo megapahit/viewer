@@ -8829,6 +8829,12 @@ LLVOAvatar* find_avatar_from_object(LLViewerObject* object)
         }
         else if( !object->isAvatar() )
         {
+            // Check for animesh objects (animated objects with a control avatar)
+            LLVOAvatar* avatar = object->getAvatar();
+            if (avatar)
+            {
+                return avatar;
+            }
             object = NULL;
         }
     }
