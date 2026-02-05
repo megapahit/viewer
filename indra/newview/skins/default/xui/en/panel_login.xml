@@ -165,7 +165,9 @@
     label="Select grid"    
     layout="topleft"
     name="server_combo"
-    width="149" />
+    width="149" >
+    <combo_box.drop_down_button pad_right="21" />
+  </combo_box>
   <text
     follows="left|top"
     font="SansSerifMedium"
