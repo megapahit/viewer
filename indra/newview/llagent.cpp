@@ -115,7 +115,6 @@ const F32 AUTOPILOT_MAX_TIME_NO_PROGRESS_FLY = 2.5f;        // seconds. Flying i
 
 const F32 MAX_VELOCITY_AUTO_LAND_SQUARED = 4.f * 4.f;
 const F64 CHAT_AGE_FAST_RATE = 3.0;
-const F64 RECENT_JUMP_THRESHOLD_SECS = 1.0; // seconds
 
 // fidget constants
 const F32 MIN_FIDGET_TIME = 8.f; // seconds
@@ -427,7 +426,7 @@ LLAgent::LLAgent() :
     mIsDoNotDisturb(false),
 
     mControlFlags(0x00000000),
-    mLastJumpRequestTime(0.0),
+    mLastJumpInputTime(0.0),
 
     mAutoPilot(false),
     mAutoPilotFlyOnStop(false),
@@ -2669,14 +2668,16 @@ void LLAgent::onAnimStop(const LLUUID& id)
     }
     else if (id == ANIM_AGENT_PRE_JUMP || id == ANIM_AGENT_LAND || id == ANIM_AGENT_MEDIUM_LAND)
     {
-        // If the jump key is currently held, avoid forcing a finish-anim that can
-        // short-circuit the next pre-jump in cases of rapid successive jumps.
-        // Bug amplified since v7 viewers or so, likely caused by https://github.com/FirestormViewer/phoenix-firestorm/commit/da87e8bd370ea079576f8b412a4ddb80c0715bd1
-        // TODO: the real fix would be to discern which anim the viewer finished, but this requires simulator fixes.
+        // FIRE-34049/FIRE-34273/https://github.com/secondlife/viewer/issues/4218
+        // Avoid forcing AGENT_CONTROL_FINISH_ANIM, which can short-circuit the next pre-jump
+        // during rapid successive jumps.
+        // TODO: a more robust fix would require knowing which specific animation finished,
+        // information that is not currently provided by the simulator.
         const bool up_pos = (mControlFlags & AGENT_CONTROL_UP_POS) != 0;
         const F64 now = LLTimer::getTotalSeconds();
-        const F64 elapsed = now - mLastJumpRequestTime;
-        const bool recent_jump = (mLastJumpRequestTime > 0.0) && (elapsed < RECENT_JUMP_THRESHOLD_SECS);
+        const F64 elapsed = now - mLastJumpInputTime;
+        static LLCachedControl<F32> recent_jump_threshold_secs(gSavedSettings, "RecentJumpThresholdSecs");
+        const bool recent_jump = (mLastJumpInputTime > 0.0) && (elapsed < recent_jump_threshold_secs);
 
         if (!up_pos && !recent_jump)
         {
