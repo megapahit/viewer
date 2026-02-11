@@ -115,6 +115,7 @@ const F32 AUTOPILOT_MAX_TIME_NO_PROGRESS_FLY = 2.5f;        // seconds. Flying i
 
 const F32 MAX_VELOCITY_AUTO_LAND_SQUARED = 4.f * 4.f;
 const F64 CHAT_AGE_FAST_RATE = 3.0;
+const F64 RECENT_JUMP_THRESHOLD_SECS = 1.0; // seconds
 
 // fidget constants
 const F32 MIN_FIDGET_TIME = 8.f; // seconds
@@ -425,9 +426,8 @@ LLAgent::LLAgent() :
 
     mIsDoNotDisturb(false),
 
-    mLastJumpRequestTime(0.0),
-
     mControlFlags(0x00000000),
+    mLastJumpRequestTime(0.0),
 
     mAutoPilot(false),
     mAutoPilotFlyOnStop(false),
@@ -679,10 +679,6 @@ void LLAgent::moveAt(S32 direction, bool reset)
 
     if (direction > 0)
     {
-        if (!getFlying())
-        {
-            mLastJumpRequestTime = LLTimer::getTotalSeconds();
-        }
         setControlFlags(AGENT_CONTROL_AT_POS | AGENT_CONTROL_FAST_AT);
     }
     else if (direction < 0)
@@ -786,6 +782,10 @@ void LLAgent::moveUp(S32 direction)
 
     if (direction > 0)
     {
+        if (!getFlying())
+        {
+            mLastJumpRequestTime = LLTimer::getTotalSeconds();
+        }
         setControlFlags(AGENT_CONTROL_UP_POS | AGENT_CONTROL_FAST_UP);
     }
     else if (direction < 0)
@@ -2676,7 +2676,7 @@ void LLAgent::onAnimStop(const LLUUID& id)
         const bool up_pos = (mControlFlags & AGENT_CONTROL_UP_POS) != 0;
         const F64 now = LLTimer::getTotalSeconds();
         const F64 elapsed = now - mLastJumpRequestTime;
-        const bool recent_jump = (mLastJumpRequestTime > 0.0) && (elapsed < 1.0);
+        const bool recent_jump = (mLastJumpRequestTime > 0.0) && (elapsed < RECENT_JUMP_THRESHOLD_SECS);
 
         if (!up_pos && !recent_jump)
         {
