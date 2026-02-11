@@ -487,7 +487,7 @@ private:
     S32             mControlsTakenCount[TOTAL_CONTROLS];
     S32             mControlsTakenPassedOnCount[TOTAL_CONTROLS];
     U32             mControlFlags;                  // Replacement for the mFooKey's
-    F64             mLastJumpRequestTime;
+    F64             mLastJumpRequestTime;           // Time of last jump request in seconds from LLTimer::getTotalSeconds()
 
     //--------------------------------------------------------------------
     // Animations
