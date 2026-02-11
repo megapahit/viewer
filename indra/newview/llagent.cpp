@@ -425,6 +425,8 @@ LLAgent::LLAgent() :
 
     mIsDoNotDisturb(false),
 
+    mLastJumpRequestTime(0.0),
+
     mControlFlags(0x00000000),
 
     mAutoPilot(false),
@@ -677,6 +679,10 @@ void LLAgent::moveAt(S32 direction, bool reset)
 
     if (direction > 0)
     {
+        if (!getFlying())
+        {
+            mLastJumpRequestTime = LLTimer::getTotalSeconds();
+        }
         setControlFlags(AGENT_CONTROL_AT_POS | AGENT_CONTROL_FAST_AT);
     }
     else if (direction < 0)
@@ -2663,7 +2669,19 @@ void LLAgent::onAnimStop(const LLUUID& id)
     }
     else if (id == ANIM_AGENT_PRE_JUMP || id == ANIM_AGENT_LAND || id == ANIM_AGENT_MEDIUM_LAND)
     {
-        setControlFlags(AGENT_CONTROL_FINISH_ANIM);
+        // If the jump key is currently held, avoid forcing a finish-anim that can
+        // short-circuit the next pre-jump in cases of rapid successive jumps.
+        // Bug amplified since v7 viewers or so, likely caused by https://github.com/FirestormViewer/phoenix-firestorm/commit/da87e8bd370ea079576f8b412a4ddb80c0715bd1
+        // TODO: the real fix would be to discern which anim the viewer finished, but this requires simulator fixes.
+        const bool up_pos = (mControlFlags & AGENT_CONTROL_UP_POS) != 0;
+        const F64 now = LLTimer::getTotalSeconds();
+        const F64 elapsed = now - mLastJumpRequestTime;
+        const bool recent_jump = (mLastJumpRequestTime > 0.0) && (elapsed < 1.0);
+
+        if (!up_pos && !recent_jump)
+        {
+            setControlFlags(AGENT_CONTROL_FINISH_ANIM);
+        }
     }
 }
 
