@@ -319,7 +319,7 @@
    top_delta="25"
    name="Listen media from"
    height="15"
-   width="165"
+   width="175"
    halign="right">
       Hear media and sounds from
   </text>
@@ -346,7 +346,7 @@
    layout="topleft"
    height="15"
    left="23"
-   width="165"
+   width="175"
    name="media_autoplay_label"
    halign="right">
     Auto-play media
@@ -357,7 +357,7 @@
         follows="left|top"
         layout="topleft"
         height="23"
-        left_delta="170"
+        left_delta="180"
         top_delta="-4"
         name="media_auto_play_combo"
         width="130">
@@ -379,7 +379,7 @@
         layout="topleft"
         height="15"
         left="23"
-        width="165"
+        width="175"
         name="media_firstinteract_label"
         halign="right">
             Media first-interact
@@ -390,11 +390,12 @@
     follows="left|top"
     layout="topleft"
     height="23"
-    left_delta="170"
+    left_delta="180"
     top_delta="-4"
     width="130"
     name="media_first_interact_combo"
     tool_tip="This setting controls which media (once loaded) does not require a first click to focus before interaction can begin. This allows clicks to be passed directly to media bypassing the focus click requirement. Each option also inherits the previous ones.">
+        <combo_box.drop_down_button pad_right="19" />
         <item
             label="Disabled"
             name="media_first_click_none"
@@ -457,7 +458,7 @@
    layout="topleft"
    follows="left"
    height="15"
-   width="165"
+   width="175"
    name="noise_suppression_label"
    left="23"
    top_delta="22"
@@ -469,7 +470,7 @@
    enabled_control="EnableVoiceChat"
    follows="left|top"
    layout="topleft"
-   left_delta="170"
+   left_delta="180"
    top_delta="-6"
    width="130"
    height="23"
@@ -503,7 +504,7 @@
    left="23"
    top_delta="30"
    name="Listen from"
-   width="165"
+   width="175"
    height="15"
    halign="right">
      Hear voice from
@@ -513,7 +514,7 @@
    control_name="VoiceEarLocation"
    follows="left|top"
    layout="topleft"
-   left_delta="170"
+   left_delta="180"
    top_delta="-6"
    width="130"
    height="23"
