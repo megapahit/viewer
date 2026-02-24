@@ -41,7 +41,7 @@
                     mouse_opaque="true"
                     name="icon_settingsdays"
                     left="4"
-                    top="6"
+                    top="9"
                     width="16" />
             <check_box
                     height="16"
@@ -58,7 +58,7 @@
                     mouse_opaque="true"
                     name="icon_settingsskies"
                     left_pad="10"
-                    top="6"
+                    top="9"
                     width="16" />
             <check_box
                     height="16"
@@ -75,7 +75,7 @@
                     mouse_opaque="true"
                     name="icon_settingswater"
                     left_pad="10"
-                    top="6"
+                    top="9"
                     width="16" />
             <check_box
                     height="16"
@@ -92,7 +92,7 @@
                   layout="topleft"
                   left="4"
                   name="flt_search"
-                  top_pad="6"
+                  top_pad="4"
                   right="-4" />
         </layout_panel>
         <layout_panel

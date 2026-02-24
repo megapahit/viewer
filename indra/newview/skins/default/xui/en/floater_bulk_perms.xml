@@ -29,7 +29,7 @@
      control_name="BulkChangeIncludeAnimations"
      height="16"
      name="check_animation"
-     top="24"
+     top="30"
      left="10"
      width="16" />
     <icon
@@ -73,7 +73,7 @@
      name="check_gesture"
      left="95"
      width="16"
-     top="25" />
+     top="30" />
     <icon
      height="16"
      image_name="Inv_Gesture"
@@ -116,7 +116,7 @@
      control_name="BulkChangeIncludeScripts"
      height="16"
      name="check_script"
-     top="25"
+     top="30"
      left="180"
      width="16"
      />
@@ -161,7 +161,7 @@
     height="16"
     name="check_settings"
     left="245"
-    top="25"
+    top="30"
     width="16" />
   <icon
     height="16"

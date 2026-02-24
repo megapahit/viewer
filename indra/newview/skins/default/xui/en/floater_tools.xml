@@ -618,7 +618,7 @@
      layout="topleft"
      left_delta="0"
      name="checkbox copy selection"
-     top_delta="15"
+     top_delta="17"
      width="134" />
     <check_box
      control_name="CreateToolCopyCenters"
@@ -628,7 +628,7 @@
      layout="topleft"
      left_delta="18"
      name="checkbox copy centers"
-     top="85"
+     top="92"
      width="134" />
     <check_box
      control_name="CreateToolCopyRotates"
@@ -637,7 +637,7 @@
      layout="topleft"
      left_delta="0"
      name="checkbox copy rotates"
-     top_delta="16"
+     top_delta="17"
      width="134" />
     <radio_group
      height="105"
