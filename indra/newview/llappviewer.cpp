@@ -732,6 +732,8 @@ public:
 
 bool LLAppViewer::init()
 {
+    LL_PROFILE_ZONE_SCOPED;
+
     setupErrorHandling(mSecondInstance);
 
     //
@@ -933,6 +935,7 @@ bool LLAppViewer::init()
         // Early out from user choice.
         LL_WARNS("InitInfo") << "initHardwareTest() failed." << LL_ENDL;
         // quit immediately
+        LL_PROFILER_FRAME_END;
         return false;
     }
     LL_INFOS("InitInfo") << "Hardware test initialization done." << LL_ENDL ;
@@ -951,6 +954,7 @@ bool LLAppViewer::init()
         OSMessageBox(msg.c_str(), LLStringUtil::null, OSMB_OK);
         LL_WARNS("InitInfo") << "Failed to init cache" << LL_ENDL;
         // quit immediately
+        LL_PROFILER_FRAME_END;
         return false;
     }
     LL_INFOS("InitInfo") << "Cache initialization is done." << LL_ENDL ;
@@ -986,6 +990,7 @@ bool LLAppViewer::init()
         // Already handled with a MBVideoDrvErr
         LL_WARNS("InitInfo") << "gGLManager.mHasRequirements is false." << LL_ENDL;
         // quit immediately
+        LL_PROFILER_FRAME_END;
         return false;
     }
 
@@ -999,6 +1004,7 @@ bool LLAppViewer::init()
         OSMessageBox(msg.c_str(), LLStringUtil::null, OSMB_OK);
         LL_WARNS("InitInfo") << "SSE2 is not supported" << LL_ENDL;
         // quit immediately
+        LL_PROFILER_FRAME_END;
         return false;
     }
 #endif
@@ -1269,7 +1275,7 @@ bool LLAppViewer::init()
         gDirUtilp->deleteDirAndContents(gDirUtilp->getDumpLogsDirPath());
     }
 #endif
-
+    LL_PROFILER_FRAME_END;
     return true;
 }
 
@@ -1343,6 +1349,7 @@ bool LLAppViewer::frame()
 
 bool LLAppViewer::doFrame()
 {
+    resumeMainloopTimeout("Main:doFrameStart");
 #ifdef LL_DISCORD
     {
         LL_PROFILE_ZONE_NAMED("discord_callbacks");
@@ -1637,17 +1644,20 @@ bool LLAppViewer::doFrame()
 
     if (LLApp::isExiting())
     {
+        pingMainloopTimeout("Main:qSnapshot");
         // Save snapshot for next time, if we made it through initialization
         if (STATE_STARTED == LLStartUp::getStartupState())
         {
             saveFinalSnapshot();
         }
 
+        pingMainloopTimeout("Main:TerminateVoice");
         if (LLVoiceClient::instanceExists())
         {
             LLVoiceClient::getInstance()->terminate();
         }
 
+        pingMainloopTimeout("Main:TerminatePump");
         delete gServicePump;
         gServicePump = NULL;
 
@@ -1656,6 +1666,11 @@ bool LLAppViewer::doFrame()
         LL_INFOS() << "Exiting main_loop" << LL_ENDL;
     }
     }LLPerfStats::StatsRecorder::endFrame();
+
+    // Not viewer's fault if something outside frame
+    // pauses viewer (ex: macOS doesn't call oneFrame),
+    // so stop tracking on exit.
+    pauseMainloopTimeout();
     LL_PROFILER_FRAME_END;
 
     return ! LLApp::isRunning();
@@ -2191,6 +2206,8 @@ void LLAppViewer::initGeneralThread()
 
 bool LLAppViewer::initThreads()
 {
+    LL_PROFILE_ZONE_SCOPED;
+
     static const bool enable_threads = true;
 
     LLImage::initClass(gSavedSettings.getBOOL("TextureNewByteRange"),gSavedSettings.getS32("TextureReverseByteRange"));
@@ -3038,6 +3055,8 @@ bool LLAppViewer::initConfiguration()
 // keeps growing, necessitating a method all its own.
 void LLAppViewer::initStrings()
 {
+    LL_PROFILE_ZONE_SCOPED;
+
     std::string strings_file = "strings.xml";
     std::string strings_path_full = gDirUtilp->findSkinnedFilenameBaseLang(LLDir::XUI, strings_file);
     if (strings_path_full.empty() || !LLFile::isfile(strings_path_full))
@@ -3127,6 +3146,7 @@ void LLAppViewer::sendOutOfDiskSpaceNotification()
 
 bool LLAppViewer::initWindow()
 {
+    LL_PROFILE_ZONE_SCOPED;
     LL_INFOS("AppInit") << "Initializing window..." << LL_ENDL;
 
     // store setting in a global for easy access and modification
@@ -3194,7 +3214,6 @@ bool LLAppViewer::initWindow()
                 app->createErrorMarker(LAST_EXEC_FROZE);
             }
         });
-        gViewerWindow->getWindow()->initWatchdog();
     }
 
     LLNotificationsUI::LLNotificationManager::getInstance();
@@ -4174,6 +4193,7 @@ void LLAppViewer::requestQuit()
         return;
     }
 
+    pingMainloopTimeout("Main:qMetrics");
     // Try to send metrics back to the grid
     metricsSend(!gDisconnected);
 
@@ -4189,6 +4209,7 @@ void LLAppViewer::requestQuit()
     LLHUDManager::getInstance()->sendEffects();
     effectp->markDead() ;//remove it.
 
+    pingMainloopTimeout("Main:qFloaters");
     // Attempt to close all floaters that might be
     // editing things.
     if (gFloaterView)
@@ -4197,6 +4218,7 @@ void LLAppViewer::requestQuit()
         gFloaterView->closeAllChildren(true);
         mClosingFloaters = true;
     }
+    pingMainloopTimeout("Main:qStats");
 
     // Send preferences once, when exiting
     bool include_preferences = true;
@@ -4204,6 +4226,7 @@ void LLAppViewer::requestQuit()
 
     gLogoutTimer.reset();
     mQuitRequested = true;
+    pingMainloopTimeout("Main:LoggingOut");
 }
 
 static bool finish_quit(const LLSD& notification, const LLSD& response)
@@ -4365,6 +4388,7 @@ U32 LLAppViewer::getObjectCacheVersion()
 
 bool LLAppViewer::initCache()
 {
+    LL_PROFILE_ZONE_SCOPED;
     mPurgeCache = false;
     bool read_only = mSecondInstance;
     LLAppViewer::getTextureCache()->setReadOnly(read_only) ;
@@ -4458,19 +4482,22 @@ bool LLAppViewer::initCache()
 
         if (mPurgeCache)
         {
-        LLSplashScreen::update(LLTrans::getString("StartupClearingCache"));
-        purgeCache();
+            LLSplashScreen::update(LLTrans::getString("StartupClearingCache"));
+            purgeCache();
 
             // clear the new C++ file system based cache
             LLDiskCache::getInstance()->clearCache();
-    }
-        else
+        }
+        else if (gSavedSettings.getBOOL("PurgeDiskCacheOnStartup"))
         {
             // purge excessive files from the new file system based cache
             LLDiskCache::getInstance()->purge();
         }
+
+        // Start disk cache purge thread to
+        // purge excessive files from the file system based cache
+        LLAppViewer::getPurgeDiskCacheThread()->start();
     }
-    LLAppViewer::getPurgeDiskCacheThread()->start();
 
     LLSplashScreen::update(LLTrans::getString("StartupInitializingTextureCache"));
 
@@ -4513,6 +4540,7 @@ void LLAppViewer::loadKeyBindings()
 // As per GHI #4498, remove old, stale CEF cache folders from previous sessions
 void LLAppViewer::purgeCefStaleCaches()
 {
+    LL_PROFILE_ZONE_SCOPED;
     // TODO: we really shouldn't use a hard coded name for the cache folder here...
     const std::string browser_parent_cache = gDirUtilp->getExpandedFilename(LL_PATH_CACHE, "cef_cache");
     if (LLFile::isdir(browser_parent_cache))
@@ -4720,6 +4748,8 @@ std::string get_name_cache_filename(const std::string &base_file, const std::str
 
 void LLAppViewer::loadNameCache()
 {
+    LL_PROFILE_ZONE_SCOPED;
+
     // display names cache
     std::string filename = get_name_cache_filename("avatar_name_cache", "xml");
     LL_INFOS("AvNameCache") << filename << LL_ENDL;
@@ -5496,6 +5526,7 @@ void LLAppViewer::outOfMemorySoftQuit()
         LLLFSThread::sLocal->pause();
         gLogoutTimer.reset();
         mQuitRequested = true;
+        destroyMainloopTimeout();
 
         LLError::LLUserWarningMsg::showOutOfMemory();
     }
@@ -5912,10 +5943,16 @@ void LLAppViewer::pingMainloopTimeout(std::string_view state)
 
 F32 LLAppViewer::getMainloopTimeoutSec() const
 {
+    if (isQuitting() || mQuitRequested)
+    {
+        constexpr F32 QUITTING_SECONDS = 240.f;
+        return QUITTING_SECONDS;
+    }
     if (LLStartUp::getStartupState() == STATE_STARTED
         && gAgent.getTeleportState() == LLAgent::TELEPORT_NONE)
     {
-        static LLCachedControl<F32> mainloop_started(gSavedSettings, "MainloopTimeoutStarted", 30.f);
+        // consider making this value match 'disconnected' timout.
+        static LLCachedControl<F32> mainloop_started(gSavedSettings, "MainloopTimeoutStarted", 60.f);
         return mainloop_started();
     }
     else
@@ -5929,6 +5966,11 @@ void LLAppViewer::handleLoginComplete()
 {
     gLoggedInTime.start();
     initMainloopTimeout("Mainloop Init");
+    LLWindow* viewer_window = gViewerWindow->getWindow();
+    if (viewer_window) // in case of a headless client
+    {
+        viewer_window->initWatchdog();
+    }
 
     // Store some data to DebugInfo in case of a freeze.
     gDebugInfo["ClientInfo"]["Name"] = LLVersionInfo::instance().getChannel();

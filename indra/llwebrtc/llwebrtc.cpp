@@ -733,12 +733,17 @@ void LLWebRTCImpl::intSetMute(bool mute, int delay_ms)
     {
         mPeerCustomProcessor->setGain(mMute ? 0.0f : mGain);
     }
+
+    // Sequence counter to prevent race conditions from rapid requests to mute/unmute
+    static std::atomic<uint32_t> mute_sequence(0);
+    uint32_t current_sequence = ++mute_sequence;
+
     if (mMute)
     {
         mWorkerThread->PostDelayedTask(
-            [this]
+            [this, current_sequence]
             {
-                if (mDeviceModule)
+                if (mDeviceModule && (current_sequence == mute_sequence.load()))
                 {
                     mDeviceModule->ForceStopRecording();
                 }
@@ -748,9 +753,9 @@ void LLWebRTCImpl::intSetMute(bool mute, int delay_ms)
     else
     {
         mWorkerThread->PostTask(
-            [this]
+            [this, current_sequence]
             {
-                if (mDeviceModule)
+                if (mDeviceModule && (current_sequence == mute_sequence.load()))
                 {
                     mDeviceModule->InitRecording();
                     mDeviceModule->ForceStartRecording();
@@ -1529,6 +1534,57 @@ void LLWebRTCPeerConnectionImpl::unsetDataObserver(LLWebRTCDataObserver* observe
     {
         mDataObserverList.erase(it);
     }
+}
+
+class LLStatsCollectorCallback : public webrtc::RTCStatsCollectorCallback
+{
+public:
+    typedef std::function<void(const LLWebRTCStatsMap&)> StatsCallback;
+
+    LLStatsCollectorCallback(StatsCallback callback) : callback_(callback) {}
+
+    void OnStatsDelivered(const webrtc::scoped_refptr<const webrtc::RTCStatsReport>& report) override
+    {
+        if (callback_)
+        {
+            // Transform RTCStatsReport stats to simple map
+            LLWebRTCStatsMap stats_map;
+            for (const auto& stats : *report)
+            {
+                std::map<std::string, std::string> stat_attributes;
+
+                // Convert each attribute to string format
+                for (const auto& attribute : stats.Attributes())
+                {
+                    stat_attributes[attribute.name()] = attribute.ToString();
+                }
+                stats_map[stats.id()] = stat_attributes;
+            }
+            callback_(stats_map);
+        }
+    }
+
+private:
+    StatsCallback callback_;
+};
+
+void LLWebRTCPeerConnectionImpl::gatherConnectionStats()
+{
+    if (!mPeerConnection)
+    {
+        return;
+    }
+
+    auto stats_callback = webrtc::make_ref_counted<LLStatsCollectorCallback>(
+        [this](const LLWebRTCStatsMap& generic_stats)
+        {
+            for (auto& observer : mSignalingObserverList)
+            {
+                observer->OnStatsDelivered(generic_stats);
+            }
+        });
+
+     mPeerConnection->GetStats(stats_callback.get());
 }
 
 LLWebRTCImpl * gWebRTCImpl = nullptr;

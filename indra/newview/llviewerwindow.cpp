@@ -2075,10 +2075,6 @@ void LLViewerWindow::initGLDefaults()
     gBox.prerender();
 }
 
-struct MainPanel : public LLPanel
-{
-};
-
 void LLViewerWindow::initBase()
 {
     S32 height = getWindowHeightScaled();
@@ -2116,6 +2112,8 @@ void LLViewerWindow::initBase()
     }
     main_view->setShape(full_window);
     getRootView()->addChild(main_view);
+
+    mMainView = main_view;
 
     // placeholder widget that controls where "world" is rendered
     mWorldViewPlaceholder = main_view->getChildView("world_view_rect")->getHandle();
@@ -4920,6 +4918,19 @@ void LLViewerWindow::saveImageLocal(LLImageFormatted *image, const snapshot_save
     if (image->save(filepath))
     {
         playSnapshotAnimAndSound();
+
+        // Show clickable notification with filepath
+        LLSD args;
+        args["FILEPATH"] = filepath;
+
+        LLSD payload;
+        payload["filepath"] = filepath;
+
+        LLNotificationsUtil::add("SnapshotSavedToComputer",
+                                 args,
+                                 payload.with("respond_on_mousedown", true),
+                                 boost::bind(&LLViewerWindow::onSnapshotNotificationClick, _1, _2));
+
         success_cb();
     }
     else
@@ -4931,6 +4942,16 @@ void LLViewerWindow::saveImageLocal(LLImageFormatted *image, const snapshot_save
 void LLViewerWindow::resetSnapshotLoc()
 {
     gSavedPerAccountSettings.setString("SnapshotBaseDir", std::string());
+}
+
+// static
+void LLViewerWindow::onSnapshotNotificationClick(const LLSD& notification, const LLSD& response)
+{
+    std::string filepath = notification["payload"]["filepath"].asString();
+    if (!filepath.empty())
+    {
+        gDirUtilp->openDir(filepath);
+    }
 }
 
 // static

@@ -1,9 +1,7 @@
 /**
- * @file llfloatersounddevices.h
- * @author Leyla Farazha
- * @brief Sound Preferences used for minimal skin
+ * @file llnearbyvoicemoderation.h
  *
-* $LicenseInfo:firstyear=2011&license=viewerlgpl$
+ * $LicenseInfo:firstyear=2008&license=viewerlgpl$
  * Second Life Viewer Source Code
  * Copyright (C) 2010, Linden Research, Inc.
  *
@@ -25,25 +23,28 @@
  * $/LicenseInfo$
  */
 
-#ifndef LL_LLFLOATERSOUNDDEVICES_H
-#define LL_LLFLOATERSOUNDDEVICES_H
+#pragma once
 
-#include "lltransientdockablefloater.h"
+class LLVOAvatar;
 
-class LLFloaterSoundDevices : public LLTransientDockableFloater
-{
-public:
+class LLNearbyVoiceModeration : public LLSingleton <LLNearbyVoiceModeration> {
+        LLSINGLETON(LLNearbyVoiceModeration);
+        ~LLNearbyVoiceModeration();
 
-    LOG_CLASS(LLFloaterSoundDevices);
+    public:
+        void requestMuteIndividual(const LLUUID& userID, bool mute);
+        void requestMuteAll(bool mute);
 
-    LLFloaterSoundDevices(const LLSD& key);
-    ~LLFloaterSoundDevices();
+        void setMutedInfo(const std::string& channelID, bool mute);
+        bool showMutedNotification(bool is_muted);
+        bool showNotificationIfNeeded();
 
-    bool postBuild() override;
-    void setDocked(bool docked, bool pop_on_undock = true) override;
-    void setFocus(bool b) override;
+        bool isNearbyChatModerator();
+
+    private:
+        LLVOAvatar* getVOAvatarFromId(const LLUUID& id);
+        const std::string getCapUrlFromRegion(LLViewerRegion* region);
+
+        boost::signals2::connection mParcelCallbackConnection;
+        std::map<std::string, bool> mChannelMuteMap;
 };
-
-
-#endif //LL_LLFLOATERSOUNDDEVICES_H
-
