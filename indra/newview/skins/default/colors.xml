@@ -1004,6 +1004,9 @@
     name="PanelGray"
     value="0.27 0.27 0.27 1" />
   <color
+    name="PanelDark"
+    value="0.078 0.078 0.078 1" />
+  <color
     name="PerformanceMid"
     value="1 0.8 0 1" />
   <color

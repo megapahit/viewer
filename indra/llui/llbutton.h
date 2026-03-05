@@ -110,6 +110,7 @@ public:
         //image overlay paddings
         Optional<S32>           image_top_pad;
         Optional<S32>           image_bottom_pad;
+        Optional<S32>           image_overlay_right_delta;
 
         /**
          * Space between image_overlay and label
@@ -371,6 +372,8 @@ protected:
      * Space between image_overlay and label
      */
     S32                         mImgOverlayLabelSpace;
+
+    S32                         mImageOverlayRightDelta;
 
     F32                         mHoverGlowStrength;
     F32                         mCurGlowStrength;
