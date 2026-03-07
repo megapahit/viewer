@@ -28,6 +28,7 @@
 #include "linden_common.h"
 
 #include "llwatchdog.h"
+#include "llmutex.h"
 #include "llthread.h"
 
 constexpr U32 WATCHDOG_SLEEP_TIME_USEC = 1000000U;

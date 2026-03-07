@@ -1,8 +1,7 @@
- /**
- * @file lltexturemanagerbridge.cpp
- * @brief Defined a null texture manager bridge.  Applications must provide their own bridge implementaton.
+/**
+ * @file llnearbyvoicemoderation.h
  *
- * $LicenseInfo:firstyear=2012&license=viewerlgpl$
+ * $LicenseInfo:firstyear=2008&license=viewerlgpl$
  * Second Life Viewer Source Code
  * Copyright (C) 2010, Linden Research, Inc.
  *
@@ -24,11 +23,28 @@
  * $/LicenseInfo$
  */
 
-#include "linden_common.h"
+#pragma once
 
-#include "lltexturemanagerbridge.h"
+class LLVOAvatar;
 
-// Define a null texture manager bridge.  Applications must provide their own bridge implementaton.
-LLTextureManagerBridge* gTextureManagerBridgep = NULL;
+class LLNearbyVoiceModeration : public LLSingleton <LLNearbyVoiceModeration> {
+        LLSINGLETON(LLNearbyVoiceModeration);
+        ~LLNearbyVoiceModeration();
 
+    public:
+        void requestMuteIndividual(const LLUUID& userID, bool mute);
+        void requestMuteAll(bool mute);
 
+        void setMutedInfo(const std::string& channelID, bool mute);
+        bool showMutedNotification(bool is_muted);
+        bool showNotificationIfNeeded();
+
+        bool isNearbyChatModerator();
+
+    private:
+        LLVOAvatar* getVOAvatarFromId(const LLUUID& id);
+        const std::string getCapUrlFromRegion(LLViewerRegion* region);
+
+        boost::signals2::connection mParcelCallbackConnection;
+        std::map<std::string, bool> mChannelMuteMap;
+};
