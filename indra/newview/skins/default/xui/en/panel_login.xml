@@ -6,7 +6,7 @@
   name="panel_login"
   focus_root="true"
   background_visible="true"
-  bg_opaque_color="PanelDark"
+  bg_opaque_color="DkGrayLogin"
   background_opaque="true"
   width="1024">
   <panel.string
@@ -17,13 +17,40 @@
     name="sign_up_url">
     https://join.secondlife.com/
   </panel.string>
-  <panel
-   follows="left|top"
-   name="ui_container"
-   width="300"
-   left="0"
+  <layout_stack
+   follows="all"
+   layout="topleft"
+   orientation="horizontal"
+   name="main_stack"
+   border_size="0"
+   animate="false"
    top="0"
+   left="0"
    height="768">
+    <layout_panel
+     auto_resize="true"
+     user_resize="false"
+     layout="topleft"
+     name="left_container"
+     background_visible="true"
+     bg_opaque_color="DkGrayLogin"
+     background_opaque="true"
+     min_width="2"
+     max_width="200"
+     expanded_min_dim="2"
+     width="40">
+    </layout_panel>
+    <layout_panel
+     auto_resize="false"
+     user_resize="false"
+     layout="topleft" 
+     name="ui_container"
+     min_width="300"
+     max_width="300"
+     width="300"
+     background_visible="true"
+     bg_opaque_color="PanelDark"
+     background_opaque="true">
     <icon
      height="77"
      width="160"
@@ -240,17 +267,25 @@
      left="40"
      top_pad="25"
      pad_bottom="1" />
-  </panel>
-  <web_browser
-    tab_stop="false"
-    trusted_content="true"
-    bg_opaque_color="Black"
-    border_visible="false"
-    follows="all"
-    left="300"
-    name="login_html"
-    start_url=""
-    top="0"
-    height="768"
-    width="724" />
+    </layout_panel>
+    <layout_panel
+     auto_resize="true"
+     layout="topleft"
+     name="web_container"
+     min_width="500"
+     width="810">
+      <web_browser
+        tab_stop="false"
+        trusted_content="true"
+        bg_opaque_color="Black"
+        border_visible="false"
+        follows="all"
+        left="0"
+        top="0"
+        right="-1"
+        bottom="-1"
+        name="login_html"
+        start_url="" />
+    </layout_panel>
+  </layout_stack>
 </panel>
