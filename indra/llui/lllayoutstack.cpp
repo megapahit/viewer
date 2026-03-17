@@ -119,7 +119,7 @@ S32 LLLayoutPanel::getTargetDim() const
 void LLLayoutPanel::setTargetDim(S32 value)
 {
     value = llmin(value, mMaxDim);
-    
+
     LLRect new_rect(getRect());
     if (mOrientation == LLLayoutStack::HORIZONTAL)
     {

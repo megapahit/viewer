@@ -110,6 +110,8 @@ LLButton::Params::Params()
     commit_on_capture_lost("commit_on_capture_lost", false),
     display_pressed_state("display_pressed_state", true),
     use_draw_context_alpha("use_draw_context_alpha", true),
+    draw_focus_border("draw_focus_border", true),
+    hover_hand_cursor("hover_hand_cursor", false),
     badge("badge"),
     handle_right_mouse("handle_right_mouse"),
     held_down_delay("held_down_delay"),
@@ -181,6 +183,8 @@ LLButton::LLButton(const LLButton::Params& p)
     mMouseUpSignal(NULL),
     mHeldDownSignal(NULL),
     mUseDrawContextAlpha(p.use_draw_context_alpha),
+    mDrawFocusBorder(p.draw_focus_border),
+    mHoverHandCursor(p.hover_hand_cursor),
     mHandleRightMouse(p.handle_right_mouse),
     mFlashingTimer(NULL)
 {
@@ -655,7 +659,7 @@ bool LLButton::handleHover(S32 x, S32 y, MASK mask)
         }
 
         // We only handle the click if the click both started and ended within us
-        getWindow()->setCursor(UI_CURSOR_ARROW);
+        getWindow()->setCursor(mHoverHandCursor ? UI_CURSOR_HAND : UI_CURSOR_ARROW);
         LL_DEBUGS("UserInput") << "hover handled by " << getName() << LL_ENDL;
     }
     return true;
@@ -842,7 +846,7 @@ void LLButton::draw()
         label_color = ll::ui::SearchableControl::getHighlightFontColor();
 
     // overlay with keyboard focus border
-    if (hasFocus())
+    if (hasFocus() && mDrawFocusBorder)
     {
         drawBorder(imagep, gFocusMgr.getFocusColor() % alpha, gFocusMgr.getFocusFlashWidth());
     }

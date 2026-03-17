@@ -133,7 +133,9 @@ public:
         Optional<F32>               hover_glow_amount;
         Optional<TimeIntervalParam> held_down_delay;
 
-        Optional<bool>              use_draw_context_alpha;
+        Optional<bool>              use_draw_context_alpha,
+                                    draw_focus_border,
+                                    hover_hand_cursor;
 
         Optional<LLBadge::Params>   badge;
 
@@ -367,6 +369,8 @@ protected:
     S32                         mImageOverlayBottomPad;
 
     bool                        mUseDrawContextAlpha;
+    bool                        mDrawFocusBorder;
+    bool                        mHoverHandCursor;
 
     /*
      * Space between image_overlay and label
