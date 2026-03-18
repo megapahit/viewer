@@ -2857,9 +2857,33 @@ void LLMeshUploadThread::packModelIntance(
                     // to ensure accurate price estimation. If not included, the server will assume all
                     // textures are 1024 x 1024, which could lead to a low estimate.
                     LLSD info = LLSD::emptyMap();
-                    info["width"] = texture->getFullWidth();
-                    info["height"] = texture->getFullHeight();
+
+                    S32 texture_width = 0;
+                    S32 texture_height = 0;
+                    if (texture->hasSavedRawImage())
+                    {
+                        LLImageDataLock lock(texture->getSavedRawImage());
+
+                        LLPointer<LLImageJ2C> upload_file = LLViewerTextureList::convertToUploadFile(texture->getSavedRawImage());
+
+                        if (!upload_file.isNull() && upload_file->getDataSize() && !upload_file->isBufferInvalid())
+                        {
+                            texture_width  = upload_file->getWidth();
+                            texture_height = upload_file->getHeight();
+                        }
+                    }
+
+                    if ((texture_width <= 0) || (texture_height <= 0))
+                    {
+                        // Fall back to the texture's stored dimensions if we can't get dimensions from the raw image.
+                        texture_width = texture->getFullWidth();
+                        texture_height = texture->getFullHeight();
+                    }
+
+                    info["width"] = texture_width;
+                    info["height"] = texture_height;
                     res["texture_info"][texture_num] = info;
+                    res["texture_list"][texture_num] = LLSD::Binary(); // empty binary to indicate texture is not included, for older server compatibility
                 }
                 // store indexes for error handling;
                 texture_list_dest.push_back(material.mDiffuseMapFilename);
