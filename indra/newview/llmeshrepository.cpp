@@ -2847,8 +2847,20 @@ void LLMeshUploadThread::packModelIntance(
                 texture_index.find(texture) == texture_index.end())
             {
                 texture_index[texture] = texture_num;
-                std::string str = texture_str.str();
-                res["texture_list"][texture_num] = LLSD::Binary(str.begin(), str.end());
+                if (include_textures)
+                {
+                    std::string str = texture_str.str();
+                    res["texture_list"][texture_num] = LLSD::Binary(str.begin(), str.end());
+                }
+                else
+                {   // When not including the whole texture, we need to send some metadata about the image
+                    // to ensure accurate price estimation. If not included, the server will assume all
+                    // textures are 1024 x 1024, which could lead to a low estimate.
+                    LLSD info = LLSD::emptyMap();
+                    info["width"] = texture->getFullWidth();
+                    info["height"] = texture->getFullHeight();
+                    res["texture_info"][texture_num] = info;
+                }
                 // store indexes for error handling;
                 texture_list_dest.push_back(material.mDiffuseMapFilename);
                 texture_num++;
@@ -2881,8 +2893,8 @@ void LLMeshUploadThread::wholeModelToLLSD(LLSD& dest, std::vector<std::string>& 
     LLSD res;
     if (mDestinationFolderId.isNull())
     {
-    result["folder_id"] = gInventory.findUserDefinedCategoryUUIDForType(LLFolderType::FT_OBJECT);
-    result["texture_folder_id"] = gInventory.findUserDefinedCategoryUUIDForType(LLFolderType::FT_TEXTURE);
+        result["folder_id"] = gInventory.findUserDefinedCategoryUUIDForType(LLFolderType::FT_OBJECT);
+        result["texture_folder_id"] = gInventory.findUserDefinedCategoryUUIDForType(LLFolderType::FT_TEXTURE);
     }
     else
     {
