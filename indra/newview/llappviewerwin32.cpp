@@ -443,9 +443,10 @@ int APIENTRY WINMAIN(HINSTANCE hInstance,
         LLControlGroup settings("global");
         if (settings.loadFromFile(user_settings_path))
         {
-            if (settings.controlExists("LastInstallVersion"))
+            // If user reinstalls or updates, we want to recheck for nsis leftovers.
+            if (settings.controlExists("PreviousInstallChecked"))
             {
-                settings.setString("LastInstallVersion", std::string());
+                settings.setBOOL("PreviousInstallChecked", false);
             }
             settings.saveToFile(user_settings_path, true);
         }

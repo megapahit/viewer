@@ -2619,14 +2619,12 @@ void release_notes_coro(const std::string url)
 void uninstall_nsis_if_required()
 {
 #if LL_VELOPACK && LL_WINDOWS
-    std::string last_install_ver = gSavedSettings.getString("LastInstallVersion");
-    if (!last_install_ver.empty())
+    bool checked_for_legacy_install = gSavedSettings.getBOOL("PreviousInstallChecked");
+    if (checked_for_legacy_install)
     {
         return;
     }
-    LLVersionInfo* ver_inst = LLVersionInfo::getInstance();
-    gSavedSettings.setString("LastInstallVersion",
-        ver_inst->getChannelAndVersion());
+    gSavedSettings.setBOOL("PreviousInstallChecked", true);
 
     LL_INFOS() << "Looking for previous NSIS installs" << LL_ENDL;
 
@@ -2639,6 +2637,8 @@ void uninstall_nsis_if_required()
     {
         return;
     }
+
+    LLVersionInfo* ver_inst = LLVersionInfo::getInstance();
 
     if (found_major > ver_inst->getMajor())
     {
@@ -2660,8 +2660,10 @@ void uninstall_nsis_if_required()
         LL_INFOS() << "Found installed nsis version that is newer" << found_major << "." << found_minor << "." << found_patch << "." << found_build << LL_ENDL;
         return;
     }
+
     // Assume that nsis is going to be something like x.x.x, while velopack is x.x.(x+1),
     // so there is no point to check build.
+    LL_INFOS() << "Found NSIS install " << found_major << "." << found_minor << "." << found_patch << "." << found_build << LL_ENDL;
 
     clear_nsis_links();
 
