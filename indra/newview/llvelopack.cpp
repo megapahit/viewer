@@ -458,7 +458,11 @@ static void parse_version(const wchar_t* version_str, int& major, int& minor, in
     swscanf(version_str, L"%d.%d.%d.%llu", &major, &minor, &patch, &build);
 }
 
-bool get_nsis_uninstaller_path(wchar_t* path_buffer, DWORD bufSize, S32 cur_major_ver, S32 cur_minor_ver, S32 cur_patch_ver, U64 cur_build_ver)
+bool get_nsis_version(
+    int& nsis_major,
+    int& nsis_minor,
+    int& nsis_patch,
+    uint64_t& nsis_build)
 {
     // Test for presence of NSIS viewer registration, then
     // attempt to read uninstall info
@@ -483,23 +487,12 @@ bool get_nsis_uninstaller_path(wchar_t* path_buffer, DWORD bufSize, S32 cur_majo
         return false;
     }
 
-    int nsis_major = 0, nsis_minor = 0, nsis_patch = 0;
-    uint64_t nsis_build = 0;
     parse_version(version_buf, nsis_major, nsis_minor, nsis_patch, nsis_build);
 
-    // Compare numerically
-    if ((nsis_major > cur_major_ver) ||
-        (nsis_major == cur_major_ver && nsis_minor > cur_minor_ver) ||
-        (nsis_major == cur_major_ver && nsis_minor == cur_minor_ver && nsis_patch > cur_patch_ver) ||
-         // Assume that bigger build number means newer version, which is not always true but works for our purposes
-        (nsis_major == cur_major_ver && nsis_minor == cur_minor_ver && nsis_patch == cur_patch_ver && nsis_build > cur_build_ver))
-    {
-        LL_INFOS() << "Found installed nsis version that is newer" << nsis_major << "." << nsis_minor << "." << nsis_patch << LL_ENDL;
-        RegCloseKey(hkey);
-        return false;
-    }
-
-    LONG rv = RegGetValueW(hkey, nullptr, L"UninstallString", RRF_RT_REG_SZ, &type, path_buffer, &bufSize);
+    // Make sure it actually exists and not a dead entry.
+    wchar_t path_buffer[MAX_PATH] = { 0 };
+    DWORD path_buf_size = sizeof(path_buffer);
+    LONG rv = RegGetValueW(hkey, nullptr, L"UninstallString", RRF_RT_REG_SZ, &type, path_buffer, &path_buf_size);
     RegCloseKey(hkey);
     if (rv != ERROR_SUCCESS)
     {

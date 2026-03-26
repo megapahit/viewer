@@ -2628,66 +2628,46 @@ void uninstall_nsis_if_required()
     gSavedSettings.setString("LastInstallVersion",
         ver_inst->getChannelAndVersion());
 
-    if (LLNotifications::instance().getIgnored("PromptRemoveNsisInstallation"))
-    {
-        // By default 'ignore' returns default button, which is uninstall
-        // for PromptRemoveNsisInstallation, but while we want the button
-        // to be the default, we don't want a scary UAC without a notice
-        // as a default action, so if this notification is ignored,
-        // we will treat it as if user is going to cancel the uninstall.
-        return;
-    }
-
     LL_INFOS() << "Looking for previous NSIS installs" << LL_ENDL;
 
-    wchar_t buffer[MAX_PATH];
-    if (!get_nsis_uninstaller_path( buffer,
-                                    MAX_PATH,
-                                    ver_inst->getMajor(),
-                                    ver_inst->getMinor(),
-                                    ver_inst->getPatch(),
-                                    ver_inst->getBuild())
-        )
+    S32 found_major = 0;
+    S32 found_minor = 0;
+    S32 found_patch = 0;
+    U64 found_build = 0;
+
+    if (!get_nsis_version(found_major, found_minor, found_patch, found_build))
     {
         return;
     }
 
-    // Clean legacy links regardless of whether we will proceed with uninstall or not.
+    if (found_major > ver_inst->getMajor())
+    {
+        LL_INFOS() << "Found installed nsis version that is newer" << found_major << "." << found_minor << "." << found_patch << "." << found_build << LL_ENDL;
+        return;
+    }
+
+    if (found_major == ver_inst->getMajor()
+        && found_minor > ver_inst->getMinor())
+    {
+        LL_INFOS() << "Found installed nsis version that is newer" << found_major << "." << found_minor << "." << found_patch << "." << found_build << LL_ENDL;
+        return;
+    }
+
+    if (found_major == ver_inst->getMajor()
+        && found_minor == ver_inst->getMinor()
+        && found_patch > ver_inst->getPatch())
+    {
+        LL_INFOS() << "Found installed nsis version that is newer" << found_major << "." << found_minor << "." << found_patch << "." << found_build << LL_ENDL;
+        return;
+    }
+    // Assume that nsis is going to be something like x.x.x, while velopack is x.x.(x+1),
+    // so there is no point to check build.
+
     clear_nsis_links();
 
-    // Compose command line: "<uninstaller_path>" /S /clearreg
-    std::wstring params = L"\"";
-    params += buffer;
-    params += L"\"";
-    // params += L" /S /clearreg"; // silent uninstall and clear registry entries
-
-    LLNotificationsUtil::add("PromptRemoveNsisInstallation", LLSD(), LLSD(),
-        [params](const LLSD& notification, const LLSD& response)
-    {
-        S32 option = LLNotificationsUtil::getSelectedOption(notification, response);
-        if (option == 1) // cancel
-        {
-            return;
-        }
-
-        LL_INFOS() << "Triggering NSIS uninstall from " << ll_convert_wide_to_string(params) << LL_ENDL;
-
-        // Launch uninstaller using explorer.exe
-        SHELLEXECUTEINFOW sei = { 0 };
-        sei.cbSize = sizeof(sei);
-        sei.fMask = SEE_MASK_DEFAULT;
-        sei.hwnd = NULL;
-        sei.lpVerb = L"runas"; // Request elevation
-        sei.lpFile = L"explorer.exe";
-        sei.lpParameters = params.c_str();
-
-        sei.nShow = SW_HIDE;
-
-        if (!ShellExecuteExW(&sei))
-        {
-            LL_WARNS("AppInit") << "Failed to launch NSIS uninstaller, error code: " << GetLastError() << LL_ENDL;
-        }
-    });
+    LLSD args;
+    args["VERSION"] = llformat("%d.%d.%d", found_major, found_minor, found_patch);
+    LLNotificationsUtil::add("FoundLegacyNsisInstallation", args);
 #endif
 }
 
