@@ -227,9 +227,9 @@ execute_process(
     COMMAND lipo libxml2.16.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libxml2.16.dylib
-    COMMAND lipo libz.1.3.1.dylib
+    COMMAND lipo libz.1.3.2.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libz.1.3.1.dylib
+        -output libz.1.3.2.dylib
     WORKING_DIRECTORY ${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Frameworks
     ERROR_QUIET
     )
@@ -281,7 +281,7 @@ execute_process(
         Frameworks/libvorbisenc.2.dylib
         Frameworks/libvorbisfile.3.dylib
         Frameworks/libxml2.16.dylib
-        Frameworks/libz.1.3.1.dylib
+        Frameworks/libz.1.3.2.dylib
         Resources/libndofdev.dylib
         Resources/SLPlugin.app/Contents/Frameworks/media_plugin_cef.dylib
         Resources/SLPlugin.app/Contents/Frameworks/media_plugin_libvlc.dylib
