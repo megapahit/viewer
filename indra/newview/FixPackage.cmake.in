@@ -170,15 +170,15 @@ execute_process(
     COMMAND lipo libiconv.2.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libiconv.2.dylib
-    COMMAND lipo libicudata.76.1.dylib
+    COMMAND lipo libicudata.78.3.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libicudata.76.1.dylib
-    COMMAND lipo libicui18n.76.1.dylib
+        -output libicudata.78.3.dylib
+    COMMAND lipo libicui18n.78.3.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libicui18n.76.1.dylib
-    COMMAND lipo libicuuc.76.1.dylib
+        -output libicui18n.78.3.dylib
+    COMMAND lipo libicuuc.78.3.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libicuuc.76.1.dylib
+        -output libicuuc.78.3.dylib
     COMMAND lipo libjpeg.8.3.2.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libjpeg.8.3.2.dylib
@@ -265,9 +265,9 @@ execute_process(
         Frameworks/libfreetype.6.dylib
         Frameworks/libhunspell-1.7.0.dylib
         Frameworks/libiconv.2.dylib
-        Frameworks/libicudata.76.1.dylib
-        Frameworks/libicui18n.76.1.dylib
-        Frameworks/libicuuc.76.1.dylib
+        Frameworks/libicudata.78.3.dylib
+        Frameworks/libicui18n.78.3.dylib
+        Frameworks/libicuuc.78.3.dylib
         Frameworks/libjpeg.8.3.2.dylib
         Frameworks/libllwebrtc.dylib
         Frameworks/liblzma.5.dylib
