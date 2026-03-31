@@ -185,9 +185,6 @@ execute_process(
     COMMAND lipo libllwebrtc.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libllwebrtc.dylib
-    COMMAND lipo liblzma.5.dylib
-        -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output liblzma.5.dylib
     COMMAND lipo libminizip.1.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libminizip.1.dylib
@@ -270,7 +267,6 @@ execute_process(
         Frameworks/libicuuc.78.3.dylib
         Frameworks/libjpeg.8.3.2.dylib
         Frameworks/libllwebrtc.dylib
-        Frameworks/liblzma.5.dylib
         Frameworks/libminizip.1.dylib
         Frameworks/libncurses.6.dylib
         Frameworks/libndofdev.dylib
