@@ -80,18 +80,18 @@ file(CREATE_LINK
     SYMBOLIC
     )
 file(CREATE_LINK
-    "../../../../Frameworks/libicudata.76.dylib"
-    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicudata.76.dylib"
+    "../../../../Frameworks/libicudata.78.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicudata.78.dylib"
     SYMBOLIC
     )
 file(CREATE_LINK
-    "../../../../Frameworks/libicui18n.76.dylib"
-    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicui18n.76.dylib"
+    "../../../../Frameworks/libicui18n.78.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicui18n.78.dylib"
     SYMBOLIC
     )
 file(CREATE_LINK
-    "../../../../Frameworks/libicuuc.76.dylib"
-    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicuuc.76.dylib"
+    "../../../../Frameworks/libicuuc.78.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicuuc.78.dylib"
     SYMBOLIC
     )
 file(CREATE_LINK
