@@ -80,18 +80,18 @@ file(CREATE_LINK
     SYMBOLIC
     )
 file(CREATE_LINK
-    "../../../../Frameworks/libicudata.76.dylib"
-    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicudata.76.dylib"
+    "../../../../Frameworks/libicudata.78.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicudata.78.dylib"
     SYMBOLIC
     )
 file(CREATE_LINK
-    "../../../../Frameworks/libicui18n.76.dylib"
-    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicui18n.76.dylib"
+    "../../../../Frameworks/libicui18n.78.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicui18n.78.dylib"
     SYMBOLIC
     )
 file(CREATE_LINK
-    "../../../../Frameworks/libicuuc.76.dylib"
-    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicuuc.76.dylib"
+    "../../../../Frameworks/libicuuc.78.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicuuc.78.dylib"
     SYMBOLIC
     )
 file(CREATE_LINK
@@ -158,9 +158,9 @@ execute_process(
     COMMAND lipo libbz2.1.0.8.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libbz2.1.0.8.dylib
-    COMMAND lipo libexpat.1.11.1.dylib
+    COMMAND lipo libexpat.1.11.2.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libexpat.1.11.1.dylib
+        -output libexpat.1.11.2.dylib
     COMMAND lipo libfreetype.6.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libfreetype.6.dylib
@@ -170,24 +170,21 @@ execute_process(
     COMMAND lipo libiconv.2.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libiconv.2.dylib
-    COMMAND lipo libicudata.76.1.dylib
+    COMMAND lipo libicudata.78.3.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libicudata.76.1.dylib
-    COMMAND lipo libicui18n.76.1.dylib
+        -output libicudata.78.3.dylib
+    COMMAND lipo libicui18n.78.3.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libicui18n.76.1.dylib
-    COMMAND lipo libicuuc.76.1.dylib
+        -output libicui18n.78.3.dylib
+    COMMAND lipo libicuuc.78.3.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libicuuc.76.1.dylib
+        -output libicuuc.78.3.dylib
     COMMAND lipo libjpeg.8.3.2.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libjpeg.8.3.2.dylib
     COMMAND lipo libllwebrtc.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libllwebrtc.dylib
-    COMMAND lipo liblzma.5.dylib
-        -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output liblzma.5.dylib
     COMMAND lipo libminizip.1.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libminizip.1.dylib
@@ -227,12 +224,12 @@ execute_process(
     COMMAND lipo libvorbisfile.3.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libvorbisfile.3.dylib
-    COMMAND lipo libxml2.2.dylib
+    COMMAND lipo libxml2.16.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libxml2.2.dylib
-    COMMAND lipo libz.1.3.1.dylib
+        -output libxml2.16.dylib
+    COMMAND lipo libz.1.3.2.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libz.1.3.1.dylib
+        -output libz.1.3.2.dylib
     WORKING_DIRECTORY ${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Frameworks
     ERROR_QUIET
     )
@@ -261,16 +258,15 @@ execute_process(
         Frameworks/libbrotlidec.1.2.0.dylib
         Frameworks/libbz2.1.0.8.dylib
         Frameworks/libdiscord_partner_sdk.dylib
-        Frameworks/libexpat.1.11.1.dylib
+        Frameworks/libexpat.1.11.2.dylib
         Frameworks/libfreetype.6.dylib
         Frameworks/libhunspell-1.7.0.dylib
         Frameworks/libiconv.2.dylib
-        Frameworks/libicudata.76.1.dylib
-        Frameworks/libicui18n.76.1.dylib
-        Frameworks/libicuuc.76.1.dylib
+        Frameworks/libicudata.78.3.dylib
+        Frameworks/libicui18n.78.3.dylib
+        Frameworks/libicuuc.78.3.dylib
         Frameworks/libjpeg.8.3.2.dylib
         Frameworks/libllwebrtc.dylib
-        Frameworks/liblzma.5.dylib
         Frameworks/libminizip.1.dylib
         Frameworks/libncurses.6.dylib
         Frameworks/libndofdev.dylib
@@ -284,8 +280,8 @@ execute_process(
         Frameworks/libvorbis.0.dylib
         Frameworks/libvorbisenc.2.dylib
         Frameworks/libvorbisfile.3.dylib
-        Frameworks/libxml2.2.dylib
-        Frameworks/libz.1.3.1.dylib
+        Frameworks/libxml2.16.dylib
+        Frameworks/libz.1.3.2.dylib
         Resources/libndofdev.dylib
         Resources/SLPlugin.app/Contents/Frameworks/media_plugin_cef.dylib
         Resources/SLPlugin.app/Contents/Frameworks/media_plugin_libvlc.dylib
