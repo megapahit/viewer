@@ -345,6 +345,7 @@ public:
                 inner_->InitRecording();
                 inner_->StartRecording();
             }
+            inner_->InitPlayout();
             inner_->StartPlayout();
         }
     }
