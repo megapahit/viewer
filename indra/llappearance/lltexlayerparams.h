@@ -27,6 +27,7 @@
 #ifndef LL_LLTEXLAYERPARAMS_H
 #define LL_LLTEXLAYERPARAMS_H
 
+#include <atomic>
 #include "llpointer.h"
 #include "v4color.h"
 #include "llviewervisualparam.h"
