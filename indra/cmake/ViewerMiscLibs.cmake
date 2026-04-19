@@ -20,4 +20,5 @@ if (${LINUX_DISTRO} MATCHES debian AND CMAKE_SYSTEM_PROCESSOR MATCHES x86_64 OR 
 use_prebuilt_binary(nanosvg)
 endif ()
 use_prebuilt_binary(viewer-fonts)
+use_prebuilt_binary(google-fonts)
 use_prebuilt_binary(emoji_shortcodes)
