@@ -59,6 +59,7 @@
      image_hover_unselected="PushButton_Login_Over"
      label_color="White"
      top_pad ="15"
+     pad_bottom="1"
      width="140"/>
     <button
      follows="top|left|right"
@@ -66,6 +67,7 @@
      label="Later"
      layout="topleft"
      left_pad="9"
+     pad_bottom="1"
      name="close_btn"
      width="90"/>
     <icon
