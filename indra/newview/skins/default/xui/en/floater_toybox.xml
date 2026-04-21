@@ -16,7 +16,6 @@
   width="650">
   <text
     follows="left|top"
-    font="SansSerifMedium"
     valign="top"
     halign="left"
     height="20"
@@ -31,7 +30,6 @@
   </text>
   <text
     follows="left|top"
-    font="SansSerifMedium"
     valign="top"
     halign="left"
     height="20"
