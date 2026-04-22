@@ -170,7 +170,7 @@ LLFontDescriptor LLFontDescriptor::normalize() const
     if (new_size != s_template_string && new_size.empty() && findSubString(new_name,"Monospace"))
         new_size = "Monospace";
     if (new_size.empty())
-        new_size = "Medium";
+        new_size = "Small";
 
     if (removeSubString(new_name,"Bold"))
         new_style |= LLFontGL::BOLD;

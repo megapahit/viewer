@@ -1407,7 +1407,7 @@
           follows="top|left"
           height="15"
           layout="topleft"
-          left="220"
+          left="240"
           name="pelvis_offset_label"
           text_color="White"
           top="8"
@@ -1421,12 +1421,13 @@
           max_val="3.0"
           name="pelvis_offset"
           top_pad="10"
+          left="340"
           value="0.0"
           width="80"/>
         <text
           follows="top|left"
           height="17"
-          left="425"
+          left="435"
           name="skin_too_many_joints"
           text_color="Orange"
           top="7"
@@ -1437,7 +1438,7 @@
         <text
           follows="top|left"
           height="32"
-          left="425"
+          left="435"
           name="skin_unknown_joint"
           text_color="Orange"
           top="8"
