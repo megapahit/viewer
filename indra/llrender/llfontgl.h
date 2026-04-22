@@ -204,6 +204,7 @@ public:
     static LLFontGL* getFontSansSerifSmallBold();
     static LLFontGL* getFontSansSerifSmallItalic();
     static LLFontGL* getFontSansSerif();
+    static LLFontGL* getFontSansSerifMedium();
     static LLFontGL* getFontSansSerifBig();
     static LLFontGL* getFontSansSerifHuge();
     static LLFontGL* getFontSansSerifBold();
