@@ -31,6 +31,9 @@
 #include "lltrace.h"
 #include "lltreeiterators.h"
 #include "llprocessor.h"
+#if _M_ARM64
+#include "llmutex.h"
+#endif
 
 #if LL_X86 || LL_X86_64
 #if LL_WINDOWS
