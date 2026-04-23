@@ -1143,6 +1143,9 @@ void LLDir::openDir(const std::string& filepath)
     // Note: Most file managers don't support file selection, so we open the directory
     params.executable = "/usr/bin/xdg-open";
     params.args.add(dir_path);
+#elif __FreeBSD__
+    params.executable = "/usr/local/bin/xdg-open";
+    params.args.add(dir_path);
 #else
     LL_WARNS() << "Platform not supported for file browser opening" << LL_ENDL;
     return;
