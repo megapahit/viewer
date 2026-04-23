@@ -75,7 +75,11 @@ LLFileSystem::LLFileSystem(const LLUUID& file_id, const LLAssetType::EType file_
 bool LLFileSystem::getExists(const LLUUID& file_id, const LLAssetType::EType file_type)
 {
     LL_PROFILE_ZONE_SCOPED;
+#if LL_WINDOWS
+    const auto filename = ll_convert<std::wstring>(LLDiskCache::metaDataToFilepath(file_id, file_type));
+#else
     const std::string filename = LLDiskCache::metaDataToFilepath(file_id, file_type);
+#endif
 
     boost::system::error_code ec;
     if (boost::filesystem::exists(filename, ec) && boost::filesystem::is_regular_file(filename, ec))
@@ -117,7 +121,11 @@ bool LLFileSystem::renameFile(const LLUUID& old_file_id, const LLAssetType::ETyp
 // static
 S32 LLFileSystem::getFileSize(const LLUUID& file_id, const LLAssetType::EType file_type)
 {
+#if LL_WINDOWS
+    const auto filename = ll_convert<std::wstring>(LLDiskCache::metaDataToFilepath(file_id, file_type));
+#else
     const std::string filename = LLDiskCache::metaDataToFilepath(file_id, file_type);
+#endif
 
     boost::system::error_code ec;
     if (boost::filesystem::exists(filename, ec) && boost::filesystem::is_regular_file(filename, ec))
