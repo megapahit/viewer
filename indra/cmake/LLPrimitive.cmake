@@ -106,7 +106,7 @@ if (TRUE)
       )
     if (WINDOWS)
       execute_process(
-        COMMAND MSBuild.exe ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r10/Project.sln -p:Configuration=${CMAKE_BUILD_TYPE}
+        COMMAND MSBuild.exe ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r10/Project.slnx -p:Configuration=${CMAKE_BUILD_TYPE}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r10
         OUTPUT_VARIABLE colladadom_installed
         )
