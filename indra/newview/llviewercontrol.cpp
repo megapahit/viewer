@@ -112,6 +112,37 @@ static bool handleRenderAvatarMouselookChanged(const LLSD& newvalue)
     return true;
 }
 
+static bool handleRenderTextureQualityChanged(const LLSD& newvalue)
+{
+    // 0=Low, 1=Medium, 2=High, 3=Ultra. Drives max-resolution and per-channel
+    // streaming aggressiveness. Channel order is X=normals, Y=diffuse,
+    // Z=specular/metallic, W=emissive (matches TextureChannelPriority).
+    U32 quality = (U32)newvalue.asInteger();
+    U32 max_res = 2048;
+    LLVector4 channel_priority(5.f, 7.5f, 20.f, 7.5f);
+    switch (quality)
+    {
+    case 0: // Low
+        max_res = 1024;
+        channel_priority.setVec(20.f, 30.f, 80.f, 30.f);
+        break;
+    case 1: // Medium
+        channel_priority.setVec(10.f, 15.f, 40.f, 15.f);
+        break;
+    case 2: // High
+        // defaults above
+        break;
+    case 3: // Ultra
+    default:
+        if (quality > 3) quality = 3;
+        channel_priority.setVec(1.f, 1.f, 1.f, 1.f);
+        break;
+    }
+    gSavedSettings.setU32("RenderMaxTextureResolution", max_res);
+    gSavedSettings.setVector4("TextureChannelPriority", channel_priority);
+    return true;
+}
+
 static bool handleRenderFarClipChanged(const LLSD& newvalue)
 {
     if (LLStartUp::getStartupState() >= STATE_STARTED)
@@ -815,6 +846,7 @@ void settings_setup_listeners()
 {
     LL_PROFILE_ZONE_SCOPED;
     setting_setup_signal_listener(gSavedSettings, "FirstPersonAvatarVisible", handleRenderAvatarMouselookChanged);
+    setting_setup_signal_listener(gSavedSettings, "RenderTextureQuality", handleRenderTextureQualityChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderFarClip", handleRenderFarClipChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderTerrainScale", handleTerrainScaleChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderTerrainPBRScale", handlePBRTerrainScaleChanged);

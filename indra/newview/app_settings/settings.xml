@@ -8005,13 +8005,24 @@
   <key>RenderMaxTextureResolution</key>
   <map>
     <key>Comment</key>
-    <string>Maximum texture resolution to download for non-boosted textures.</string>
+    <string>Maximum texture resolution to download for non-boosted textures. Driven by RenderTextureQuality.</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>
     <string>U32</string>
     <key>Value</key>
     <integer>2048</integer>
+  </map>
+  <key>RenderTextureQuality</key>
+  <map>
+    <key>Comment</key>
+    <string>Texture quality preset: 0=Low, 1=Medium, 2=High, 3=Ultra. Drives RenderMaxTextureResolution and TextureChannelPriority.</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>U32</string>
+    <key>Value</key>
+    <integer>2</integer>
   </map>
     <key>RenderDownScaleMethod</key>
     <map>
