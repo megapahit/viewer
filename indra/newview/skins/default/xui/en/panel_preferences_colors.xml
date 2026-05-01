@@ -520,12 +520,21 @@
          value="default"
          width="75" />
         <radio_item
-          label="gold"
+          label="classic"
           left_pad="0"
           layout="topleft"
           top_delta="0"
           height="16"
           name="radio2"
+          value="classic"
+          width="75" />
+        <radio_item
+          label="gold"
+          left_pad="0"
+          layout="topleft"
+          top_delta="0"
+          height="16"
+          name="radio3"
           value="gold"
           width="75" />
         <radio_item
@@ -534,7 +543,7 @@
          layout="topleft"
          top_delta="0"
          height="16"
-         name="radio3"
+         name="radio4"
          value="contrast"
          width="75" />
         <radio_item
@@ -543,7 +552,7 @@
          layout="topleft"
          top_delta="0"
          height="16"
-         name="radio2"
+         name="radio5"
          value="contrast_gold"
          width="75" />
         <radio_group.commit_callback

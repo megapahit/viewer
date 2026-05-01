@@ -72,12 +72,12 @@
           <icon
            height="77"
            width="160"
-           image_name="login_sl_logo_horizontal"
+           image_name="login_mp_logo_horizontal"
            layout="topleft"
            follows="left|top"
            left="70"
            top="39"
-           name="sl_logo_small" />
+           name="mp_logo_small" />
           <icon
            left="40"
            top_pad="30"
