@@ -274,6 +274,10 @@ target_link_libraries(llui
 
 include(LibraryInstall)
 
+if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
+    set_source_files_properties(llxuiparser.cpp PROPERTIES COMPILE_FLAGS -Wno-sfinae-incomplete)
+endif ()
+
 # Add tests
 if(LL_TESTS)
   include(LLAddBuildTest)
