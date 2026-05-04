@@ -163,7 +163,7 @@ elseif (WINDOWS)
             ${prefix_result}/../bin/vorbis.dll
             ${prefix_result}/../bin/vorbisenc.dll
             ${prefix_result}/../bin/vorbisfile.dll
-            ${prefix_result}/../bin/zlib1.dll
+            ${prefix_result}/../bin/z.dll
         DESTINATION .
         )
 
