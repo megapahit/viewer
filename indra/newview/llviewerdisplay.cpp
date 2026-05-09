@@ -1109,7 +1109,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
     if (gShaderProfileFrame)
     {
         gShaderProfileFrame = false;
-        boost::json::value stats{ boost::json::object_kind };
+        boost::json::value stats( boost::json::object_kind );
         getProfileStatsContext(stats.as_object());
         LLGLSLShader::finishProfile(stats);
 
