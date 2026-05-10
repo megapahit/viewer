@@ -208,7 +208,6 @@ if (INSTALL)
                 ${AUTOBUILD_INSTALL_DIR}/resources/chrome_200_percent.pak
                 ${AUTOBUILD_INSTALL_DIR}/resources/icudtl.dat
                 ${AUTOBUILD_INSTALL_DIR}/resources/resources.pak
-                ${AUTOBUILD_INSTALL_DIR}/bin/release/snapshot_blob.bin
                 ${AUTOBUILD_INSTALL_DIR}/bin/release/v8_context_snapshot.bin
             DESTINATION llplugin
             )
