@@ -37,7 +37,8 @@ if (LINUX)
   include(FindPipeWire)
   include_directories(SYSTEM ${PIPEWIRE_INCLUDE_DIRS} ${SPA_INCLUDE_DIRS})
   
-  message( "Building with Linux volume catcher for PipeWire and PulseAudio" )
+  #message( "Building with Linux volume catcher for PipeWire and PulseAudio" )
+  message( "Building with Linux volume catcher for PulseAudio" )
 
   list(APPEND media_plugin_cef_HEADER_FILES
     linux/volume_catcher_linux.h
@@ -207,7 +208,6 @@ if (INSTALL)
                 ${AUTOBUILD_INSTALL_DIR}/resources/chrome_200_percent.pak
                 ${AUTOBUILD_INSTALL_DIR}/resources/icudtl.dat
                 ${AUTOBUILD_INSTALL_DIR}/resources/resources.pak
-                ${AUTOBUILD_INSTALL_DIR}/bin/release/snapshot_blob.bin
                 ${AUTOBUILD_INSTALL_DIR}/bin/release/v8_context_snapshot.bin
             DESTINATION llplugin
             )
