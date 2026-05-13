@@ -30,6 +30,7 @@
 #include "lluuid.h"
 //#include "message.h"
 #include "llgl.h"
+#include "llrender.h"
 #include "llviewertexture.h"
 #include "llui.h"
 #include <list>
@@ -92,6 +93,10 @@ class LLViewerTextureList
     friend class LLLocalBitmap;
 
 public:
+    // eTexIndex -> TextureChannelPriority component (X=normals, Y=diffuse,
+    // Z=spec, W=emissive). Single source of truth.
+    static const S32 sChannelToPriority[LLRender::NUM_TEXTURE_CHANNELS];
+
     static bool createUploadFile(LLPointer<LLImageRaw> raw_image,
                                  const std::string& out_filename,
                                  const S32 max_image_dimentions = LLViewerFetchedTexture::MAX_IMAGE_SIZE_DEFAULT,

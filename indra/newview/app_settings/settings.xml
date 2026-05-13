@@ -9221,7 +9221,7 @@
   <key>RenderReflectionDetail</key>
     <map>
       <key>Comment</key>
-      <string>DEPRECATED -- use RenderTransparentWater and RenderReflectionProbeDetail -- Detail of reflection render pass.</string>
+      <string>DEPRECATED - use RenderTransparentWater and RenderReflectionProbeDetail - Detail of reflection render pass.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
@@ -11819,30 +11819,152 @@
     <key>TextureChannelPriority</key>
     <map>
       <key>Comment</key>
-      <string>Per-channel texture streaming aggressiveness. X=normals, Y=diffuse, Z=specular/metallic, W=emissive. 1.0=baseline, higher=more aggressive downrez.</string>
+      <string>Per-channel exponent on the combined discard factor. X=normals, Y=diffuse, Z=spec, W=emissive. 1.0 = baseline; lower = more aggressive. Driven by the RenderTextureQuality preset.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>Vector4</string>
       <key>Value</key>
       <array>
-        <real>5</real>
-        <real>7.5</real>
-        <real>20</real>
-        <real>7.5</real>
+        <real>1.0</real>
+        <real>0.75</real>
+        <real>0.5</real>
+        <real>0.75</real>
       </array>
     </map>
-    <key>TextureCameraBoost</key>
+    <key>TextureMaxDiscardOverride</key>
     <map>
       <key>Comment</key>
-      <string>Amount to boost resolution of textures that are important to the camera.</string>
+      <string>When non-zero, overrides the per-texture codec-derived max discard cap. 0 = use codec-reported levels. Higher lets the streaming math push past the codec ceiling; scaleDown handles the GL side.</string>
       <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>S32</string>
+      <key>Value</key>
       <integer>0</integer>
+    </map>
+    <key>TextureMemoryPressureRampRate</key>
+    <map>
+      <key>Comment</key>
+      <string>Feedback rate (per second) for the VRAM-pressure factor (0..1). Higher = faster convergence on the budget; lower = gentler.</string>
+      <key>Persist</key>
+      <integer>1</integer>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>8.0</real>
+      <real>3.0</real>
     </map>
+    <key>TextureMemoryPressureBackoffStart</key>
+    <map>
+      <key>Comment</key>
+      <string>Fraction of the VRAM target at which the pressure ramp starts (0..1). Lower = earlier headroom-building; 1.0 disables backoff (ramp only above target).</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.85</real>
+    </map>
+    <key>TextureTerrainDistanceFloor</key>
+    <map>
+      <key>Comment</key>
+      <string>Minimum distance factor for BOOST_TERRAIN textures. Keeps combined &gt; 0 so VRAM pressure can evict terrain. Lower = higher idle quality, less pressure response.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.01</real>
+    </map>
+    <key>TextureTerrainCoverageFraction</key>
+    <map>
+      <key>Comment</key>
+      <string>Synthetic on-screen coverage fraction for BOOST_TERRAIN textures (no faces are registered). Higher = higher idle quality, less pressure response.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.99</real>
+    </map>
+    <key>TextureAgentAvatarBoost</key>
+    <map>
+      <key>Comment</key>
+      <string>Quality boost (0..1) for textures on the agent's avatar (rigged mesh / animated objects). Lower = higher quality. Preference, not exemption - pressure can still evict.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.5</real>
+    </map>
+    <key>TextureBackgroundFactorRatePerSec</key>
+    <map>
+      <key>Comment</key>
+      <string>Per-second ramp rate of the background-window discard floor (0..1). Snaps to 0 in foreground. Default 0.011 ~ 90s to saturate.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.011</real>
+    </map>
+    <key>TextureDistanceDiscardPower</key>
+    <map>
+      <key>Comment</key>
+      <string>Exponent on the distance factor (face_distance / draw_distance). 1.0 = linear; lower = textures hit max discard sooner with distance. Default 0.5 = sqrt.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.5</real>
+    </map>
+    <key>TextureSizeDiscardPower</key>
+    <map>
+      <key>Comment</key>
+      <string>Exponent on the on-screen size factor (1 - coverage). 1.0 = linear; lower = small-on-screen textures attenuate sooner.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>1.0</real>
+    </map>
+    <key>TextureStalenessIntervalSeconds</key>
+    <map>
+      <key>Comment</key>
+      <string>Seconds per staleness step. Per-interval increment is 1/max_discard so any texture saturates after interval * max_discard seconds idle.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>5.0</real>
+    </map>
+    <key>TextureBindDecaySeconds</key>
+    <map>
+      <key>Comment</key>
+      <string>Grace seconds after a bind during which the staleness factor stays at 0. Prevents intermittently-bound textures from ramping. 0 disables the grace period.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>5.0</real>
+    </map>
+    <key>TextureFetchPressureScale</key>
+    <map>
+      <key>Comment</key>
+      <string>Pending-fetch divisor for the bias floor: bias floor = 1 + clamp(pending / scale, 0, 3). Lower = bias rises sooner under load floods.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>1000.0</real>
+    </map>
+
     <key>TextureDecodeDisabled</key>
     <map>
       <key>Comment</key>
@@ -16383,7 +16505,7 @@
   <key>EmulateCoreCount</key>
   <map>
     <key>Comment</key>
-    <string>For debugging -- number of cores to restrict the main process to, or 0 for no limit.  Requires restart.</string>
+    <string>For debugging - number of cores to restrict the main process to, or 0 for no limit.  Requires restart.</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>
@@ -16537,7 +16659,7 @@
 <key>MultiModeDoubleClickFolder</key>
 <map>
   <key>Comment</key>
-  <string>Sets the action for Double-click on folder in multi-folder view (0 - expands and collapses folder, 1 - opens a new window, 2 – stays in current floater but switches to SFV)</string>
+  <string>Sets the action for Double-click on folder in multi-folder view (0 - expands and collapses folder, 1 - opens a new window, 2 - stays in current floater but switches to SFV)</string>
   <key>Persist</key>
   <integer>1</integer>
   <key>Type</key>

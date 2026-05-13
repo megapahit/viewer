@@ -197,6 +197,9 @@ void LLTexUnit::bindFast(LLTexture* texture)
     glActiveTexture(GL_TEXTURE0 + mIndex);
     gGL.mCurrTextureUnitIndex = mIndex;
     mCurrTexture = gl_tex->getTexName();
+    // bindFast bypasses updateBindStats(); stamp directly so the staleness
+    // signal sees per-frame use of batched textures.
+    gl_tex->stampBound();
     if (!mCurrTexture)
     {
         LL_PROFILE_ZONE_NAMED("MISSING TEXTURE");
@@ -249,11 +252,17 @@ bool LLTexUnit::bind(LLTexture* texture, bool for_rendering, bool forceBind)
                         setTextureFilteringOption(gl_tex->mFilterOption);
                     }
                 }
+                else
+                {
+                    // Already current - still being used, keep it fresh.
+                    gl_tex->stampBound();
+                }
             }
             else
             {
                 //if deleted, will re-generate it immediately
                 texture->forceImmediateUpdate() ;
+                gl_tex->stampBound();
 
                 gl_tex->forceUpdateBindStats() ;
                 return texture->bindDefaultImage(mIndex);
@@ -324,6 +333,11 @@ bool LLTexUnit::bind(LLImageGL* texture, bool for_rendering, bool forceBind, S32
             setTextureFilteringOption(texture->mFilterOption);
             stop_glerror();
         }
+    }
+    else
+    {
+        // Already current - still being used, keep it fresh.
+        texture->stampBound();
     }
 
     stop_glerror();
