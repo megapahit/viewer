@@ -191,7 +191,11 @@ void MediaPluginLibVLC::initVLC()
 //
 void MediaPluginLibVLC::resetVLC()
 {
+#if LIBVLC_VERSION_MAJOR < 4
     libvlc_media_player_stop(mLibVLCMediaPlayer);
+#else
+    libvlc_media_player_stop_async(mLibVLCMediaPlayer);
+#endif
     libvlc_media_player_release(mLibVLCMediaPlayer);
     libvlc_release(mLibVLC);
 }
@@ -258,7 +262,11 @@ void MediaPluginLibVLC::eventCallbacks(const libvlc_event_t* event, void* ptr)
         parent->mVlcStatus = STATUS_DONE;
         break;
 
+#if LIBVLC_VERSION_MAJOR < 4
     case libvlc_MediaPlayerEndReached:
+#else
+    case libvlc_MediaPlayerStopping:
+#endif
         parent->mVlcStatus = STATUS_DONE;
         parent->mCurTime = parent->mDuration;
         parent->setDurationDirty();
@@ -285,6 +293,7 @@ void MediaPluginLibVLC::eventCallbacks(const libvlc_event_t* event, void* ptr)
         parent->setDurationDirty();
         break;
 
+#if LIBVLC_VERSION_MAJOR < 4
     case libvlc_MediaPlayerTitleChanged:
     {
         char* title = libvlc_media_get_meta(parent->mLibVLCMedia, libvlc_meta_Title);
@@ -294,6 +303,7 @@ void MediaPluginLibVLC::eventCallbacks(const libvlc_event_t* event, void* ptr)
         }
     }
     break;
+#endif
     case libvlc_MediaMetaChanged:
         auto title = libvlc_media_get_meta(parent->mLibVLCMedia, libvlc_meta_Title);
         if (title)
@@ -331,10 +341,18 @@ void MediaPluginLibVLC::playMedia()
     // memory.
     if (mLibVLCMediaPlayer)
     {
+#if LIBVLC_VERSION_MAJOR < 4
         libvlc_media_player_stop(mLibVLCMediaPlayer);
+#else
+        libvlc_media_player_stop_async(mLibVLCMediaPlayer);
+#endif
     }
 
+#if LIBVLC_VERSION_MAJOR < 4
     mLibVLCMedia = libvlc_media_new_location(mLibVLC, mURL.c_str());
+#else
+    mLibVLCMedia = libvlc_media_new_location(mURL.c_str());
+#endif
     if (!mLibVLCMedia)
     {
         mLibVLCMediaPlayer = 0;
@@ -342,7 +360,11 @@ void MediaPluginLibVLC::playMedia()
         return;
     }
 
+#if LIBVLC_VERSION_MAJOR < 4
     mLibVLCMediaPlayer = libvlc_media_player_new_from_media(mLibVLCMedia);
+#else
+    mLibVLCMediaPlayer = libvlc_media_player_new_from_media(mLibVLC, mLibVLCMedia);
+#endif
     if (!mLibVLCMediaPlayer)
     {
         setStatus(STATUS_ERROR);
@@ -357,12 +379,18 @@ void MediaPluginLibVLC::playMedia()
         libvlc_event_attach(em, libvlc_MediaPlayerPlaying, eventCallbacks, this);
         libvlc_event_attach(em, libvlc_MediaPlayerPaused, eventCallbacks, this);
         libvlc_event_attach(em, libvlc_MediaPlayerStopped, eventCallbacks, this);
+#if LIBVLC_VERSION_MAJOR < 4
         libvlc_event_attach(em, libvlc_MediaPlayerEndReached, eventCallbacks, this);
+#else
+        libvlc_event_attach(em, libvlc_MediaPlayerStopping, eventCallbacks, this);
+#endif
         libvlc_event_attach(em, libvlc_MediaPlayerEncounteredError, eventCallbacks, this);
         libvlc_event_attach(em, libvlc_MediaPlayerTimeChanged, eventCallbacks, this);
         libvlc_event_attach(em, libvlc_MediaPlayerPositionChanged, eventCallbacks, this);
         libvlc_event_attach(em, libvlc_MediaPlayerLengthChanged, eventCallbacks, this);
+#if LIBVLC_VERSION_MAJOR < 4
         libvlc_event_attach(em, libvlc_MediaPlayerTitleChanged, eventCallbacks, this);
+#endif
     }
     auto event_manager = libvlc_media_event_manager(mLibVLCMedia);
     if (event_manager)
@@ -548,7 +576,11 @@ void MediaPluginLibVLC::receiveMessage(const char* message_string)
                 {
                     if (mPixels == iter->second.mAddress)
                     {
+#if LIBVLC_VERSION_MAJOR < 4
                         libvlc_media_player_stop(mLibVLCMediaPlayer);
+#else
+                        libvlc_media_player_stop_async(mLibVLCMediaPlayer);
+#endif
                         libvlc_media_player_release(mLibVLCMediaPlayer);
                         mLibVLCMediaPlayer = 0;
 
@@ -612,7 +644,11 @@ void MediaPluginLibVLC::receiveMessage(const char* message_string)
 
                         if (mLibVLCMediaPlayer)
                         {
+#if LIBVLC_VERSION_MAJOR < 4
                             libvlc_media_player_set_time(mLibVLCMediaPlayer, time);
+#else
+                            libvlc_media_player_set_time(mLibVLCMediaPlayer, time, true);
+#endif
                             time = libvlc_media_player_get_time(mLibVLCMediaPlayer);
                             if (time < 0)
                             {
@@ -648,7 +684,11 @@ void MediaPluginLibVLC::receiveMessage(const char* message_string)
                 {
                     if (mLibVLCMediaPlayer)
                     {
+#if LIBVLC_VERSION_MAJOR < 4
                         libvlc_media_player_stop(mLibVLCMediaPlayer);
+#else
+                        libvlc_media_player_stop_async(mLibVLCMediaPlayer);
+#endif
                     }
                 }
                 else if (message_name == "start")
@@ -658,9 +698,13 @@ void MediaPluginLibVLC::receiveMessage(const char* message_string)
                         if (mVlcStatus == STATUS_DONE && !libvlc_media_player_is_playing(mLibVLCMediaPlayer))
                         {
                             // stop or vlc will ignore 'play', it will just
-                            // make an MediaPlayerEndReached event even if
+                            // make an MediaPlayerEndReached/MediaPlayerStopping event even if
                             // seek was used
+#if LIBVLC_VERSION_MAJOR < 4
                             libvlc_media_player_stop(mLibVLCMediaPlayer);
+#else
+                            libvlc_media_player_stop_async(mLibVLCMediaPlayer);
+#endif
                         }
                         libvlc_media_player_play(mLibVLCMediaPlayer);
                     }
@@ -677,7 +721,11 @@ void MediaPluginLibVLC::receiveMessage(const char* message_string)
                     if (mLibVLCMediaPlayer)
                     {
                         libvlc_time_t time = (libvlc_time_t)(1000.0 * message_in.getValueReal("time"));
+#if LIBVLC_VERSION_MAJOR < 4
                         libvlc_media_player_set_time(mLibVLCMediaPlayer, time);
+#else
+                        libvlc_media_player_set_time(mLibVLCMediaPlayer, time, true);
+#endif
                         time = libvlc_media_player_get_time(mLibVLCMediaPlayer);
                         if (time < 0)
                         {
