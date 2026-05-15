@@ -3204,7 +3204,16 @@ void LLViewerLODTexture::processTextureStats()
             combined = llmax(combined, mStalenessFactor);
             if (!isAgentAvatarBoost(mBoostLevel))
             {
-                combined = llmax(combined, sBackgroundFactor);
+                // Background floor capped at (dim_max - offset) so we can
+                // keep some baseline quality while backgrounded.
+                static LLCachedControl<S32> bg_offset(gSavedSettings, "TextureBackgroundDiscardOffset", 2);
+                F32 bg = sBackgroundFactor;
+                if ((S32)bg_offset > 0 && dim_max_for_image > 0.f)
+                {
+                    F32 cap = llmax(dim_max_for_image - (F32)(S32)bg_offset, 0.f) / dim_max_for_image;
+                    bg = llmin(bg, cap);
+                }
+                combined = llmax(combined, bg);
             }
 
             // VRAM pressure: pow(combined, 1 - factor) bends the curve

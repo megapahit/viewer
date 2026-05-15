@@ -11909,6 +11909,18 @@
       <key>Value</key>
       <real>0.011</real>
     </map>
+    <key>TextureBackgroundDiscardOffset</key>
+    <map>
+      <key>Comment</key>
+      <string>Backgrounded textures will only discard up to (dim_max - offset). e.g. a 2048 texture (dim_max 11) with offset 2 caps the background floor at discard 9. 0 disables the cap (background can drive to max discard).</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>S32</string>
+      <key>Value</key>
+      <integer>2</integer>
+    </map>
+
     <key>TextureDistanceDiscardPower</key>
     <map>
       <key>Comment</key>
