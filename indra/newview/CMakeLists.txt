@@ -2205,7 +2205,6 @@ target_link_libraries(${VIEWER_BINARY_NAME}
         )
 
 if (NOT (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES aarch64) OR (${LINUX_DISTRO} MATCHES debian AND CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)))
-   target_compile_definitions(${VIEWER_BINARY_NAME} INTERFACE USE_WEBRTC=1)
    target_link_libraries(${VIEWER_BINARY_NAME} llwebrtc )
 endif ()
 
