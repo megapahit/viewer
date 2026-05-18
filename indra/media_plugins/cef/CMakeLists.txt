@@ -37,8 +37,7 @@ if (LINUX)
   include(FindPipeWire)
   include_directories(SYSTEM ${PIPEWIRE_INCLUDE_DIRS} ${SPA_INCLUDE_DIRS})
   
-  #message( "Building with Linux volume catcher for PipeWire and PulseAudio" )
-  message( "Building with Linux volume catcher for PulseAudio" )
+  message( "Building with Linux volume catcher for PipeWire and PulseAudio" )
 
   list(APPEND media_plugin_cef_HEADER_FILES
     linux/volume_catcher_linux.h
