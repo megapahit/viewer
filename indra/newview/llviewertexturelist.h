@@ -93,8 +93,8 @@ class LLViewerTextureList
     friend class LLLocalBitmap;
 
 public:
-    // eTexIndex -> TextureChannelPriority component (X=normals, Y=diffuse,
-    // Z=spec, W=emissive). Single source of truth.
+    // eTexIndex -> TextureChannel* index (0=Normal, 1=BaseColor,
+    // 2=Specular, 3=Emissive). Single source of truth.
     static const S32 sChannelToPriority[LLRender::NUM_TEXTURE_CHANNELS];
 
     static bool createUploadFile(LLPointer<LLImageRaw> raw_image,

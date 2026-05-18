@@ -3180,10 +3180,19 @@ void LLViewerLODTexture::processTextureStats()
             // Per-channel exponent. 1.0 = baseline; <1.0 pushes combined
             // toward 1 (max attenuation) faster. Edges are preserved:
             // pow(0, p) = 0, pow(1, p) = 1.
+            // mPriorityChannel order: 0=Normal, 1=BaseColor, 2=Specular, 3=Emissive.
             S32 priority_channel = (mPriorityChannel >= 0 && mPriorityChannel < 4) ? (S32)mPriorityChannel : 1;
-            static LLCachedControl<LLVector4> channel_priority(gSavedSettings, "TextureChannelPriority",
-                LLVector4(1.f, 1.f, 1.f, 1.f));
-            F32 channel_power = llmax(channel_priority().mV[priority_channel], 0.0001f);
+            static LLCachedControl<F32> channel_normal   (gSavedSettings, "TextureChannelNormal",    1.0f);
+            static LLCachedControl<F32> channel_basecolor(gSavedSettings, "TextureChannelBaseColor", 0.75f);
+            static LLCachedControl<F32> channel_specular (gSavedSettings, "TextureChannelSpecular",  0.5f);
+            static LLCachedControl<F32> channel_emissive (gSavedSettings, "TextureChannelEmissive",  0.75f);
+            const F32 channels[4] = {
+                (F32)channel_normal,
+                (F32)channel_basecolor,
+                (F32)channel_specular,
+                (F32)channel_emissive,
+            };
+            F32 channel_power = llmax(channels[priority_channel], 0.0001f);
             if (channel_power != 1.f)
             {
                 combined = powf(combined, channel_power);

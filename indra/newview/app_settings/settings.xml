@@ -8016,7 +8016,7 @@
   <key>RenderTextureQuality</key>
   <map>
     <key>Comment</key>
-    <string>Texture quality preset: 0=Low, 1=Medium, 2=High, 3=Ultra. Drives RenderMaxTextureResolution and TextureChannelPriority.</string>
+    <string>Texture quality preset: 0=Low, 1=Medium, 2=High, 3=Ultra. Drives RenderMaxTextureResolution, the four TextureChannel* exponents, and TextureDistanceDiscardPower.</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>
@@ -11816,21 +11816,49 @@
       <key>Value</key>
       <real>20.0</real>
     </map>
-    <key>TextureChannelPriority</key>
+    <key>TextureChannelNormal</key>
     <map>
       <key>Comment</key>
-      <string>Per-channel exponent on the combined discard factor. X=normals, Y=diffuse, Z=spec, W=emissive. 1.0 = baseline; lower = more aggressive. Driven by the RenderTextureQuality preset.</string>
+      <string>Per-channel discard exponent for normal maps. 1.0 = baseline; lower = more aggressive. Driven by the RenderTextureQuality preset.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
-      <string>Vector4</string>
+      <string>F32</string>
       <key>Value</key>
-      <array>
-        <real>1.0</real>
-        <real>0.75</real>
-        <real>0.5</real>
-        <real>0.75</real>
-      </array>
+      <real>1.0</real>
+    </map>
+    <key>TextureChannelBaseColor</key>
+    <map>
+      <key>Comment</key>
+      <string>Per-channel discard exponent for base color / diffuse. 1.0 = baseline; lower = more aggressive. Driven by the RenderTextureQuality preset.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.75</real>
+    </map>
+    <key>TextureChannelSpecular</key>
+    <map>
+      <key>Comment</key>
+      <string>Per-channel discard exponent for specular / metallic-roughness. 1.0 = baseline; lower = more aggressive. Driven by the RenderTextureQuality preset.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.5</real>
+    </map>
+    <key>TextureChannelEmissive</key>
+    <map>
+      <key>Comment</key>
+      <string>Per-channel discard exponent for emissive. 1.0 = baseline; lower = more aggressive. Driven by the RenderTextureQuality preset.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.75</real>
     </map>
     <key>TextureMaxDiscardOverride</key>
     <map>

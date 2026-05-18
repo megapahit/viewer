@@ -96,9 +96,9 @@ LLTextureKey::LLTextureKey(LLUUID id, ETexListType tex_type)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// eTexIndex -> TextureChannelPriority component index (X=normals, Y=diffuse,
-// Z=spec, W=emissive). Single source of truth - route all channel-priority
-// lookups through this table.
+// eTexIndex -> TextureChannel* index (0=Normal, 1=BaseColor, 2=Specular,
+// 3=Emissive). Single source of truth - route all channel-priority lookups
+// through this table.
 const S32 LLViewerTextureList::sChannelToPriority[LLRender::NUM_TEXTURE_CHANNELS] =
 {
     1,  // DIFFUSE_MAP (0)             -> Y (diffuse)

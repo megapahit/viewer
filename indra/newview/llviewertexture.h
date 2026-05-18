@@ -203,8 +203,7 @@ protected:
     mutable S32  mMaxVirtualSizeResetInterval;
     LLFrameTimer mLastReferencedTimer;
 
-    // Index into TextureChannelPriority Vector4 (X=normals, Y=diffuse,
-    // Z=spec, W=emissive). -1 -> fall back to diffuse.
+    // 0=Normal, 1=BaseColor, 2=Specular, 3=Emissive. -1 -> base color.
     S8 mPriorityChannel = -1;
 
     // Bind-staleness floor, 0..1. Per-interval increment is 1/max_discard

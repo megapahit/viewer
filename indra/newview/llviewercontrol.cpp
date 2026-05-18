@@ -114,36 +114,42 @@ static bool handleRenderAvatarMouselookChanged(const LLSD& newvalue)
 
 static bool handleRenderTextureQualityChanged(const LLSD& newvalue)
 {
-    // 0=Low, 1=Medium, 2=High, 3=Ultra. Drives max-resolution and the
-    // per-channel TextureChannelPriority + TextureDistanceDiscardPower
-    // exponents. Channel order: X=normals, Y=diffuse, Z=spec, W=emissive.
+    // 0=Low, 1=Medium, 2=High, 3=Ultra. Drives RenderMaxTextureResolution,
+    // the four TextureChannel* exponents (Normal/BaseColor/Spec/Emissive),
+    // and TextureDistanceDiscardPower.
     U32 quality = (U32)newvalue.asInteger();
     U32 max_res = 2048;
-    LLVector4 channel_priority(1.f, 0.75f, 0.5f, 0.75f);
+    F32 ch_normal    = 1.0f;
+    F32 ch_basecolor = 0.75f;
+    F32 ch_specular  = 0.5f;
+    F32 ch_emissive  = 0.75f;
     F32 distance_power = 0.5f;
     switch (quality)
     {
     case 0: // Low
         max_res = 1024;
-        channel_priority.setVec(0.5f, 0.75f, 0.1f, 0.5f);
+        ch_normal = 0.5f; ch_basecolor = 0.75f; ch_specular = 0.1f; ch_emissive = 0.5f;
         distance_power = 0.15f;
         break;
     case 1: // Medium
-        channel_priority.setVec(0.75f, 0.75f, 0.3f, 0.75f);
+        ch_normal = 0.75f; ch_basecolor = 0.75f; ch_specular = 0.3f; ch_emissive = 0.75f;
         distance_power = 0.25f;
         break;
     case 2: // High
-        // channel defaults above (1, 0.75, 0.5, 0.75)
+        // channel defaults above
         distance_power = 0.35f;
         break;
     case 3: // Ultra
     default:
-        channel_priority.setVec(1.f, 1.f, 1.f, 1.f);
+        ch_normal = 1.f; ch_basecolor = 1.f; ch_specular = 1.f; ch_emissive = 1.f;
         distance_power = 0.5f;
         break;
     }
     gSavedSettings.setU32("RenderMaxTextureResolution", max_res);
-    gSavedSettings.setVector4("TextureChannelPriority", channel_priority);
+    gSavedSettings.setF32("TextureChannelNormal", ch_normal);
+    gSavedSettings.setF32("TextureChannelBaseColor", ch_basecolor);
+    gSavedSettings.setF32("TextureChannelSpecular", ch_specular);
+    gSavedSettings.setF32("TextureChannelEmissive", ch_emissive);
     gSavedSettings.setF32("TextureDistanceDiscardPower", distance_power);
     return true;
 }
