@@ -11921,6 +11921,17 @@
       <integer>2</integer>
     </map>
 
+    <key>TextureCloseBubbleMeters</key>
+    <map>
+      <key>Comment</key>
+      <string>Close-camera bubble (meters). Faces inside this distance get dist_factor = 0 (no discard contribution); the ramp to 1 spans (bubble, draw_distance].</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>5.0</real>
+    </map>
     <key>TextureDistanceDiscardPower</key>
     <map>
       <key>Comment</key>

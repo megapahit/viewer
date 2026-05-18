@@ -933,6 +933,13 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
         bool on_agent_avatar = false;
         F32 draw_distance = llmax(gAgentCamera.mDrawDistance, 0.001f);
 
+        // Close-camera bubble: distances under bubble_meters resolve to
+        // dist_factor = 0 (no discard contribution). The ramp from 0 -> 1
+        // spans (bubble, draw_distance] rather than (0, draw_distance].
+        static LLCachedControl<F32> close_bubble(gSavedSettings, "TextureCloseBubbleMeters", 5.f);
+        F32 bubble = llclamp((F32)close_bubble, 0.f, draw_distance - 0.001f);
+        F32 ramp_range = llmax(draw_distance - bubble, 0.001f);
+
         U32 face_count = 0;
         U32 max_faces_to_check = 1024;
 
@@ -990,7 +997,8 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
 
                     on_screen |= face->mInFrustum;
 
-                    F32 dist_factor = llclampf(face->mDistanceToCamera / draw_distance);
+                    F32 dist_above_bubble = llmax(face->mDistanceToCamera - bubble, 0.f);
+                    F32 dist_factor = llclampf(dist_above_bubble / ramp_range);
                     min_distance_factor = llmin(min_distance_factor, dist_factor);
 
                     if (face->mAvatar && face->mAvatar == gAgentAvatarp)
@@ -1071,7 +1079,8 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
             static LLCachedControl<F32> terrain_distance_floor(gSavedSettings, "TextureTerrainDistanceFloor", 0.01f);
             static LLCachedControl<F32> terrain_coverage(gSavedSettings, "TextureTerrainCoverageFraction", 0.99f);
             F32 nearest = LLSurface::sNearestVisiblePatchDistance;
-            F32 dist = (nearest < FLT_MAX) ? llclampf(nearest / draw_distance) : 1.f;
+            F32 nearest_above_bubble = (nearest < FLT_MAX) ? llmax(nearest - bubble, 0.f) : ramp_range;
+            F32 dist = llclampf(nearest_above_bubble / ramp_range);
             imagep->mMinDistanceFactor = llmax(dist, llclampf((F32)terrain_distance_floor));
             imagep->mMaxOnScreenSize = LLViewerTexture::sWindowPixelArea * llclampf((F32)terrain_coverage);
         }
