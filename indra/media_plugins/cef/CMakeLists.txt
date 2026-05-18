@@ -37,8 +37,7 @@ if (LINUX)
   include(FindPipeWire)
   include_directories(SYSTEM ${PIPEWIRE_INCLUDE_DIRS} ${SPA_INCLUDE_DIRS})
   
-  #message( "Building with Linux volume catcher for PipeWire and PulseAudio" )
-  message( "Building with Linux volume catcher for PulseAudio" )
+  message( "Building with Linux volume catcher for PipeWire and PulseAudio" )
 
   list(APPEND media_plugin_cef_HEADER_FILES
     linux/volume_catcher_linux.h
@@ -47,7 +46,7 @@ if (LINUX)
   set(LINUX_VOLUME_CATCHER 
     linux/volume_catcher_linux.cpp 
     linux/volume_catcher_pulseaudio.cpp
-    #linux/volume_catcher_pipewire.cpp
+    linux/volume_catcher_pipewire.cpp 
   )
 
   list(APPEND media_plugin_cef_SOURCE_FILES ${LINUX_VOLUME_CATCHER})
@@ -71,8 +70,6 @@ add_library(media_plugin_cef
     SHARED
     ${media_plugin_cef_SOURCE_FILES}
     )
-
-#target_compile_definitions(media_plugin_cef PRIVATE USE_VOLUME_CATCHER_PW=1)
 
 #add_dependencies(media_plugin_cef
 #  ${MEDIA_PLUGIN_BASE_LIBRARIES}

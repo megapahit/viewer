@@ -28,7 +28,7 @@
 #include "llimagej2coj.h"
 
 // this is defined so that we get static linking.
-#include <openjpeg-2.5/openjpeg.h>
+#include "openjpeg.h"
 
 // Factory function: see declaration in llimagej2c.cpp
 LLImageJ2CImpl* fallbackCreateLLImageJ2CImpl()

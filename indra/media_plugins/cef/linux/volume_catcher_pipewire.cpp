@@ -207,7 +207,7 @@ void VolumeCatcherPipeWire::ChildNode::updateVolume()
 
     {
         std::lock_guard pwLock(*mImpl);
-        pw_node_set_param(mProxy, SPA_PARAM_Props, 0, pod);
+        pw_node_set_param((pw_node*)mProxy, SPA_PARAM_Props, 0, pod);
     }
 }
 
@@ -303,7 +303,7 @@ void VolumeCatcherPipeWire::handleRegistryEventGlobal(
     childNode->mProxy = proxy;
     childNode->mImpl = this;
 
-    pw_node_add_listener(proxy, &childNode->mNodeListener, &NODE_EVENTS, childNode);
+    pw_node_add_listener((pw_node*)proxy, &childNode->mNodeListener, &NODE_EVENTS, childNode);
     llpw_proxy_add_listener(proxy, &childNode->mProxyListener, &PROXY_EVENTS, childNode);
 }
 
