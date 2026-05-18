@@ -37,14 +37,12 @@ void VolumeCatcher::onEnablePipeWireVolumeCatcher(bool enable)
     if (pimpl != nullptr)
         return;
 
-#if USE_VOLUME_CATCHER_PW
     if (enable)
     {
         LL_DEBUGS() << "volume catcher using pipewire" << LL_ENDL;
         pimpl = new VolumeCatcherPipeWire();
     }
     else
-#endif
     {
         LL_DEBUGS() << "volume catcher using pulseaudio" << LL_ENDL;
         pimpl = new VolumeCatcherPulseAudio();
