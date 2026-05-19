@@ -11871,17 +11871,6 @@
       <key>Value</key>
       <integer>0</integer>
     </map>
-    <key>TextureMemoryPressureRampRate</key>
-    <map>
-      <key>Comment</key>
-      <string>Geometric ramp/decay rate (per second) for the VRAM-pressure distance multiplier (&gt;= 1). Higher = faster convergence on the budget; lower = gentler. Multiplier compresses the streaming distance signal: at mult=N, faces past (ramp_range / N) hit max discard.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>1.0</real>
-    </map>
     <key>TextureMemoryPressureBackoffStart</key>
     <map>
       <key>Comment</key>

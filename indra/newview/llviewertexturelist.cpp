@@ -934,44 +934,37 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
         bool on_agent_avatar = false;
         F32 draw_distance = llmax(gAgentCamera.mDrawDistance, 0.001f);
 
-        // Close-camera bubble: distances under bubble_meters resolve to
-        // dist_factor = 0 (no discard contribution). The ramp from 0 -> 1
-        // spans (bubble, draw_distance] rather than (0, draw_distance].
+        // Close-camera bubble: faces inside `bubble` meters resolve to
+        // dist_factor = 0, so the distance ramp spans (bubble, draw_distance].
         static LLCachedControl<F32> close_bubble(gSavedSettings, "TextureCloseBubbleMeters", 5.f);
         static LLCachedControl<F32> close_bubble_min(gSavedSettings, "TextureCloseBubbleMinMeters", 0.1f);
-        static LLCachedControl<F32> max_pressure_mult(gSavedSettings, "TextureMemoryPressureMaxMultiplier", 64.f);
         static LLCachedControl<F32> bubble_shrink_threshold(gSavedSettings, "TextureCloseBubbleShrinkThreshold", 0.8f);
         static LLCachedControl<F32> bubble_track_rate(gSavedSettings, "TextureCloseBubbleTrackRate", 0.5f);
         F32 bubble_full = llmax((F32)close_bubble, 0.f);
         F32 bubble_min  = llclamp((F32)close_bubble_min, 0.f, bubble_full);
-        // Target bubble: stay at full size until pressure multiplier is
-        // deep into its range, then collapse toward bubble_min. The bubble
-        // is an emergency response, not part of the normal feedback loop.
-        F32 mult_cap = llmax((F32)max_pressure_mult, 1.0001f);
-        F32 mult_progress = llclampf((LLViewerTexture::sMemoryPressureMultiplier - 1.f) / (mult_cap - 1.f));
-        F32 shrink_thresh = llclampf((F32)bubble_shrink_threshold);
-        F32 shrink_t = (mult_progress > shrink_thresh)
-            ? (mult_progress - shrink_thresh) / llmax(1.f - shrink_thresh, 0.0001f)
-            : 0.f;
-        F32 target_bubble = bubble_full - (bubble_full - bubble_min) * shrink_t;
-        // Slow-track the actual bubble toward target so short-term multiplier
-        // swings don't yo-yo close textures in and out. Advance the state
-        // ONCE per frame, not per texture - this function runs once per
-        // texture so a naive per-call lerp converges in a single frame.
+        // Advance the slow-track once per frame, not per texture: this
+        // function runs once per texture so a naive per-call lerp converges
+        // in a single frame.
         static F32 s_tracked_bubble = -1.f;
         static U32 s_tracked_bubble_frame = 0;
         if (s_tracked_bubble < 0.f) s_tracked_bubble = bubble_full;
         if (s_tracked_bubble_frame != LLFrameTimer::getFrameCount())
         {
             s_tracked_bubble_frame = LLFrameTimer::getFrameCount();
+            F32 progress = LLViewerTexture::getMemoryPressureProgress();
+            F32 shrink_thresh = llclampf((F32)bubble_shrink_threshold);
+            F32 shrink_frac = (progress > shrink_thresh)
+                ? (progress - shrink_thresh) / llmax(1.f - shrink_thresh, 0.0001f)
+                : 0.f;
+            F32 target_bubble = bubble_full - (bubble_full - bubble_min) * shrink_frac;
             F32 dt = (F32)gFrameIntervalSeconds;
             F32 alpha = 1.f - expf(-llmax(dt, 0.f) * llmax((F32)bubble_track_rate, 0.f));
             s_tracked_bubble += (target_bubble - s_tracked_bubble) * alpha;
             s_tracked_bubble = llclamp(s_tracked_bubble, bubble_min, bubble_full);
+            sCurrentBubbleMeters = s_tracked_bubble;
         }
         F32 bubble = llclamp(s_tracked_bubble, 0.f, draw_distance - 0.001f);
         F32 ramp_range = llmax(draw_distance - bubble, 0.001f);
-        sCurrentBubbleMeters = bubble;
 
         U32 face_count = 0;
         U32 max_faces_to_check = 1024;

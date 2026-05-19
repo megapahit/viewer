@@ -251,10 +251,14 @@ public:
     // signal: dist_factor = clamp(mMinDistanceFactor * mult, 0, 1).
     // Grows geometrically while over budget; decays back to 1 when fitting.
     static F32 sMemoryPressureMultiplier;
-    // Last-ditch global discard floor. Creeps up when mult is pegged at cap
-    // and we are still over budget; decays back to 0 when fitting. Applied
-    // as a floor on mDesiredDiscardLevel for non-avatar-bake textures.
+    // Last-ditch global discard floor. Mirrors sDesiredDiscardBias once the
+    // multiplier is exhausted.
     static F32 sLastDitchMinDiscard;
+
+    // 0..1 progress of the pressure multiplier from baseline (1) to its
+    // configured cap (TextureMemoryPressureMaxMultiplier). Used to gate
+    // bubble shrink and last-ditch engagement.
+    static F32 getMemoryPressureProgress();
     static U32 sBiasTexturesUpdated;
     static S32 sMaxSculptRez ;
     static U32 sMinLargeImageSize ;
