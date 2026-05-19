@@ -247,10 +247,14 @@ public:
     // snaps to 0 in foreground. Avatar bakes exempt.
     static F32 sBackgroundFactor;
 
-    // VRAM-pressure factor, 0..1. Applied in processTextureStats as
-    // combined = pow(combined, 1 - factor) - bends the curve without
-    // flattening the distance gradient.
-    static F32 sMemoryPressureFactor;
+    // VRAM-pressure distance multiplier, >= 1. Compresses the distance
+    // signal: dist_factor = clamp(mMinDistanceFactor * mult, 0, 1).
+    // Grows geometrically while over budget; decays back to 1 when fitting.
+    static F32 sMemoryPressureMultiplier;
+    // Last-ditch global discard floor. Creeps up when mult is pegged at cap
+    // and we are still over budget; decays back to 0 when fitting. Applied
+    // as a floor on mDesiredDiscardLevel for non-avatar-bake textures.
+    static F32 sLastDitchMinDiscard;
     static U32 sBiasTexturesUpdated;
     static S32 sMaxSculptRez ;
     static U32 sMinLargeImageSize ;
@@ -379,7 +383,7 @@ public:
 
     void updateVirtualSize() ;
 
-    S32  getDesiredDiscardLevel()            { return mDesiredDiscardLevel; }
+    S32  getDesiredDiscardLevel() const      { return mDesiredDiscardLevel; }
     void setMinDiscardLevel(S32 discard)    { mMinDesiredDiscardLevel = llmin(mMinDesiredDiscardLevel,(S8)discard); }
 
     void setBoostLevel(S32 level) override;

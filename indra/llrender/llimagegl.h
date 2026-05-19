@@ -239,6 +239,7 @@ public:
     // Various GL/Rendering options
     S64Bytes mTextureMemory;
     mutable F32  mLastBindTime = 0.f; // wall-clock time at last stampBound; drives streaming staleness
+    F32          mGLCreateTime = 0.f; // wall-clock time the GL texture was created; staleness fallback for never-bound textures
 
 private:
     U32 createPickMask(S32 pWidth, S32 pHeight);

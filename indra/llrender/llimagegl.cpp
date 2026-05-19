@@ -715,7 +715,10 @@ void LLImageGL::dump()
 //----------------------------------------------------------------------------
 void LLImageGL::forceUpdateBindStats(void) const
 {
-    mLastBindTime = sLastFrameTime;
+    // Intentionally a no-op: mLastBindTime is written only by real bind
+    // paths so the staleness signal reflects actual GPU use. Callers that
+    // still invoke this (avatar "keep alive" sites, deleted-texture
+    // fallback) no longer falsely refresh staleness.
 }
 
 bool LLImageGL::updateBindStats() const
@@ -1650,7 +1653,6 @@ bool LLImageGL::createGLTexture(S32 discard_level, const LLImageRaw* imageraw, S
     {
         destroyGLTexture();
         mCurrentDiscardLevel = discard_level;
-        mLastBindTime = sLastFrameTime;
         mGLTextureCreated = false;
         return true ;
     }
@@ -1766,9 +1768,7 @@ bool LLImageGL::createGLTexture(S32 discard_level, const U8* data_in, bool data_
 
 
     mTextureMemory = (S64Bytes)getMipBytes(mCurrentDiscardLevel);
-
-    // mark this as bound at this point, so we don't throw it out immediately
-    mLastBindTime = sLastFrameTime;
+    mGLCreateTime = sLastFrameTime;
 
     checkActiveThread();
     return true;

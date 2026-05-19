@@ -11874,13 +11874,13 @@
     <key>TextureMemoryPressureRampRate</key>
     <map>
       <key>Comment</key>
-      <string>Feedback rate (per second) for the VRAM-pressure factor (0..1). Higher = faster convergence on the budget; lower = gentler.</string>
+      <string>Geometric ramp/decay rate (per second) for the VRAM-pressure distance multiplier (&gt;= 1). Higher = faster convergence on the budget; lower = gentler. Multiplier compresses the streaming distance signal: at mult=N, faces past (ramp_range / N) hit max discard.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>3.0</real>
+      <real>1.0</real>
     </map>
     <key>TextureMemoryPressureBackoffStart</key>
     <map>
@@ -11892,6 +11892,83 @@
       <string>F32</string>
       <key>Value</key>
       <real>0.85</real>
+    </map>
+    <key>TextureMemoryPressureMaxMultiplier</key>
+    <map>
+      <key>Comment</key>
+      <string>Upper bound on the VRAM-pressure distance multiplier (&gt;= 1). Mostly defensive -- at mult=64 the streaming ramp collapses to ~ramp_range/64, already extreme. Higher allows even more aggressive compression in tight-budget scenes.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>64.0</real>
+    </map>
+    <key>TextureLastDitchEngageProgress</key>
+    <map>
+      <key>Comment</key>
+      <string>mult_progress (0..1) at which the last-ditch floor starts creeping up. The floor only advances when mult is at or above this fraction of its cap AND prediction is still over budget. Decays back toward 0 whenever prediction is under budget.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.95</real>
+    </map>
+    <key>TextureLastDitchRampRate</key>
+    <map>
+      <key>Comment</key>
+      <string>Rate (discard levels/sec) at which sLastDitchMinDiscard creeps up while engaged. 0.5 = takes ~2 sec to add one discard level. Mirrors sDesiredDiscardBias ramp shape.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.5</real>
+    </map>
+    <key>TextureLastDitchDecayRate</key>
+    <map>
+      <key>Comment</key>
+      <string>Rate (discard levels/sec) at which sLastDitchMinDiscard decays back to 0 when prediction is under budget.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.5</real>
+    </map>
+    <key>TextureLastDitchMinDiscardMax</key>
+    <map>
+      <key>Comment</key>
+      <string>Hard ceiling on sLastDitchMinDiscard. At 13 the floor can climb all the way to the deepest meaningful mip; lower values cap how aggressive the last-ditch escalation can get before we are simply out of discards.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>13.0</real>
+    </map>
+    <key>TextureMemoryPressurePredictionGain</key>
+    <map>
+      <key>Comment</key>
+      <string>Power exponent mapping predicted-over-budget ratio to target multiplier. target_mult = pred_over^gain. Higher gain saturates faster.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>10.0</real>
+    </map>
+    <key>TextureMemoryPressureSmoothingRate</key>
+    <map>
+      <key>Comment</key>
+      <string>Lerp rate (1/sec) at which the pressure multiplier converges to its prediction-driven target. Higher = faster response, lower = smoother. Default 4 reaches ~63% in 0.25s.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>4.0</real>
     </map>
     <key>TextureTerrainDistanceFloor</key>
     <map>
@@ -11952,13 +12029,46 @@
     <key>TextureCloseBubbleMeters</key>
     <map>
       <key>Comment</key>
-      <string>Close-camera bubble (meters). Faces inside this distance get dist_factor = 0 (no discard contribution); the ramp to 1 spans (bubble, draw_distance].</string>
+      <string>Close-camera bubble (meters). Faces inside this distance get dist_factor = 0 (no discard contribution); the ramp to 1 spans (bubble, draw_distance]. Shrinks toward TextureCloseBubbleMinMeters as VRAM pressure ramps the multiplier toward its cap.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
       <real>5.0</real>
+    </map>
+    <key>TextureCloseBubbleMinMeters</key>
+    <map>
+      <key>Comment</key>
+      <string>Floor (meters) for the close-camera bubble under maximum VRAM pressure. At sMemoryPressureMultiplier = TextureMemoryPressureMaxMultiplier the bubble collapses to this value, allowing eviction of even close textures when nothing else fits.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>3.0</real>
+    </map>
+    <key>TextureCloseBubbleShrinkThreshold</key>
+    <map>
+      <key>Comment</key>
+      <string>Bubble stays at full size until mult_progress exceeds this fraction (0..1) of its range to the cap. Above that, bubble lerps from full to TextureCloseBubbleMinMeters. Keeps the bubble out of the normal feedback loop.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.8</real>
+    </map>
+    <key>TextureCloseBubbleTrackRate</key>
+    <map>
+      <key>Comment</key>
+      <string>Rate (1/sec) at which the actual bubble tracks its target. Lower = smoother, slower to react. Damps short-term multiplier swings so close textures don't yo-yo.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.5</real>
     </map>
     <key>TextureDistanceDiscardPower</key>
     <map>

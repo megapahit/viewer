@@ -71,6 +71,7 @@
 void (*LLViewerTextureList::sUUIDCallback)(void **, const LLUUID&) = NULL;
 
 S32 LLViewerTextureList::sNumImages = 0;
+F32 LLViewerTextureList::sCurrentBubbleMeters = 0.f;
 
 LLViewerTextureList gTextureList;
 
@@ -937,8 +938,40 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
         // dist_factor = 0 (no discard contribution). The ramp from 0 -> 1
         // spans (bubble, draw_distance] rather than (0, draw_distance].
         static LLCachedControl<F32> close_bubble(gSavedSettings, "TextureCloseBubbleMeters", 5.f);
-        F32 bubble = llclamp((F32)close_bubble, 0.f, draw_distance - 0.001f);
+        static LLCachedControl<F32> close_bubble_min(gSavedSettings, "TextureCloseBubbleMinMeters", 0.1f);
+        static LLCachedControl<F32> max_pressure_mult(gSavedSettings, "TextureMemoryPressureMaxMultiplier", 64.f);
+        static LLCachedControl<F32> bubble_shrink_threshold(gSavedSettings, "TextureCloseBubbleShrinkThreshold", 0.8f);
+        static LLCachedControl<F32> bubble_track_rate(gSavedSettings, "TextureCloseBubbleTrackRate", 0.5f);
+        F32 bubble_full = llmax((F32)close_bubble, 0.f);
+        F32 bubble_min  = llclamp((F32)close_bubble_min, 0.f, bubble_full);
+        // Target bubble: stay at full size until pressure multiplier is
+        // deep into its range, then collapse toward bubble_min. The bubble
+        // is an emergency response, not part of the normal feedback loop.
+        F32 mult_cap = llmax((F32)max_pressure_mult, 1.0001f);
+        F32 mult_progress = llclampf((LLViewerTexture::sMemoryPressureMultiplier - 1.f) / (mult_cap - 1.f));
+        F32 shrink_thresh = llclampf((F32)bubble_shrink_threshold);
+        F32 shrink_t = (mult_progress > shrink_thresh)
+            ? (mult_progress - shrink_thresh) / llmax(1.f - shrink_thresh, 0.0001f)
+            : 0.f;
+        F32 target_bubble = bubble_full - (bubble_full - bubble_min) * shrink_t;
+        // Slow-track the actual bubble toward target so short-term multiplier
+        // swings don't yo-yo close textures in and out. Advance the state
+        // ONCE per frame, not per texture - this function runs once per
+        // texture so a naive per-call lerp converges in a single frame.
+        static F32 s_tracked_bubble = -1.f;
+        static U32 s_tracked_bubble_frame = 0;
+        if (s_tracked_bubble < 0.f) s_tracked_bubble = bubble_full;
+        if (s_tracked_bubble_frame != LLFrameTimer::getFrameCount())
+        {
+            s_tracked_bubble_frame = LLFrameTimer::getFrameCount();
+            F32 dt = (F32)gFrameIntervalSeconds;
+            F32 alpha = 1.f - expf(-llmax(dt, 0.f) * llmax((F32)bubble_track_rate, 0.f));
+            s_tracked_bubble += (target_bubble - s_tracked_bubble) * alpha;
+            s_tracked_bubble = llclamp(s_tracked_bubble, bubble_min, bubble_full);
+        }
+        F32 bubble = llclamp(s_tracked_bubble, 0.f, draw_distance - 0.001f);
         F32 ramp_range = llmax(draw_distance - bubble, 0.001f);
+        sCurrentBubbleMeters = bubble;
 
         U32 face_count = 0;
         U32 max_faces_to_check = 1024;
@@ -1107,10 +1140,15 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
             F32 grace = llmax((F32)bind_decay_seconds, 0.f);
             F32 interval = llmax((F32)staleness_interval, 0.0001f);
 
-            bool ever_bound = (gli->mLastBindTime > 0.f);
-            F32 time_since_bind = ever_bound ? (LLImageGL::sLastFrameTime - gli->mLastBindTime) : 0.f;
+            // Clock starts at whichever is later: the last real bind or
+            // the GL-create time. The latter is the fallback for textures
+            // decoded into GL but never actually rendered - without it,
+            // mLastBindTime stays 0 forever and staleness can't evict.
+            F32 clock_time = llmax(gli->mLastBindTime, gli->mGLCreateTime);
+            bool has_clock = (clock_time > 0.f);
+            F32 time_since = has_clock ? (LLImageGL::sLastFrameTime - clock_time) : 0.f;
 
-            if (!ever_bound || time_since_bind <= grace)
+            if (!has_clock || time_since <= grace)
             {
                 imagep->mStalenessFactor = 0.f;
             }
@@ -1123,7 +1161,7 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
                     : (S32)gli->getMaxDiscardLevel();
                 if (max_discard > 0)
                 {
-                    F32 steps = (time_since_bind - grace) / interval;
+                    F32 steps = (time_since - grace) / interval;
                     F32 step_size = 1.f / (F32)max_discard;
                     imagep->mStalenessFactor = llclampf(steps * step_size);
                 }
@@ -1270,10 +1308,13 @@ F32 LLViewerTextureList::updateImagesCreateTextures(F32 max_time)
         // give time to downscaling first - if mDownScaleQueue is not empty, we're running out of memory and need
         // to free up memory by discarding off screen textures quickly
 
-        // do at least 5 and make sure we don't get too far behind even if it violates
-        // the time limit.  If we don't downscale quickly the viewer will hit swap and may
-        // freeze.
-        S32 min_count = (S32)mCreateTextureList.size() / 20 + 5;
+        // Drain rate scales with both pending creates and the downscale
+        // queue itself. Without the queue term, a backlog of evictions
+        // could only drain 5/frame regardless of size, and the system
+        // can't actually free VRAM fast enough under pressure.
+        S32 min_count = (S32)mCreateTextureList.size() / 20
+                      + (S32)mDownScaleQueue.size() / 5
+                      + 5;
 
         create_timer.reset();
         while (!mDownScaleQueue.empty())
@@ -1375,12 +1416,15 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
 
     //update MIN_UPDATE_COUNT or 5% of other textures, whichever is greater
     update_count = llmax((U32) MIN_UPDATE_COUNT, (U32) mUUIDMap.size()/20);
-    if (LLViewerTexture::sDesiredDiscardBias > 1.f
+    // Scale up the per-frame update window under VRAM pressure so eviction
+    // candidates get re-evaluated quickly. Both the legacy bias and the
+    // new pressure multiplier widen the window.
+    F32 pressure_scale = llmax(LLViewerTexture::sDesiredDiscardBias,
+                               LLViewerTexture::sMemoryPressureMultiplier);
+    if (pressure_scale > 1.f
         && LLViewerTexture::sBiasTexturesUpdated < (U32)mUUIDMap.size())
     {
-        // We are over memory target. Bias affects discard rates, so update
-        // existing textures agresively to free memory faster.
-        update_count = (S32)(update_count * LLViewerTexture::sDesiredDiscardBias);
+        update_count = (S32)(update_count * pressure_scale);
 
         // This isn't particularly precise and can overshoot, but it doesn't need
         // to be, just making sure it did a full circle and doesn't get stuck updating
