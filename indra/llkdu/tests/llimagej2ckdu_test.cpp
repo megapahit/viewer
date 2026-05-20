@@ -84,6 +84,10 @@ bool LLImageBase::isBufferInvalid() const { return false; }
 
 LLImageJ2CImpl::~LLImageJ2CImpl() { }
 
+// LLImageJ2CKDU::estimateDataSize calls LLImage::useNewByteRange() which is
+// inline and reads sUseNewByteRange; provide storage for the test link.
+bool LLImage::sUseNewByteRange = false;
+
 LLImageFormatted::LLImageFormatted(S8 ) { }
 LLImageFormatted::~LLImageFormatted() { }
 U8* LLImageFormatted::allocateData(S32 ) { return NULL; }
