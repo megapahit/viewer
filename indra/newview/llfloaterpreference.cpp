@@ -773,9 +773,9 @@ void LLFloaterPreference::onOpen(const LLSD& key)
     // Load (double-)click to walk/teleport settings.
     updateClickActionViews();
 
-#if LL_LINUX
+#if LL_LINUX || __FreeBSD__
     // Lixux doesn't support automatic mode
-    LLComboBox* combo = getChild<LLComboBox>("double_click_action_combo");
+    LLComboBox* combo = getChild<LLComboBox>("mouse_warp_combo");
     S32 mode = gSavedSettings.getS32("MouseWarpMode");
     if (mode == 0)
     {
