@@ -44,6 +44,11 @@ protected:
     virtual bool initDecode(LLImageJ2C &base, LLImageRaw &raw_image, int discard_level = -1, int* region = NULL);
     virtual bool initEncode(LLImageJ2C &base, LLImageRaw &raw_image, int blocks_size = -1, int precincts_size = -1, int levels = 0);
     virtual std::string getEngineInfo() const;
+public:
+    // OpenJPEG decodes whole code-blocks even with strict mode off, so the
+    // lean packet-walk under-allocates and clips quality. Keep the older
+    // conservative pyramid-with-multiplier estimate here.
+    virtual S32 estimateDataSize(S32 w, S32 h, S32 comp, S32 discard_level, F32 rate) const override;
 };
 
 #endif

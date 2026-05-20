@@ -11871,6 +11871,17 @@
       <key>Value</key>
       <integer>0</integer>
     </map>
+    <key>TextureMemoryHighWaterMark</key>
+    <map>
+      <key>Comment</key>
+      <string>Fraction of budget (0..1) at which the pressure controller bypasses smoothing and slams to cap. Last-ditch min-discard also creeps without waiting for mult_progress.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.8</real>
+    </map>
     <key>TextureMemoryPressureBackoffStart</key>
     <map>
       <key>Comment</key>

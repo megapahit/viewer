@@ -602,10 +602,25 @@ void LLViewerTexture::updateClass()
             - (F32)pending_bytes_decrease * BYTES_TO_USED_UNITS;
         F32 predicted_over = predicted_used / llmax(backoff_target, 1.f);
 
+        // High water mark: when used crosses budget * high_water, skip the
+        // smoothed convergence and slam the controller into hard-cap state.
+        // Recovers the historical 90% behavior - immediate aggressive
+        // response instead of waiting for the lerp to chase the target.
+        static LLCachedControl<F32> high_water(gSavedSettings, "TextureMemoryHighWaterMark", 0.8f);
+        bool above_high_water = used >= budget * llclamp((F32)high_water, 0.5f, 1.f);
+
         F32 target_mult = llclamp(powf(llmax(predicted_over, 1.f), llmax((F32)prediction_gain, 0.0001f)), 1.f, cap);
-        // ~63% convergence in 1/smoothing_rate seconds (default 0.25s).
-        F32 alpha = 1.f - expf(-llmax(dt, 0.f) * llmax((F32)smoothing_rate, 0.f));
-        sMemoryPressureMultiplier += (target_mult - sMemoryPressureMultiplier) * alpha;
+        if (above_high_water)
+        {
+            target_mult = cap;
+            sMemoryPressureMultiplier = cap;
+        }
+        else
+        {
+            // ~63% convergence in 1/smoothing_rate seconds (default 0.25s).
+            F32 alpha = 1.f - expf(-llmax(dt, 0.f) * llmax((F32)smoothing_rate, 0.f));
+            sMemoryPressureMultiplier += (target_mult - sMemoryPressureMultiplier) * alpha;
+        }
         sMemoryPressureMultiplier = llclamp(sMemoryPressureMultiplier, 1.f, cap);
 
         F32 progress = getMemoryPressureProgress();
@@ -615,12 +630,14 @@ void LLViewerTexture::updateClass()
             static LLCachedControl<F32> ld_ramp(gSavedSettings, "TextureLastDitchRampRate", 0.5f);
             static LLCachedControl<F32> ld_decay(gSavedSettings, "TextureLastDitchDecayRate", 0.5f);
             static LLCachedControl<F32> ld_max(gSavedSettings, "TextureLastDitchMinDiscardMax", 13.f);
-            bool mult_saturated = progress >= llclampf((F32)ld_engage);
-            if (mult_saturated && predicted_over > 1.f)
+            // Above the high water mark, last-ditch creeps regardless of
+            // mult_progress: by definition we are out of normal headroom.
+            bool engage = above_high_water || progress >= llclampf((F32)ld_engage);
+            if (engage && predicted_over > 1.f)
             {
                 sLastDitchMinDiscard += llmax((F32)ld_ramp, 0.f) * dt;
             }
-            else if (predicted_over < 1.f)
+            else if (!above_high_water && predicted_over < 1.f)
             {
                 sLastDitchMinDiscard -= llmax((F32)ld_decay, 0.f) * dt;
             }
