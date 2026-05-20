@@ -108,10 +108,9 @@ public:
     virtual ~LLImageJ2CImpl();
 
     // Estimate the byte size of a J2C codestream sufficient to decode the
-    // given discard level. KDU streams packet-by-packet and uses the lean
-    // pyramid-walk default. OpenJPEG needs over-allocation to land on
-    // code-block boundaries even with strict mode off, so it overrides.
-    virtual S32 estimateDataSize(S32 w, S32 h, S32 comp, S32 discard_level, F32 rate) const;
+    // given discard level. KDU uses a packet-by-packet impl; OpenJPEG
+    // overrides with a more conservative block-aligned estimate.
+    virtual S32 estimateDataSize(S32 w, S32 h, S32 comp, S32 discard_level, F32 rate) const = 0;
 protected:
     // Find out the image size and number of channels.
     // Return value:

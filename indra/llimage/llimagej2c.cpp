@@ -265,32 +265,6 @@ S32 LLImageJ2C::calcHeaderSizeJ2C()
     return FIRST_PACKET_SIZE; // Hack. just needs to be >= actual header size...
 }
 
-// Lean pyramid-walk byte estimator suited to packet-by-packet decoders (KDU).
-// Starts at one max-block, walks resolutions by doubling area, sums each
-// layer's compressed-bytes contribution.
-// Reference: https://wiki.lindenlab.com/wiki/THX1138_KDU_Improvements#Byte_Range_Study
-S32 LLImageJ2CImpl::estimateDataSize(S32 w, S32 h, S32 comp, S32 discard_level, F32 rate) const
-{
-    constexpr S32 precision = 8;
-    constexpr S32 max_components = 4;
-    S32 width  = (w > 0) ? w : 2048;
-    S32 height = (h > 0) ? h : 2048;
-    const S32 surface = width * height;
-    S32 nb_layers = 1;
-    S32 s = MAX_BLOCK_SIZE * MAX_BLOCK_SIZE;
-    S32 totalbytes = (S32)(s * max_components * precision * rate);
-    while (surface > s)
-    {
-        if (nb_layers <= (5 - discard_level))
-            totalbytes += (S32)(s * max_components * precision * rate);
-        nb_layers++;
-        s *= 4;
-    }
-    totalbytes /= 8;
-    totalbytes += LLImageJ2C::calcHeaderSizeJ2C();
-    return totalbytes;
-}
-
 //static
 S32 LLImageJ2C::calcDataSizeJ2C(S32 w, S32 h, S32 comp, S32 discard_level, F32 rate)
 {
