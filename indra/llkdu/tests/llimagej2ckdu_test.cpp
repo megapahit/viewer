@@ -83,6 +83,7 @@ void LLImageBase::setSize(S32 , S32 , S32 ) { }
 bool LLImageBase::isBufferInvalid() const { return false; }
 
 LLImageJ2CImpl::~LLImageJ2CImpl() { }
+S32 LLImageJ2CImpl::estimateDataSize(S32, S32, S32, S32, F32) const { return 0; }
 
 LLImageFormatted::LLImageFormatted(S8 ) { }
 LLImageFormatted::~LLImageFormatted() { }
