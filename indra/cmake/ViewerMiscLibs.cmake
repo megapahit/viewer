@@ -18,4 +18,5 @@ endif()
 
 use_prebuilt_binary(nanosvg)
 use_prebuilt_binary(viewer-fonts)
+use_prebuilt_binary(google-fonts)
 use_prebuilt_binary(emoji_shortcodes)
