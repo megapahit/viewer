@@ -4784,6 +4784,19 @@ class LLViewMouselook : public view_listener_t
         }
         else
         {
+            // NaCl: Right-click + scroll wheel zoom in mouselook (ported from Firestorm).
+            // If we were zoomed when the user toggles out of mouselook, restore the
+            // normal (pre-zoom) FOV before switching back to the default camera.
+            LLVector3 mlFovValues = gSavedSettings.getVector3("_NACL_MLFovValues");
+            F32 cameraAngle = gSavedSettings.getF32("CameraAngle");
+            if (mlFovValues.mV[VZ] > 0.0f)
+            {
+                mlFovValues.mV[VY] = cameraAngle;   // preserve last zoomed FOV
+                mlFovValues.mV[VZ] = 0.0f;
+                gSavedSettings.setVector3("_NACL_MLFovValues", mlFovValues);
+                gSavedSettings.setF32("CameraAngle", mlFovValues.mV[VX]); // restore normal FOV
+            }
+            // NaCl End
             gAgentCamera.changeCameraToDefault();
         }
         return true;
@@ -7153,6 +7166,13 @@ void handle_hover_height()
 {
     LLFloaterReg::showInstance("edit_hover_height");
 }
+
+// Firestorm port: Quick Preferences floater (hover height, bandwidth)
+void handle_quick_prefs()
+{
+    LLFloaterReg::toggleInstance("quick_prefs");
+}
+// End Firestorm port
 
 void handle_edit_physics()
 {
@@ -9983,6 +10003,7 @@ void initialize_menus()
     commit.add("EditShape", boost::bind(&handle_edit_shape));
     commit.add("HoverHeight", boost::bind(&handle_hover_height));
     commit.add("EditPhysics", boost::bind(&handle_edit_physics));
+    commit.add("QuickPrefs", boost::bind(&handle_quick_prefs));     // Firestorm port
 
     // View menu
     view_listener_t::addMenu(new LLViewMouselook(), "View.Mouselook");

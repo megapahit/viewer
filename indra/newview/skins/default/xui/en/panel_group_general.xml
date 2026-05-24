@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <panel
  label="General"
- height="420"
+ height="580"
  width="304"
  class="panel_group_general"
  name="general_tab">
@@ -95,6 +95,53 @@ Hover your mouse over the options for more help.
      visible="true"
      width="120" />
     </panel>
+
+    <!-- Nameplate tinting: isolated panel, placed after group_info_top -->
+    <panel
+     name="nametag_color_panel"
+     follows="left|right|top"
+     layout="topleft"
+     left="0"
+     top="129"
+     width="304"
+     height="36"
+     background_visible="false">
+        <text
+         type="string"
+         follows="left|top"
+         height="16"
+         layout="topleft"
+         left="5"
+         top="2"
+         width="160"
+         name="nametag_color_label"
+         text_color="EmphasisColor">
+          Nameplate Color:
+        </text>
+        <color_swatch
+         can_apply_immediately="false"
+         follows="left|top"
+         height="22"
+         label=""
+         label_height="0"
+         layout="topleft"
+         left="170"
+         top="2"
+         name="group_nametag_color"
+         tool_tip="Click to set nameplate color for this group"
+         width="54" />
+        <button
+         follows="left|top"
+         height="22"
+         label="Clear"
+         layout="topleft"
+         left="230"
+         top="2"
+         name="group_nametag_color_clear"
+         tool_tip="Remove the nameplate color for this group"
+         width="60" />
+    </panel>
+
     <text_editor
      type="string"
      follows="left|top|right"
@@ -104,7 +151,7 @@ Hover your mouse over the options for more help.
      max_length="511"
      name="charter"
      parse_urls="true"
-     top="105"
+     top="170"
      right="-4"
     bg_readonly_color="DkGray2"
     text_readonly_color="White"
