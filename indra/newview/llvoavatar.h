@@ -298,6 +298,7 @@ public:
     // LLAvatarPropertiesObserver: receives APT_GROUPS reply for group-tint lookup
     /*virtual*/ void processProperties(void* data, EAvatarProcessorType type) override;
     void            sendAvatarGroupsRequest();
+    const LLUUID&   getActiveGroupID() const { return mActiveGroupID; }
     static void     invalidateNameTag(const LLUUID& agent_id);
     // force all name tags to rebuild, useful when display names turned on/off
     static void     invalidateNameTags();

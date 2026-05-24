@@ -48,6 +48,8 @@
 #include "llagentcamera.h"
 #include "llappviewer.h" // for gDisconnected
 #include "llavataractions.h"
+#include "llgroupcolormap.h"         // group-based dot tinting
+#include "llvoavatar.h"              // group-based dot tinting
 #include "llcallingcard.h" // LLAvatarTracker
 #include "llfloaterland.h"
 #include "llfloaterworldmap.h"
@@ -432,6 +434,24 @@ void LLNetMap::draw()
 
             LLColor4 color = LLAvatarActions::isFriend(uuid) ? map_avatar_friend_color : map_avatar_color;
 
+            // Group-based dot tinting: override with group color if one is set.
+            // Look up the avatar's active group UUID from the LLVOAvatar object.
+            if (LLViewerObject* obj = gObjectList.findObject(uuid))
+            {
+                if (LLVOAvatar* av = dynamic_cast<LLVOAvatar*>(obj))
+                {
+                    LLUUID active_group = av->getActiveGroupID();
+                    if (active_group.notNull())
+                    {
+                        LLColor4 group_color = LLGroupColorMap::getInstance()->getGroupColor(active_group);
+                        if (group_color.mV[VW] >= 0.01f)
+                        {
+                            color = group_color;
+                        }
+                    }
+                }
+            }
+
             unknown_relative_z = sorted_positions[i].mdV[VZ] >= COARSEUPDATE_MAX_Z &&
                     camera_position.mV[VZ] >= COARSEUPDATE_MAX_Z;
 
@@ -505,10 +525,23 @@ void LLNetMap::draw()
         LLUIImagePtr you = LLWorldMapView::sAvatarYouLargeImage;
         if (you)
         {
+            // Group-based dot tinting for self: use gAgent.getGroupID() directly
+            LLColor4 self_color = UI_VERTEX_COLOR;
+            LLUUID self_group = gAgent.getGroupID();
+            if (self_group.notNull())
+            {
+                LLColor4 group_color = LLGroupColorMap::getInstance()->getGroupColor(self_group);
+                if (group_color.mV[VW] >= 0.01f)
+                {
+                    self_color = group_color;
+                }
+            }
+
             you->draw(ll_round(pos_map.mV[VX] - mDotRadius),
                       ll_round(pos_map.mV[VY] - mDotRadius),
                       dot_width,
-                      dot_width);
+                      dot_width,
+                      self_color);
 
             F32 dist_to_cursor_squared = dist_vec_squared(LLVector2(pos_map.mV[VX], pos_map.mV[VY]),
                                           LLVector2((F32)local_mouse_x, (F32)local_mouse_y));
