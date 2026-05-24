@@ -316,6 +316,24 @@ static void update_tp_display(bool minimized)
         {
             // Transition to REQUESTED.  Viewer has sent some kind
             // of TeleportRequest to the source simulator
+
+            // NaCl: Right-click + scroll wheel zoom in mouselook (ported from Firestorm).
+            // Reset the mouselook zoom state on teleport so we don't get stuck at
+            // the zoomed FOV after arriving at the destination.
+            if (gAgentCamera.cameraMouselook())
+            {
+                LLVector3 mlFovValues = gSavedSettings.getVector3("_NACL_MLFovValues");
+                bool wasZoomed = (mlFovValues.mV[VZ] > 0.0f);
+                mlFovValues.mV[VZ] = 0.0f;     // clear "currently zoomed" flag
+                gSavedSettings.setVector3("_NACL_MLFovValues", mlFovValues);
+                if (wasZoomed)
+                {
+                    // Restore the normal (pre-zoom) FOV
+                    gSavedSettings.setF32("CameraAngle", mlFovValues.mV[VX]);
+                }
+            }
+            // NaCl End
+
             gTeleportDisplayTimer.reset();
             const std::string& msg = LLAgent::sTeleportProgressMessages["requesting"];
             LL_INFOS("Teleport") << "A teleport request has been sent, setting state to TELEPORT_REQUESTED" << LL_ENDL;

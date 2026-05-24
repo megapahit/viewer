@@ -207,6 +207,7 @@
 #include "llstartuplistener.h"
 #include "lltoolbarview.h"
 #include "llexperiencelog.h"
+#include "llgroupcolormap.h"        // group-based nameplate tinting
 #include "llcleanup.h"
 
 #include "llenvironment.h"
@@ -3344,6 +3345,9 @@ void LLStartUp::initExperiences()
         boost::bind(&LLAgent::getRegionCapability, &gAgent, _1));
 
     LLExperienceLog::instance().initialize();
+
+    // Load per-group nameplate colors for this account
+    LLGroupColorMap::getInstance()->loadFromDisk();
 }
 
 void LLStartUp::cleanupNameCache()

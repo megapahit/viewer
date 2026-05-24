@@ -53,6 +53,7 @@ public:
     virtual bool            handleHover(S32 x, S32 y, MASK mask)            { return mCur->handleHover( x, y, mask ); }
     virtual bool            handleScrollWheel(S32 x, S32 y, S32 clicks)     { return mCur->handleScrollWheel( x, y, clicks ); }
     virtual bool            handleRightMouseDown(S32 x, S32 y, MASK mask)   { return mCur->handleRightMouseDown( x, y, mask ); }
+    virtual bool            handleRightMouseUp(S32 x, S32 y, MASK mask)     { return mCur->handleRightMouseUp( x, y, mask ); }  // NaCl: mouselook zoom
 
     virtual LLViewerObject* getEditingObject()                              { return mCur->getEditingObject(); }
     virtual LLVector3d      getEditingPointGlobal()                         { return mCur->getEditingPointGlobal(); }
@@ -228,6 +229,7 @@ public:
     virtual bool            handleMouseDown(S32 x, S32 y, MASK mask) override;
     virtual bool            handleDoubleClick(S32 x, S32 y, MASK mask) override;
     virtual bool            handleRightMouseDown(S32 x, S32 y, MASK mask) override;
+    virtual bool            handleRightMouseUp(S32 x, S32 y, MASK mask) override;   // NaCl: mouselook zoom
     virtual bool            handleMouseUp(S32 x, S32 y, MASK mask) override;
     virtual bool            handleScrollWheel(S32 x, S32 y, S32 clicks) override;
     virtual void            onMouseCaptureLost() override;

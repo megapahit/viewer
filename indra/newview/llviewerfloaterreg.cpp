@@ -85,6 +85,7 @@
 #include "llfloatergroups.h"
 #include "llfloaterhelpbrowser.h"
 #include "llfloaterhoverheight.h"
+#include "llquickprefs.h"           // Quick Preferences floater (Firestorm port)
 #include "mpfloatertuning.h"
 #include "llfloaterhowto.h"
 #include "llfloaterhud.h"
@@ -393,6 +394,7 @@ void LLViewerFloaterReg::registerFloaters()
 
     LLFloaterReg::add("help_browser", "floater_help_browser.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterHelpBrowser>);
     LLFloaterReg::add("edit_hover_height", "floater_edit_hover_height.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterHoverHeight>);
+    LLFloaterReg::add("quick_prefs", "floater_quick_prefs.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterQuickPrefs>); // Firestorm port
     LLFloaterReg::add("hud", "floater_hud.xml", (LLFloaterBuildFunc)&LLFloaterReg::build<LLFloaterHUD>);
 
     LLFloaterReg::add("mpv_performance", "floater_mp_performance.xml", (LLFloaterBuildFunc)&

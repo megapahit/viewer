@@ -342,6 +342,7 @@ set(viewer_SOURCE_FILES
     llgltfmateriallist.cpp
     llgltfmaterialpreviewmgr.cpp
     llgroupactions.cpp
+    llgroupcolormap.cpp             # group-based nameplate tinting
     llgroupiconctrl.cpp
     llgrouplist.cpp
     llgroupmgr.cpp
@@ -560,6 +561,7 @@ set(viewer_SOURCE_FILES
     llpreviewtexture.cpp
     llproductinforequest.cpp
     llprogressview.cpp
+    llquickprefs.cpp                # Firestorm port: Quick Preferences floater
     llrecentpeople.cpp
     llreflectionmap.cpp
     llreflectionmapmanager.cpp
@@ -1036,6 +1038,7 @@ set(viewer_HEADER_FILES
     llgltfmateriallist.h
     llgltfmaterialpreviewmgr.h
     llgroupactions.h
+    llgroupcolormap.h               # group-based nameplate tinting
     llgroupiconctrl.h
     llgrouplist.h
     llgroupmgr.h
@@ -1239,6 +1242,7 @@ set(viewer_HEADER_FILES
     llpreviewtexture.h
     llproductinforequest.h
     llprogressview.h
+    llquickprefs.h                  # Firestorm port: Quick Preferences floater
     llrecentpeople.h
     llreflectionmap.h
     llreflectionmapmanager.h

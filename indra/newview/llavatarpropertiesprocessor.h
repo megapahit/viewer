@@ -55,7 +55,8 @@ enum EAvatarProcessorType
     APT_PICK_INFO,
     APT_TEXTURES,
     APT_CLASSIFIEDS,
-    APT_CLASSIFIED_INFO
+    APT_CLASSIFIED_INFO,
+    APT_GROUPS             // Group membership list with per-group role titles
 };
 
 // legacy data is supposed to match AvatarPropertiesReply,
@@ -115,6 +116,28 @@ struct LLAvatarData::LLGroupData
     LLUUID group_id;
     std::string group_name;
     LLUUID group_insignia_id;
+};
+
+/** Sent by the server automatically alongside AvatarPropertiesReply (UDP).
+ *  Contains every group the avatar belongs to, including their selected
+ *  role title in each group.  The active group is the one whose group_title
+ *  matches the avatar's current "Title" NameValue. */
+struct LLAvatarGroups
+{
+    LLUUID agent_id;
+    LLUUID avatar_id;
+
+    struct LLGroupData
+    {
+        U64         group_powers  { 0 };
+        bool        accept_notices{ false };
+        std::string group_title;   // role title the avatar has selected in this group
+        LLUUID      group_id;
+        std::string group_name;
+        LLUUID      group_insignia_id;
+    };
+    typedef std::list<LLGroupData> group_list_t;
+    group_list_t group_list;
 };
 
 struct LLPickData

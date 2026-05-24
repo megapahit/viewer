@@ -44,6 +44,7 @@
 #include "llanimationstates.h"
 #include "llavatarnamecache.h"
 #include "llavatarpropertiesprocessor.h"
+#include "llgroupcolormap.h"         // group-based nameplate tinting
 #include "llavatarrendernotifier.h"
 #include "llcontrolavatar.h"
 #include "llexperiencecache.h"
@@ -674,6 +675,8 @@ LLVOAvatar::LLVOAvatar(const LLUUID& id,
     mNameAlpha(0.f),
     mRenderGroupTitles(sRenderGroupTitles),
     mNameCloud(false),
+    mActiveGroupID(),
+    mGroupFetchPending(false),
     mFirstTEMessageReceived( false ),
     mFirstAppearanceMessageReceived( false ),
     mCulled( false ),
@@ -3650,7 +3653,26 @@ void LLVOAvatar::idleUpdateNameTagText(bool new_name)
         mNameAppearance = is_appearance;
         mNameFriend = is_friend;
         mNameCloud = is_cloud;
-        mTitle = title ? title->getString() : "";
+
+        // Group-based nameplate tinting: when the title NameValue changes on a
+        // non-self avatar it means their active group (or role) changed.  Fire
+        // a lightweight AvatarPropertiesRequest so the AvatarGroupsReply arrives
+        // and we can discover the active group UUID.  We register ourselves as an
+        // observer for APT_GROUPS in processProperties() below.
+        const std::string new_title = title ? title->getString() : "";
+        if (!isSelf() && new_title != mTitle)
+        {
+            // Reset cached group UUID - it will be repopulated by the reply.
+            mActiveGroupID.setNull();
+            if (!mGroupFetchPending)
+            {
+                mGroupFetchPending = true;
+                LLAvatarPropertiesProcessor::getInstance()->addObserver(getID(), this);
+                LLAvatarPropertiesProcessor::getInstance()->sendAvatarLegacyPropertiesRequest(getID());
+            }
+        }
+
+        mTitle = new_title;
         LLStringFn::replace_ascii_controlchars(mTitle,LL_UNKNOWN_CHAR);
         new_name = true;
     }
@@ -3883,7 +3905,80 @@ LLColor4 LLVOAvatar::getNameTagColor(bool is_friend)
         // ...not using display names
         color_name = "NameTagLegacy";
     }
-    return LLUIColorTable::getInstance()->getColor( color_name );
+
+    LLColor4 base_color = LLUIColorTable::getInstance()->getColor(color_name);
+
+    // Group-based nameplate tinting: override with the group color if one is set.
+    // For self, the active group UUID is always available via gAgent.
+    // For others, it is populated asynchronously via AvatarGroupsReply.
+    LLUUID active_group;
+    if (isSelf())
+    {
+        active_group = gAgent.getGroupID();
+    }
+    else
+    {
+        active_group = mActiveGroupID;
+    }
+
+    if (active_group.notNull())
+    {
+        LLColor4 group_color = LLGroupColorMap::getInstance()->getGroupColor(active_group);
+        if (group_color.mV[VW] >= 0.01f)   // non-transparent = has a color set
+        {
+            return group_color;
+        }
+    }
+
+    return base_color;
+}
+
+// ---------------------------------------------------------------------------
+// Group-based nameplate tinting: observer callback
+// ---------------------------------------------------------------------------
+
+void LLVOAvatar::processProperties(void* data, EAvatarProcessorType type)
+{
+    if (type != APT_GROUPS)
+        return;
+
+    LLAvatarGroups* groups = static_cast<LLAvatarGroups*>(data);
+    if (!groups || groups->avatar_id != getID())
+        return;
+
+    // Un-register ourselves — we only need this one reply per title change.
+    LLAvatarPropertiesProcessor::getInstance()->removeObserver(getID(), this);
+    mGroupFetchPending = false;
+
+    // The active group is the one whose GroupTitle matches the avatar's
+    // current Title NameValue (mTitle).  Each avatar can only have one
+    // selected role title displayed at a time, so this match is unambiguous.
+    for (const auto& gd : groups->group_list)
+    {
+        if (gd.group_title == mTitle)
+        {
+            mActiveGroupID = gd.group_id;
+            // Force nametag rebuild so new color is shown immediately.
+            clearNameTag();
+            return;
+        }
+    }
+
+    // No match found (e.g. avatar has no active group or title is blank).
+    mActiveGroupID.setNull();
+    clearNameTag();
+}
+
+// Request the group list for a non-self avatar so we can resolve their
+// active group UUID.  Called from idleUpdateNameTagText on title change.
+void LLVOAvatar::sendAvatarGroupsRequest()
+{
+    if (!isSelf() && !mGroupFetchPending)
+    {
+        mGroupFetchPending = true;
+        LLAvatarPropertiesProcessor::getInstance()->addObserver(getID(), this);
+        LLAvatarPropertiesProcessor::getInstance()->sendAvatarLegacyPropertiesRequest(getID());
+    }
 }
 
 void LLVOAvatar::idleUpdateBelowWater()

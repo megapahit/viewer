@@ -527,12 +527,28 @@ void LLAvatarPropertiesProcessor::processAvatarGroupsReply(LLMessageSystem* msg,
     AvatarGroupsReply is automatically sent by the server in response to the
     AvatarPropertiesRequest in addition to the AvatarPropertiesReply message.
     */
-    LLUUID agent_id;
-    LLUUID avatar_id;
-    msg->getUUIDFast(_PREHASH_AgentData, _PREHASH_AgentID, agent_id);
-    msg->getUUIDFast(_PREHASH_AgentData, _PREHASH_AvatarID, avatar_id);
+    LLAvatarGroups avatar_groups;
+    msg->getUUIDFast(_PREHASH_AgentData, _PREHASH_AgentID,  avatar_groups.agent_id);
+    msg->getUUIDFast(_PREHASH_AgentData, _PREHASH_AvatarID, avatar_groups.avatar_id);
 
-    LL_DEBUGS("AvatarProperties") << "Received AvatarGroupsReply for " << avatar_id << LL_ENDL;
+    LL_DEBUGS("AvatarProperties") << "Received AvatarGroupsReply for "
+                                  << avatar_groups.avatar_id << LL_ENDL;
+
+    S32 group_count = msg->getNumberOfBlocksFast(_PREHASH_GroupData);
+    for (S32 i = 0; i < group_count; ++i)
+    {
+        LLAvatarGroups::LLGroupData gd;
+        msg->getU64Fast(      _PREHASH_GroupData, _PREHASH_GroupPowers,      gd.group_powers,      i);
+        msg->getBOOLFast(     _PREHASH_GroupData, _PREHASH_AcceptNotices,    gd.accept_notices,    i);
+        msg->getStringFast(   _PREHASH_GroupData, _PREHASH_GroupTitle,       gd.group_title,       i);
+        msg->getUUIDFast(     _PREHASH_GroupData, _PREHASH_GroupID,          gd.group_id,          i);
+        msg->getStringFast(   _PREHASH_GroupData, _PREHASH_GroupName,        gd.group_name,        i);
+        msg->getUUIDFast(     _PREHASH_GroupData, _PREHASH_GroupInsigniaID,  gd.group_insignia_id, i);
+        avatar_groups.group_list.push_back(gd);
+    }
+
+    LLAvatarPropertiesProcessor* self = getInstance();
+    self->notifyObservers(avatar_groups.avatar_id, &avatar_groups, APT_GROUPS);
 }
 
 void LLAvatarPropertiesProcessor::notifyObservers(const LLUUID& id, void* data, EAvatarProcessorType type)

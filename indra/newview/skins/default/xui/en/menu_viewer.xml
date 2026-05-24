@@ -206,6 +206,14 @@
              function="Edit.EnableHoverHeight" />
       </menu_item_call>
       <menu_item_call
+        label="Quick Preferences..."
+        layout="topleft"
+        name="Quick Preferences"
+        shortcut="alt|control|Q">
+            <menu_item_call.on_click
+             function="QuickPrefs" />
+      </menu_item_call>
+      <menu_item_call
         label="Edit shape..."
         layout="topleft"
         name="Edit My Shape">

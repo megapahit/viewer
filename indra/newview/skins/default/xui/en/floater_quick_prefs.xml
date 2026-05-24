@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<!--
+  floater_quick_prefs.xml
+  Quick Preferences panel – ported from Firestorm Viewer.
+  Provides on-the-fly access to avatar hover height and max bandwidth.
+-->
+<floater
+    positioning="cascading"
+    can_minimize="true"
+    can_close="true"
+    can_resize="false"
+    height="96"
+    width="320"
+    layout="topleft"
+    name="quick_prefs"
+    single_instance="true"
+    help_topic="quick_prefs"
+    save_rect="true"
+    save_visibility="false"
+    title="QUICK PREFERENCES">
+
+  <!-- ── Hover Height ─────────────────────────────────────────────────── -->
+  <text
+      type="string"
+      follows="left|top"
+      height="16"
+      layout="topleft"
+      left="10"
+      top="28"
+      width="100"
+      name="HoverHeightLabel"
+      tool_tip="Adjust your avatar's hover height above the ground">
+    Hover Height:
+  </text>
+
+  <slider
+      control_name="HoverHeightSlider"
+      decimal_digits="3"
+      enabled="false"
+      can_edit_text="true"
+      follows="left|right|top"
+      height="16"
+      increment="0.001"
+      initial_value="0.0"
+      label_width="0"
+      layout="topleft"
+      left="110"
+      right="-10"
+      top="30"
+      name="HoverHeightSlider"
+      tool_tip="Drag to set your avatar hover height (-3.0 to +3.0 m)" />
+
+  <!-- ── Max Bandwidth ────────────────────────────────────────────────── -->
+  <text
+      type="string"
+      follows="left|top"
+      height="16"
+      layout="topleft"
+      left="10"
+      top_pad="12"
+      width="100"
+      name="MaxBandwidthLabel"
+      tool_tip="Set the maximum network bandwidth in Kbps">
+    Max Bandwidth:
+  </text>
+
+  <slider
+      control_name="ThrottleBandwidthKBPS"
+      decimal_digits="0"
+      can_edit_text="true"
+      follows="left|right|top"
+      height="16"
+      increment="50"
+      initial_value="500"
+      max_val="3000"
+      min_val="50"
+      label_width="0"
+      layout="topleft"
+      left="110"
+      right="-10"
+      top_delta="-2"
+      name="max_bandwidth"
+      tool_tip="Network bandwidth in Kbps (50 – 3000)" />
+
+</floater>

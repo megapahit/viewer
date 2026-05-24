@@ -52,6 +52,7 @@
 #include "llagentcamera.h"
 #include "llfloatertools.h"
 #include "llviewercontrol.h"
+#include "llviewercamera.h"         // NaCl: mouselook right-click zoom
 
 extern LLControlGroup gSavedSettings;
 
@@ -791,9 +792,41 @@ bool LLToolCompGun::handleRightMouseDown(S32 x, S32 y, MASK mask)
     return false;
     */
 
+    // NaCl: Right-click + scroll wheel zoom in mouselook (ported from Firestorm).
+    // When right mouse is pressed without Alt, record the current FOV as the
+    // pre-zoom value (VX) and swap in the stored zoom target (VY).
+    // VZ == 1.0 means "currently zoomed", 0.0 means "not zoomed".
+    if (!(gKeyboard->currentMask(true) & MASK_ALT))
+    {
+        LLVector3 mlFovValues = gSavedSettings.getVector3("_NACL_MLFovValues");
+        F32 cameraAngle = gSavedSettings.getF32("CameraAngle");
+        mlFovValues.mV[VX] = cameraAngle;       // save normal FOV
+        mlFovValues.mV[VZ] = 1.0f;              // mark as zoomed
+        gSavedSettings.setVector3("_NACL_MLFovValues", mlFovValues);
+        gSavedSettings.setF32("CameraAngle", mlFovValues.mV[VY]); // apply zoom FOV
+    }
+    // NaCl End
+
     // Returning true will suppress the context menu
     return true;
 }
+
+// NaCl: Right-click + scroll wheel zoom in mouselook (ported from Firestorm).
+// Restore the pre-zoom FOV when the right mouse button is released.
+bool LLToolCompGun::handleRightMouseUp(S32 x, S32 y, MASK mask)
+{
+    LLVector3 mlFovValues = gSavedSettings.getVector3("_NACL_MLFovValues");
+    F32 cameraAngle = gSavedSettings.getF32("CameraAngle");
+    if (mlFovValues.mV[VZ] == 1.0f)    // only restore if we entered zoom
+    {
+        mlFovValues.mV[VY] = cameraAngle;   // save last zoomed FOV for next right-click
+        mlFovValues.mV[VZ] = 0.0f;          // mark as not zoomed
+        gSavedSettings.setVector3("_NACL_MLFovValues", mlFovValues);
+        gSavedSettings.setF32("CameraAngle", mlFovValues.mV[VX]); // restore normal FOV
+    }
+    return true;
+}
+// NaCl End
 
 
 bool LLToolCompGun::handleMouseUp(S32 x, S32 y, MASK mask)
@@ -831,10 +864,28 @@ void    LLToolCompGun::handleDeselect()
 
 bool LLToolCompGun::handleScrollWheel(S32 x, S32 y, S32 clicks)
 {
-    if (clicks > 0)
+    // NaCl: Right-click + scroll wheel zoom in mouselook (ported from Firestorm).
+    // If currently zoomed (right mouse held, VZ == 1.0), adjust the zoom level
+    // with the scroll wheel. Otherwise fall through to the original behaviour.
+    LLVector3 mlFovValues = gSavedSettings.getVector3("_NACL_MLFovValues");
+    F32 cameraAngle = gSavedSettings.getF32("CameraAngle");
+    mlFovValues.mV[VY] = cameraAngle;
+    if (mlFovValues.mV[VZ] > 0.0f)
     {
-        gAgentCamera.changeCameraToDefault();
-
+        // Scroll up (clicks > 0) = narrower FOV (zoom in); scroll down = wider (zoom out).
+        mlFovValues.mV[VY] = llclamp(
+            mlFovValues.mV[VY] + (F32)(clicks * 0.1f),
+            LLViewerCamera::getInstance()->getMinView(),
+            LLViewerCamera::getInstance()->getMaxView());
+        gSavedSettings.setVector3("_NACL_MLFovValues", mlFovValues);
+        gSavedSettings.setF32("CameraAngle", mlFovValues.mV[VY]);
     }
+    else if (clicks > 0 && gSavedSettings.getBOOL("FSScrollWheelExitsMouselook"))
+    {
+        // Not zoomed: scroll up exits mouselook (original behaviour, now gated by setting).
+        gAgentCamera.changeCameraToDefault();
+    }
+    // NaCl End
+
     return true;
 }
