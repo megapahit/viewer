@@ -172,8 +172,7 @@ if (INSTALL)
             FILES
                 ${ARCH_PREBUILT_DIRS_RELEASE}/libcef.so
                 ${ARCH_PREBUILT_DIRS_RELEASE}/libvk_swiftshader.so
-                ${AUTOBUILD_INSTALL_DIR}/bin/release/snapshot_blob.bin
-                ${AUTOBUILD_INSTALL_DIR}/bin/release/v8_context_snapshot.bin
+                ${AUTOBUILD_INSTALL_DIR}/lib/release/v8_context_snapshot.bin
                 ${AUTOBUILD_INSTALL_DIR}/resources/chrome_100_percent.pak
                 ${AUTOBUILD_INSTALL_DIR}/resources/chrome_200_percent.pak
                 ${AUTOBUILD_INSTALL_DIR}/resources/icudtl.dat
