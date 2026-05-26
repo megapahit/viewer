@@ -6,7 +6,75 @@ include(UnixInstall)
 include_guard()
 add_library( ll::cef INTERFACE IMPORTED )
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+if (${LINUX_DISTRO} MATCHES fedora)
+    if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/dullahan_installed OR NOT ${dullahan_installed} EQUAL 0)
+        file(
+            COPY /usr/src/cef-146.0.11/libcef_dll
+            DESTINATION ${CMAKE_BINARY_DIR}
+        )
+        execute_process(
+            COMMAND sed -i "s/macro(L/cmake_minimum_required(VERSION 3.28)\\nmacro(SET_LIBRARY_TARGET_PROPERTIES)\\nendmacro()\\nmacro(L/" CMakeLists.txt
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/libcef_dll
+        )
+        try_compile(LIBCEF_DLL_RESULT
+            PROJECT libcef_dll
+            SOURCE_DIR ${CMAKE_BINARY_DIR}/libcef_dll
+            BINARY_DIR ${CMAKE_BINARY_DIR}/libcef_dll
+            CMAKE_FLAGS
+                -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+                "-DCMAKE_CXX_FLAGS:STRING=-I/usr/include/cef -I/usr/src/cef-146.0.11 -fPIC"
+        )
+        if (${LIBCEF_DLL_RESULT})
+            file(
+                COPY ${CMAKE_BINARY_DIR}/libcef_dll/libcef_dll_wrapper.a
+                DESTINATION ${ARCH_PREBUILT_DIRS_RELEASE}
+            )
+        endif ()
+        if (NOT EXISTS ${CMAKE_BINARY_DIR}/dullahan-1.29.0-CEF_146.0.12.tar.gz)
+            file(DOWNLOAD
+                https://github.com/secondlife/dullahan/archive/refs/tags/v1.29.0-CEF_146.0.12.tar.gz
+                ${CMAKE_BINARY_DIR}/dullahan-1.29.0-CEF_146.0.12.tar.gz
+            )
+        endif ()
+        file(ARCHIVE_EXTRACT
+            INPUT ${CMAKE_BINARY_DIR}/dullahan-1.29.0-CEF_146.0.12.tar.gz
+            DESTINATION ${CMAKE_BINARY_DIR}
+        )
+        try_compile(DULLAHAN_RESULT
+            PROJECT dullahan
+            SOURCE_DIR ${CMAKE_BINARY_DIR}/dullahan-1.29.0-CEF_146.0.12
+            BINARY_DIR ${CMAKE_BINARY_DIR}/dullahan-1.29.0-CEF_146.0.12
+            CMAKE_FLAGS
+                -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+                -DCMAKE_INSTALL_PREFIX:PATH=${LIBS_PREBUILT_DIR}
+                -DCMAKE_INSTALL_LIBDIR:PATH=${ARCH_PREBUILT_DIRS_RELEASE}
+                -DCEF_WRAPPER_DIR:PATH=/usr/include/cef
+                -DCEF_WRAPPER_BUILD_DIR:PATH=${CMAKE_BINARY_DIR}/dullahan-1.29.0-CEF_146.0.12
+                -DCEF_LIBRARY_RELEASE:FILEPATH=${INSTALL_PREFIX}/${_LIB}/cef/libcef.so
+                -DCEF_DLL_LIBRARY_RELEASE:FILEPATH=${ARCH_PREBUILT_DIRS_RELEASE}/libcef_dll_wrapper.a
+                "-DCMAKE_CXX_FLAGS:STRING=-I/usr/include/cef -I/usr/src/cef-146.0.11 -DWRAPPING_CEF_SHARED"
+        )
+        if (${DULLAHAN_RESULT})
+            file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/bin/release)
+            file(
+                COPY ${CMAKE_BINARY_DIR}/dullahan-1.29.0-CEF_146.0.12/dullahan_host
+                DESTINATION ${LIBS_PREBUILT_DIR}/bin/release
+            )
+            file(
+                COPY ${CMAKE_BINARY_DIR}/dullahan-1.29.0-CEF_146.0.12/libdullahan.a
+                DESTINATION ${ARCH_PREBUILT_DIRS_RELEASE}
+            )
+            file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/include/cef)
+            file(
+                COPY
+                    ${CMAKE_BINARY_DIR}/dullahan-1.29.0-CEF_146.0.12/src/dullahan.h
+                    ${CMAKE_BINARY_DIR}/dullahan-1.29.0-CEF_146.0.12/src/dullahan_version.h
+                DESTINATION ${LIBS_PREBUILT_DIR}/include/cef
+            )
+            file(WRITE ${PREBUILD_TRACKING_DIR}/dullahan_installed "0")
+        endif ()
+    endif ()
+elseif (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
     if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/dullahan_installed OR NOT ${dullahan_installed} EQUAL 0)
         if (NOT EXISTS ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40.tar.gz)
             file(DOWNLOAD
@@ -58,7 +126,15 @@ endif ()
 execute_process(
     COMMAND patchelf --set-rpath ${INSTALL_LIBRARY_DIR} bin/release/dullahan_host
     WORKING_DIRECTORY ${LIBS_PREBUILT_DIR}
+)
+
+if (${LINUX_DISTRO} MATCHES fedora)
+    target_include_directories( ll::cef SYSTEM INTERFACE /usr/include/cef/include)
+    execute_process(
+        COMMAND patchelf --add-rpath ${INSTALL_PREFIX}/${_LIB}/cef bin/release/dullahan_host
+        WORKING_DIRECTORY ${LIBS_PREBUILT_DIR}
     )
+endif ()
 
 target_include_directories( ll::cef SYSTEM INTERFACE  ${LIBS_PREBUILT_DIR}/include/cef)
 
@@ -126,6 +202,9 @@ elseif (DARWIN)
     )
 
 elseif (LINUX)
+    if (${LINUX_DISTRO} MATCHES fedora)
+        target_link_directories( ll::cef INTERFACE ${INSTALL_PREFIX}/${_LIB}/cef )
+    endif ()
     target_link_libraries( ll::cef INTERFACE
         libdullahan.a
         cef

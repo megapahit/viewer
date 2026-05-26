@@ -51,6 +51,9 @@ if (LINUX)
 
   list(APPEND media_plugin_cef_SOURCE_FILES ${LINUX_VOLUME_CATCHER})
   set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--build-id")
+  if (${LINUX_DISTRO} MATCHES fedora)
+    set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH};${INSTALL_PREFIX}/${_LIB}/cef)
+  endif ()
   list(APPEND media_plugin_cef_LINK_LIBRARIES llwindow )
 elseif (DARWIN)
   list(APPEND media_plugin_cef_SOURCE_FILES volume_catcher_null.cpp)
@@ -159,6 +162,11 @@ if (INSTALL)
                 DESTINATION lib/${VIEWER_BINARY_NAME}
                 #PERMISSIONS SETUID OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
             )
+        elseif (${LINUX_DISTRO} MATCHES fedora)
+            install(
+                PROGRAMS ${AUTOBUILD_INSTALL_DIR}/bin/release/dullahan_host
+                DESTINATION libexec/${VIEWER_BINARY_NAME}
+            )
         else (${LINUX_DISTRO} MATCHES arch)
             install(
                 PROGRAMS
@@ -168,21 +176,23 @@ if (INSTALL)
                 #PERMISSIONS SETUID OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
             )
         endif (${LINUX_DISTRO} MATCHES arch)
-        install(
-            FILES
-                ${ARCH_PREBUILT_DIRS_RELEASE}/libcef.so
-                ${ARCH_PREBUILT_DIRS_RELEASE}/libvk_swiftshader.so
-                ${AUTOBUILD_INSTALL_DIR}/lib/release/v8_context_snapshot.bin
-                ${AUTOBUILD_INSTALL_DIR}/resources/chrome_100_percent.pak
-                ${AUTOBUILD_INSTALL_DIR}/resources/chrome_200_percent.pak
-                ${AUTOBUILD_INSTALL_DIR}/resources/icudtl.dat
-                ${AUTOBUILD_INSTALL_DIR}/resources/resources.pak
-            DESTINATION ${_LIB}/${VIEWER_BINARY_NAME}
+        if (NOT (${LINUX_DISTRO} MATCHES fedora))
+            install(
+                FILES
+                    ${ARCH_PREBUILT_DIRS_RELEASE}/libcef.so
+                    ${ARCH_PREBUILT_DIRS_RELEASE}/libvk_swiftshader.so
+                    ${AUTOBUILD_INSTALL_DIR}/lib/release/v8_context_snapshot.bin
+                    ${AUTOBUILD_INSTALL_DIR}/resources/chrome_100_percent.pak
+                    ${AUTOBUILD_INSTALL_DIR}/resources/chrome_200_percent.pak
+                    ${AUTOBUILD_INSTALL_DIR}/resources/icudtl.dat
+                    ${AUTOBUILD_INSTALL_DIR}/resources/resources.pak
+                DESTINATION ${_LIB}/${VIEWER_BINARY_NAME}
             )
-        install(
-            DIRECTORY ${AUTOBUILD_INSTALL_DIR}/resources/locales
-            DESTINATION ${_LIB}/${VIEWER_BINARY_NAME}
+            install(
+                DIRECTORY ${AUTOBUILD_INSTALL_DIR}/resources/locales
+                DESTINATION ${_LIB}/${VIEWER_BINARY_NAME}
             )
+        endif ()
     elseif (WINDOWS)
         set(_LIB llplugin)
         install(
