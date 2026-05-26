@@ -101,6 +101,9 @@ void LLStatsListener::getPerfData(LLSD const & evt)
     setPeriodArray(frametime, "frame_time_ms", last, recording, num_periods, LLStatViewer::FRAMETIME,
         [](LLTrace::Recording& period, const auto& stat) { return period.getMean(stat); });
 
+    setPeriodArray(frametime, "do_frame_time_us", last, recording, num_periods, LLStatViewer::DOFRAME_TIME_US,
+        [](LLTrace::Recording& period, const auto& stat) { return period.getMean(stat); });
+
     setPeriodArray(frametime, "frame_time_jitter_ms", last, recording, num_periods, LLStatViewer::FRAMETIME_JITTER,
         [](LLTrace::Recording& period, const auto& stat) { return period.getMean(stat); });
 

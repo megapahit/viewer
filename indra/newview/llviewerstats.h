@@ -223,6 +223,8 @@ extern LLTrace::SampleStatHandle<U32>               FRAMETIME_JITTER_EVENTS,
                                                     FRAMETIME_JITTER_EVENTS_PER_MINUTE,
                                                     FRAMETIME_JITTER_EVENTS_LAST_MINUTE;
 
+extern LLTrace::SampleStatHandle<U64>               DOFRAME_TIME_US;
+
 extern LLTrace::SampleStatHandle<F64> NOTRMALIZED_FRAMETIME_JITTER_SESSION;
 extern LLTrace::SampleStatHandle<F64> NFTV;
 extern LLTrace::SampleStatHandle<F64> NORMALIZED_FRAMTIME_JITTER_PERIOD;
