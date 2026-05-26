@@ -192,12 +192,22 @@ LLInventoryModelBackgroundFetch::LLInventoryModelBackgroundFetch():
     mFetchCount(0),
     mLastFetchCount(0),
     mFetchFolderCount(0),
+    mInitialFetchDuration(0.f),
+    mInitialFetchDurationCaptured(false),
     mAllRecursiveFoldersFetched(false),
     mRecursiveInventoryFetchStarted(false),
     mRecursiveLibraryFetchStarted(false),
     mRecursiveMarketplaceFetchStarted(false),
     mMinTimeBetweenFetches(0.3f)
 {}
+
+void LLInventoryModelBackgroundFetch::markFetchStarted()
+{
+    if (!mBackgroundFetchActive)
+    {
+        mFetchStartTimer.reset();
+    }
+}
 
 LLInventoryModelBackgroundFetch::~LLInventoryModelBackgroundFetch()
 {
@@ -289,6 +299,7 @@ void LLInventoryModelBackgroundFetch::start(const LLUUID& id, bool recursive)
         // it's a folder, do a bulk fetch
         LL_DEBUGS(LOG_INV) << "Start fetching category: " << id << ", recursive: " << recursive << LL_ENDL;
 
+        markFetchStarted();
         mBackgroundFetchActive = true;
         mFolderFetchActive = true;
         EFetchType recursion_type = recursive ? FT_RECURSIVE : FT_DEFAULT;
@@ -376,6 +387,7 @@ void LLInventoryModelBackgroundFetch::scheduleFolderFetch(const LLUUID& cat_id, 
 {
     if (mFetchFolderQueue.empty() || mFetchFolderQueue.front().mUUID != cat_id)
     {
+        markFetchStarted();
         mBackgroundFetchActive = true;
         mFolderFetchActive = true;
 
@@ -403,6 +415,7 @@ void LLInventoryModelBackgroundFetch::scheduleItemFetch(const LLUUID& item_id, b
 {
     if (mFetchItemQueue.empty() || mFetchItemQueue.front().mUUID != item_id)
     {
+        markFetchStarted();
         mBackgroundFetchActive = true;
         if (forced)
         {
@@ -447,6 +460,7 @@ void LLInventoryModelBackgroundFetch::fetchFolderAndLinks(const LLUUID& cat_id, 
                                });
 
     // start idle loop to track completion
+    markFetchStarted();
     mBackgroundFetchActive = true;
     mFolderFetchActive = true;
     gIdleCallbacks.addFunction(&LLInventoryModelBackgroundFetch::backgroundFetchCB, nullptr);
@@ -489,6 +503,7 @@ void LLInventoryModelBackgroundFetch::fetchCOF(nullary_func_t callback)
                      });
 
     // start idle loop to track completion
+    markFetchStarted();
     mBackgroundFetchActive = true;
     mFolderFetchActive = true;
     gIdleCallbacks.addFunction(&LLInventoryModelBackgroundFetch::backgroundFetchCB, nullptr);
@@ -496,6 +511,7 @@ void LLInventoryModelBackgroundFetch::fetchCOF(nullary_func_t callback)
 
 void LLInventoryModelBackgroundFetch::findLostItems()
 {
+    markFetchStarted();
     mBackgroundFetchActive = true;
     mFolderFetchActive = true;
     mFetchFolderQueue.emplace_back(LLUUID::null, FT_RECURSIVE);
@@ -515,6 +531,11 @@ void LLInventoryModelBackgroundFetch::setAllFoldersFetched()
     mFolderFetchActive = false;
     if (isBulkFetchProcessingComplete())
     {
+        if (mAllRecursiveFoldersFetched && !mInitialFetchDurationCaptured)
+        {
+            mInitialFetchDuration = mFetchStartTimer.getElapsedTimeF32();
+            mInitialFetchDurationCaptured = true;
+        }
         mBackgroundFetchActive = false;
     }
 
@@ -843,6 +864,11 @@ void LLInventoryModelBackgroundFetch::bulkFetchViaAis()
 
     if (isBulkFetchProcessingComplete())
     {
+        if (mAllRecursiveFoldersFetched && !mInitialFetchDurationCaptured)
+        {
+            mInitialFetchDuration = mFetchStartTimer.getElapsedTimeF32();
+            mInitialFetchDurationCaptured = true;
+        }
         mBackgroundFetchActive = false;
     }
 }
