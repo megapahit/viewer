@@ -51,7 +51,7 @@ if (LINUX)
 
   list(APPEND media_plugin_cef_SOURCE_FILES ${LINUX_VOLUME_CATCHER})
   set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--build-id")
-  if (${LINUX_DISTRO} MATCHES fedora)
+  if (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES fedora))
     set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH};${INSTALL_PREFIX}/${_LIB}/cef)
   endif ()
   list(APPEND media_plugin_cef_LINK_LIBRARIES llwindow )
@@ -156,27 +156,23 @@ if (INSTALL)
         endif ()
         if (${LINUX_DISTRO} MATCHES arch)
             install(
-                PROGRAMS
-                    ${AUTOBUILD_INSTALL_DIR}/bin/release/chrome-sandbox
-                    ${AUTOBUILD_INSTALL_DIR}/bin/release/dullahan_host
+                PROGRAMS ${AUTOBUILD_INSTALL_DIR}/bin/release/dullahan_host
                 DESTINATION lib/${VIEWER_BINARY_NAME}
-                #PERMISSIONS SETUID OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
             )
         elseif (${LINUX_DISTRO} MATCHES fedora)
             install(
                 PROGRAMS ${AUTOBUILD_INSTALL_DIR}/bin/release/dullahan_host
                 DESTINATION libexec/${VIEWER_BINARY_NAME}
             )
-        else (${LINUX_DISTRO} MATCHES arch)
+        else ()
             install(
                 PROGRAMS
                     ${AUTOBUILD_INSTALL_DIR}/bin/release/chrome-sandbox
                     ${AUTOBUILD_INSTALL_DIR}/bin/release/dullahan_host
                 DESTINATION libexec/${VIEWER_BINARY_NAME}
-                #PERMISSIONS SETUID OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
             )
-        endif (${LINUX_DISTRO} MATCHES arch)
-        if (NOT (${LINUX_DISTRO} MATCHES fedora))
+        endif ()
+        if (NOT (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES fedora)))
             install(
                 FILES
                     ${ARCH_PREBUILT_DIRS_RELEASE}/libcef.so
