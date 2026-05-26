@@ -50,7 +50,7 @@ if (LINUX)
   )
 
   list(APPEND media_plugin_cef_SOURCE_FILES ${LINUX_VOLUME_CATCHER})
-  set(CMAKE_SHARED_LINKER_FLAGS  "-Wl,--build-id -Wl,-rpath,'$ORIGIN:$ORIGIN/../../lib'")
+  set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--build-id")
   list(APPEND media_plugin_cef_LINK_LIBRARIES llwindow )
 elseif (DARWIN)
   list(APPEND media_plugin_cef_SOURCE_FILES volume_catcher_null.cpp)
@@ -178,11 +178,11 @@ if (INSTALL)
                 ${AUTOBUILD_INSTALL_DIR}/resources/chrome_200_percent.pak
                 ${AUTOBUILD_INSTALL_DIR}/resources/icudtl.dat
                 ${AUTOBUILD_INSTALL_DIR}/resources/resources.pak
-            DESTINATION ${_LIB}
+            DESTINATION ${_LIB}/${VIEWER_BINARY_NAME}
             )
         install(
             DIRECTORY ${AUTOBUILD_INSTALL_DIR}/resources/locales
-            DESTINATION ${_LIB}
+            DESTINATION ${_LIB}/${VIEWER_BINARY_NAME}
             )
     elseif (WINDOWS)
         set(_LIB llplugin)
@@ -216,6 +216,6 @@ if (INSTALL)
         set(_LIB lib)
     endif ()
     if (NOT WINDOWS)
-      install(TARGETS ${PROJECT_NAME} DESTINATION ${_LIB})
+      install(TARGETS ${PROJECT_NAME} DESTINATION ${_LIB}/${VIEWER_BINARY_NAME})
     endif ()
 endif ()

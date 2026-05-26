@@ -201,7 +201,7 @@ if (LINUX)
         if (USE_DISCORD)
             install(
                 FILES ${ARCH_PREBUILT_DIRS_RELEASE}/libdiscord_partner_sdk.so
-                DESTINATION ${_LIB}
+                DESTINATION ${_LIB}/${VIEWER_BINARY_NAME}
                 )
         endif ()
         if (USE_FMODSTUDIO)
@@ -209,7 +209,7 @@ if (LINUX)
                 ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so
                 ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so.13
                 ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so.13.34
-            DESTINATION ${_LIB})
+            DESTINATION ${_LIB}/${VIEWER_BINARY_NAME})
         endif (USE_FMODSTUDIO)
 endif (LINUX)
 

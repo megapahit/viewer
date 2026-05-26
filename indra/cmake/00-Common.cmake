@@ -16,6 +16,7 @@ include_guard()
 
 include(Variables)
 include(Linker)
+include(UnixInstall)
 
 # We go to some trouble to set LL_BUILD to the set of relevant compiler flags.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} $ENV{LL_BUILD}")
@@ -127,7 +128,7 @@ endif (NOT CMAKE_CXX_COMPILER_ID MATCHES GNU AND WINDOWS)
 
 if (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
   set( CMAKE_BUILD_WITH_INSTALL_RPATH TRUE )
-  set( CMAKE_INSTALL_RPATH $ORIGIN $ORIGIN/../lib )
+  set( CMAKE_INSTALL_RPATH ${INSTALL_LIBRARY_DIR} )
   set(CMAKE_EXE_LINKER_FLAGS "-Wl,--exclude-libs,ALL")
 
   find_program(CCACHE_EXE ccache)

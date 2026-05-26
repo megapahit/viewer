@@ -22,8 +22,8 @@ if (INSTALL)
     set(_LIB lib)
   endif ()
 
-  set(INSTALL_LIBRARY_DIR ${INSTALL_PREFIX}/${_LIB} CACHE PATH
-      "Installation directory for read-only shared files.")
+  set(INSTALL_LIBRARY_DIR ${INSTALL_PREFIX}/${_LIB}/${VIEWER_BINARY_NAME} CACHE PATH
+      "Installation directory for dynamic library files and their resources.")
 
   set(INSTALL_SHARE_DIR ${INSTALL_PREFIX}/share CACHE PATH
       "Installation directory for read-only shared files.")

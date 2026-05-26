@@ -1,6 +1,7 @@
 # -*- cmake -*-
 include(Linking)
 include(Prebuilt)
+include(UnixInstall)
 
 include_guard()
 add_library( ll::cef INTERFACE IMPORTED )
@@ -59,7 +60,7 @@ use_prebuilt_binary(dullahan)
 endif ()
 
 execute_process(
-    COMMAND patchelf --remove-rpath bin/release/dullahan_host
+    COMMAND patchelf --set-rpath ${INSTALL_LIBRARY_DIR} bin/release/dullahan_host
     WORKING_DIRECTORY ${LIBS_PREBUILT_DIR}
     )
 
