@@ -588,6 +588,7 @@ set(viewer_SOURCE_FILES
     llslurl.cpp
     llsnapshotlivepreview.cpp
     llspatialpartition.cpp
+    llstatslistener.cpp
     llspeakers.cpp
     llspeakingindicatormanager.cpp
     llsplitbutton.cpp
@@ -739,7 +740,6 @@ set(viewer_SOURCE_FILES
     llwebprofile.cpp
     llwind.cpp
     llwindowlistener.cpp
-    llstatslistener.cpp
     llwlhandlers.cpp
     llworld.cpp
     llworldmap.cpp
@@ -1260,6 +1260,7 @@ set(viewer_HEADER_FILES
     llsnapshotlivepreview.h
     llsnapshotmodel.h
     llspatialpartition.h
+    llstatslistener.h
     llspeakers.h
     llspeakingindicatormanager.h
     llsplitbutton.h
@@ -1413,7 +1414,6 @@ set(viewer_HEADER_FILES
     llwebprofile.h
     llwind.h
     llwindowlistener.h
-    llstatslistener.h
     llwlhandlers.h
     llworld.h
     llworldmap.h

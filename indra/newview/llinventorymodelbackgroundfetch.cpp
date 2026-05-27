@@ -207,6 +207,7 @@ void LLInventoryModelBackgroundFetch::markFetchStarted()
     {
         mFetchStartTimer.reset();
     }
+    mBackgroundFetchActive = true;
 }
 
 LLInventoryModelBackgroundFetch::~LLInventoryModelBackgroundFetch()
@@ -300,7 +301,6 @@ void LLInventoryModelBackgroundFetch::start(const LLUUID& id, bool recursive)
         LL_DEBUGS(LOG_INV) << "Start fetching category: " << id << ", recursive: " << recursive << LL_ENDL;
 
         markFetchStarted();
-        mBackgroundFetchActive = true;
         mFolderFetchActive = true;
         EFetchType recursion_type = recursive ? FT_RECURSIVE : FT_DEFAULT;
         if (id.isNull())
@@ -388,7 +388,6 @@ void LLInventoryModelBackgroundFetch::scheduleFolderFetch(const LLUUID& cat_id, 
     if (mFetchFolderQueue.empty() || mFetchFolderQueue.front().mUUID != cat_id)
     {
         markFetchStarted();
-        mBackgroundFetchActive = true;
         mFolderFetchActive = true;
 
         if (forced)
@@ -416,7 +415,6 @@ void LLInventoryModelBackgroundFetch::scheduleItemFetch(const LLUUID& item_id, b
     if (mFetchItemQueue.empty() || mFetchItemQueue.front().mUUID != item_id)
     {
         markFetchStarted();
-        mBackgroundFetchActive = true;
         if (forced)
         {
             // check if already requested
@@ -461,7 +459,6 @@ void LLInventoryModelBackgroundFetch::fetchFolderAndLinks(const LLUUID& cat_id, 
 
     // start idle loop to track completion
     markFetchStarted();
-    mBackgroundFetchActive = true;
     mFolderFetchActive = true;
     gIdleCallbacks.addFunction(&LLInventoryModelBackgroundFetch::backgroundFetchCB, nullptr);
 }
@@ -504,7 +501,6 @@ void LLInventoryModelBackgroundFetch::fetchCOF(nullary_func_t callback)
 
     // start idle loop to track completion
     markFetchStarted();
-    mBackgroundFetchActive = true;
     mFolderFetchActive = true;
     gIdleCallbacks.addFunction(&LLInventoryModelBackgroundFetch::backgroundFetchCB, nullptr);
 }
@@ -512,7 +508,6 @@ void LLInventoryModelBackgroundFetch::fetchCOF(nullary_func_t callback)
 void LLInventoryModelBackgroundFetch::findLostItems()
 {
     markFetchStarted();
-    mBackgroundFetchActive = true;
     mFolderFetchActive = true;
     mFetchFolderQueue.emplace_back(LLUUID::null, FT_RECURSIVE);
     gIdleCallbacks.addFunction(&LLInventoryModelBackgroundFetch::backgroundFetchCB, nullptr);
@@ -542,7 +537,7 @@ void LLInventoryModelBackgroundFetch::setAllFoldersFetched()
     // For now only informs about initial fetch being done
     mFoldersFetchedSignal();
 
-    LL_INFOS(LOG_INV) << "Inventory background fetch completed" << LL_ENDL;
+    LL_INFOS(LOG_INV) << "Inventory background fetch completed after: " << mFetchStartTimer.getElapsedTimeF32() << LL_ENDL;
 }
 
 boost::signals2::connection LLInventoryModelBackgroundFetch::setFetchCompletionCallback(folders_fetched_callback_t cb)
