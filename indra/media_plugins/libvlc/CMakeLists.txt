@@ -88,7 +88,7 @@ if (INSTALL)
             DESTINATION ${_LIB}/plugins
             )
     elseif (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
-        set(_LIB lib/${ARCH}-linux-gnu)
+        set(_LIB lib/${ARCH}-linux-gnu/${VIEWER_BINARY_NAME})
     elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed) OR (${LINUX_DISTRO} MATCHES gentoo))
         set(_LIB lib${ADDRESS_SIZE}/${VIEWER_BINARY_NAME})
     else ()
