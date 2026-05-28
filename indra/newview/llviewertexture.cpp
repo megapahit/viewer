@@ -102,14 +102,14 @@ F32 LLViewerTexture::getMemoryPressureProgress()
 // Effective oversample factor for the per-texture pixel-area discard cap.
 // Trends from TextureScreenSizeOversample toward
 // TextureScreenSizeOversampleUnderPressure as the pressure multiplier
-// walks its 0..1 range; pinned to the floor above the high water mark.
+// walks its 0..1 range. Progress = 1 (mult at cap, including the high-
+// water-mark slam in updateClass) lands on the floor.
 static F32 pixelCapOversampleForPressure()
 {
     static LLCachedControl<F32> over_base(gSavedSettings, "TextureScreenSizeOversample", 1.5f);
     static LLCachedControl<F32> over_pressure(gSavedSettings, "TextureScreenSizeOversampleUnderPressure", 0.5f);
     F32 base = llmax((F32)over_base, 0.1f);
     F32 floor = llclamp((F32)over_pressure, 0.1f, base);
-    if (LLViewerTexture::sAboveHighWater) return floor;
     F32 progress = LLViewerTexture::getMemoryPressureProgress();
     return base + (floor - base) * progress;
 }
