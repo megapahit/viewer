@@ -124,25 +124,30 @@ static bool handleRenderTextureQualityChanged(const LLSD& newvalue)
     F32 ch_specular  = 0.5f;
     F32 ch_emissive  = 0.75f;
     F32 distance_power = 0.5f;
+    F32 screen_oversample = 1.5f;
     switch (quality)
     {
     case 0: // Low
         max_res = 1024;
         ch_normal = 0.5f; ch_basecolor = 0.75f; ch_specular = 0.1f; ch_emissive = 0.5f;
         distance_power = 0.15f;
+        screen_oversample = 0.75f;
         break;
     case 1: // Medium
         ch_normal = 0.75f; ch_basecolor = 0.75f; ch_specular = 0.3f; ch_emissive = 0.75f;
         distance_power = 0.25f;
+        screen_oversample = 1.0f;
         break;
     case 2: // High
         // channel defaults above
         distance_power = 0.35f;
+        screen_oversample = 1.5f;
         break;
     case 3: // Ultra
     default:
         ch_normal = 1.f; ch_basecolor = 1.f; ch_specular = 1.f; ch_emissive = 1.f;
         distance_power = 0.5f;
+        screen_oversample = 2.0f;
         break;
     }
     gSavedSettings.setU32("RenderMaxTextureResolution", max_res);
@@ -151,6 +156,7 @@ static bool handleRenderTextureQualityChanged(const LLSD& newvalue)
     gSavedSettings.setF32("TextureChannelSpecular", ch_specular);
     gSavedSettings.setF32("TextureChannelEmissive", ch_emissive);
     gSavedSettings.setF32("TextureDistanceDiscardPower", distance_power);
+    gSavedSettings.setF32("TextureScreenSizeOversample", screen_oversample);
     return true;
 }
 

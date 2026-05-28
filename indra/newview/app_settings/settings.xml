@@ -8060,7 +8060,7 @@
   <key>RenderTextureQuality</key>
   <map>
     <key>Comment</key>
-    <string>Texture quality preset: 0=Low, 1=Medium, 2=High, 3=Ultra. Drives RenderMaxTextureResolution, the four TextureChannel* exponents, and TextureDistanceDiscardPower.</string>
+    <string>Texture quality preset: 0=Low, 1=Medium, 2=High, 3=Ultra. Drives RenderMaxTextureResolution, the four TextureChannel* exponents, TextureDistanceDiscardPower, and TextureScreenSizeOversample.</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>
@@ -12146,6 +12146,28 @@
       <string>F32</string>
       <key>Value</key>
       <real>1.0</real>
+    </map>
+    <key>TextureScreenSizeOversample</key>
+    <map>
+      <key>Comment</key>
+      <string>Texels per screen pixel kept by the per-texture pixel-area discard cap. 1.0 = 1:1 with on-screen contribution; higher = sharper distant textures, more VRAM. Driven by RenderTextureQuality.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>1.5</real>
+    </map>
+    <key>TextureScreenSizeOversampleUnderPressure</key>
+    <map>
+      <key>Comment</key>
+      <string>Floor that TextureScreenSizeOversample collapses toward as the pressure multiplier walks up. Pinned to this value above TextureMemoryHighWaterMark. Lower = allow distant textures to drop below their on-screen contribution under pressure.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>0.5</real>
     </map>
     <key>TextureStalenessIntervalSeconds</key>
     <map>

@@ -98,6 +98,21 @@ F32 LLViewerTexture::getMemoryPressureProgress()
     F32 cap = llmax((F32)max_mult, 1.0001f);
     return llclampf((sMemoryPressureMultiplier - 1.f) / (cap - 1.f));
 }
+
+// Effective oversample factor for the per-texture pixel-area discard cap.
+// Trends from TextureScreenSizeOversample toward
+// TextureScreenSizeOversampleUnderPressure as the pressure multiplier
+// walks its 0..1 range; pinned to the floor above the high water mark.
+static F32 pixelCapOversampleForPressure()
+{
+    static LLCachedControl<F32> over_base(gSavedSettings, "TextureScreenSizeOversample", 1.5f);
+    static LLCachedControl<F32> over_pressure(gSavedSettings, "TextureScreenSizeOversampleUnderPressure", 0.5f);
+    F32 base = llmax((F32)over_base, 0.1f);
+    F32 floor = llclamp((F32)over_pressure, 0.1f, base);
+    if (LLViewerTexture::sAboveHighWater) return floor;
+    F32 progress = LLViewerTexture::getMemoryPressureProgress();
+    return base + (floor - base) * progress;
+}
 U32 LLViewerTexture::sBiasTexturesUpdated = 0;
 
 S32 LLViewerTexture::sMaxSculptRez = 128; //max sculpt image size
@@ -3364,6 +3379,24 @@ void LLViewerLODTexture::processTextureStats()
         discard_level = llclamp(discard_level, min_discard, (F32)effective_cap);
 
         mDesiredDiscardLevel = llmin(effective_cap, (S32)discard_level);
+
+        // Pixel-area discard cap. Don't let mDesiredDiscardLevel push the
+        // GL resolution below the texture's largest on-screen contribution
+        // x an oversample factor (sharper when we have memory headroom,
+        // looser under pressure). Avatar bakes exempt.
+        if (!isAgentAvatarBoost(mBoostLevel) && mMaxOnScreenSize > 0.f && mTexelsPerImage > 0)
+        {
+            static const F64 log_4 = log(4.0);
+            F32 oversample = pixelCapOversampleForPressure();
+            F32 visible_texels = mMaxOnScreenSize * oversample * oversample;
+            visible_texels = llclamp(visible_texels, (F32)MIN_IMAGE_AREA, (F32)mTexelsPerImage);
+            if ((F32)mTexelsPerImage > visible_texels)
+            {
+                S32 d_pixel_cap = (S32)floor(log((F32)mTexelsPerImage / visible_texels) / log_4);
+                d_pixel_cap = llclamp(d_pixel_cap, 0, dim_max_for_image_i);
+                mDesiredDiscardLevel = llmin((S32)mDesiredDiscardLevel, d_pixel_cap);
+            }
+        }
 
         // Apply the setMinDiscardLevel cap, relaxed under VRAM pressure
         // (cap_relax = 1 - 1/mult: 0 at mult=1, ~0.5 at mult=2, ~0.9 at
