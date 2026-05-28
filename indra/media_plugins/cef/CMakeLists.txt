@@ -148,11 +148,11 @@ if (INSTALL)
             )
     elseif (LINUX)
         if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
-            set(_LIB lib/${ARCH}-linux-gnu)
+            set(_LIB lib/${ARCH}-linux-gnu/${VIEWER_BINARY_NAME})
         elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed) OR (${LINUX_DISTRO} MATCHES gentoo))
-            set(_LIB lib${ADDRESS_SIZE})
+            set(_LIB lib${ADDRESS_SIZE}/${VIEWER_BINARY_NAME})
         else ()
-            set(_LIB lib)
+            set(_LIB lib/${VIEWER_BINARY_NAME})
         endif ()
         if (${LINUX_DISTRO} MATCHES arch)
             install(
@@ -182,11 +182,11 @@ if (INSTALL)
                     ${AUTOBUILD_INSTALL_DIR}/resources/chrome_200_percent.pak
                     ${AUTOBUILD_INSTALL_DIR}/resources/icudtl.dat
                     ${AUTOBUILD_INSTALL_DIR}/resources/resources.pak
-                DESTINATION ${_LIB}/${VIEWER_BINARY_NAME}
+                DESTINATION ${_LIB}
             )
             install(
                 DIRECTORY ${AUTOBUILD_INSTALL_DIR}/resources/locales
-                DESTINATION ${_LIB}/${VIEWER_BINARY_NAME}
+                DESTINATION ${_LIB}
             )
         endif ()
     elseif (WINDOWS)
@@ -218,9 +218,9 @@ if (INSTALL)
             DESTINATION llplugin
             )
     else ()
-        set(_LIB lib)
+        set(_LIB lib/${VIEWER_BINARY_NAME})
     endif ()
     if (NOT WINDOWS)
-      install(TARGETS ${PROJECT_NAME} DESTINATION ${_LIB}/${VIEWER_BINARY_NAME})
+      install(TARGETS ${PROJECT_NAME} DESTINATION ${_LIB})
     endif ()
 endif ()
