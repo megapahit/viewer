@@ -112,51 +112,80 @@ static bool handleRenderAvatarMouselookChanged(const LLSD& newvalue)
     return true;
 }
 
+// Per-tier texture quality preset. Data-driven so adding a setting is
+// "add a column", and the tier values are visible side-by-side. Index is
+// RenderTextureQuality: 0=Low, 1=Medium, 2=High, 3=Ultra.
+namespace
+{
+    struct TexturePreset
+    {
+        const char* name;
+        U32 max_resolution;
+        F32 discard_bias_max;       // TextureDiscardBiasMax: ceiling on the watermark bias
+        F32 close_bubble_meters;
+        F32 close_bubble_min_meters;
+        F32 close_bubble_shrink_threshold;
+        F32 screen_size_oversample;
+        F32 screen_size_oversample_under_pressure;
+        F32 background_factor_rate_per_sec;
+        F32 discard_backgrounded_time;
+        F32 pressure_discard_scale;
+        F32 min_cap_relax_scale;
+        F32 update_count_max_mult;
+        F32 avatar_oversample_mult;
+        S32 channel_off_normal;
+        S32 channel_off_basecolor;
+        S32 channel_off_specular;
+        S32 channel_off_emissive;
+    };
+
+    // Tier values: Low (2-4GB), Medium (4-8GB), High (8-16GB), Ultra (16+GB).
+    // Pressure-aggression ladder: Low burns hot, Ultra barely sweats.
+    //
+    // The watermarks (TextureWatermarkHigh/Low) are NOT tiered - they're a
+    // physical "crossed the budget" threshold (0.90 / 0.70), constant across
+    // tiers. Tier aggression is expressed via discard_bias_max (how steep the
+    // ramp can get) and pressure_discard_scale (how fast it steepens). At the
+    // cap, compression = 1 + bias_max*scale; the floor forces max discard at
+    // ~1/compression of draw distance:
+    //   Low:    1+16*1.5 = 25  -> ~4% of draw distance
+    //   Medium: 1+12*1.2 = 15  -> ~7%
+    //   High:   1+10*1.0 = 11  -> ~9%
+    //   Ultra:  1+ 8*0.75 = 7  -> ~14% (the old "mult 8" feel)
+    //                            max_res  biasMax bub   bub_min sh_th  oS    oSp   bgRt   bgT    pScl   relax  uMul  avO   N  BC S  E
+    static constexpr TexturePreset TEXTURE_PRESETS[4] = {
+        /* 0 Low    */ { "Low",    1024,   16.0f,  3.0f,  0.0f,  0.70f, 0.75f, 0.50f, 0.020f,  30.0f, 1.5f,  1.5f,  8.0f, 1.5f,  7, 0, 4, 1 },
+        /* 1 Medium */ { "Medium", 2048,   12.0f,  5.0f,  1.0f,  0.80f, 1.00f, 0.50f, 0.011f,  60.0f, 1.2f,  1.2f,  6.0f, 1.75f, 0, 0, 1, 1 },
+        /* 2 High   */ { "High",   2048,   10.0f,  8.0f,  2.0f,  0.90f, 1.50f, 0.75f, 0.005f, 120.0f, 1.0f,  1.0f,  4.0f, 2.0f,  0, 0, 1, 0 },
+        /* 3 Ultra  */ { "Ultra",  2048,    8.0f, 12.0f,  4.0f,  0.95f, 2.00f, 1.00f, 0.002f, 300.0f, 0.75f, 0.75f, 2.0f, 2.0f,  0, 0, 0, 0 },
+    };
+}
+
 static bool handleRenderTextureQualityChanged(const LLSD& newvalue)
 {
-    // 0=Low, 1=Medium, 2=High, 3=Ultra. Drives RenderMaxTextureResolution,
-    // the four TextureChannel* exponents (Normal/BaseColor/Spec/Emissive),
-    // and TextureDistanceDiscardPower.
     U32 quality = (U32)newvalue.asInteger();
-    U32 max_res = 2048;
-    F32 ch_normal    = 1.0f;
-    F32 ch_basecolor = 0.75f;
-    F32 ch_specular  = 0.5f;
-    F32 ch_emissive  = 0.75f;
-    F32 distance_power = 0.5f;
-    F32 screen_oversample = 1.5f;
-    switch (quality)
-    {
-    case 0: // Low
-        max_res = 1024;
-        ch_normal = 0.5f; ch_basecolor = 0.75f; ch_specular = 0.1f; ch_emissive = 0.5f;
-        distance_power = 0.15f;
-        screen_oversample = 0.75f;
-        break;
-    case 1: // Medium
-        ch_normal = 0.75f; ch_basecolor = 0.75f; ch_specular = 0.3f; ch_emissive = 0.75f;
-        distance_power = 0.25f;
-        screen_oversample = 1.0f;
-        break;
-    case 2: // High
-        // channel defaults above
-        distance_power = 0.35f;
-        screen_oversample = 1.5f;
-        break;
-    case 3: // Ultra
-    default:
-        ch_normal = 1.f; ch_basecolor = 1.f; ch_specular = 1.f; ch_emissive = 1.f;
-        distance_power = 0.5f;
-        screen_oversample = 2.0f;
-        break;
-    }
-    gSavedSettings.setU32("RenderMaxTextureResolution", max_res);
-    gSavedSettings.setF32("TextureChannelNormal", ch_normal);
-    gSavedSettings.setF32("TextureChannelBaseColor", ch_basecolor);
-    gSavedSettings.setF32("TextureChannelSpecular", ch_specular);
-    gSavedSettings.setF32("TextureChannelEmissive", ch_emissive);
-    gSavedSettings.setF32("TextureDistanceDiscardPower", distance_power);
-    gSavedSettings.setF32("TextureScreenSizeOversample", screen_oversample);
+    if (quality > 3) quality = 3;
+    const TexturePreset& p = TEXTURE_PRESETS[quality];
+
+    gSavedSettings.setU32("RenderMaxTextureResolution",                p.max_resolution);
+    gSavedSettings.setF32("TextureDiscardBiasMax",                     p.discard_bias_max);
+    gSavedSettings.setF32("TextureCloseBubbleMeters",                  p.close_bubble_meters);
+    gSavedSettings.setF32("TextureCloseBubbleMinMeters",               p.close_bubble_min_meters);
+    gSavedSettings.setF32("TextureCloseBubbleShrinkThreshold",         p.close_bubble_shrink_threshold);
+    gSavedSettings.setF32("TextureScreenSizeOversample",               p.screen_size_oversample);
+    gSavedSettings.setF32("TextureScreenSizeOversampleUnderPressure",  p.screen_size_oversample_under_pressure);
+    gSavedSettings.setF32("TextureBackgroundFactorRatePerSec",         p.background_factor_rate_per_sec);
+    gSavedSettings.setF32("TextureDiscardBackgroundedTime",            p.discard_backgrounded_time);
+    gSavedSettings.setF32("TexturePressureDiscardScale",               p.pressure_discard_scale);
+    gSavedSettings.setF32("TextureMinCapPressureRelaxScale",           p.min_cap_relax_scale);
+    gSavedSettings.setF32("TextureUpdateCountPressureMaxMultiplier",   p.update_count_max_mult);
+    gSavedSettings.setF32("TextureAgentAvatarOversampleMultiplier",    p.avatar_oversample_mult);
+    gSavedSettings.setS32("TextureChannelOffsetNormal",                p.channel_off_normal);
+    gSavedSettings.setS32("TextureChannelOffsetBaseColor",             p.channel_off_basecolor);
+    gSavedSettings.setS32("TextureChannelOffsetSpecular",              p.channel_off_specular);
+    gSavedSettings.setS32("TextureChannelOffsetEmissive",              p.channel_off_emissive);
+
+    LL_INFOS("TextureStream") << "Applied texture quality preset: " << p.name << LL_ENDL;
     return true;
 }
 

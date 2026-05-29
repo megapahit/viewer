@@ -1043,8 +1043,11 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
                     S32 te_offset = face->getTEOffset();  // offset is -1 if not inited
                     LLViewerObject* objp = face->getViewerObject();
                     const LLTextureEntry* te = (te_offset < 0 || te_offset >= objp->getNumTEs()) ? nullptr : objp->getTE(te_offset);
-                    F32 min_scale = te ? llmin(fabsf(te->getScaleS()), fabsf(te->getScaleT())) : 1.f;
-                    min_scale = llclamp(min_scale * min_scale, texture_scale_min(), texture_scale_max());
+                    // getMinScaleSq() returns cached min(|scaleS|,|scaleT|)^2;
+                    // invalidated by setScale*. Saves the abs/min/multiply per
+                    // face per frame. Clamp against the user-tunable LLCachedControl
+                    // values still happens here.
+                    F32 min_scale = te ? llclamp(te->getMinScaleSq(), texture_scale_min(), texture_scale_max()) : 1.f;
                     vsize /= min_scale;
 
                     // Raw screen-space coverage - taken before the bias /
@@ -1410,10 +1413,17 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
     //update MIN_UPDATE_COUNT or 5% of other textures, whichever is greater
     update_count = llmax((U32) MIN_UPDATE_COUNT, (U32) mUUIDMap.size()/20);
     // Scale up the per-frame update window under VRAM pressure so eviction
-    // candidates get re-evaluated quickly. Both the legacy bias and the
-    // new pressure multiplier widen the window.
-    F32 pressure_scale = llmax(LLViewerTexture::sDesiredDiscardBias,
-                               LLViewerTexture::sMemoryPressureMultiplier);
+    // candidates get re-evaluated quickly. Use memory-pressure *progress*
+    // (0..1) rather than the raw multiplier so the cap can't blow up by 64x
+    // at peak pressure - the old code processed the entire mUUIDMap every
+    // frame at peak, inflating non-avatar frame time and tripping AutoFPS
+    // to walk RenderFarClip down. Legacy bias term is preserved (it's
+    // small-ranged 1..4) so behavior unchanged at moderate pressure.
+    static LLCachedControl<F32> update_cap(gSavedSettings, "TextureUpdateCountPressureMaxMultiplier", 6.f);
+    F32 cap_minus_1 = llmax((F32)update_cap - 1.f, 0.f);
+    F32 progress = LLViewerTexture::getMemoryPressureProgress();
+    F32 bias_term = llmax(0.f, LLViewerTexture::sDesiredDiscardBias - 1.f);
+    F32 pressure_scale = 1.f + llmin(cap_minus_1, llmax(bias_term, progress * cap_minus_1));
     if (pressure_scale > 1.f
         && LLViewerTexture::sBiasTexturesUpdated < (U32)mUUIDMap.size())
     {
@@ -1421,7 +1431,7 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
 
         // This isn't particularly precise and can overshoot, but it doesn't need
         // to be, just making sure it did a full circle and doesn't get stuck updating
-        // at bias = 4 with 4 times the rate permanently.
+        // at the scaled rate permanently.
         LLViewerTexture::sBiasTexturesUpdated += update_count;
     }
     update_count = llmin(update_count, (U32) mUUIDMap.size());

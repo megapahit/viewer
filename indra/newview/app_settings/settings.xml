@@ -8060,7 +8060,7 @@
   <key>RenderTextureQuality</key>
   <map>
     <key>Comment</key>
-    <string>Texture quality preset: 0=Low, 1=Medium, 2=High, 3=Ultra. Drives RenderMaxTextureResolution, the four TextureChannel* exponents, TextureDistanceDiscardPower, and TextureScreenSizeOversample.</string>
+    <string>Texture quality preset: 0=Low, 1=Medium, 2=High, 3=Ultra. Drives RenderMaxTextureResolution, TextureDiscardBiasMax, TextureCloseBubbleMeters/MinMeters/ShrinkThreshold, TextureChannelOffset* (four), TexturePressureDiscardScale, TextureMinCapPressureRelaxScale, TextureUpdateCountPressureMaxMultiplier, TextureScreenSizeOversample/UnderPressure, TextureAgentAvatarOversampleMultiplier, TextureBackgroundFactorRatePerSec, TextureDiscardBackgroundedTime. Watermarks (TextureWatermarkHigh/Low) are constant across tiers.</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>
@@ -11871,49 +11871,49 @@
       <key>Value</key>
       <real>20.0</real>
     </map>
-    <key>TextureChannelNormal</key>
+    <key>TextureChannelOffsetNormal</key>
     <map>
       <key>Comment</key>
-      <string>Per-channel discard exponent for normal maps. 1.0 = baseline; lower = more aggressive. Driven by the RenderTextureQuality preset.</string>
+      <string>Additive discard offset for normal maps (integer mip levels). 0 = no shift; positive = N more discard levels (worse quality). Driven by the RenderTextureQuality preset.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
-      <string>F32</string>
+      <string>S32</string>
       <key>Value</key>
-      <real>1.0</real>
+      <integer>0</integer>
     </map>
-    <key>TextureChannelBaseColor</key>
+    <key>TextureChannelOffsetBaseColor</key>
     <map>
       <key>Comment</key>
-      <string>Per-channel discard exponent for base color / diffuse. 1.0 = baseline; lower = more aggressive. Driven by the RenderTextureQuality preset.</string>
+      <string>Additive discard offset for base color / diffuse (integer mip levels). 0 = no shift; positive = N more discard levels. Driven by the RenderTextureQuality preset.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
-      <string>F32</string>
+      <string>S32</string>
       <key>Value</key>
-      <real>0.75</real>
+      <integer>0</integer>
     </map>
-    <key>TextureChannelSpecular</key>
+    <key>TextureChannelOffsetSpecular</key>
     <map>
       <key>Comment</key>
-      <string>Per-channel discard exponent for specular / metallic-roughness. 1.0 = baseline; lower = more aggressive. Driven by the RenderTextureQuality preset.</string>
+      <string>Additive discard offset for specular / metallic-roughness (integer mip levels). Higher = more aggressive (specular detail is usually less perceptible than diffuse). Driven by the RenderTextureQuality preset.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
-      <string>F32</string>
+      <string>S32</string>
       <key>Value</key>
-      <real>0.5</real>
+      <integer>1</integer>
     </map>
-    <key>TextureChannelEmissive</key>
+    <key>TextureChannelOffsetEmissive</key>
     <map>
       <key>Comment</key>
-      <string>Per-channel discard exponent for emissive. 1.0 = baseline; lower = more aggressive. Driven by the RenderTextureQuality preset.</string>
+      <string>Additive discard offset for emissive (integer mip levels). Higher = more aggressive. Driven by the RenderTextureQuality preset.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
-      <string>F32</string>
+      <string>S32</string>
       <key>Value</key>
-      <real>0.75</real>
+      <integer>1</integer>
     </map>
     <key>TextureMaxDiscardOverride</key>
     <map>
@@ -11926,104 +11926,104 @@
       <key>Value</key>
       <integer>0</integer>
     </map>
-    <key>TextureMemoryHighWaterMark</key>
+    <key>TextureWatermarkHigh</key>
     <map>
       <key>Comment</key>
-      <string>Fraction of budget (0..1) at which the pressure controller bypasses smoothing and slams to cap. Last-ditch min-discard also creeps without waiting for mult_progress.</string>
+      <string>High watermark as a fraction of the VRAM budget. When used VRAM crosses this, the global discard bias climbs (backs off detail). Held at 0.90 across quality tiers - it's a physical "crossed the budget" threshold, not a tier preference.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>0.8</real>
+      <real>0.90</real>
     </map>
-    <key>TextureMemoryPressureBackoffStart</key>
+    <key>TextureWatermarkLow</key>
     <map>
       <key>Comment</key>
-      <string>Fraction of the VRAM target at which the pressure ramp starts (0..1). Lower = earlier headroom-building; 1.0 disables backoff (ramp only above target).</string>
+      <string>Low watermark as a fraction of the VRAM budget. When used VRAM drops below this, the global discard bias relaxes (restores detail). The band between low and high is the hysteresis zone where the bias holds steady - wide enough to prevent sawtooth without prediction/smoothing.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>0.85</real>
+      <real>0.70</real>
     </map>
-    <key>TextureMemoryPressureMaxMultiplier</key>
+    <key>TextureDiscardBiasMax</key>
     <map>
       <key>Comment</key>
-      <string>Upper bound on the VRAM-pressure distance multiplier (&gt;= 1). Mostly defensive -- at mult=64 the streaming ramp collapses to ~ramp_range/64, already extreme. Higher allows even more aggressive compression in tight-budget scenes.</string>
+      <string>Upper bound on the watermark-driven global discard bias. Caps how steep the distance-floor ramp can get under sustained pressure: at the cap with TexturePressureDiscardScale=1.0 the floor forces max discard at ~1/(1+max) of draw distance. Also the denominator for getMemoryPressureProgress.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>64.0</real>
+      <real>12.0</real>
     </map>
-    <key>TextureLastDitchEngageProgress</key>
+    <key>TextureDiscardBiasRampRate</key>
     <map>
       <key>Comment</key>
-      <string>mult_progress (0..1) at which the last-ditch floor starts creeping up. The floor only advances when mult is at or above this fraction of its cap AND prediction is still over budget. Decays back toward 0 whenever prediction is under budget.</string>
+      <string>Rate (bias units/sec) at which the global discard bias climbs while used VRAM is above the high watermark. Deliberately slow so eviction (scaleDown draining) catches up before the next step - prevents over-shoot / thrash.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>0.95</real>
+      <real>2.0</real>
     </map>
-    <key>TextureLastDitchRampRate</key>
+    <key>TextureDiscardBiasDecayRate</key>
     <map>
       <key>Comment</key>
-      <string>Rate (discard levels/sec) at which sLastDitchMinDiscard creeps up while engaged. 0.5 = takes ~2 sec to add one discard level. Mirrors sDesiredDiscardBias ramp shape.</string>
+      <string>Rate (bias units/sec) at which the global discard bias relaxes while used VRAM is below the low watermark. Typically slower than the ramp so detail returns gradually as headroom appears.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>0.5</real>
+      <real>1.0</real>
     </map>
-    <key>TextureLastDitchDecayRate</key>
+    <key>TexturePressureDiscardScale</key>
     <map>
       <key>Comment</key>
-      <string>Rate (discard levels/sec) at which sLastDitchMinDiscard decays back to 0 when prediction is under budget.</string>
+      <string>Modulates the distance-floor pressure response. compression = 1 + sDiscardBias * scale; the floor forces max discard at ~1/compression of draw distance. At scale=1.0 with bias=12, max discard is forced at ~8% of draw distance; higher scale = steeper / closer. Driven by the RenderTextureQuality preset.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>0.5</real>
+      <real>1.0</real>
     </map>
-    <key>TextureLastDitchMinDiscardMax</key>
+    <key>TextureMinCapPressureRelaxScale</key>
     <map>
       <key>Comment</key>
-      <string>Hard ceiling on sLastDitchMinDiscard. At 13 the floor can climb all the way to the deepest meaningful mip; lower values cap how aggressive the last-ditch escalation can get before we are simply out of discards.</string>
+      <string>Modulates the relaxation of mMinDesiredDiscardLevel under pressure. add = floor(progress * room * scale), where room is the gap to max discard and progress is sDiscardBias/TextureDiscardBiasMax. At 0 disables relaxation entirely.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>13.0</real>
+      <real>1.0</real>
     </map>
-    <key>TextureMemoryPressurePredictionGain</key>
+    <key>TextureUpdateCountPressureMaxMultiplier</key>
     <map>
       <key>Comment</key>
-      <string>Power exponent mapping predicted-over-budget ratio to target multiplier. target_mult = pred_over^gain. Higher gain saturates faster.</string>
+      <string>Hard cap on per-frame update_count scale-up factor in updateImagesFetchTextures under pressure. Replaces unbounded max(bias, mult) blow-up. At default 6, the full-list sweep takes at minimum mUUIDMap.size()/6 frames per round-trip under high pressure - bounded CPU cost even at peak.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>10.0</real>
+      <real>6.0</real>
     </map>
-    <key>TextureMemoryPressureSmoothingRate</key>
+    <key>TextureFetchBiasTrackRate</key>
     <map>
       <key>Comment</key>
-      <string>Lerp rate (1/sec) at which the pressure multiplier converges to its prediction-driven target. Higher = faster response, lower = smoother. Default 4 reaches ~63% in 0.25s.</string>
+      <string>First-order low-pass rate for the fetch-pressure bias contribution (1/sec). The bias floor decays independently of VRAM headroom, so queue-driven bias releases naturally as fetches drain. Default ~1s convergence.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>4.0</real>
+      <real>1.0</real>
     </map>
     <key>TextureTerrainDistanceFloor</key>
     <map>
@@ -12047,16 +12047,16 @@
       <key>Value</key>
       <real>0.99</real>
     </map>
-    <key>TextureAgentAvatarBoost</key>
+    <key>TextureAgentAvatarOversampleMultiplier</key>
     <map>
       <key>Comment</key>
-      <string>Quality boost (0..1) for textures on the agent's avatar (rigged mesh / animated objects). Lower = higher quality. Preference, not exemption - pressure can still evict.</string>
+      <string>Oversample multiplier for textures on the agent's avatar (rigged mesh / animated objects). 1.0 = no boost; 2.0 = 4x texels per pixel = exactly -1 discard level. Preference, not exemption - pressure can still evict via the distance floor.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>0.5</real>
+      <real>2.0</real>
     </map>
     <key>TextureBackgroundFactorRatePerSec</key>
     <map>
@@ -12095,7 +12095,7 @@
     <key>TextureCloseBubbleMinMeters</key>
     <map>
       <key>Comment</key>
-      <string>Floor (meters) for the close-camera bubble under maximum VRAM pressure. At sMemoryPressureMultiplier = TextureMemoryPressureMaxMultiplier the bubble collapses to this value, allowing eviction of even close textures when nothing else fits.</string>
+      <string>Floor (meters) for the close-camera bubble under maximum VRAM pressure. As the discard bias approaches TextureDiscardBiasMax the bubble collapses toward this value, allowing eviction of even close textures when nothing else fits.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
@@ -12125,28 +12125,6 @@
       <key>Value</key>
       <real>0.5</real>
     </map>
-    <key>TextureDistanceDiscardPower</key>
-    <map>
-      <key>Comment</key>
-      <string>Exponent on the distance factor (face_distance / draw_distance). 1.0 = linear; lower = textures hit max discard sooner with distance. Default 0.5 = sqrt.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>0.5</real>
-    </map>
-    <key>TextureSizeDiscardPower</key>
-    <map>
-      <key>Comment</key>
-      <string>Exponent on the on-screen size factor (1 - coverage). 1.0 = linear; lower = small-on-screen textures attenuate sooner.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>1.0</real>
-    </map>
     <key>TextureScreenSizeOversample</key>
     <map>
       <key>Comment</key>
@@ -12161,7 +12139,7 @@
     <key>TextureScreenSizeOversampleUnderPressure</key>
     <map>
       <key>Comment</key>
-      <string>Floor that TextureScreenSizeOversample collapses toward as the pressure multiplier walks up. Pinned to this value above TextureMemoryHighWaterMark. Lower = allow distant textures to drop below their on-screen contribution under pressure.</string>
+      <string>Floor that TextureScreenSizeOversample collapses toward as the discard bias walks up toward TextureDiscardBiasMax. Lower = allow distant textures to drop below their on-screen contribution under pressure.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>

@@ -247,17 +247,21 @@ public:
     // snaps to 0 in foreground. Avatar bakes exempt.
     static F32 sBackgroundFactor;
 
-    // VRAM-pressure distance multiplier, >= 1. Compresses the distance
-    // signal: dist_factor = clamp(mMinDistanceFactor * mult, 0, 1).
-    // Grows geometrically while over budget; decays back to 1 when fitting.
-    static F32 sMemoryPressureMultiplier;
-    // Last-ditch global discard floor. Mirrors sDesiredDiscardBias once the
-    // multiplier is exhausted.
-    static F32 sLastDitchMinDiscard;
+    // Watermark-driven global discard bias, [0, TextureDiscardBiasMax].
+    // The single VRAM-pressure controller: climbs while used VRAM is above
+    // the high watermark, relaxes below the low watermark, holds in the
+    // hysteresis band between. Replaces the old sMemoryPressureMultiplier +
+    // sLastDitchMinDiscard pair (and the predict-scan apparatus). Feeds the
+    // distance-weighted pressure floor in processTextureStats: close content
+    // is protected, distant content is evicted first, and as the bias climbs
+    // the "force max discard" distance moves inward from draw distance toward
+    // the bubble. Subsumes last-ditch - at max bias the distance floor forces
+    // everything outside the bubble to its deepest mip.
+    static F32 sDiscardBias;
 
-    // 0..1 progress of the pressure multiplier from baseline (1) to its
-    // configured cap (TextureMemoryPressureMaxMultiplier). Used to gate
-    // bubble shrink and last-ditch engagement.
+    // 0..1 progress of sDiscardBias from baseline (0) to its configured cap
+    // (TextureDiscardBiasMax). Gates bubble shrink, pixel-area oversample
+    // collapse, the per-frame update count, and the min-cap relax.
     static F32 getMemoryPressureProgress();
     static U32 sBiasTexturesUpdated;
     static S32 sMaxSculptRez ;
@@ -599,6 +603,23 @@ public:
 
 private:
     void init(bool firstinit) ;
+
+    // Streaming discard pipeline, factored out of processTextureStats so each
+    // stage is individually readable and testable. Execution order:
+    //   base = computeBaseDiscard()            // canonical texels/pixel (or UI-pinned)
+    //   if not UI-pinned:
+    //     base = applyChannelOffset(base)      // per-channel additive bias
+    //     base = applyPressureFloor(base)      // distance-weighted VRAM floor
+    //     base = applyStalenessBackgroundFloors(base)
+    //   ... per-texture caps ...
+    //   final = applyMinDesiredCap(final)      // caller-set min, relaxed under pressure
+    // Each reads per-texture member state directly; avatar_bake and the
+    // dim-max values are computed once by the caller and threaded through.
+    S32 computeBaseDiscard(S32 dim_max_i) const;
+    S32 applyChannelOffset(S32 discard) const;
+    S32 applyPressureFloor(S32 discard, F32 dim_max, bool avatar_bake) const;
+    S32 applyStalenessBackgroundFloors(S32 discard, F32 dim_max, bool avatar_bake) const;
+    S32 applyMinDesiredCap(S32 discard, S32 dim_max_i, bool avatar_bake) const;
 };
 
 //

@@ -88,15 +88,14 @@ S32 LLViewerTexture::sAuxCount = 0;
 LLFrameTimer LLViewerTexture::sEvaluationTimer;
 F32 LLViewerTexture::sDesiredDiscardBias = 0.f;
 F32 LLViewerTexture::sBackgroundFactor = 0.f;
-F32 LLViewerTexture::sMemoryPressureMultiplier = 1.f;
-F32 LLViewerTexture::sLastDitchMinDiscard = 0.f;
+F32 LLViewerTexture::sDiscardBias = 0.f;
 
 //static
 F32 LLViewerTexture::getMemoryPressureProgress()
 {
-    static LLCachedControl<F32> max_mult(gSavedSettings, "TextureMemoryPressureMaxMultiplier", 64.f);
-    F32 cap = llmax((F32)max_mult, 1.0001f);
-    return llclampf((sMemoryPressureMultiplier - 1.f) / (cap - 1.f));
+    static LLCachedControl<F32> bias_max(gSavedSettings, "TextureDiscardBiasMax", 12.f);
+    F32 cap = llmax((F32)bias_max, 0.0001f);
+    return llclampf(sDiscardBias / cap);
 }
 
 // Effective oversample factor for the per-texture pixel-area discard cap.
@@ -556,128 +555,56 @@ void LLViewerTexture::updateClass()
 
     F32 over_pct = (used - target) / target;
 
-    // Predicted-VRAM pressure controller. Eviction is fast, refetch is slow,
-    // so feedback on instantaneous `used` sawtooths; feeding `used +
-    // in_flight_delta` lets mult converge to equilibrium instead of cycling.
+    // Watermark-driven discard-bias controller. One clean signal: the bias
+    // climbs while used VRAM is above the high watermark, relaxes below the
+    // low watermark, and holds steady in the hysteresis band between. The
+    // band is what prevents sawtooth - no prediction scan or smoothing
+    // needed (the prediction apparatus existed only to damp the old
+    // multiplier's oscillation). The dt-based ramp is deliberately slow so
+    // eviction (scaleDown draining mDownScaleQueue) has time to actually
+    // free bytes before the next step, matching the id/Granite "back off
+    // without thrashing" pattern. Subsumes the old last-ditch floor: when
+    // the bias saturates, the distance-weighted floor in processTextureStats
+    // forces everything outside the bubble to its deepest mip.
     {
-        static LLCachedControl<F32> backoff_start(gSavedSettings, "TextureMemoryPressureBackoffStart", 0.85f);
-        static LLCachedControl<F32> max_mult(gSavedSettings, "TextureMemoryPressureMaxMultiplier", 64.f);
-        static LLCachedControl<F32> prediction_gain(gSavedSettings, "TextureMemoryPressurePredictionGain", 10.f);
-        static LLCachedControl<F32> smoothing_rate(gSavedSettings, "TextureMemoryPressureSmoothingRate", 4.f);
+        static LLCachedControl<F32> wm_high(gSavedSettings, "TextureWatermarkHigh", 0.90f);
+        static LLCachedControl<F32> wm_low(gSavedSettings, "TextureWatermarkLow", 0.70f);
+        static LLCachedControl<F32> bias_max(gSavedSettings, "TextureDiscardBiasMax", 12.f);
+        static LLCachedControl<F32> bias_ramp(gSavedSettings, "TextureDiscardBiasRampRate", 2.0f);
+        static LLCachedControl<F32> bias_decay(gSavedSettings, "TextureDiscardBiasDecayRate", 1.0f);
 
-        F32 backoff_target = target * llclamp((F32)backoff_start, 0.05f, 1.f);
-        F32 cap = llmax((F32)max_mult, 1.0001f);
-        F32 dt = (F32)gFrameIntervalSeconds;
+        F32 high_frac = llclamp((F32)wm_high, 0.1f, 1.f);
+        F32 low_frac  = llclamp((F32)wm_low, 0.05f, high_frac);
+        F32 high = budget * high_frac;
+        F32 low  = budget * low_frac;
+        F32 cap  = llmax((F32)bias_max, 0.f);
+        F32 dt   = (F32)gFrameIntervalSeconds;
 
-        // Skip the full-list iteration when there is no pressure to react to:
-        // mult already at baseline, last-ditch at zero, and used well clear of
-        // the backoff target. Worst case the controller picks up the spike one
-        // frame later, from `used` alone.
-        bool need_predict = sMemoryPressureMultiplier > 1.001f
-                         || sLastDitchMinDiscard > 0.f
-                         || used > backoff_target * 0.5f;
-
-        S64 pending_bytes_increase = 0;
-        S64 pending_bytes_decrease = 0;
-        if (need_predict)
+        if (used > high)
         {
-            LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vt - in-flight predict");
-            for (auto& imagep : gTextureList)
-            {
-                if (imagep.isNull()) continue;
-                // Cheap inline checks first so the virtual getDiscardLevel()
-                // call only fires when there is a real chance of contribution.
-                S32 desired = imagep->getDesiredDiscardLevel();
-                if (desired < 0) continue;
-                S32 fw = imagep->getFullWidth();
-                S32 fh = imagep->getFullHeight();
-                if (fw <= 0 || fh <= 0) continue;
-                S32 current = imagep->getDiscardLevel();
-                if (current < 0 || desired == current) continue;
-
-                S32 wd = llmax(1, fw >> desired);
-                S32 hd = llmax(1, fh >> desired);
-                S32 wc = llmax(1, fw >> current);
-                S32 hc = llmax(1, fh >> current);
-                // bpp=4, mip pyramid overhead 4/3
-                S64 size_d = (S64)wd * hd * 4 * 4 / 3;
-                S64 size_c = (S64)wc * hc * 4 * 4 / 3;
-
-                if (desired < current)
-                    pending_bytes_increase += (size_d - size_c);
-                else
-                    pending_bytes_decrease += (size_c - size_d);
-            }
+            sDiscardBias += llmax((F32)bias_ramp, 0.f) * dt;
         }
-
-        // 1024 * 512 = 524288: matches the unit reduction at line 513.
-        constexpr F32 BYTES_TO_USED_UNITS = 1.f / 524288.f;
-        F32 predicted_used = used
-            + (F32)pending_bytes_increase * BYTES_TO_USED_UNITS
-            - (F32)pending_bytes_decrease * BYTES_TO_USED_UNITS;
-        F32 predicted_over = predicted_used / llmax(backoff_target, 1.f);
-
-        // High water mark: when used crosses budget * high_water, skip the
-        // smoothed convergence and slam the controller into hard-cap state.
-        // Recovers the historical 90% behavior - immediate aggressive
-        // response instead of waiting for the lerp to chase the target.
-        static LLCachedControl<F32> high_water(gSavedSettings, "TextureMemoryHighWaterMark", 0.8f);
-        bool above_high_water = used >= budget * llclamp((F32)high_water, 0.5f, 1.f);
-
-        F32 target_mult = llclamp(powf(llmax(predicted_over, 1.f), llmax((F32)prediction_gain, 0.0001f)), 1.f, cap);
-        if (above_high_water)
+        else if (used < low)
         {
-            target_mult = cap;
-            sMemoryPressureMultiplier = cap;
+            sDiscardBias -= llmax((F32)bias_decay, 0.f) * dt;
         }
-        else
-        {
-            // ~63% convergence in 1/smoothing_rate seconds (default 0.25s).
-            F32 alpha = 1.f - expf(-llmax(dt, 0.f) * llmax((F32)smoothing_rate, 0.f));
-            sMemoryPressureMultiplier += (target_mult - sMemoryPressureMultiplier) * alpha;
-        }
-        sMemoryPressureMultiplier = llclamp(sMemoryPressureMultiplier, 1.f, cap);
-
-        F32 progress = getMemoryPressureProgress();
-
-        {
-            static LLCachedControl<F32> ld_engage(gSavedSettings, "TextureLastDitchEngageProgress", 0.95f);
-            static LLCachedControl<F32> ld_ramp(gSavedSettings, "TextureLastDitchRampRate", 0.5f);
-            static LLCachedControl<F32> ld_decay(gSavedSettings, "TextureLastDitchDecayRate", 0.5f);
-            static LLCachedControl<F32> ld_max(gSavedSettings, "TextureLastDitchMinDiscardMax", 13.f);
-            // Above the high water mark, last-ditch creeps regardless of
-            // mult_progress: by definition we are out of normal headroom.
-            bool engage = above_high_water || progress >= llclampf((F32)ld_engage);
-            if (engage && predicted_over > 1.f)
-            {
-                sLastDitchMinDiscard += llmax((F32)ld_ramp, 0.f) * dt;
-            }
-            else if (!above_high_water && predicted_over < 1.f)
-            {
-                sLastDitchMinDiscard -= llmax((F32)ld_decay, 0.f) * dt;
-            }
-            sLastDitchMinDiscard = llclamp(sLastDitchMinDiscard, 0.f, llmax((F32)ld_max, 0.f));
-        }
+        // In the hysteresis band [low, high]: hold steady.
+        sDiscardBias = llclamp(sDiscardBias, 0.f, cap);
 
         // 1 Hz pressure log.
         static LLFrameTimer s_pressure_log_timer;
         if (s_pressure_log_timer.getElapsedTimeF32() > 1.f)
         {
             s_pressure_log_timer.reset();
-            F32 over = used / llmax(backoff_target, 1.f);
             LL_INFOS("TextureStream") << "pressure"
-                << " mult=" << sMemoryPressureMultiplier
-                << " target_mult=" << target_mult
-                << " progress=" << progress
+                << " discard_bias=" << sDiscardBias
+                << " progress=" << getMemoryPressureProgress()
                 << " used=" << used
-                << " predicted=" << predicted_used
-                << " target=" << target
-                << " over=" << over
-                << " pred_over=" << predicted_over
-                << " in+=" << (S32)(pending_bytes_increase / 1024 / 1024)
-                << "MB in-=" << (S32)(pending_bytes_decrease / 1024 / 1024)
-                << "MB bias=" << sDesiredDiscardBias
-                << " ldmin=" << sLastDitchMinDiscard
+                << " budget=" << budget
+                << " high=" << high
+                << " low=" << low
+                << " over_pct=" << over_pct
+                << " legacy_bias=" << sDesiredDiscardBias
                 << " dsq=" << (S32)gTextureList.mDownScaleQueue.size()
                 << LL_ENDL;
         }
@@ -802,17 +729,23 @@ void LLViewerTexture::updateClass()
         }
     }
 
-    // Fetch-queue depth as a one-way bias floor (decay path still drops
-    // bias when the queue drains). Pushes bias up before VRAM overflows
-    // during teleport/scene-change floods.
+    // Fetch-queue depth as a smoothed bias floor. First-order low-pass so the
+    // contribution decays naturally as the queue drains - the old one-way max
+    // floor would latch bias high in busy regions even after VRAM came back
+    // (the unrelated bias-decay path required VRAM-comfortable AND no eviction
+    // in flight, which often never coincided during sustained fetch floods).
+    static F32 s_fetch_bias = 0.f;
     if (LLTextureFetch* fetcher = LLAppViewer::getTextureFetch())
     {
-        S32 pending = fetcher->getNumRequests();
         static LLCachedControl<F32> fetch_pressure_scale(gSavedSettings, "TextureFetchPressureScale", 1000.f);
+        static LLCachedControl<F32> fetch_bias_track_rate(gSavedSettings, "TextureFetchBiasTrackRate", 1.0f);
         F32 scale = llmax((F32)fetch_pressure_scale, 1.f);
-        F32 fetch_pressure = llclamp((F32)pending / scale, 0.f, 3.f);
-        sDesiredDiscardBias = llmax(sDesiredDiscardBias, 1.f + fetch_pressure);
+        F32 target = llclamp((F32)fetcher->getNumRequests() / scale, 0.f, 3.f);
+        F32 dt = (F32)gFrameIntervalSeconds;
+        F32 alpha = 1.f - expf(-llmax(dt, 0.f) * llmax((F32)fetch_bias_track_rate, 0.f));
+        s_fetch_bias += (target - s_fetch_bias) * alpha;
     }
+    sDesiredDiscardBias = llmax(sDesiredDiscardBias, 1.f + s_fetch_bias);
 
     sDesiredDiscardBias = llclamp(sDesiredDiscardBias, 1.f, 4.f);
     if (last_texture_update_count_bias < sDesiredDiscardBias)
@@ -830,6 +763,20 @@ void LLViewerTexture::updateClass()
         // a problem.
         last_texture_update_count_bias = sDesiredDiscardBias;
     }
+
+    // Quartile-pressure crossing resets the update counter so eviction
+    // candidates get re-evaluated when pressure escalates - parallel to
+    // the bias-rise reset above. The legacy bias term doesn't see fast
+    // VRAM-pressure changes (sDiscardBias ramps independently of it), so
+    // without this, a sudden VRAM pressure spike would wait for the
+    // round-trip through the whole mUUIDMap before re-evaluating.
+    static S32 last_pressure_quartile = 0;
+    S32 pressure_quartile = (S32)floorf(getMemoryPressureProgress() * 4.f);
+    if (pressure_quartile > last_pressure_quartile)
+    {
+        sBiasTexturesUpdated = 0;
+    }
+    last_pressure_quartile = pressure_quartile;
 }
 
 //static
@@ -3224,6 +3171,157 @@ S8 LLViewerLODTexture::getType() const
     return LLViewerTexture::LOD_TEXTURE;
 }
 
+// ---- processTextureStats discard pipeline helpers ----------------------
+// Each takes the working discard level and returns the updated value,
+// reading per-texture member state directly. Pure functions of state (they
+// never write members); the orchestrator in processTextureStats owns
+// mDesiredDiscardLevel. See the header for the execution-order overview.
+
+// Canonical "1 texel per screen pixel" base discard. For UI-pinned textures
+// (mKnownDrawWidth/Height) it uses the known render size; otherwise the
+// on-screen pixel coverage with an oversample factor (sharper when we have
+// headroom, plus the own-avatar boost) and the close-camera bubble clamp.
+S32 LLViewerLODTexture::computeBaseDiscard(S32 dim_max_i) const
+{
+    static const F64 log_4 = log(4.0);
+
+    if (mKnownDrawWidth && mKnownDrawHeight)
+    {
+        // UI-pinned target dimensions - pixel-area against the known render
+        // size, not the on-screen coverage.
+        S32 draw_texels = mKnownDrawWidth * mKnownDrawHeight;
+        draw_texels = llclamp(draw_texels, MIN_IMAGE_AREA, MAX_IMAGE_AREA);
+        return (S32)floor(log((F64)mTexelsPerImage / (F64)draw_texels) / log_4);
+    }
+
+    // Oversample: >1 = sharper than 1:1; <1 = allow under-sampling. Pressure
+    // shrinks it via pixelCapOversampleForPressure. Own-avatar boost doubles
+    // it (4x texels = exactly -1 discard) - a preference, not an exemption.
+    F32 oversample = pixelCapOversampleForPressure();
+    if (mOnAgentAvatar)
+    {
+        static LLCachedControl<F32> avatar_over_mult(gSavedSettings, "TextureAgentAvatarOversampleMultiplier", 2.0f);
+        oversample *= llmax((F32)avatar_over_mult, 1.f);
+    }
+
+    // Bubble clamp: any face inside the close-camera bubble
+    // (mMinDistanceFactor == 0) is treated as filling the screen, so the
+    // base saturates at 0 (full res) for bubble-resident content.
+    F32 effective_screen = mMaxOnScreenSize;
+    if (mMinDistanceFactor <= 0.f)
+    {
+        effective_screen = llmax(effective_screen, sWindowPixelArea);
+    }
+
+    F32 visible_texels = effective_screen * oversample * oversample;
+    visible_texels = llclamp(visible_texels, (F32)MIN_IMAGE_AREA, (F32)mTexelsPerImage);
+
+    S32 base_discard;
+    if ((F32)mTexelsPerImage <= visible_texels || mMaxOnScreenSize <= 0.f)
+    {
+        // Already at-or-below 1:1 with on-screen pixels; no discard needed.
+        // Also the fallback for never-measured textures (mMaxOnScreenSize==0)
+        // - keep full res until a measurement arrives.
+        base_discard = 0;
+    }
+    else
+    {
+        base_discard = (S32)floor(log((F64)mTexelsPerImage / (F64)visible_texels) / log_4);
+    }
+    return llclamp(base_discard, 0, dim_max_i);
+}
+
+// Per-channel additive offset. Channel-priority order:
+//   0=Normal, 1=BaseColor, 2=Specular, 3=Emissive.
+// Defaults push specular/emissive +1 (one mip coarser) - users frequently
+// put 2048 spec/emissive maps on tiny prims where the detail is invisible.
+// Tier presets crank these further (e.g. Low pushes normals hard).
+S32 LLViewerLODTexture::applyChannelOffset(S32 discard) const
+{
+    if (mPriorityChannel >= 0 && mPriorityChannel < 4)
+    {
+        static LLCachedControl<S32> off_normal   (gSavedSettings, "TextureChannelOffsetNormal",    0);
+        static LLCachedControl<S32> off_basecolor(gSavedSettings, "TextureChannelOffsetBaseColor", 0);
+        static LLCachedControl<S32> off_specular (gSavedSettings, "TextureChannelOffsetSpecular",  1);
+        static LLCachedControl<S32> off_emissive (gSavedSettings, "TextureChannelOffsetEmissive",  1);
+        const S32 offsets[4] = {
+            (S32)off_normal,
+            (S32)off_basecolor,
+            (S32)off_specular,
+            (S32)off_emissive,
+        };
+        discard += offsets[mPriorityChannel];
+    }
+    return discard;
+}
+
+// VRAM pressure distance floor. Forces a minimum discard that ramps with
+// distance; the ramp steepens as the watermark-driven sDiscardBias climbs,
+// so the "force max discard" distance moves inward from draw distance toward
+// the bubble. compression = 1 + bias*scale; the floor reaches dim_max at
+// ~1/compression of draw distance. Bubble residents (mMinDistanceFactor==0)
+// stay at floor 0 - protected. Subsumes the old last-ditch mechanism: at
+// saturated bias every non-bubble texture is forced to its deepest mip.
+// Avatar bakes exempt.
+S32 LLViewerLODTexture::applyPressureFloor(S32 discard, F32 dim_max, bool avatar_bake) const
+{
+    if (!avatar_bake && sDiscardBias > 0.f)
+    {
+        static LLCachedControl<F32> press_scale(gSavedSettings, "TexturePressureDiscardScale", 1.0f);
+        F32 ramp_compression = 1.f + sDiscardBias * llmax((F32)press_scale, 0.f);
+        F32 effective_dist = llmin(mMinDistanceFactor * ramp_compression, 1.f);
+        S32 pressure_floor = (S32)floorf(effective_dist * dim_max);
+        discard = llmax(discard, pressure_floor);
+    }
+    return discard;
+}
+
+// Staleness + background max-floors. Both are authored 0..1 elsewhere
+// (updateImageDecodePriority / updateClass) and translated to discard space
+// here. They only raise discard (worse quality), never reduce it. Background
+// floor is capped at (dim_max - offset) so we keep some baseline quality
+// while backgrounded; avatar bakes are exempt from the background floor.
+S32 LLViewerLODTexture::applyStalenessBackgroundFloors(S32 discard, F32 dim_max, bool avatar_bake) const
+{
+    const S32 stale_floor = (S32)floorf(mStalenessFactor * dim_max);
+    discard = llmax(discard, stale_floor);
+
+    if (!avatar_bake)
+    {
+        static LLCachedControl<S32> bg_offset(gSavedSettings, "TextureBackgroundDiscardOffset", 2);
+        F32 bg_norm = sBackgroundFactor;
+        if ((S32)bg_offset > 0 && dim_max > 0.f)
+        {
+            F32 cap = llmax(dim_max - (F32)(S32)bg_offset, 0.f) / dim_max;
+            bg_norm = llmin(bg_norm, cap);
+        }
+        const S32 bg_floor = (S32)floorf(bg_norm * dim_max);
+        discard = llmax(discard, bg_floor);
+    }
+    return discard;
+}
+
+// Caller-set min-discard cap (setMinDiscardLevel: terrain / avatar-self /
+// thumbnails), relaxed under pressure. add = floor(progress * room * scale),
+// where room is the gap to dim_max and progress is sDiscardBias normalized -
+// mirrors the original cap_relax = (1 - 1/mult)*room shape. Caps of 0
+// (thumbnails) and avatar bakes are preserved. Returns the capped discard.
+S32 LLViewerLODTexture::applyMinDesiredCap(S32 discard, S32 dim_max_i, bool avatar_bake) const
+{
+    S32 effective_min_cap = mMinDesiredDiscardLevel;
+    if (sDiscardBias > 0.f &&
+        mMinDesiredDiscardLevel > 0 && mMinDesiredDiscardLevel < S8_MAX &&
+        !avatar_bake)
+    {
+        static LLCachedControl<F32> cap_relax_scale(gSavedSettings, "TextureMinCapPressureRelaxScale", 1.0f);
+        F32 progress = getMemoryPressureProgress();
+        F32 room = (F32)dim_max_i - (F32)mMinDesiredDiscardLevel;
+        S32 add = (S32)floorf(progress * room * llmax((F32)cap_relax_scale, 0.f));
+        effective_min_cap = llmin(effective_min_cap + add, dim_max_i);
+    }
+    return llmin(effective_min_cap, discard);
+}
+
 // This is gauranteed to get called periodically for every texture
 //virtual
 void LLViewerLODTexture::processTextureStats()
@@ -3231,7 +3329,13 @@ void LLViewerLODTexture::processTextureStats()
     LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE;
     updateVirtualSize();
 
-    bool did_downscale = false;
+    // Hoisted once: avatar bake textures are exempt from several pressure
+    // mechanisms below (anti-cloud-bug protection). Reads of `avatar_bake`
+    // replace inline isAgentAvatarBoost(mBoostLevel) calls; each site keeps
+    // its own intent comment explaining *why* the exemption applies. See
+    // also LLViewerFetchedTexture::isAgentAvatarBoost() in the header for
+    // the canonical list of exemption sites.
+    const bool avatar_bake = isAgentAvatarBoost(mBoostLevel);
 
     static LLCachedControl<bool> textures_fullres(gSavedSettings,"TextureLoadFullRes", false);
 
@@ -3266,183 +3370,59 @@ void LLViewerLODTexture::processTextureStats()
     }
     else
     {
-        F32 discard_level = 0.f;
+        // Pixel-area-primary discard pipeline. The canonical "1 texel per
+        // screen pixel" base means distance falls out for free (pixel
+        // coverage ~ 1/D^2 => +1 discard per doubling of distance). The
+        // per-stage math lives in the helpers (computeBaseDiscard etc.);
+        // this just orchestrates them. Every modifier after the base is
+        // monotone non-decreasing in discard.
 
-        // floor(log2(max(w, h))) - both the multiplier on the normalized
-        // factor and the cap clamp at the bottom of this function.
+        // Per-texture max discard (smallest meaningful mip): floor(log2(max(w,h))).
         S32 dim_max_for_image_i = (mFullWidth > 0 && mFullHeight > 0)
             ? LLImageGL::dimDerivedMaxDiscard(mFullWidth, mFullHeight)
             : (S32)mCodecMaxDiscardLevel;
         F32 dim_max_for_image = (F32)dim_max_for_image_i;
 
-        if (mKnownDrawWidth && mKnownDrawHeight)
+        S32 discard = computeBaseDiscard(dim_max_for_image_i);
+
+        // Channel / pressure / staleness+background floors apply only to the
+        // coverage-driven path; UI-pinned (mKnownDrawWidth/Height) textures
+        // take the base verbatim.
+        if (!(mKnownDrawWidth && mKnownDrawHeight))
         {
-            // UI-pinned target dimensions - use pixel-area math.
-            static const F64 log_4 = log(4.0);
-            S32 draw_texels = mKnownDrawWidth * mKnownDrawHeight;
-            draw_texels = llclamp(draw_texels, MIN_IMAGE_AREA, MAX_IMAGE_AREA);
-            discard_level = (F32)(log(mTexelsPerImage / draw_texels) / log_4);
-        }
-        else
-        {
-            // Two 0..1 signals composed multiplicatively:
-            //   discard = distance_factor * size_factor * max_discard
-            // distance_factor: face_dist / draw_dist, shaped by
-            //   TextureDistanceDiscardPower (default 0.5 = sqrt).
-            // size_factor: 1 - (mMaxOnScreenSize / window_pixels), shaped
-            //   by TextureSizeDiscardPower.
-            // Either factor near 0 keeps the result fine - both have to
-            // be high for the texture to go deep.
-            static LLCachedControl<F32> distance_power(gSavedSettings, "TextureDistanceDiscardPower", 0.5f);
-            F32 power = llmax((F32)distance_power, 0.0001f);
-            F32 distance_factor = (power == 1.f) ? mMinDistanceFactor : powf(mMinDistanceFactor, power);
-
-            static LLCachedControl<F32> size_power(gSavedSettings, "TextureSizeDiscardPower", 1.f);
-            F32 sz_power = llmax((F32)size_power, 0.0001f);
-            F32 coverage = llclampf(mMaxOnScreenSize / sWindowPixelArea);
-            F32 inv_cov = 1.f - coverage;
-            F32 size_factor = (sz_power == 1.f) ? inv_cov : powf(inv_cov, sz_power);
-
-            F32 combined = distance_factor * size_factor;
-
-            // VRAM pressure: multiply the combined signal and clamp to 0..1.
-            // Compresses the effective draw range and picks up close-coverage
-            // textures (small combined) too. Applied before the channel
-            // exponent so subsequent transforms see a normalized 0..1 value.
-            // Avatar bakes exempt.
-            if (!isAgentAvatarBoost(mBoostLevel) && sMemoryPressureMultiplier > 1.f)
-            {
-                combined = llmin(combined * sMemoryPressureMultiplier, 1.f);
-            }
-
-            // Per-channel exponent. 1.0 = baseline; <1.0 pushes combined
-            // toward 1 (max attenuation) faster. Edges are preserved:
-            // pow(0, p) = 0, pow(1, p) = 1.
-            // mPriorityChannel order: 0=Normal, 1=BaseColor, 2=Specular, 3=Emissive.
-            S32 priority_channel = (mPriorityChannel >= 0 && mPriorityChannel < 4) ? (S32)mPriorityChannel : 1;
-            static LLCachedControl<F32> channel_normal   (gSavedSettings, "TextureChannelNormal",    1.0f);
-            static LLCachedControl<F32> channel_basecolor(gSavedSettings, "TextureChannelBaseColor", 0.75f);
-            static LLCachedControl<F32> channel_specular (gSavedSettings, "TextureChannelSpecular",  0.5f);
-            static LLCachedControl<F32> channel_emissive (gSavedSettings, "TextureChannelEmissive",  0.75f);
-            const F32 channels[4] = {
-                (F32)channel_normal,
-                (F32)channel_basecolor,
-                (F32)channel_specular,
-                (F32)channel_emissive,
-            };
-            F32 channel_power = llmax(channels[priority_channel], 0.0001f);
-            if (channel_power != 1.f)
-            {
-                combined = powf(combined, channel_power);
-            }
-
-            // Own-avatar boost: shave combined for rigged/animated faces
-            // on gAgentAvatarp. Preference, not exemption - applied
-            // before the staleness/background/pressure floors so heavy
-            // pressure can still evict.
-            if (mOnAgentAvatar)
-            {
-                static LLCachedControl<F32> agent_avatar_boost(gSavedSettings, "TextureAgentAvatarBoost", 0.5f);
-                combined *= llclampf((F32)agent_avatar_boost);
-            }
-
-            // Staleness / background floors. Avatar bakes exempt from
-            // background to avoid the universal-cloud bug when re-foregrounding.
-            combined = llmax(combined, mStalenessFactor);
-            if (!isAgentAvatarBoost(mBoostLevel))
-            {
-                // Background floor capped at (dim_max - offset) so we can
-                // keep some baseline quality while backgrounded.
-                static LLCachedControl<S32> bg_offset(gSavedSettings, "TextureBackgroundDiscardOffset", 2);
-                F32 bg = sBackgroundFactor;
-                if ((S32)bg_offset > 0 && dim_max_for_image > 0.f)
-                {
-                    F32 cap = llmax(dim_max_for_image - (F32)(S32)bg_offset, 0.f) / dim_max_for_image;
-                    bg = llmin(bg, cap);
-                }
-                combined = llmax(combined, bg);
-            }
-
-            discard_level = combined * dim_max_for_image;
+            discard = applyChannelOffset(discard);
+            discard = applyPressureFloor(discard, dim_max_for_image, avatar_bake);
+            discard = applyStalenessBackgroundFloors(discard, dim_max_for_image, avatar_bake);
         }
 
-        discard_level = floorf(discard_level);
-
-        F32 min_discard = 0.f;
+        // Per-texture caps: min_discard forces 1 for sources over the
+        // resolution cap; effective_cap is the per-texture max (debug
+        // override or dim-derived).
+        S32 min_discard = 0;
         if (mFullWidth > max_tex_res || mFullHeight > max_tex_res)
-            min_discard = 1.f;
+            min_discard = 1;
 
-        // dim_max_for_image_i is the per-texture cap. TextureMaxDiscardOverride
-        // raises it (debug). Codec_max applies only to fetches, not here.
         static LLCachedControl<S32> max_discard_override(gSavedSettings, "TextureMaxDiscardOverride", 0);
-        S32 effective_cap = (max_discard_override > 0) ? (S32)max_discard_override : dim_max_for_image_i;
-        discard_level = llclamp(discard_level, min_discard, (F32)effective_cap);
+        const S32 effective_cap = (max_discard_override > 0) ? (S32)max_discard_override : dim_max_for_image_i;
+        discard = llclamp(discard, min_discard, effective_cap);
+        mDesiredDiscardLevel = (S8)discard;
 
-        mDesiredDiscardLevel = llmin(effective_cap, (S32)discard_level);
+        // Caller-set min-discard cap (terrain / avatar-self / thumbnails),
+        // relaxed under pressure.
+        mDesiredDiscardLevel = (S8)applyMinDesiredCap(mDesiredDiscardLevel, dim_max_for_image_i, avatar_bake);
 
-        // Pixel-area discard cap. Don't let mDesiredDiscardLevel push the
-        // GL resolution below the texture's largest on-screen contribution
-        // x an oversample factor (sharper when we have memory headroom,
-        // looser under pressure). Avatar bakes exempt.
-        if (!isAgentAvatarBoost(mBoostLevel) && mMaxOnScreenSize > 0.f && mTexelsPerImage > 0)
-        {
-            static const F64 log_4 = log(4.0);
-            F32 oversample = pixelCapOversampleForPressure();
-            F32 visible_texels = mMaxOnScreenSize * oversample * oversample;
-            visible_texels = llclamp(visible_texels, (F32)MIN_IMAGE_AREA, (F32)mTexelsPerImage);
-            if ((F32)mTexelsPerImage > visible_texels)
-            {
-                S32 d_pixel_cap = (S32)floor(log((F32)mTexelsPerImage / visible_texels) / log_4);
-                d_pixel_cap = llclamp(d_pixel_cap, 0, dim_max_for_image_i);
-                mDesiredDiscardLevel = llmin((S32)mDesiredDiscardLevel, d_pixel_cap);
-            }
-        }
+        // (There is no separate last-ditch floor - applyPressureFloor
+        // subsumes it. At saturated sDiscardBias the distance floor forces
+        // every non-bubble texture to its deepest mip, and in-bubble content
+        // stays protected, which is exactly the intended behavior.)
 
-        // Apply the setMinDiscardLevel cap, relaxed under VRAM pressure
-        // (cap_relax = 1 - 1/mult: 0 at mult=1, ~0.5 at mult=2, ~0.9 at
-        // mult=10). Caps of 0 (thumbnails) and avatar bakes are preserved.
-        S32 effective_min_cap = mMinDesiredDiscardLevel;
-        if (sMemoryPressureMultiplier > 1.f &&
-            mMinDesiredDiscardLevel > 0 && mMinDesiredDiscardLevel < S8_MAX &&
-            !isAgentAvatarBoost(mBoostLevel))
-        {
-            F32 cap_relax = 1.f - 1.f / sMemoryPressureMultiplier;
-            F32 room = (F32)dim_max_for_image_i - (F32)mMinDesiredDiscardLevel;
-            effective_min_cap += (S32)(cap_relax * room);
-            effective_min_cap = llmin(effective_min_cap, dim_max_for_image_i);
-        }
-        mDesiredDiscardLevel = llmin((S8)effective_min_cap, mDesiredDiscardLevel);
-
-        // Halve the floor for bubble-resident textures (mMinDistanceFactor == 0
-        // = at least one face inside the bubble) so the close-vs-far gradient
-        // is preserved at every pressure level.
-        if (!isAgentAvatarBoost(mBoostLevel))
-        {
-            S32 forced = (S32)floorf(sLastDitchMinDiscard);
-            if (mMinDistanceFactor <= 0.f) forced /= 2;
-            forced = llclamp(forced, 0, dim_max_for_image_i);
-            if (forced > mDesiredDiscardLevel)
-            {
-                mDesiredDiscardLevel = (S8)forced;
-            }
-        }
-
-
-        //
-        // At this point we've calculated the quality level that we want,
-        // if possible.  Now we check to see if we have it, and take the
-        // proper action if we don't.
-        //
-
+        // If the GPU already holds finer data than we now want, schedule a
+        // downscale. Avatar bakes exempt: shrinking mid-bake can leave the
+        // avatar stuck as a cloud until the next bake completes.
         S32 current_discard = getDiscardLevel();
-        // Avatar bakes exempt: shrinking mid-bake can leave the avatar
-        // stuck as a cloud until the next bake completes.
-        if (!isAgentAvatarBoost(mBoostLevel))
+        if (!avatar_bake && current_discard < mDesiredDiscardLevel && !mForceToSaveRawImage)
         {
-            if (current_discard < mDesiredDiscardLevel && !mForceToSaveRawImage)
-            { // should scale down
-                scaleDown();
-            }
+            scaleDown();
         }
 
         mDesiredDiscardLevel = llmin(mDesiredDiscardLevel, (S32)mLoadedCallbackDesiredDiscardLevel);
