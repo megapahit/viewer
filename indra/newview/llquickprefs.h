@@ -27,6 +27,7 @@
 #include "llfloater.h"
 
 class LLSliderCtrl;
+class LLCheckBoxCtrl;
 class LLTextBox;
 
 /**
@@ -76,6 +77,10 @@ private:
     void syncAvatarZOffsetFromPreferenceSetting();
 
     boost::signals2::connection mRegionChangedSlot;
+
+    // OTS over-the-shoulder aim
+    LLCheckBoxCtrl* mOTSEnabledCheck { nullptr };
+    void onOTSEnabledChanged();
 };
 
 #endif // LL_LLQUICKPREFS_H

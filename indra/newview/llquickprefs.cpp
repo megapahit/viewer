@@ -26,6 +26,8 @@
 #include "llquickprefs.h"
 
 #include "llagent.h"
+#include "llagentcamera.h"
+#include "llcheckboxctrl.h"
 #include "llsliderctrl.h"
 #include "lltextbox.h"
 #include "llviewercontrol.h"
@@ -96,6 +98,14 @@ bool LLFloaterQuickPrefs::postBuild()
             boost::bind(&LLFloaterQuickPrefs::onRegionChanged, this));
     }
     onRegionChanged();  // evaluate current region immediately
+
+    // OTS aim mode checkbox
+    mOTSEnabledCheck = getChild<LLCheckBoxCtrl>("ots_enabled");
+    if (mOTSEnabledCheck)
+    {
+        mOTSEnabledCheck->setCommitCallback(
+            boost::bind(&LLFloaterQuickPrefs::onOTSEnabledChanged, this));
+    }
 
     return true;
 }
@@ -202,4 +212,17 @@ void LLFloaterQuickPrefs::syncAvatarZOffsetFromPreferenceSetting()
 {
     F32 value = gSavedPerAccountSettings.getF32("AvatarHoverOffsetZ");
     mAvatarZOffsetSlider->setValue(value, false);   // false = no commit signal
+}
+
+void LLFloaterQuickPrefs::onOTSEnabledChanged()
+{
+    if (mOTSEnabledCheck)
+    {
+        gSavedSettings.setBOOL("OTSEnabled", mOTSEnabledCheck->get());
+        // If currently in OTS mode and checkbox was unchecked, exit OTS
+        if (!mOTSEnabledCheck->get() && gAgentCamera.cameraOTS())
+        {
+            gAgentCamera.changeCameraFromOTS();
+        }
+    }
 }

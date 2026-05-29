@@ -9,7 +9,7 @@
     can_minimize="true"
     can_close="true"
     can_resize="false"
-    height="96"
+    height="240"
     width="320"
     layout="topleft"
     name="quick_prefs"
@@ -81,5 +81,129 @@
       top_delta="-2"
       name="max_bandwidth"
       tool_tip="Network bandwidth in Kbps (50 – 3000)" />
+
+  <view_border
+      follows="left|right"
+      layout="topleft"
+      left="2"
+      right="-2"
+      top_pad="10"
+      height="2"
+      name="ots_divider" />
+
+  <text
+      type="string"
+      follows="left|top"
+      height="16"
+      layout="topleft"
+      left="5"
+      top_pad="6"
+      width="290"
+      text_color="EmphasisColor"
+      name="OTSLabel">
+    Over-the-Shoulder Cam:
+  </text>
+
+  <check_box
+      control_name="OTSEnabled"
+      follows="left|top"
+      height="16"
+      label="Use Over-The-Shoulder Cam"
+      layout="topleft"
+      left="10"
+      top_pad="4"
+      width="290"
+      name="ots_enabled"
+      tool_tip="When checked, M enters shoulder cam instead of first-person mouselook" />
+
+  <text
+      type="string"
+      follows="left|top"
+      height="16"
+      layout="topleft"
+      left="10"
+      top_pad="6"
+      width="100"
+      name="OTSDistLabel">
+    Distance:
+  </text>
+
+  <slider
+      control_name="OTSCameraDistance"
+      decimal_digits="1"
+      can_edit_text="true"
+      follows="left|right|top"
+      height="16"
+      increment="0.1"
+      initial_value="3.0"
+      max_val="10.0"
+      min_val="1.0"
+      label_width="0"
+      layout="topleft"
+      left="110"
+      right="-10"
+      top_delta="-2"
+      name="ots_distance"
+      tool_tip="Camera distance behind avatar (1 – 10 m)" />
+
+  <text
+      type="string"
+      follows="left|top"
+      height="16"
+      layout="topleft"
+      left="10"
+      top_pad="4"
+      width="100"
+      name="OTSSideLabel">
+    Side offset:
+  </text>
+
+  <slider
+      control_name="OTSCameraSide"
+      decimal_digits="2"
+      can_edit_text="true"
+      follows="left|right|top"
+      height="16"
+      increment="0.05"
+      initial_value="-0.5"
+      max_val="1.0"
+      min_val="-1.0"
+      label_width="0"
+      layout="topleft"
+      left="110"
+      right="-10"
+      top_delta="-2"
+      name="ots_side"
+      tool_tip="Side offset: negative = right shoulder, positive = left shoulder" />
+
+  <text
+      type="string"
+      follows="left|top"
+      height="16"
+      layout="topleft"
+      left="10"
+      top_pad="4"
+      width="100"
+      name="OTSHeightLabel">
+    Height:
+  </text>
+
+  <slider
+      control_name="OTSCameraHeight"
+      decimal_digits="2"
+      can_edit_text="true"
+      follows="left|right|top"
+      height="16"
+      increment="0.05"
+      initial_value="0.5"
+      max_val="2.0"
+      min_val="0.0"
+      label_width="0"
+      layout="topleft"
+      left="110"
+      right="-10"
+      top_delta="-2"
+      name="ots_height"
+      tool_tip="Camera height above avatar root (0 – 2 m)" />
 
 </floater>
