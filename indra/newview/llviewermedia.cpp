@@ -1826,7 +1826,7 @@ LLPluginClassMedia* LLViewerMediaImpl::newSourceFromMediaType(std::string media_
         if (plugin_basename == "media_plugin_cef")
         {
             launcher_name = "/compat/linux/usr/libexec/megapahit/SLPlugin";
-            plugin_name = "/compat/linux/usr/lib/x86_64-linux-gnu/libmedia_plugin_cef.so";
+            plugin_name = "/compat/linux/usr/lib/x86_64-linux-gnu/megapahit/libmedia_plugin_cef.so";
         }
 #endif
 
@@ -1891,8 +1891,8 @@ LLPluginClassMedia* LLViewerMediaImpl::newSourceFromMediaType(std::string media_
             std::string plugin_dir = gDirUtilp->getLLPluginDir();
             if (plugin_basename == "media_plugin_cef")
             {
-                plugin_dir = "/compat/linux/usr/lib/x86_64-linux-gnu";
-                plugin_name = "/usr/lib/x86_64-linux-gnu/libmedia_plugin_cef.so";
+                plugin_dir = "/compat/linux/usr/lib/x86_64-linux-gnu/megapahit";
+                plugin_name = "/usr/lib/x86_64-linux-gnu/megapahit/libmedia_plugin_cef.so";
             }
 #else
             const std::string plugin_dir = gDirUtilp->getLLPluginDir();
