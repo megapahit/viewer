@@ -9,328 +9,415 @@
  name="move_panel"
  top="1"
  width="517">
-  <icon
-     follows="left|top"
-     height="18"
-     image_name="Cam_FreeCam_Off"
-     layout="topleft"
-     name="camera_icon"
-     mouse_opaque="false"
-     visible="true"
-     width="18"
-     left="30"
-     top="10"/>
-  <slider
-   can_edit_text="true"
-   control_name="CameraAngle"
-   decimal_digits="2"
-   follows="left|top"
-   height="16"
-   increment="0.025"
-   initial_value="1.57"
-   layout="topleft"
-   label_width="100"
-   label="View angle"
-   left_pad="30"
-   max_val="2.97"
-   min_val="0.17"
-   name="camera_fov"
-   show_text="false"
-   width="240" />
-  <slider
-   can_edit_text="true"
-   control_name="CameraOffsetScale"
-   decimal_digits="2"
-   follows="left|top"
-   height="16"
-   increment="0.025"
-   initial_value="1"
-   layout="topleft"
-   label="Distance"
-   left_delta="0"
-   label_width="100"
-   max_val="3"
-   min_val="0.5"
-   name="camera_offset_scale"
-   show_text="false"
-   width="240"
-   top_pad="5"/>
-  <text
-  follows="left|top"
-  type="string"
-  length="1"
-  height="10"
-  left="80"
-  name="heading2"
-  width="270"
-  top_pad="5">
-    Automatic position for:
-  </text>
-  <check_box
-     control_name="EditCameraMovement"
-     height="20"
-     follows="left|top"
-     label="Build/Edit"
-     layout="topleft"
-     left_delta="30"
-     name="edit_camera_movement"
-     tool_tip="Use automatic camera positioning when entering and exiting edit mode"
-     width="280"
-     top_pad="5" />
-  <check_box
-   control_name="AppearanceCameraMovement"
-   follows="left|top"
-   height="16"
-   label="Appearance"
-   layout="topleft"
-   name="appearance_camera_movement"
-   tool_tip="Use automatic camera positioning while in edit mode"
-   width="242" />
-  <icon
-	 follows="left|top"
-	 height="18"
-	 image_name="Move_Walk_Off"
-   layout="topleft"
-	 name="avatar_icon"
-	 mouse_opaque="false"
-	 visible="true"
-	 width="18"
-   top_pad="10"
-   left="30" />
-  <text
-   follows="left|top"
-   type="string"
-   length="1"
-   height="10"
-   layout="topleft"
-   left="78"
-   name="keyboard_lbl"
-   width="270"
-   top_delta="2">
-    Keyboard:
-  </text>
-  <check_box
-   control_name="ArrowKeysAlwaysMove"
-   follows="left|top"
-   height="20"
-   label="Arrow keys always move me while in chat"
-   layout="topleft"
-   left_delta="5"
-   name="arrow_keys_move_avatar_check"
-   width="237"
-   top_pad="5"/>
-  <check_box
-   control_name="AllowTapTapHoldRun"
-   follows="left|top"
-   height="20"
-   label="Tap-tap-hold to run"
-   layout="topleft"
-   left_delta="0"
-   name="tap_tap_hold_to_run"
-   width="237"
-   top_pad="0"/>
-  <check_box
-   control_name="AutomaticFly"
-   follows="left|top"
-   height="20"
-   label="Hold jump or crouch key to start or stop flying"
-   layout="topleft"
-   left_delta="0"
-   name="automatic_fly"
-   width="237"
-   top_pad="0"/>
-  <text
-   follows="left|top"
-   type="string"
-   length="1"
-   height="10"
-   layout="topleft"
-   left="78"
-   name="mouse_lbl"
-   width="270"
-   top_pad="15">
-    Mouse:
-  </text>
-  <check_box
-   control_name="FirstPersonAvatarVisible"
-   follows="left|top"
-   height="20"
-   label="Show me in Mouselook"
-   layout="topleft"
-   left_delta="5"
-   name="first_person_avatar_visible"
-   top_pad="5"
-   width="256" />
-  <check_box
-   control_name="OTSEnabled"
-   follows="left|top"
-   height="20"
-   label="Use Over-The-Shoulder Cam"
-   layout="topleft"
-   left_delta="5"
-   name="ots_enabled"
-   top_pad="5"
-   tool_tip="When checked, pressing M enters over-the-shoulder cam instead of first-person mouselook"
-   width="320" />
-  <text
-   type="string"
-   length="1"
-   follows="left|top"
-   height="15"
-   layout="topleft"
-   left_delta="3"
-   name=" Mouse Sensitivity"
-   top_pad="10"
-   width="160"
-   wrap="true">
-    Mouselook mouse sensitivity:
-  </text>
-  <slider
-   control_name="MouseSensitivity"
-   follows="left|top"
-   height="15"
-   initial_value="2"
-   layout="topleft"
-   show_text="false"
-   left_pad="0"
-   max_val="15"
-   name="mouse_sensitivity"
-   top_delta="-1"
-   width="115" />
-  <check_box
-   control_name="InvertMouse"
-   height="16"
-   label="Invert"
-   layout="topleft"
-   left_pad="2"
-   name="invert_mouse"
-   top_delta="0"
-   width="128" />
-  <text
-   follows="left|top"
-   type="string"
-   length="1"
-   height="10"
-   layout="topleft"
-   left="86"
-   name="mouse_warp_lbl"
-   width="150"
-   top_pad="20">
-    Mouse Warp:
-  </text>
-  <combo_box
-   control_name="MouseWarpMode"
-   height="23"
-   layout="topleft"
-   left_pad="10"
-   top_delta="-6"
-   name="mouse_warp_combo"
-   tool_tip="Controls warping of the mouse to the center of the screen during alt-zoom and mouse look."
-   width="200">
-    <combo_box.item
-     label="Automatic"
-     name="0"
-     value="0"/>
-    <combo_box.item
-     label="On"
-     name="1"
-     value="1"/>
-    <combo_box.item
-     label="Off"
-     name="2"
-     value="2"/>
-  </combo_box>
-  <text
-   follows="left|top"
-   type="string"
-   length="1"
-   height="10"
-   layout="topleft"
-   left="86"
-   name="single_click_action_lbl"
-   width="150"
-   top_pad="12">
-    Single click on land:
-  </text>
-  <combo_box
-   height="23"
-   layout="topleft"
-   left_pad="10"
-   top_delta="-6"
-   name="single_click_action_combo"
-   width="200">
-    <combo_box.item
-     label="No action"
-     name="0"
-     value="0"/>
-    <combo_box.item
-     label="Move to clicked point"
-     name="1"
-     value="1"/>
-    <combo_box.commit_callback
-     function="Pref.ClickActionChange"/>
-  </combo_box>
-  <text
-   follows="left|top"
-   type="string"
-   length="1"
-   height="10"
-   layout="topleft"
-   left="86"
-   name="double_click_action_lbl"
-   width="150"
-   top_pad="12">
-    Double click on land:
-  </text>
-  <combo_box
-   height="23"
-   layout="topleft"
-   left_pad="10"
-   top_delta="-6"
-   name="double_click_action_combo"
-   width="200">
-    <combo_box.item
-     label="No action"
-     name="0"
-     value="0"/>
-    <combo_box.item
-     label="Move to clicked point"
-     name="1"
-     value="1"/>
-    <combo_box.item
-     label="Teleport to clicked point"
-     name="2"
-     value="2"/>
-    <combo_box.commit_callback
-     function="Pref.ClickActionChange"/>
-  </combo_box>
-  <check_box
-   control_name="EnableCollisionSounds"
-   height="20"
-   label="Play sound on collisions"
-   layout="topleft"
-   left="83"
-   name="sound_on_collisions"
+
+  <tab_container
+   name="move_view_tab_container"
+   enabled="true"
    top_pad="0"
-   width="200" />
-  <check_box
-   control_name="DoubleClickZoomIn"
-   height="20"
-   label="Double click on nearby list to zoom in on avatar"
-   layout="topleft"
-   left="83"
-   name="double_click_zoom_in"
-   top_pad="0"
-   width="200" />
-  <button
-   height="23"
-   label="Other Devices"
-   left="30"
-   name="joystick_setup_button"
-   top="30"
-   width="155">
-    <button.commit_callback
-     function="Floater.Show"
-     parameter="pref_joystick" />
-  </button>
+   follows="left|top|right|bottom"
+   width="517"
+   height="408"
+   left_delta="0"
+   tab_position="top"
+   tab_stop="false">
+
+    <!-- ── Move & View tab (existing content) ─────────────────────────── -->
+    <panel
+     label="Move &amp; View"
+     name="move_view_panel"
+     layout="topleft"
+     follows="top|left">
+
+      <icon
+         follows="left|top"
+         height="18"
+         image_name="Cam_FreeCam_Off"
+         layout="topleft"
+         name="camera_icon"
+         mouse_opaque="false"
+         visible="true"
+         width="18"
+         left="30"
+         top="10"/>
+      <slider
+       can_edit_text="true"
+       control_name="CameraAngle"
+       decimal_digits="2"
+       follows="left|top"
+       height="16"
+       increment="0.025"
+       initial_value="1.57"
+       layout="topleft"
+       label_width="100"
+       label="View angle"
+       left_pad="30"
+       max_val="2.97"
+       min_val="0.17"
+       name="camera_fov"
+       show_text="false"
+       width="240" />
+      <slider
+       can_edit_text="true"
+       control_name="CameraOffsetScale"
+       decimal_digits="2"
+       follows="left|top"
+       height="16"
+       increment="0.025"
+       initial_value="1"
+       layout="topleft"
+       label="Distance"
+       left_delta="0"
+       label_width="100"
+       max_val="3"
+       min_val="0.5"
+       name="camera_offset_scale"
+       show_text="false"
+       width="240"
+       top_pad="5"/>
+      <text
+      follows="left|top"
+      type="string"
+      length="1"
+      height="10"
+      left="80"
+      name="heading2"
+      width="270"
+      top_pad="5">
+        Automatic position for:
+      </text>
+      <check_box
+         control_name="EditCameraMovement"
+         height="20"
+         follows="left|top"
+         label="Build/Edit"
+         layout="topleft"
+         left_delta="30"
+         name="edit_camera_movement"
+         tool_tip="Use automatic camera positioning when entering and exiting edit mode"
+         width="280"
+         top_pad="5" />
+      <check_box
+       control_name="AppearanceCameraMovement"
+       follows="left|top"
+       height="16"
+       label="Appearance"
+       layout="topleft"
+       name="appearance_camera_movement"
+       tool_tip="Use automatic camera positioning while in edit mode"
+       width="242" />
+      <icon
+    	 follows="left|top"
+    	 height="18"
+    	 image_name="Move_Walk_Off"
+       layout="topleft"
+    	 name="avatar_icon"
+    	 mouse_opaque="false"
+    	 visible="true"
+    	 width="18"
+       top_pad="10"
+       left="30" />
+      <text
+       follows="left|top"
+       type="string"
+       length="1"
+       height="10"
+       layout="topleft"
+       left="78"
+       name="keyboard_lbl"
+       width="270"
+       top_delta="2">
+        Keyboard:
+      </text>
+      <check_box
+       control_name="ArrowKeysAlwaysMove"
+       follows="left|top"
+       height="20"
+       label="Arrow keys always move me while in chat"
+       layout="topleft"
+       left_delta="5"
+       name="arrow_keys_move_avatar_check"
+       width="237"
+       top_pad="5"/>
+      <check_box
+       control_name="AllowTapTapHoldRun"
+       follows="left|top"
+       height="20"
+       label="Tap-tap-hold to run"
+       layout="topleft"
+       left_delta="0"
+       name="tap_tap_hold_to_run"
+       width="237"
+       top_pad="0"/>
+      <check_box
+       control_name="AutomaticFly"
+       follows="left|top"
+       height="20"
+       label="Hold jump or crouch key to start or stop flying"
+       layout="topleft"
+       left_delta="0"
+       name="automatic_fly"
+       width="237"
+       top_pad="0"/>
+      <text
+       follows="left|top"
+       type="string"
+       length="1"
+       height="10"
+       layout="topleft"
+       left="78"
+       name="mouse_lbl"
+       width="270"
+       top_pad="15">
+        Mouse:
+      </text>
+      <check_box
+       control_name="FirstPersonAvatarVisible"
+       follows="left|top"
+       height="20"
+       label="Show me in Mouselook"
+       layout="topleft"
+       left_delta="5"
+       name="first_person_avatar_visible"
+       top_pad="5"
+       width="256" />
+      <check_box
+       control_name="OTSEnabled"
+       follows="left|top"
+       height="20"
+       label="Use Over-The-Shoulder Cam"
+       layout="topleft"
+       left_delta="5"
+       name="ots_enabled"
+       top_pad="5"
+       tool_tip="When checked, pressing M enters over-the-shoulder cam instead of first-person mouselook"
+       width="320" />
+      <text
+       type="string"
+       length="1"
+       follows="left|top"
+       height="15"
+       layout="topleft"
+       left_delta="3"
+       name=" Mouse Sensitivity"
+       top_pad="10"
+       width="160"
+       wrap="true">
+        Mouselook mouse sensitivity:
+      </text>
+      <slider
+       control_name="MouseSensitivity"
+       follows="left|top"
+       height="15"
+       initial_value="2"
+       layout="topleft"
+       show_text="false"
+       left_pad="0"
+       max_val="15"
+       name="mouse_sensitivity"
+       top_delta="-1"
+       width="115" />
+      <check_box
+       control_name="InvertMouse"
+       height="16"
+       label="Invert"
+       layout="topleft"
+       left_pad="2"
+       name="invert_mouse"
+       top_delta="0"
+       width="128" />
+      <text
+       follows="left|top"
+       type="string"
+       length="1"
+       height="10"
+       layout="topleft"
+       left="86"
+       name="mouse_warp_lbl"
+       width="150"
+       top_pad="20">
+        Mouse Warp:
+      </text>
+      <combo_box
+       control_name="MouseWarpMode"
+       height="23"
+       layout="topleft"
+       left_pad="10"
+       top_delta="-6"
+       name="mouse_warp_combo"
+       tool_tip="Controls warping of the mouse to the center of the screen during alt-zoom and mouse look."
+       width="200">
+        <combo_box.item label="Automatic" name="0" value="0"/>
+        <combo_box.item label="On"         name="1" value="1"/>
+        <combo_box.item label="Off"        name="2" value="2"/>
+      </combo_box>
+      <text
+       follows="left|top"
+       type="string"
+       length="1"
+       height="10"
+       layout="topleft"
+       left="86"
+       name="single_click_action_lbl"
+       width="150"
+       top_pad="12">
+        Single click on land:
+      </text>
+      <combo_box
+       height="23"
+       layout="topleft"
+       left_pad="10"
+       top_delta="-6"
+       name="single_click_action_combo"
+       width="200">
+        <combo_box.item label="No action"              name="0" value="0"/>
+        <combo_box.item label="Move to clicked point"  name="1" value="1"/>
+        <combo_box.commit_callback function="Pref.ClickActionChange"/>
+      </combo_box>
+      <text
+       follows="left|top"
+       type="string"
+       length="1"
+       height="10"
+       layout="topleft"
+       left="86"
+       name="double_click_action_lbl"
+       width="150"
+       top_pad="12">
+        Double click on land:
+      </text>
+      <combo_box
+       height="23"
+       layout="topleft"
+       left_pad="10"
+       top_delta="-6"
+       name="double_click_action_combo"
+       width="200">
+        <combo_box.item label="No action"                   name="0" value="0"/>
+        <combo_box.item label="Move to clicked point"       name="1" value="1"/>
+        <combo_box.item label="Teleport to clicked point"   name="2" value="2"/>
+        <combo_box.commit_callback function="Pref.ClickActionChange"/>
+      </combo_box>
+      <check_box
+       control_name="EnableCollisionSounds"
+       height="20"
+       label="Play sound on collisions"
+       layout="topleft"
+       left="83"
+       name="sound_on_collisions"
+       top_pad="0"
+       width="200" />
+      <check_box
+       control_name="DoubleClickZoomIn"
+       height="20"
+       label="Double click on nearby list to zoom in on avatar"
+       layout="topleft"
+       left="83"
+       name="double_click_zoom_in"
+       top_pad="0"
+       width="200" />
+      <button
+       height="23"
+       label="Other Devices"
+       left="30"
+       name="joystick_setup_button"
+       top="30"
+       width="155">
+        <button.commit_callback function="Floater.Show" parameter="pref_joystick" />
+      </button>
+
+    </panel>
+
+    <!-- ── Over-The-Shoulder tab ──────────────────────────────────────── -->
+    <panel
+     label="Over-The-Shoulder"
+     name="ots_panel"
+     layout="topleft"
+     follows="top|left">
+
+      <text
+       type="string"
+       follows="left|top"
+       font="SansSerifSmallBold"
+       height="20"
+       layout="topleft"
+       left="10"
+       name="ots_enable_header"
+       top="10"
+       width="490">
+        Over-the-Shoulder Camera
+      </text>
+
+      <check_box
+       control_name="OTSEnabled"
+       follows="left|top"
+       height="20"
+       label="Use Over-The-Shoulder Cam"
+       layout="topleft"
+       left="15"
+       name="ots_enabled_pref"
+       top_pad="5"
+       tool_tip="When checked, pressing M enters over-the-shoulder cam instead of first-person mouselook"
+       width="350" />
+
+      <text
+       type="string"
+       follows="left|top"
+       font="SansSerifSmallBold"
+       height="20"
+       layout="topleft"
+       left="10"
+       name="ots_pos_header"
+       top_pad="12"
+       width="490">
+        Camera Position
+      </text>
+
+      <text type="string" follows="left|top" height="16" layout="topleft"
+       left="15" top_pad="6" width="130" name="dist_label">Distance:</text>
+      <slider
+       control_name="OTSCameraDistance"
+       decimal_digits="1" can_edit_text="true"
+       follows="left|right|top" height="16"
+       increment="0.1" initial_value="3.0" max_val="10.0" min_val="1.0"
+       label_width="0" layout="topleft" left="150" right="-10" top_delta="-2"
+       name="ots_distance"
+       tool_tip="Camera distance behind avatar (1 – 10 m)" />
+
+      <text type="string" follows="left|top" height="16" layout="topleft"
+       left="15" top_pad="6" width="130" name="side_label">Side offset:</text>
+      <slider
+       control_name="OTSCameraSide"
+       decimal_digits="2" can_edit_text="true"
+       follows="left|right|top" height="16"
+       increment="0.05" initial_value="-0.5" max_val="1.0" min_val="-1.0"
+       label_width="0" layout="topleft" left="150" right="-10" top_delta="-2"
+       name="ots_side"
+       tool_tip="Side offset: negative = right shoulder, positive = left shoulder" />
+
+      <text type="string" follows="left|top" height="16" layout="topleft"
+       left="15" top_pad="6" width="130" name="height_label">Height:</text>
+      <slider
+       control_name="OTSCameraHeight"
+       decimal_digits="2" can_edit_text="true"
+       follows="left|right|top" height="16"
+       increment="0.05" initial_value="0.5" max_val="2.0" min_val="0.0"
+       label_width="0" layout="topleft" left="150" right="-10" top_delta="-2"
+       name="ots_height"
+       tool_tip="Camera height above avatar root (0 – 2 m)" />
+
+      <text type="string" follows="left|top" height="16" layout="topleft"
+       left="15" top_pad="6" width="130" name="focus_label">Focus distance:</text>
+      <slider
+       control_name="OTSFocusDistance"
+       decimal_digits="1" can_edit_text="true"
+       follows="left|right|top" height="16"
+       increment="0.5" initial_value="10.0" max_val="30.0" min_val="2.0"
+       label_width="0" layout="topleft" left="150" right="-10" top_delta="-2"
+       name="ots_focus_dist"
+       tool_tip="Focus point distance along camera forward axis (2 – 30 m)" />
+
+    </panel>
+
+  </tab_container>
+
 </panel>
