@@ -191,6 +191,7 @@ if (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
   set(CLANG_WARNINGS
       ${GCC_CLANG_COMPATIBLE_WARNINGS}
       # Put clang specific warning configuration here
+      -Wno-inconsistent-missing-override
   )
 
   set(GCC_WARNINGS
