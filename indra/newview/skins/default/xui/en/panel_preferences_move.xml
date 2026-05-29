@@ -180,17 +180,6 @@
        name="first_person_avatar_visible"
        top_pad="5"
        width="256" />
-      <check_box
-       control_name="OTSEnabled"
-       follows="left|top"
-       height="20"
-       label="Use Over-The-Shoulder Cam"
-       layout="topleft"
-       left_delta="5"
-       name="ots_enabled"
-       top_pad="5"
-       tool_tip="When checked, pressing M enters over-the-shoulder cam instead of first-person mouselook"
-       width="320" />
       <text
        type="string"
        length="1"
