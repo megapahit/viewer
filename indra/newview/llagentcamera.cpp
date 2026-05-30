@@ -2297,6 +2297,14 @@ void LLAgentCamera::changeCameraToOTS()
         {
             gAgentAvatarp->updateAttachmentVisibility(CAMERA_MODE_THIRD_PERSON);
         }
+
+        // Start the camera animation LAST, after mCameraMode is OTS and after
+        // changeCameraToMouselook(false) has cleared mCameraAnimating via its
+        // animate=false branch. The rendered camera is still at the old
+        // (third-person) position this frame, so startCameraAnimation snapshots
+        // that as the start point and updateCamera lerps to the OTS shoulder
+        // target over ZoomTime seconds — matching the mouselook transition feel.
+        startCameraAnimation();
     }
 }
 
@@ -2406,7 +2414,7 @@ void LLAgentCamera::changeCameraToThirdPerson(bool animate)
         }
 
         mCameraLag.clearVec();
-        if (mCameraMode == CAMERA_MODE_MOUSELOOK)
+        if (mCameraMode == CAMERA_MODE_MOUSELOOK || mCameraMode == CAMERA_MODE_OTS)
         {
             mCurrentCameraDistance = MIN_CAMERA_DISTANCE;
             mTargetCameraDistance = MIN_CAMERA_DISTANCE;
