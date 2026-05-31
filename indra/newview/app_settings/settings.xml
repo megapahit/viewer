@@ -1459,8 +1459,8 @@
       <key>Value</key>
       <array>
         <real>-3.0</real>
-        <real>0.5</real>
-        <real>0.2</real>
+        <real>0.0</real>
+        <real>0.75</real>
       </array>
     </map>
     <key>CameraOffsetScale</key>
@@ -3329,9 +3329,9 @@
       <string>Vector3D</string>
       <key>Value</key>
       <array>
-        <real>0.9</real>
-        <real>0.5</real>
-        <real>0.2</real>
+        <real>1.0</real>
+        <real>0.0</real>
+        <real>1.0</real>
       </array>
     </map>
     <key>AvatarSitRotation</key>
