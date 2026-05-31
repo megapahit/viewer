@@ -4778,25 +4778,37 @@ class LLViewMouselook : public view_listener_t
 {
     bool handleEvent(const LLSD& userdata)
     {
+        // When OTS is enabled M toggles OTS mode (shoulder cam).
+        // When disabled M toggles normal first-person mouselook.
+        if (gSavedSettings.getBOOL("OTSEnabled"))
+        {
+            if (!gAgentCamera.cameraOTS())
+            {
+                gAgentCamera.changeCameraToOTS();
+            }
+            else
+            {
+                gAgentCamera.changeCameraFromOTS();
+            }
+            return true;
+        }
+
         if (!gAgentCamera.cameraMouselook())
         {
             gAgentCamera.changeCameraToMouselook();
         }
         else
         {
-            // NaCl: Right-click + scroll wheel zoom in mouselook (ported from Firestorm).
-            // If we were zoomed when the user toggles out of mouselook, restore the
-            // normal (pre-zoom) FOV before switching back to the default camera.
+            // NaCl: restore FOV on mouselook exit
             LLVector3 mlFovValues = gSavedSettings.getVector3("_NACL_MLFovValues");
             F32 cameraAngle = gSavedSettings.getF32("CameraAngle");
             if (mlFovValues.mV[VZ] > 0.0f)
             {
-                mlFovValues.mV[VY] = cameraAngle;   // preserve last zoomed FOV
+                mlFovValues.mV[VY] = cameraAngle;
                 mlFovValues.mV[VZ] = 0.0f;
                 gSavedSettings.setVector3("_NACL_MLFovValues", mlFovValues);
-                gSavedSettings.setF32("CameraAngle", mlFovValues.mV[VX]); // restore normal FOV
+                gSavedSettings.setF32("CameraAngle", mlFovValues.mV[VX]);
             }
-            // NaCl End
             gAgentCamera.changeCameraToDefault();
         }
         return true;

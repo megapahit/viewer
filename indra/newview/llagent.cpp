@@ -2123,6 +2123,13 @@ std::ostream& operator<<(std::ostream &s, const LLAgent &agent)
 //-----------------------------------------------------------------------------
 bool LLAgent::needsRenderAvatar()
 {
+    // OTS mode: always render avatar — we are in third-person even though
+    // mouselook input is active.
+    if (gAgentCamera.cameraOTS())
+    {
+        return mShowAvatar && mOutfitChosen;
+    }
+
     if (gAgentCamera.cameraMouselook() && !LLVOAvatar::sVisibleInFirstPerson)
     {
         return false;
@@ -2134,6 +2141,11 @@ bool LLAgent::needsRenderAvatar()
 // true if we need to render your own avatar's head.
 bool LLAgent::needsRenderHead()
 {
+    // OTS mode: always render head — avatar is fully visible.
+    if (gAgentCamera.cameraOTS())
+    {
+        return mShowAvatar;
+    }
     return (LLVOAvatar::sVisibleInFirstPerson && LLPipeline::sReflectionRender) || (mShowAvatar && !gAgentCamera.cameraMouselook());
 }
 
@@ -2247,7 +2259,8 @@ void LLAgent::endAnimationUpdateUI()
     }
 
     // clean up UI from mode we're leaving
-    if (gAgentCamera.getLastCameraMode() == CAMERA_MODE_MOUSELOOK )
+    if (gAgentCamera.getLastCameraMode() == CAMERA_MODE_MOUSELOOK
+        || gAgentCamera.getLastCameraMode() == CAMERA_MODE_OTS)
     {
         gToolBarView->setToolBarsVisible(true);
         // show mouse cursor
@@ -2369,7 +2382,8 @@ void LLAgent::endAnimationUpdateUI()
     //---------------------------------------------------------------------
     // Set up UI for mode we're entering
     //---------------------------------------------------------------------
-    if (gAgentCamera.getCameraMode() == CAMERA_MODE_MOUSELOOK)
+    if (gAgentCamera.getCameraMode() == CAMERA_MODE_MOUSELOOK
+        || gAgentCamera.getCameraMode() == CAMERA_MODE_OTS)
     {
         // clean up UI
         // first show anything hidden by UI toggle
