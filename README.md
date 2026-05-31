@@ -55,7 +55,7 @@ $ megapahit
 ### Fedora
 
 ```
-$ sudo dnf install cmake gcc-c++ patch patchelf rpm-build perl-FindBin freealut-devel apr-util-devel boost-devel boost-url cef-devel expat-devel fltk-devel glm-devel mesa-libGLU-devel hunspell-devel minizip-ng-compat-devel libnghttp2-devel nanosvg-devel openjpeg-devel pipewire-devel pulseaudio-libs-devel sdl2-compat-devel v-hacd-devel vlc-devel libvorbis-devel libXcursor-devel libXfixes-devel libXinerama-devel xxhash-devel
+$ sudo dnf install cmake gcc-c++ patch patchelf rpm-build perl-FindBin freealut-devel apr-util-devel boost-devel cef-devel expat-devel fltk-devel glm-devel mesa-libGLU-devel hunspell-devel minizip-ng-compat-devel libnghttp2-devel nanosvg-devel openjpeg-devel pipewire-devel pulseaudio-libs-devel sdl2-compat-devel v-hacd-devel vlc-devel libvorbis-devel libXcursor-devel libXfixes-devel libXinerama-devel xxhash-devel
 $ export LL_BUILD="-O3 -std=c++20 -fPIC -DLL_LINUX=1"
 $ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=ON -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON ../indra
 $ make -j`nproc`
@@ -110,7 +110,7 @@ $ open newview/Megapahit.app
 ### openSUSE Tumbleweed
 
 ```
-$ sudo zypper install cmake gcc-c++ patch patchelf apr-util-devel boost-devel libboost_program_options-devel libboost_url1_91_0 libboost_url1_91_0-devel libboost_context-devel libboost_fiber-devel libboost_filesystem-devel libboost_regex-devel libboost_thread-devel libpng16-devel libxml++-devel libexpat-devel fltk-devel glm glu-devel hunspell-devel minizip-devel nanosvg-devel libnghttp2-devel openjpeg2-devel pipewire-devel libpulse-devel libSDL2_gfx-1_0-0 libSDL2_gfx-devel sdl2-compat-devel vlc-devel libvorbis-devel xxhash-devel zlib-ng-devel libXrender-devel libXcursor-devel libXfixes-devel libXext-devel libXft-devel libXinerama-devel freetype2-devel fontconfig-devel libjpeg8-devel libjpeg8-devel freealut-devel rpm-build
+$ sudo zypper install cmake gcc-c++ patch patchelf apr-util-devel boost-devel libboost_program_options-devel libboost_url1_91_0 libboost_url1_91_0-devel libboost_context-devel libboost_fiber-devel libboost_filesystem-devel libboost_regex-devel libboost_thread-devel libpng16-devel libxml++-devel libexpat-devel fltk-devel glm-devel glu-devel hunspell-devel minizip-devel nanosvg-devel libnghttp2-devel openjpeg2-devel pipewire-devel libpulse-devel libSDL2_gfx-1_0-0 libSDL2_gfx-devel sdl2-compat-devel vlc-devel libvorbis-devel xxhash-devel zlib-ng-devel libXrender-devel libXcursor-devel libXfixes-devel libXext-devel libXft-devel libXinerama-devel freetype2-devel fontconfig-devel libjpeg8-devel libjpeg8-devel freealut-devel rpm-build
 
 $ export LL_BUILD="-O3 -std=c++20 -fPIC -DLL_LINUX=1"
 
