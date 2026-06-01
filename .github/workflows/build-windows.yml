@@ -1,0 +1,225 @@
+name: Windows Build
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    tags:
+      - 'test/*'
+      - 'build/*'
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-x64:
+    name: Windows x64
+    runs-on: windows-2025-vs2026
+
+    steps:
+      - name: Set VCPKG_ROOT
+        shell: bash
+        run: echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> "$GITHUB_ENV"
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v3
+
+      - name: Checkout source
+        uses: actions/checkout@v5
+
+      - name: Install vcpkg dependencies (x64)
+        shell: bash
+        run: |
+          vcpkg install \
+            python3:x64-windows \
+            freealut:x64-windows \
+            apr-util:x64-windows \
+            boost:x64-windows \
+            freetype:x64-windows \
+            glm:x64-windows \
+            hunspell:x64-windows \
+            libjpeg-turbo:x64-windows \
+            meshoptimizer:x64-windows \
+            minizip:x64-windows \
+            nanosvg:x64-windows \
+            nghttp2:x64-windows \
+            openjpeg:x64-windows \
+            libvorbis:x64-windows \
+            "libxml2[tools]:x64-windows" \
+            xxhash:x64-windows
+
+      - name: Configure (x64)
+        shell: bash
+        env:
+          LL_BUILD: "/MD /O2 /Ob2 /std:c++20 /Zc:wchar_t- /Zi /GR /DLL_RELEASE=1 /DLL_RELEASE_FOR_DOWNLOAD=1 /DNDEBUG /D_SECURE_STL=0 /D_HAS_ITERATOR_DEBUGGING=0 /DWIN32 /D_WINDOWS /DLL_WINDOWS=1 /DUNICODE /D_UNICODE /DWINVER=0x0602 /D_WIN32_WINNT=0x0602"
+        run: |
+          export PYTHON="$VCPKG_ROOT/installed/x64-windows/tools/python3/python.exe"
+          CMAKE_BIN=$(find "$VCPKG_ROOT/downloads/tools" -name "cmake.exe" -path "*/x86_64/*" | head -1)
+          if [ -z "$CMAKE_BIN" ]; then
+            CMAKE_BIN=cmake
+          fi
+          mkdir build-windows-x86_64
+          cd build-windows-x86_64
+          "$CMAKE_BIN" \
+            -DCMAKE_BUILD_TYPE:STRING=Release \
+            -DADDRESS_SIZE:STRING=64 \
+            -DUSE_OPENAL:BOOL=ON \
+            -DUSE_FMODSTUDIO:BOOL=OFF \
+            -DENABLE_MEDIA_PLUGINS:BOOL=ON \
+            -DLL_TESTS:BOOL=OFF \
+            -DNDOF:BOOL=OFF \
+            -DROOT_PROJECT_NAME:STRING=Megapahit \
+            -DVIEWER_CHANNEL:STRING=Megapahit \
+            -DVIEWER_BINARY_NAME:STRING=Megapahit \
+            -DBUILD_SHARED_LIBS:BOOL=OFF \
+            -DINSTALL:BOOL=ON \
+            -DPACKAGE:BOOL=ON \
+            "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+            -DVS_DISABLE_FATAL_WARNINGS:BOOL=ON \
+            ../indra
+
+      - name: Build (x64)
+        shell: bash
+        run: |
+          cd build-windows-x86_64
+          MSBuild.exe Megapahit.slnx -p:Configuration=Release -m
+
+      - name: Install NSIS (x64)
+        shell: pwsh
+        run: |
+          choco install nsis --no-progress -y
+          "C:\Program Files (x86)\NSIS" | Out-File -FilePath $env:GITHUB_PATH -Append
+
+      - name: Package (x64)
+        shell: bash
+        run: |
+          cd build-windows-x86_64
+          cpack -G NSIS
+
+      - name: Read version
+        id: version
+        shell: bash
+        run: echo "version=$(cat indra/newview/viewer_version.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload installer artifact (x64)
+        uses: actions/upload-artifact@v6
+        with:
+          name: megapahit-windows-x64-${{ steps.version.outputs.version }}
+          path: build-windows-x86_64/Megapahit-*-win64.exe
+          if-no-files-found: error
+
+      - name: Upload to release (x64)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v3
+        with:
+          name: ${{ github.ref_name }}
+          files: build-windows-x86_64/Megapahit-*-win64.exe
+          prerelease: ${{ startsWith(github.ref_name, 'test/') || startsWith(github.ref_name, 'build/') }}
+
+  build-windows-arm64:
+    name: Windows arm64
+    if: false
+    runs-on: windows-2022
+
+    steps:
+      - name: Set VCPKG_ROOT
+        shell: bash
+        run: echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> "$GITHUB_ENV"
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v3
+
+      - name: Checkout source
+        uses: actions/checkout@v5
+
+      - name: Install vcpkg dependencies (arm64)
+        shell: bash
+        run: |
+          vcpkg install \
+            python3:arm64-windows \
+            freealut:arm64-windows \
+            apr-util:arm64-windows \
+            boost:arm64-windows \
+            curl:arm64-windows \
+            freetype:arm64-windows \
+            glm:arm64-windows \
+            hunspell:arm64-windows \
+            libjpeg-turbo:arm64-windows \
+            meshoptimizer:arm64-windows \
+            minizip:arm64-windows \
+            nanosvg:arm64-windows \
+            nghttp2:arm64-windows \
+            openjpeg:arm64-windows \
+            sse2neon:arm64-windows \
+            libvorbis:arm64-windows \
+            "libxml2[tools]:arm64-windows" \
+            xxhash:arm64-windows
+          vcpkg install boost-fiber:arm64-windows --allow-unsupported || true
+
+      - name: Configure (arm64)
+        shell: bash
+        env:
+          LL_BUILD: "/MD /O2 /Ob2 /std:c++20 /Zc:wchar_t- /Zi /GR /DLL_RELEASE=1 /DLL_RELEASE_FOR_DOWNLOAD=1 /DNDEBUG /D_SECURE_STL=0 /D_HAS_ITERATOR_DEBUGGING=0 /DWIN32 /D_WINDOWS /DLL_WINDOWS=1 /DUNICODE /D_UNICODE /DWINVER=0x0602 /D_WIN32_WINNT=0x0602 /Zc:preprocessor"
+        run: |
+          export PYTHON="$VCPKG_ROOT/installed/arm64-windows/tools/python3/python.exe"
+          CMAKE_BIN=$(find "$VCPKG_ROOT/downloads/tools" -name "cmake.exe" -path "*/arm64/*" | head -1)
+          if [ -z "$CMAKE_BIN" ]; then
+            CMAKE_BIN=$(find "$VCPKG_ROOT/downloads/tools" -name "cmake.exe" | head -1)
+          fi
+          if [ -z "$CMAKE_BIN" ]; then
+            CMAKE_BIN=cmake
+          fi
+          mkdir build-windows-aarch64
+          cd build-windows-aarch64
+          "$CMAKE_BIN" \
+            -DCMAKE_BUILD_TYPE:STRING=Release \
+            -DADDRESS_SIZE:STRING=64 \
+            -DUSE_OPENAL:BOOL=ON \
+            -DUSE_FMODSTUDIO:BOOL=OFF \
+            -DENABLE_MEDIA_PLUGINS:BOOL=OFF \
+            -DLL_TESTS:BOOL=OFF \
+            -DNDOF:BOOL=OFF \
+            -DROOT_PROJECT_NAME:STRING=Megapahit \
+            -DVIEWER_CHANNEL:STRING=Megapahit \
+            -DVIEWER_BINARY_NAME:STRING=Megapahit \
+            -DBUILD_SHARED_LIBS:BOOL=OFF \
+            -DINSTALL:BOOL=ON \
+            -DPACKAGE:BOOL=ON \
+            "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+            -DVCPKG_TARGET_TRIPLET:STRING=arm64-windows \
+            -DVS_DISABLE_FATAL_WARNINGS:BOOL=ON \
+            ../indra
+
+      - name: Build (arm64)
+        shell: bash
+        run: |
+          cd build-windows-aarch64
+          MSBuild.exe Megapahit.slnx -p:Configuration=Release -m
+
+      - name: Package (arm64)
+        shell: bash
+        run: |
+          cd build-windows-aarch64
+          cpack -G NSIS
+
+      - name: Read version
+        id: version
+        shell: bash
+        run: echo "version=$(cat indra/newview/viewer_version.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload installer artifact (arm64)
+        uses: actions/upload-artifact@v6
+        with:
+          name: megapahit-windows-arm64-${{ steps.version.outputs.version }}
+          path: build-windows-aarch64/Megapahit-*-win64.exe
+          if-no-files-found: error
+
+      - name: Upload to release (arm64)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v3
+        with:
+          name: ${{ github.ref_name }}
+          files: build-windows-aarch64/Megapahit-*-win64.exe
+          prerelease: ${{ startsWith(github.ref_name, 'test/') || startsWith(github.ref_name, 'build/') }}

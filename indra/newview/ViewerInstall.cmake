@@ -130,18 +130,29 @@ elseif (WINDOWS)
         set(BOOST_PLATFORM x${ADDRESS_SIZE})
     endif ()
 
+    # Detect the actual Boost DLL suffix from vcpkg-installed binaries.
+    file(GLOB _boost_context_dlls "${prefix_result}/../bin/boost_context-*.dll")
+    if (_boost_context_dlls)
+        list(GET _boost_context_dlls 0 _boost_context_dll)
+        get_filename_component(_boost_context_dll_name "${_boost_context_dll}" NAME_WE)
+        string(REPLACE "boost_context" "" BOOST_DLL_SFX "${_boost_context_dll_name}")
+    else ()
+        set(BOOST_DLL_SFX -vc143-mt-${BOOST_PLATFORM}-1_91)
+        message(WARNING "Could not detect Boost DLL suffix via glob; using fallback '${BOOST_DLL_SFX}'.")
+    endif ()
+
     install(
         PROGRAMS
             ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/${VIEWER_BINARY_NAME}.exe
             ${prefix_result}/../bin/OpenAL32.dll
             ${prefix_result}/../bin/alut.dll
-            ${prefix_result}/../bin/boost_context-vc143-mt-${BOOST_PLATFORM}-1_91.dll
-            ${prefix_result}/../bin/boost_fiber-vc143-mt-${BOOST_PLATFORM}-1_91.dll
-            ${prefix_result}/../bin/boost_filesystem-vc143-mt-${BOOST_PLATFORM}-1_91.dll
-            ${prefix_result}/../bin/boost_json-vc143-mt-${BOOST_PLATFORM}-1_91.dll
-            ${prefix_result}/../bin/boost_program_options-vc143-mt-${BOOST_PLATFORM}-1_91.dll
-            ${prefix_result}/../bin/boost_thread-vc143-mt-${BOOST_PLATFORM}-1_91.dll
-            ${prefix_result}/../bin/boost_url-vc143-mt-${BOOST_PLATFORM}-1_91.dll
+            ${prefix_result}/../bin/boost_context${BOOST_DLL_SFX}.dll
+            ${prefix_result}/../bin/boost_fiber${BOOST_DLL_SFX}.dll
+            ${prefix_result}/../bin/boost_filesystem${BOOST_DLL_SFX}.dll
+            ${prefix_result}/../bin/boost_json${BOOST_DLL_SFX}.dll
+            ${prefix_result}/../bin/boost_program_options${BOOST_DLL_SFX}.dll
+            ${prefix_result}/../bin/boost_thread${BOOST_DLL_SFX}.dll
+            ${prefix_result}/../bin/boost_url${BOOST_DLL_SFX}.dll
             ${prefix_result}/../bin/brotlicommon.dll
             ${prefix_result}/../bin/brotlidec.dll
             ${prefix_result}/../bin/bz2.dll
@@ -176,8 +187,8 @@ elseif (WINDOWS)
 
     install(
         PROGRAMS
-            ${prefix_result}/../bin/boost_context-vc143-mt-${BOOST_PLATFORM}-1_91.dll
-            ${prefix_result}/../bin/boost_fiber-vc143-mt-${BOOST_PLATFORM}-1_91.dll
+            ${prefix_result}/../bin/boost_context${BOOST_DLL_SFX}.dll
+            ${prefix_result}/../bin/boost_fiber${BOOST_DLL_SFX}.dll
             ${prefix_result}/../bin/libapr-1.dll
             ${prefix_result}/../bin/libaprutil-1.dll
             ${prefix_result}/../bin/libexpat.dll

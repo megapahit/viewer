@@ -1,0 +1,25 @@
+# Parameters for melusina-org/setup-macports.
+# Listing ports here (rather than in a manual `port install` step) means the
+# action installs them and they fall under its built-in installation cache,
+# which is keyed on the macOS version + this file. Edit this list and the
+# cache invalidates automatically.
+#
+# NOTE: no +universal variants. MacPorts' own guidance is that universal
+# builds are poorly supported on Apple Silicon (apr-util fails to build that
+# way). The runner is arm64 and we build the viewer arm64-only, so arm64
+# ports are correct and faster.
+version: '2.11.5'
+ports:
+  - name: 'cmake'
+  - name: 'pkgconfig'
+  - name: 'freealut'
+  - name: 'apr-util'
+  - name: 'boost188'
+  - name: 'glm'
+  - name: 'hunspell'
+  - name: 'freetype'
+  - name: 'minizip'
+  - name: 'nghttp2'
+  - name: 'openjpeg'
+  - name: 'libvorbis'
+  - name: 'xxhashlib'

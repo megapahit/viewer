@@ -1,0 +1,123 @@
+name: macOS Build
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    tags:
+      - 'test/*'
+      - 'build/*'
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    name: macOS (arm64)
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v5
+
+      - name: Set up MacPorts (installs cached deps from parameter file)
+        uses: melusina-org/setup-macports@v1
+        with:
+          parameters: .github/parameters/setup-macports.yaml
+
+      - name: Dump MacPorts logs on failure
+        if: failure()
+        shell: bash
+        run: |
+          echo "=== searching for MacPorts main.log files ==="
+          LOGDIR="/opt/local/var/macports/logs"
+          find "$LOGDIR" -name "main.log" 2>/dev/null | while read -r log; do
+            echo ""
+            echo "######################################################"
+            echo "### $log"
+            echo "######################################################"
+            tail -n 80 "$log"
+          done
+
+      - name: Configure
+        shell: bash
+        run: |
+          SDKPATH="$(xcrun --show-sdk-path)"
+          export LL_BUILD="-O3 -gdwarf-2 -stdlib=libc++ -mmacosx-version-min=12 -iwithsysroot $SDKPATH -std=c++20 -fPIC -DLL_RELEASE=1 -DLL_RELEASE_FOR_DOWNLOAD=1 -DNDEBUG -DPIC -DLL_DARWIN=1"
+
+          mkdir build-macos && cd build-macos
+          cmake \
+            -DCMAKE_BUILD_TYPE:STRING=Release \
+            -DADDRESS_SIZE:STRING=64 \
+            -DUSE_OPENAL:BOOL=ON \
+            -DUSE_FMODSTUDIO:BOOL=OFF \
+            -DENABLE_MEDIA_PLUGINS:BOOL=OFF \
+            -DLL_TESTS:BOOL=OFF \
+            -DNDOF:BOOL=OFF \
+            -DROOT_PROJECT_NAME:STRING=Megapahit \
+            -DVIEWER_CHANNEL:STRING=Megapahit \
+            -DVIEWER_BINARY_NAME:STRING=megapahit \
+            -DBUILD_SHARED_LIBS:BOOL=OFF \
+            -DINSTALL:BOOL=ON \
+            -DPACKAGE:BOOL=OFF \
+            -DCMAKE_INSTALL_PREFIX:PATH=newview/Megapahit.app/Contents/Resources \
+            -DCMAKE_OSX_ARCHITECTURES:STRING=$(uname -m) \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=12 \
+            -DENABLE_SIGNING:BOOL=ON \
+            -DSIGNING_IDENTITY:STRING=- \
+            ../indra
+
+      - name: Build
+        shell: bash
+        run: |
+          cd build-macos
+          make -j$(sysctl -n hw.ncpu)
+
+      - name: Install into app bundle
+        shell: bash
+        run: |
+          cd build-macos
+          make install
+
+      - name: Read version
+        id: version
+        shell: bash
+        run: echo "version=$(cat indra/newview/viewer_version.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Package .app into a .zip
+        shell: bash
+        run: |
+          cd build-macos/newview
+          ditto -c -k --keepParent "Megapahit.app" \
+            "Megapahit-${{ steps.version.outputs.version }}-macos-$(uname -m).zip"
+
+      - name: Verify signature survived packaging
+        shell: bash
+        run: |
+          cd build-macos/newview
+          mkdir -p verify-tmp
+          ditto -x -k Megapahit-*-macos-*.zip verify-tmp/
+          codesign --verify --deep --strict --verbose=2 verify-tmp/Megapahit.app || {
+            echo "Signature verification FAILED"
+            rm -rf verify-tmp
+            exit 1
+          }
+          rm -rf verify-tmp
+          echo "Signature verified intact."
+
+      - name: Upload app artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: megapahit-macos-${{ steps.version.outputs.version }}
+          path: build-macos/newview/Megapahit-*-macos-*.zip
+          if-no-files-found: error
+
+      - name: Upload to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v3
+        with:
+          name: ${{ github.ref_name }}
+          files: build-macos/newview/Megapahit-*-macos-*.zip
+          prerelease: ${{ startsWith(github.ref_name, 'test/') || startsWith(github.ref_name, 'build/') }}
