@@ -173,11 +173,26 @@ if (INSTALL)
             )
         endif ()
         if (NOT (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES fedora)))
+            file(MAKE_DIRECTORY ${AUTOBUILD_INSTALL_DIR}/lib/release/${VIEWER_BINARY_NAME})
+            file(CREATE_LINK
+                "../libGLESv2.so"
+                "${AUTOBUILD_INSTALL_DIR}/lib/release/${VIEWER_BINARY_NAME}/libGLESv2.so"
+                SYMBOLIC
+            )
+            file(CREATE_LINK
+                "../libvulkan.so.1"
+                "${AUTOBUILD_INSTALL_DIR}/lib/release/${VIEWER_BINARY_NAME}/libvulkan.so.1"
+                SYMBOLIC
+            )
             install(
                 FILES
                     ${ARCH_PREBUILT_DIRS_RELEASE}/libcef.so
                     ${ARCH_PREBUILT_DIRS_RELEASE}/libvk_swiftshader.so
-                    ${AUTOBUILD_INSTALL_DIR}/lib/release/v8_context_snapshot.bin
+                    ${ARCH_PREBUILT_DIRS_RELEASE}/libEGL.so
+                    ${ARCH_PREBUILT_DIRS_RELEASE}/v8_context_snapshot.bin
+                    ${ARCH_PREBUILT_DIRS_RELEASE}/vk_swiftshader_icd.json
+                    ${ARCH_PREBUILT_DIRS_RELEASE}/${VIEWER_BINARY_NAME}/libGLESv2.so
+                    ${ARCH_PREBUILT_DIRS_RELEASE}/${VIEWER_BINARY_NAME}/libvulkan.so.1
                     ${AUTOBUILD_INSTALL_DIR}/resources/chrome_100_percent.pak
                     ${AUTOBUILD_INSTALL_DIR}/resources/chrome_200_percent.pak
                     ${AUTOBUILD_INSTALL_DIR}/resources/icudtl.dat
