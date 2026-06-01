@@ -9,7 +9,7 @@ target_compile_definitions(ll::discord_sdk INTERFACE LL_DISCORD=1)
 
 if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/discord_sdk_installed OR NOT ${discord_sdk_installed} EQUAL 0)
     file(ARCHIVE_EXTRACT
-        INPUT $ENV{HOME}/Downloads/DiscordSocialSdk-1.8.13395.zip
+        INPUT $ENV{HOME}/Downloads/DiscordSocialSdk-1.9.15780.zip
         DESTINATION ${CMAKE_BINARY_DIR}
         )
     file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/include/discord_sdk)
@@ -19,9 +19,12 @@ if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKIN
           ${CMAKE_BINARY_DIR}/discord_social_sdk/include/discordpp.h
         DESTINATION ${LIBS_PREBUILT_DIR}/include/discord_sdk
         )
+    if ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
+        set(DISCORD_PLATFORM /arm64)
+    endif ()
     if (WINDOWS)
         file(
-            COPY ${CMAKE_BINARY_DIR}/discord_social_sdk/bin/release/discord_partner_sdk.dll
+            COPY ${CMAKE_BINARY_DIR}/discord_social_sdk/bin/release${DISCORD_PLATFORM}/discord_partner_sdk.dll
             DESTINATION ${LIBS_PREBUILT_DIR}/bin/release
             )
         set(LIBRARY_EXTENSION lib)
@@ -39,7 +42,7 @@ if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKIN
             )
     else ()
         file(
-            COPY ${CMAKE_BINARY_DIR}/discord_social_sdk/lib/release/${LIBRARY_PREFIX}discord_partner_sdk.${LIBRARY_EXTENSION}
+            COPY ${CMAKE_BINARY_DIR}/discord_social_sdk/lib/release${DISCORD_PLATFORM}/${LIBRARY_PREFIX}discord_partner_sdk.${LIBRARY_EXTENSION}
             DESTINATION ${ARCH_PREBUILT_DIRS_RELEASE}
             )
     endif ()
