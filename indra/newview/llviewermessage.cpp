@@ -6120,11 +6120,18 @@ void process_teleport_local(LLMessageSystem *msg,void**)
     }
 
     gAgent.setPositionAgent(pos);
-    gAgentCamera.slamLookAt(look_at);
+
+    bool keep_camera_local_tp = gSavedSettings.getBOOL("KeepCameraOnLocalTeleport");
+
+    if (!keep_camera_local_tp)
+    {
+        gAgentCamera.slamLookAt(look_at);
+    }
 
     if ( !(gAgent.getTeleportKeepsLookAt() && LLViewerJoystick::getInstance()->getOverrideCamera()) )
     {
-        gAgentCamera.resetView(true, true);
+        // resetView still runs (cleanup); the false args just leave the camera alone.
+        gAgentCamera.resetView(!keep_camera_local_tp, !keep_camera_local_tp);
     }
 
     // send camera update to new region

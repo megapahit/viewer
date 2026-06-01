@@ -4741,6 +4741,28 @@
       <key>Value</key>
       <integer>0</integer>
     </map>
+    <key>KeepCameraOnLocalTeleport</key>
+    <map>
+      <key>Comment</key>
+      <string>Do not reset the camera position or mode when teleporting within the same region.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>0</integer>
+    </map>
+    <key>DisableTeleportScreens</key>
+    <map>
+      <key>Comment</key>
+      <string>Do not show the fullscreen teleport progress/black screen during teleports.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>0</integer>
+    </map>
     <key>MiniMapAutoCenter</key>
     <map>
       <key>Comment</key>

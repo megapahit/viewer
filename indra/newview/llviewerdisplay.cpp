@@ -280,6 +280,12 @@ static void update_tp_display(bool minimized)
     F32 teleport_save_time = TELEPORT_EXPIRY + TELEPORT_EXPIRY_PER_ATTACHMENT * attach_count;
     F32 teleport_elapsed = gTeleportDisplayTimer.getElapsedTimeF32();
     F32 teleport_percent = teleport_elapsed * (100.f / teleport_save_time);
+
+    // Reuse the minimized-window path to suppress the teleport progress screen.
+    if (gSavedSettings.getBOOL("DisableTeleportScreens"))
+    {
+        minimized = true;
+    }
     if (gAgent.getTeleportState() != LLAgent::TELEPORT_START && teleport_percent > 100.f)
     {
         // Give up.  Don't keep the UI locked forever.
