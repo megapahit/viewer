@@ -407,6 +407,52 @@
 
     </panel>
 
+    <!-- ── Teleports tab ──────────────────────────────────────────────── -->
+    <panel
+     label="Teleports"
+     name="teleports_panel"
+     layout="topleft"
+     follows="top|left">
+
+      <text
+       type="string"
+       follows="left|top"
+       font="SansSerifSmallBold"
+       height="20"
+       layout="topleft"
+       left="10"
+       name="teleport_header"
+       top="10"
+       width="490">
+        Teleport Options
+      </text>
+
+      <check_box
+       control_name="KeepCameraOnLocalTeleport"
+       follows="left|top"
+       height="20"
+       label="Keep camera position on local teleport"
+       layout="topleft"
+       left="15"
+       name="keep_camera_on_local_teleport"
+       top_pad="8"
+       tool_tip="When teleporting within the same region, do not reset the camera position or mode (stays in mouselook/over-the-shoulder)"
+       width="450" />
+
+      <check_box
+       control_name="DisableTeleportScreens"
+       follows="left|top"
+       height="20"
+       label="Disable teleport progress screen"
+       layout="topleft"
+       left="15"
+       name="disable_teleport_screens"
+       top_pad="6"
+       tool_tip="Do not show the fullscreen progress/black screen during teleports"
+       width="450" />
+
+    </panel>
+
   </tab_container>
 
 </panel>
