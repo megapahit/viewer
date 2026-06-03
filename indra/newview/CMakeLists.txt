@@ -2202,8 +2202,14 @@ endif ()
 
 if (ENABLE_MEDIA_PLUGINS)
    target_link_libraries(${VIEWER_BINARY_NAME} ll::libvlc )
+   # Tell the viewer source which media-library version headers are
+   # actually available in this build, so version reporting in
+   # llappviewer.cpp is gated on the build configuration rather than on
+   # a CPU/compiler macro. Mirrors the link availability above exactly.
+   target_compile_definitions(${VIEWER_BINARY_NAME} PRIVATE LL_VLC=1)
    if (DARWIN OR LINUX)
       target_link_libraries(${VIEWER_BINARY_NAME} ll::cef )
+      target_compile_definitions(${VIEWER_BINARY_NAME} PRIVATE LL_CEF=1)
    endif ()
 endif ()
 
