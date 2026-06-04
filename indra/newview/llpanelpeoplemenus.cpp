@@ -84,11 +84,14 @@ LLContextMenu* PeopleContextMenu::createMenu()
         registrar.add("Avatar.Calllog",         boost::bind(&LLAvatarActions::viewChatHistory,          id));
         registrar.add("Avatar.Freeze",          boost::bind(&LLAvatarActions::freezeAvatar,                 id));
         registrar.add("Avatar.Eject",           boost::bind(&PeopleContextMenu::eject,                  this));
+        registrar.add("Avatar.EstateKick",      boost::bind(&LLAvatarActions::estateKickAvatar,             id));
+        registrar.add("Avatar.EstateBan",       boost::bind(&LLAvatarActions::estateBanAvatar,              id));
 
 
         enable_registrar.add("Avatar.EnableItem", boost::bind(&PeopleContextMenu::enableContextMenuItem, this, _2));
         enable_registrar.add("Avatar.CheckItem",  boost::bind(&PeopleContextMenu::checkContextMenuItem, this, _2));
         enable_registrar.add("Avatar.EnableFreezeEject", boost::bind(&PeopleContextMenu::enableFreezeEject, this, _2));
+        enable_registrar.add("Avatar.EnableEstateEjectBan", boost::bind(&PeopleContextMenu::enableEstateEjectBan, this, _2));
 
         // create the context menu from the XUI
         menu = createFromFile("menu_people_nearby.xml");
@@ -318,6 +321,17 @@ bool PeopleContextMenu::enableFreezeEject(const LLSD& userdata)
     return new_value;
 }
 
+bool PeopleContextMenu::enableEstateEjectBan(const LLSD& userdata)
+{
+    if (gAgent.getID() == mUUIDs.front() || mUUIDs.size() != 1)
+        return false;
+
+    LLViewerRegion* region = gAgent.getRegion();
+    if (!region) return false;
+    if (gAgent.isGodlike()) return true;
+    return region->getOwner() == gAgent.getID() || region->isEstateManager();
+}
+
 void PeopleContextMenu::requestTeleport()
 {
     // boost::bind cannot recognize overloaded method LLAvatarActions::teleportRequest(),
@@ -419,6 +433,8 @@ void NearbyPeopleContextMenu::buildContextMenu(class LLMenuGL& menu, U32 flags)
         items.push_back(std::string("block_unblock"));
         items.push_back(std::string("freeze"));
         items.push_back(std::string("eject"));
+        items.push_back(std::string("estate_eject"));
+        items.push_back(std::string("estate_ban"));
     }
 
     hide_context_entries(menu, items, disabled_items);

@@ -5404,6 +5404,18 @@ Kick [EVIL_USER] from this estate?
 
   <notification
    icon="alertmodal.tga"
+   name="EstateBanUser"
+   type="alertmodal">
+Ban [AVATAR_NAME] from this estate?
+    <tag>confirm</tag>
+    <usetemplate
+     name="okcancelbuttons"
+     notext="Cancel"
+     yestext="Ban"/>
+  </notification>
+
+  <notification
+   icon="alertmodal.tga"
    name="EstateChangeCovenant"
    type="alertmodal">
 Are you sure you want to change the Estate Covenant?

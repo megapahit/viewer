@@ -34,6 +34,7 @@
 #include "llnotifications.h"
 #include "llnotificationsutil.h"
 #include "roles_constants.h"    // for GP_MEMBER_INVITE
+#include "llregionflags.h"      // for ESTATE_ACCESS_BANNED_AGENT_ADD
 
 #include "llagent.h"
 #include "llappviewer.h"        // for gLastVersionChannel
@@ -622,6 +623,34 @@ void LLAvatarActions::ejectAvatar(const LLUUID& id, bool ban_enabled)
             LLNotificationsUtil::add("EjectAvatarNoBan", LLSD(), payload, handleEjectAvatar);
         }
     }
+}
+
+// static
+void LLAvatarActions::estateKickAvatar(const LLUUID& id)
+{
+    LLAvatarName av_name;
+    LLSD payload;
+    payload["avatar_id"] = id;
+    LLSD args;
+    if (LLAvatarNameCache::get(id, &av_name))
+    {
+        args["EVIL_USER"] = av_name.getCompleteName();
+    }
+    LLNotificationsUtil::add("EstateKickUser", args, payload, handleEstateKickAvatar);
+}
+
+// static
+void LLAvatarActions::estateBanAvatar(const LLUUID& id)
+{
+    LLAvatarName av_name;
+    LLSD payload;
+    payload["avatar_id"] = id;
+    LLSD args;
+    if (LLAvatarNameCache::get(id, &av_name))
+    {
+        args["AVATAR_NAME"] = av_name.getCompleteName();
+    }
+    LLNotificationsUtil::add("EstateBanUser", args, payload, handleEstateBanAvatar);
 }
 
 // static
@@ -1420,6 +1449,62 @@ bool LLAvatarActions::handleEjectAvatar(const LLSD& notification, const LLSD& re
         msg->nextBlock("Data");
         msg->addUUID("TargetID", avatar_id );
         msg->addU32("Flags", flags );
+        gAgent.sendReliableMessage();
+    }
+    return false;
+}
+
+bool LLAvatarActions::handleEstateKickAvatar(const LLSD& notification, const LLSD& response)
+{
+    S32 option = LLNotificationsUtil::getSelectedOption(notification, response);
+    if (option == 0)
+    {
+        LLUUID avatar_id = notification["payload"]["avatar_id"].asUUID();
+        LLMessageSystem* msg = gMessageSystem;
+        msg->newMessage("EstateOwnerMessage");
+        msg->nextBlockFast(_PREHASH_AgentData);
+        msg->addUUIDFast(_PREHASH_AgentID, gAgent.getID());
+        msg->addUUIDFast(_PREHASH_SessionID, gAgent.getSessionID());
+        msg->addUUIDFast(_PREHASH_TransactionID, LLUUID::null);
+        msg->nextBlock("MethodData");
+        msg->addString("Method", "kickestate");
+        msg->addUUID("Invoice", LLUUID::generateNewID());
+        msg->nextBlock("ParamList");
+        msg->addString("Parameter", avatar_id.asString());
+        gAgent.sendReliableMessage();
+    }
+    return false;
+}
+
+bool LLAvatarActions::handleEstateBanAvatar(const LLSD& notification, const LLSD& response)
+{
+    S32 option = LLNotificationsUtil::getSelectedOption(notification, response);
+    if (option == 0)
+    {
+        LLUUID avatar_id = notification["payload"]["avatar_id"].asUUID();
+        LLMessageSystem* msg = gMessageSystem;
+        msg->newMessage("EstateOwnerMessage");
+        msg->nextBlockFast(_PREHASH_AgentData);
+        msg->addUUIDFast(_PREHASH_AgentID, gAgent.getID());
+        msg->addUUIDFast(_PREHASH_SessionID, gAgent.getSessionID());
+        msg->addUUIDFast(_PREHASH_TransactionID, LLUUID::null);
+        msg->nextBlock("MethodData");
+        msg->addString("Method", "estateaccessdelta");
+        msg->addUUID("Invoice", LLUUID::generateNewID());
+
+        std::string buf;
+        gAgent.getID().toString(buf);
+        msg->nextBlock("ParamList");
+        msg->addString("Parameter", buf);
+
+        buf = llformat("%u", (U32)ESTATE_ACCESS_BANNED_AGENT_ADD);
+        msg->nextBlock("ParamList");
+        msg->addString("Parameter", buf);
+
+        avatar_id.toString(buf);
+        msg->nextBlock("ParamList");
+        msg->addString("Parameter", buf);
+
         gAgent.sendReliableMessage();
     }
     return false;
