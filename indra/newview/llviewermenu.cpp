@@ -4065,6 +4065,44 @@ void handle_avatar_eject(const LLSD& avatar_id)
         }
 }
 
+void handle_avatar_estate_kick(const LLSD& avatar_id)
+{
+    LLUUID id = avatar_id.asUUID();
+    if (id.isNull())
+    {
+        LLVOAvatar* avatar = find_avatar_from_object(
+            LLSelectMgr::getInstance()->getSelection()->getPrimaryObject());
+        if (avatar) id = avatar->getID();
+    }
+    if (id.notNull())
+    {
+        LLAvatarActions::estateKickAvatar(id);
+    }
+}
+
+void handle_avatar_estate_ban(const LLSD& avatar_id)
+{
+    LLUUID id = avatar_id.asUUID();
+    if (id.isNull())
+    {
+        LLVOAvatar* avatar = find_avatar_from_object(
+            LLSelectMgr::getInstance()->getSelection()->getPrimaryObject());
+        if (avatar) id = avatar->getID();
+    }
+    if (id.notNull())
+    {
+        LLAvatarActions::estateBanAvatar(id);
+    }
+}
+
+bool enable_estate_eject_ban(const LLSD& avatar_id)
+{
+    LLViewerRegion* region = gAgent.getRegion();
+    if (!region) return false;
+    if (gAgent.isGodlike()) return true;
+    return region->getOwner() == gAgent.getID() || region->isEstateManager();
+}
+
 bool my_profile_visible()
 {
     LLFloater* floaterp = LLAvatarActions::getProfileFloater(gAgentID);
@@ -10358,6 +10396,9 @@ void initialize_menus()
     view_listener_t::addMenu(new LLAvatarVisibleDebug(), "Avatar.VisibleDebug");
     view_listener_t::addMenu(new LLAvatarInviteToGroup(), "Avatar.InviteToGroup");
     commit.add("Avatar.Eject", boost::bind(&handle_avatar_eject, LLSD()));
+    commit.add("Avatar.EstateKick", boost::bind(&handle_avatar_estate_kick, _2));
+    commit.add("Avatar.EstateBan", boost::bind(&handle_avatar_estate_ban, _2));
+    enable.add("Avatar.EnableEstateEjectBan", boost::bind(&enable_estate_eject_ban, _2));
     commit.add("Avatar.ShowInspector", boost::bind(&handle_avatar_show_inspector));
     view_listener_t::addMenu(new LLAvatarSendIM(), "Avatar.SendIM");
     view_listener_t::addMenu(new LLAvatarCall(), "Avatar.Call");

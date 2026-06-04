@@ -47,6 +47,7 @@ private:
     bool enableContextMenuItem(const LLSD& userdata);
     bool checkContextMenuItem(const LLSD& userdata);
     bool enableFreezeEject(const LLSD& userdata);
+    bool enableEstateEjectBan(const LLSD& userdata);
     void offerTeleport();
     void eject();
     void startConference();
