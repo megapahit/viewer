@@ -53,7 +53,7 @@ jobs:
             -DADDRESS_SIZE:STRING=64 \
             -DUSE_OPENAL:BOOL=ON \
             -DUSE_FMODSTUDIO:BOOL=OFF \
-            -DENABLE_MEDIA_PLUGINS:BOOL=OFF \
+            -DENABLE_MEDIA_PLUGINS:BOOL=ON \
             -DLL_TESTS:BOOL=OFF \
             -DNDOF:BOOL=OFF \
             -DROOT_PROJECT_NAME:STRING=Megapahit \
