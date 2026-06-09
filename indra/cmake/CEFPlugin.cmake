@@ -142,46 +142,49 @@ elseif (${LINUX_DISTRO} MATCHES fedora)
             file(WRITE ${PREBUILD_TRACKING_DIR}/dullahan_installed "0")
         endif ()
     endif ()
-elseif (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+elseif (LINUX)
     if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/dullahan_installed OR NOT ${dullahan_installed} EQUAL 0)
-        if (NOT EXISTS ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40.tar.gz)
+        if (NOT EXISTS ${CMAKE_BINARY_DIR}/dullahan-1.30.0-CEF_147.0.10.tar.gz)
             file(DOWNLOAD
-                https://github.com/secondlife/dullahan/archive/refs/tags/v1.24.0-CEF_139.0.40.tar.gz
-                ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40.tar.gz
-                )
+                https://github.com/secondlife/dullahan/archive/refs/tags/v1.30.0-CEF_147.0.10.tar.gz
+                ${CMAKE_BINARY_DIR}/dullahan-1.30.0-CEF_147.0.10.tar.gz
+            )
         endif ()
         file(ARCHIVE_EXTRACT
-            INPUT ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40.tar.gz
+            INPUT ${CMAKE_BINARY_DIR}/dullahan-1.30.0-CEF_147.0.10.tar.gz
             DESTINATION ${CMAKE_BINARY_DIR}
-            )
+        )
         execute_process(
             COMMAND sed -i "/#include <vector>/a #include <cstdint>" dullahan.h
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40/src
-            )
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dullahan-1.30.0-CEF_147.0.10/src
+        )
         file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/include/cef)
+        if (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+            set(CEF_PLATFORM arm)
+        endif ()
         try_compile(DULLAHAN_RESULT
             PROJECT dullahan
-            SOURCE_DIR ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40
-            BINARY_DIR ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40
+            SOURCE_DIR ${CMAKE_BINARY_DIR}/dullahan-1.30.0-CEF_147.0.10
+            BINARY_DIR ${CMAKE_BINARY_DIR}/dullahan-1.30.0-CEF_147.0.10
             CMAKE_FLAGS
                 -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
                 -DCMAKE_INSTALL_PREFIX:PATH=${LIBS_PREBUILT_DIR}
                 -DCMAKE_INSTALL_LIBDIR:PATH=${ARCH_PREBUILT_DIRS_RELEASE}
                 -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=ON
                 -DUSE_SPOTIFY_CEF:BOOL=ON
-                -DSPOTIFY_CEF_URL:STRING=https://cef-builds.spotifycdn.com/cef_binary_139.0.40%2Bg465474a%2Bchromium-139.0.7258.139_linuxarm64_minimal.tar.bz2
+                -DSPOTIFY_CEF_URL:STRING=https://cef-builds.spotifycdn.com/cef_binary_147.0.10%2Bgd58e84d%2Bchromium-147.0.7727.118_linux${CEF_PLATFORM}64_minimal.tar.bz2
                 -DPROJECT_ARCH:STRING=${CMAKE_SYSTEM_PROCESSOR}
         )
         if (${DULLAHAN_RESULT})
             execute_process(
                 COMMAND ${CMAKE_MAKE_PROGRAM} install
-                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40
+                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dullahan-1.30.0-CEF_147.0.10
                 OUTPUT_VARIABLE dullahan_installed
             )
             file(
                 COPY
-                    ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40/src/dullahan.h
-                    ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40/src/dullahan_version.h
+                    ${CMAKE_BINARY_DIR}/dullahan-1.30.0-CEF_147.0.10/src/dullahan.h
+                    ${CMAKE_BINARY_DIR}/dullahan-1.30.0-CEF_147.0.10/src/dullahan_version.h
                 DESTINATION ${LIBS_PREBUILT_DIR}/include/cef
                 )
             file(WRITE ${PREBUILD_TRACKING_DIR}/dullahan_installed "${dullahan_installed}")
