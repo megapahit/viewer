@@ -94,14 +94,17 @@ file(CREATE_LINK
     "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicuuc.78.dylib"
     SYMBOLIC
     )
+if(@ENABLE_MEDIA_PLUGINS@)
 file(CREATE_LINK
     "../../../../Frameworks/Chromium Embedded Framework.framework"
     "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/Chromium Embedded Framework.framework"
     SYMBOLIC
     )
+endif()
 
 fixup_bundle(${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/MacOS/${VIEWER_CHANNEL} "" "${dirs}")
 
+if(@ENABLE_MEDIA_PLUGINS@)
 file(CHMOD
     "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/DullahanHelper.app/Contents/MacOS/DullahanHelper"
     "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/DullahanHelper (Alerts).app/Contents/MacOS/DullahanHelper (Alerts)"
@@ -110,7 +113,9 @@ file(CHMOD
     "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/DullahanHelper (Renderer).app/Contents/MacOS/DullahanHelper (Renderer)"
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
     )
+endif()
 
+if(@ENABLE_MEDIA_PLUGINS@)
 execute_process(
     COMMAND hdiutil detach /Volumes/VLC\ media\ player
     COMMAND lipo libalut.0.dylib
@@ -233,6 +238,7 @@ execute_process(
     WORKING_DIRECTORY ${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Frameworks
     ERROR_QUIET
     )
+endif()
 
 message("By default, the situation is assumed to be the strictest, an Apple Silicon Mac with the default security settings. Running a native self-built viewer on it without correct codesigning would lead to a crash. Also, codesigning requires administrative access. If you believe you're not in such a situation, you can remove the sudos in this file.")
 execute_process(
@@ -637,6 +643,7 @@ execute_process(
         Resources/SLPlugin.app/Contents/Frameworks/DullahanHelper\ \(Plugin\).app/Contents/MacOS/DullahanHelper\ \(Plugin\)
         WORKING_DIRECTORY ${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents
     )
+if(@ENABLE_MEDIA_PLUGINS@)
 execute_process(
     COMMAND sudo codesign -f -s ${SIGNING_IDENTITY} --timestamp -o runtime --runtime-version ${CMAKE_OSX_DEPLOYMENT_TARGET}
         DullahanHelper.app
@@ -657,6 +664,7 @@ execute_process(
         DullahanHelper\ \(Renderer\).app
     WORKING_DIRECTORY ${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks
     )
+endif()
 execute_process(
     COMMAND sudo codesign -f -s ${SIGNING_IDENTITY} --timestamp -o runtime --runtime-version ${CMAKE_OSX_DEPLOYMENT_TARGET}
         --entitlements ${CMAKE_SOURCE_DIR}/newview/slplugin.entitlements
