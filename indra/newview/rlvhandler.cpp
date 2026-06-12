@@ -393,6 +393,10 @@ ECmdRet ForceHandler<EBehaviour::Detach>::onCommand(const RlvCommand& rlvCmd)
             folderID = findDescendentCategoryIDByName(folderID, option);
             LLAppearanceMgr::instance().takeOffOutfit(folderID);
         }
+        else
+        {
+            LLAppearanceMgr::instance().removeItemFromAvatar(gObjectList.findObject(LLUUID(option))->getAttachmentItemID());
+        }
     }
     return ECmdRet::Succeeded;
 }
