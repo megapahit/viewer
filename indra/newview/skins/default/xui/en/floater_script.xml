@@ -8,9 +8,9 @@
  can_dock="true"
  can_minimize="true"
  save_rect="true"
- visible="false"
- width="350"
+ visible="false" 
+ width="402"
  can_resize="false"
- min_width="350"
+ min_width="402"
  min_height="200">
 </floater>
