@@ -2208,6 +2208,8 @@ bool LLAppViewer::cleanup()
     // deleteSingleton() methods.
     LLSingletonBase::deleteAll();
 
+    LLUICtrlFactory::deleteSingleton();
+
     LLSplashScreen::hide();
 
     LL_INFOS() << "Goodbye!" << LL_ENDL;
@@ -3047,7 +3049,6 @@ bool LLAppViewer::initConfiguration()
     {
         // This is the second instance of SL. Mute voice,
         // but make sure the setting is *not* persisted.
-        // Also see LLVivoxVoiceClient::voiceEnabled()
         LLControlVariable* enable_voice = gSavedSettings.getControl("EnableVoiceChat");
         if (enable_voice)
         {
