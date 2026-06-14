@@ -1,0 +1,11 @@
+message("By default, the situation is assumed to be the strictest, an Apple Silicon Mac with the default security settings. Codesigning requires administrative access. If you believe you're not in such a situation, you can remove the sudos in this file.")
+execute_process(
+    COMMAND sudo codesign -f -s ${SIGNING_IDENTITY} --timestamp -o runtime --runtime-version ${CMAKE_OSX_DEPLOYMENT_TARGET}
+        Resources/SLPlugin.app/Contents/Frameworks/plugins/libi420_rgb_mmx_plugin.dylib
+        Resources/SLPlugin.app/Contents/Frameworks/plugins/libi420_rgb_sse2_plugin.dylib
+        Resources/SLPlugin.app/Contents/Frameworks/plugins/libi420_yuy2_mmx_plugin.dylib
+        Resources/SLPlugin.app/Contents/Frameworks/plugins/libi420_yuy2_sse2_plugin.dylib
+        Resources/SLPlugin.app/Contents/Frameworks/plugins/libi422_yuy2_mmx_plugin.dylib
+        Resources/SLPlugin.app/Contents/Frameworks/plugins/libi422_yuy2_sse2_plugin.dylib
+        WORKING_DIRECTORY ${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents
+    )
