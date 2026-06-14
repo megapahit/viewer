@@ -75,13 +75,37 @@ if (DARWIN)
             ${CMAKE_CURRENT_SOURCE_DIR}/FixPackage.cmake.in
             ${CMAKE_CURRENT_BINARY_DIR}/FixBundle.cmake
             )
-    else (PACKAGE)
+        if (CMAKE_OSX_ARCHITECTURES MATCHES x86_64)
+            configure_file(
+                ${CMAKE_CURRENT_SOURCE_DIR}/SignPackageMmxSse2.cmake.in
+                ${CMAKE_CURRENT_BINARY_DIR}/SignBundleMmxSse2.cmake
+                )
+        endif ()
+        configure_file(
+            ${CMAKE_CURRENT_SOURCE_DIR}/SignPackage.cmake.in
+            ${CMAKE_CURRENT_BINARY_DIR}/SignBundle.cmake
+            )
+    else ()
         configure_file(
             ${CMAKE_CURRENT_SOURCE_DIR}/FixBundle.cmake.in
             ${CMAKE_CURRENT_BINARY_DIR}/FixBundle.cmake
             )
-    endif (PACKAGE)
+        if (CMAKE_OSX_ARCHITECTURES MATCHES x86_64)
+            configure_file(
+                ${CMAKE_CURRENT_SOURCE_DIR}/SignBundleMmxSse2.cmake.in
+                ${CMAKE_CURRENT_BINARY_DIR}/SignBundleMmxSse2.cmake
+                )
+        endif ()
+        configure_file(
+            ${CMAKE_CURRENT_SOURCE_DIR}/SignBundle.cmake.in
+            ${CMAKE_CURRENT_BINARY_DIR}/SignBundle.cmake
+            )
+    endif ()
     install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/FixBundle.cmake)
+    if (CMAKE_OSX_ARCHITECTURES MATCHES x86_64)
+        install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/SignBundleMmxSse2.cmake)
+    endif ()
+    install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/SignBundle.cmake)
 
 elseif (WINDOWS)
 
