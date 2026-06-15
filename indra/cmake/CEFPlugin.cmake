@@ -32,7 +32,7 @@ if (${LINUX_DISTRO} MATCHES arch)
         endif ()
         if (NOT EXISTS ${CMAKE_BINARY_DIR}/dullahan-1.31.0-CEF_148.0.9.tar.gz)
             file(DOWNLOAD
-                https://github.com/secondlife/dullahan/archive/refs/tags/v1.31.0-CEF_148.0.9.tar.gzz
+                https://github.com/secondlife/dullahan/archive/refs/tags/v1.31.0-CEF_148.0.9.tar.gz
                 ${CMAKE_BINARY_DIR}/dullahan-1.31.0-CEF_148.0.9.tar.gz
             )
         endif ()
