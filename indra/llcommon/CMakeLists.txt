@@ -303,7 +303,7 @@ elseif ($ENV{MSYSTEM_CARCH} MATCHES aarch64)
   target_include_directories(llcommon PUBLIC ${prefix_result}/../include/sse2neon)
 endif ()
 
-if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu) OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed) OR CMAKE_OSX_ARCHITECTURES MATCHES x86_64)
+if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu) OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed) OR CMAKE_OSX_ARCHITECTURES MATCHES x86_64 OR ($ENV{MSYSTEM_CARCH} MATCHES aarch64))
   target_include_directories(llcommon PUBLIC ${LIBS_PREBUILT_DIR}/include)
 endif ()
 
