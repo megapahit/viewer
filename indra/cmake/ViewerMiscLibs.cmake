@@ -16,7 +16,7 @@ endif()
 use_prebuilt_binary(slvoice)
 endif (FALSE)
 
-if (DARWIN)
+if (DARWIN OR USE_FLATPAK)
 use_prebuilt_binary(nanosvg)
 endif ()
 use_prebuilt_binary(viewer-fonts)

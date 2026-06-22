@@ -28,27 +28,29 @@ elseif (WINDOWS)
     message(WARNING "Could not detect Boost suffix via glob; using fallback '${sfx}'. "
                     "Check that vcpkg installed boost into ${prefix_result}.")
   endif ()
-else ()
+elseif (NOT USE_FLATPAK)
   find_package( Boost )
 endif ()
-target_link_libraries( ll::boost INTERFACE
-  boost_context${sfx}
-  boost_fiber${sfx}
-  boost_filesystem${sfx}
-  boost_program_options${sfx}
-  boost_thread${sfx}
-  boost_url${sfx}
-  )
-if (WINDOWS)
-  target_link_libraries( ll::boost INTERFACE boost_json${sfx})
-else ()
-  target_link_libraries( ll::boost INTERFACE boost_regex${sfx})
+if (NOT USE_FLATPAK)
+  target_link_libraries( ll::boost INTERFACE
+    boost_context${sfx}
+    boost_fiber${sfx}
+    boost_filesystem${sfx}
+    boost_program_options${sfx}
+    boost_thread${sfx}
+    boost_url${sfx}
+    )
+  if (WINDOWS)
+    target_link_libraries( ll::boost INTERFACE boost_json${sfx})
+  else ()
+    target_link_libraries( ll::boost INTERFACE boost_regex${sfx})
+  endif ()
+  if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES fedora) OR DARWIN)
+    target_link_libraries( ll::boost INTERFACE boost_system${sfx})
+  endif ()
+  target_compile_definitions( ll::boost INTERFACE BOOST_BIND_GLOBAL_PLACEHOLDERS )
+  return()
 endif ()
-if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES fedora) OR DARWIN)
-  target_link_libraries( ll::boost INTERFACE boost_system${sfx})
-endif ()
-target_compile_definitions( ll::boost INTERFACE BOOST_BIND_GLOBAL_PLACEHOLDERS )
-return()
 
 if( USE_CONAN )
   target_link_libraries( ll::boost INTERFACE CONAN_PKG::boost )
@@ -163,3 +165,5 @@ target_link_libraries(ll::boost INTERFACE
 if (LINUX)
     target_link_libraries(ll::boost INTERFACE rt)
 endif (LINUX)
+
+target_include_directories(ll::boost SYSTEM INTERFACE ${LIBS_PREBUILT_DIR}/include)

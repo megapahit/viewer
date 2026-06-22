@@ -87,6 +87,22 @@ if (INSTALL)
                 /Volumes/VLC\ media\ player/VLC.app/Contents/MacOS/lib/libvlccore.dylib
             DESTINATION ${_LIB}/plugins
             )
+    elseif (USE_FLATPAK)
+        set(_LIB lib${ADDRESS_SIZE})
+        install(
+            DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE}/vlc
+            DESTINATION ${_LIB}
+            )
+        install(
+            FILES
+                ${ARCH_PREBUILT_DIRS_RELEASE}/libvlc.so
+                ${ARCH_PREBUILT_DIRS_RELEASE}/libvlc.so.5
+                ${ARCH_PREBUILT_DIRS_RELEASE}/libvlc.so.5.6.1
+                ${ARCH_PREBUILT_DIRS_RELEASE}/libvlccore.so
+                ${ARCH_PREBUILT_DIRS_RELEASE}/libvlccore.so.9
+                ${ARCH_PREBUILT_DIRS_RELEASE}/libvlccore.so.9.0.1
+            DESTINATION ${_LIB}
+            )
     elseif (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
         set(_LIB lib/${ARCH}-linux-gnu/${VIEWER_BINARY_NAME})
     elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed) OR (${LINUX_DISTRO} MATCHES gentoo))

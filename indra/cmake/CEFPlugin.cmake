@@ -1,7 +1,6 @@
 # -*- cmake -*-
 include(Linking)
 include(Prebuilt)
-include(UnixInstall)
 
 include_guard()
 add_library( ll::cef INTERFACE IMPORTED )
@@ -50,7 +49,7 @@ if (${LINUX_DISTRO} MATCHES arch)
                 -DCMAKE_INSTALL_LIBDIR:PATH=${ARCH_PREBUILT_DIRS_RELEASE}
                 -DCEF_WRAPPER_DIR:PATH=/usr/include/cef
                 -DCEF_WRAPPER_BUILD_DIR:PATH=${CMAKE_BINARY_DIR}/dullahan-1.31.0-CEF_148.0.9
-                -DCEF_LIBRARY_RELEASE:FILEPATH=${INSTALL_PREFIX}/${_LIB}/cef/libcef.so
+                -DCEF_LIBRARY_RELEASE:FILEPATH=${INSTALL_PREFIX}/lib/cef/libcef.so
                 -DCEF_DLL_LIBRARY_RELEASE:FILEPATH=${ARCH_PREBUILT_DIRS_RELEASE}/libcef_dll_wrapper.a
                 "-DCMAKE_CXX_FLAGS:STRING=-I/usr/include/cef -I/usr/src/cef -DWRAPPING_CEF_SHARED"
         )
@@ -118,7 +117,7 @@ elseif (${LINUX_DISTRO} MATCHES fedora)
                 -DCMAKE_INSTALL_LIBDIR:PATH=${ARCH_PREBUILT_DIRS_RELEASE}
                 -DCEF_WRAPPER_DIR:PATH=/usr/include/cef
                 -DCEF_WRAPPER_BUILD_DIR:PATH=${CMAKE_BINARY_DIR}/dullahan-1.29.0-CEF_146.0.12
-                -DCEF_LIBRARY_RELEASE:FILEPATH=${INSTALL_PREFIX}/${_LIB}/cef/libcef.so
+                -DCEF_LIBRARY_RELEASE:FILEPATH=${INSTALL_PREFIX}/lib${ADDRESS_SIZE}/cef/libcef.so
                 -DCEF_DLL_LIBRARY_RELEASE:FILEPATH=${ARCH_PREBUILT_DIRS_RELEASE}/libcef_dll_wrapper.a
                 "-DCMAKE_CXX_FLAGS:STRING=-I/usr/include/cef -I/usr/src/cef-146.0.11 -DWRAPPING_CEF_SHARED"
         )
@@ -198,8 +197,11 @@ execute_process(
 
 if (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES fedora))
     target_include_directories( ll::cef SYSTEM INTERFACE /usr/include/cef/include)
+    if (${LINUX_DISTRO} MATCHES fedora)
+        set(LIB_SUFFIX ${ADDRESS_SIZE})
+    endif ()
     execute_process(
-        COMMAND patchelf --add-rpath ${INSTALL_PREFIX}/${_LIB}/cef bin/release/dullahan_host
+        COMMAND patchelf --add-rpath ${INSTALL_PREFIX}/lib${LIB_SUFFIX}/cef bin/release/dullahan_host
         WORKING_DIRECTORY ${LIBS_PREBUILT_DIR}
     )
 endif ()
@@ -271,7 +273,10 @@ elseif (DARWIN)
 
 elseif (LINUX)
     if (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES fedora))
-        target_link_directories( ll::cef INTERFACE ${INSTALL_PREFIX}/${_LIB}/cef )
+        if (${LINUX_DISTRO} MATCHES fedora)
+            set(LIB_SUFFIX ${ADDRESS_SIZE})
+        endif ()
+        target_link_directories( ll::cef INTERFACE ${INSTALL_PREFIX}/lib${LIB_SUFFIX}/cef )
     endif ()
     target_link_libraries( ll::cef INTERFACE
         libdullahan.a

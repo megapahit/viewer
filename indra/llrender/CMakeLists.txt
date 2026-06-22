@@ -103,7 +103,12 @@ target_link_libraries(llrender
         llwindow
         ll::freetype
         OpenGL::GL
-        OpenGL::GLU
         )
+
+if (USE_FLATPAK)
+  target_link_libraries(${PROJECT_NAME} ll::glu)
+else ()
+  target_link_libraries(${PROJECT_NAME} OpenGL::GLU)
+endif ()
 
 include(LibraryInstall)
