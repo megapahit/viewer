@@ -18,7 +18,7 @@ if( USE_CONAN )
     "${CONAN_INCLUDE_DIRS_COLLADADOM}/collada-dom/1.4/" )
 endif()
 
-if (TRUE)
+if (NOT USE_FLATPAK)
   include(FindPkgConfig)
   pkg_check_modules(Minizip REQUIRED minizip)
   if (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES gentoo) OR DARWIN OR WINDOWS)
@@ -147,9 +147,9 @@ if (TRUE)
     file(WRITE ${PREBUILD_TRACKING_DIR}/colladadom_installed "${colladadom_installed}")
   endif ()
 
-else (TRUE)
+else (NOT USE_FLATPAK)
 
-use_system_binary( colladadom )
+#use_system_binary( colladadom )
 
 use_prebuilt_binary(colladadom)
 use_prebuilt_binary(minizip-ng) # needed for colladadom
@@ -175,7 +175,7 @@ if (WINDOWS)
     target_link_libraries( ll::libxml INTERFACE Bcrypt.lib)
 endif()
 
-endif (TRUE)
+endif (NOT USE_FLATPAK)
 
 target_include_directories( ll::colladadom SYSTEM INTERFACE
         ${LIBS_PREBUILT_DIR}/include/collada

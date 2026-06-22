@@ -6,23 +6,25 @@ set(INSTALL OFF CACHE BOOL
     "Generate install target.")
 
 if (INSTALL)
-  if (CMAKE_SYSTEM_NAME MATCHES FreeBSD)
+  if (USE_FLATPAK OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
       set(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX} CACHE PATH
           "Top-level installation directory.")
-  else (CMAKE_SYSTEM_NAME MATCHES FreeBSD)
+  else ()
   set(INSTALL_PREFIX /usr CACHE PATH
       "Top-level installation directory.")
-  endif (CMAKE_SYSTEM_NAME MATCHES FreeBSD)
-
-  if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
-    set(_LIB lib/${ARCH}-linux-gnu)
-  elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed) OR (${LINUX_DISTRO} MATCHES gentoo))
-    set(_LIB lib${ADDRESS_SIZE})
-  else ()
-    set(_LIB lib)
   endif ()
 
-  set(INSTALL_LIBRARY_DIR ${INSTALL_PREFIX}/${_LIB}/${VIEWER_BINARY_NAME} CACHE PATH
+  if (USE_FLATPAK)
+    set(_LIB lib${ADDRESS_SIZE})
+  elseif (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
+    set(_LIB lib/${ARCH}-linux-gnu/${VIEWER_BINARY_NAME})
+  elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed) OR (${LINUX_DISTRO} MATCHES gentoo))
+    set(_LIB lib${ADDRESS_SIZE}/${VIEWER_BINARY_NAME})
+  else ()
+    set(_LIB lib/${VIEWER_BINARY_NAME})
+  endif ()
+
+  set(INSTALL_LIBRARY_DIR ${INSTALL_PREFIX}/${_LIB} CACHE PATH
       "Installation directory for dynamic library files and their resources.")
 
   set(INSTALL_SHARE_DIR ${INSTALL_PREFIX}/share CACHE PATH
@@ -35,13 +37,17 @@ if (INSTALL)
   set(APP_SHARE_DIR ${INSTALL_SHARE_DIR}/${VIEWER_BINARY_NAME}
       CACHE PATH
       "Installation directory for read-only data files.")
-  if (${LINUX_DISTRO} MATCHES arch)
+  if (USE_FLATPAK)
+    set(APP_LIBEXEC_DIR ${INSTALL_PREFIX}/libexec
+        CACHE PATH
+        "Installation directory for non-manual executables.")
+  elseif (${LINUX_DISTRO} MATCHES arch)
     set(APP_LIBEXEC_DIR ${INSTALL_PREFIX}/lib/${VIEWER_BINARY_NAME}
         CACHE PATH
         "Installation directory for non-manual executables.")
-  else (${LINUX_DISTRO} MATCHES arch)
+  else ()
     set(APP_LIBEXEC_DIR ${INSTALL_PREFIX}/libexec/${VIEWER_BINARY_NAME}
         CACHE PATH
         "Installation directory for non-manual executables.")
-  endif (${LINUX_DISTRO} MATCHES arch)
+  endif ()
 endif (INSTALL)

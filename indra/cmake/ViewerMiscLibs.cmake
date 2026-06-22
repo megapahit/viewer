@@ -7,7 +7,7 @@ if (NOT (DARWIN OR WINDOWS))
   target_link_libraries( ll::fontconfig INTERFACE  Fontconfig::Fontconfig )
 endif ()
 
-if (DARWIN)
+if (DARWIN OR USE_FLATPAK)
 use_prebuilt_binary(nanosvg)
 endif ()
 use_prebuilt_binary(viewer-fonts)

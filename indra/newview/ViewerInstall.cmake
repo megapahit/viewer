@@ -226,26 +226,42 @@ install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${VIEWER_BINARY_NAME}
         )
 
 if (LINUX)
-        if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
-                set(_LIB lib/${ARCH}-linux-gnu)
-        elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed) OR (${LINUX_DISTRO} MATCHES gentoo))
+        if (USE_FLATPAK)
                 set(_LIB lib${ADDRESS_SIZE})
+        elseif (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
+                set(_LIB lib/${ARCH}-linux-gnu/${VIEWER_BINARY_NAME})
+        elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed) OR (${LINUX_DISTRO} MATCHES gentoo))
+                set(_LIB lib${ADDRESS_SIZE}/${VIEWER_BINARY_NAME})
         else ()
-                set(_LIB lib)
+                set(_LIB lib/${VIEWER_BINARY_NAME})
         endif ()
         if (USE_DISCORD)
             install(
                 FILES ${ARCH_PREBUILT_DIRS_RELEASE}/libdiscord_partner_sdk.so
-                DESTINATION ${_LIB}/${VIEWER_BINARY_NAME}
+                DESTINATION ${_LIB}
+                )
+        endif ()
+        if (USE_FLATPAK)
+            install(
+                FILES
+                  ${ARCH_PREBUILT_DIRS_RELEASE}/libalut.so
+                  ${ARCH_PREBUILT_DIRS_RELEASE}/libalut.so.0
+                  ${ARCH_PREBUILT_DIRS_RELEASE}/libalut.so.0.0.0
+                  ${ARCH_PREBUILT_DIRS_RELEASE}/libopenal.so
+                  ${ARCH_PREBUILT_DIRS_RELEASE}/libopenal.so.1
+                  ${ARCH_PREBUILT_DIRS_RELEASE}/libopenal.so.1.24.2
+                DESTINATION ${_LIB}
                 )
         endif ()
         if (USE_FMODSTUDIO)
-            install(FILES
-                ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so
-                ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so.13
-                ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so.13.34
-            DESTINATION ${_LIB}/${VIEWER_BINARY_NAME})
-        endif (USE_FMODSTUDIO)
+            install(
+                FILES
+                  ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so
+                  ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so.13
+                  ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so.13.34
+                DESTINATION ${_LIB}
+                )
+        endif ()
 endif (LINUX)
 
 install(DIRECTORY skins app_settings fonts

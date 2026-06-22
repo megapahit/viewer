@@ -154,7 +154,7 @@ if (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
         --param asan-stack=0
       )
       add_link_options(-fsanitize=address)
-  else()
+  elseif( NOT USE_FLATPAK )
    add_compile_definitions( _FORTIFY_SOURCE=2 )
   endif()
 

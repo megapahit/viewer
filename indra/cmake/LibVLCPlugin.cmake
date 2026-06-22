@@ -27,11 +27,14 @@ if (DARWIN)
     target_include_directories( ll::libvlc SYSTEM INTERFACE /Volumes/VLC\ media\ player/VLC.app/Contents/MacOS/include)
     target_link_directories( ll::libvlc INTERFACE /Volumes/VLC\ media\ player/VLC.app/Contents/MacOS/lib)
     target_link_libraries( ll::libvlc INTERFACE vlc vlccore )
-elseif (WINDOWS)
+elseif (WINDOWS OR USE_FLATPAK)
 use_prebuilt_binary(vlc-bin)
+    if (WINDOWS)
+        set(LIB_SUFFIX lib)
+    endif ()
     target_link_libraries( ll::libvlc INTERFACE
-            libvlc.lib
-            libvlccore.lib
+            ${LIB_SUFFIX}vlc
+            ${LIB_SUFFIX}vlccore
     )
 else ()
     include(FindPkgConfig)

@@ -52,7 +52,10 @@ if (LINUX)
   list(APPEND media_plugin_cef_SOURCE_FILES ${LINUX_VOLUME_CATCHER})
   set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--build-id")
   if (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES fedora))
-    set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH};${INSTALL_PREFIX}/${_LIB}/cef)
+    if (${LINUX_DISTRO} MATCHES fedora)
+        set(LIB_SUFFIX ${ADDRESS_SIZE})
+    endif ()
+    set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH};${INSTALL_PREFIX}/lib${LIB_SUFFIX}/cef)
   endif ()
   list(APPEND media_plugin_cef_LINK_LIBRARIES llwindow )
 elseif (DARWIN)
@@ -147,14 +150,23 @@ if (INSTALL)
             DESTINATION ${_LIB}
             )
     elseif (LINUX)
-        if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
+        if (USE_FLATPAK)
+            set(_LIB lib${ADDRESS_SIZE})
+        elseif (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
             set(_LIB lib/${ARCH}-linux-gnu/${VIEWER_BINARY_NAME})
         elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed) OR (${LINUX_DISTRO} MATCHES gentoo))
             set(_LIB lib${ADDRESS_SIZE}/${VIEWER_BINARY_NAME})
         else ()
             set(_LIB lib/${VIEWER_BINARY_NAME})
         endif ()
-        if (${LINUX_DISTRO} MATCHES arch)
+        if (USE_FLATPAK)
+            install(
+                PROGRAMS
+                    ${AUTOBUILD_INSTALL_DIR}/bin/release/chrome-sandbox
+                    ${AUTOBUILD_INSTALL_DIR}/bin/release/dullahan_host
+                DESTINATION libexec
+            )
+        elseif (${LINUX_DISTRO} MATCHES arch)
             install(
                 PROGRAMS ${AUTOBUILD_INSTALL_DIR}/bin/release/dullahan_host
                 DESTINATION lib/${VIEWER_BINARY_NAME}
@@ -173,17 +185,6 @@ if (INSTALL)
             )
         endif ()
         if (NOT (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES fedora)))
-            file(MAKE_DIRECTORY ${AUTOBUILD_INSTALL_DIR}/lib/release/${VIEWER_BINARY_NAME})
-            file(CREATE_LINK
-                "../libGLESv2.so"
-                "${AUTOBUILD_INSTALL_DIR}/lib/release/${VIEWER_BINARY_NAME}/libGLESv2.so"
-                SYMBOLIC
-            )
-            file(CREATE_LINK
-                "../libvulkan.so.1"
-                "${AUTOBUILD_INSTALL_DIR}/lib/release/${VIEWER_BINARY_NAME}/libvulkan.so.1"
-                SYMBOLIC
-            )
             install(
                 FILES
                     ${ARCH_PREBUILT_DIRS_RELEASE}/libcef.so
@@ -191,8 +192,6 @@ if (INSTALL)
                     ${ARCH_PREBUILT_DIRS_RELEASE}/libEGL.so
                     ${ARCH_PREBUILT_DIRS_RELEASE}/v8_context_snapshot.bin
                     ${ARCH_PREBUILT_DIRS_RELEASE}/vk_swiftshader_icd.json
-                    ${ARCH_PREBUILT_DIRS_RELEASE}/${VIEWER_BINARY_NAME}/libGLESv2.so
-                    ${ARCH_PREBUILT_DIRS_RELEASE}/${VIEWER_BINARY_NAME}/libvulkan.so.1
                     ${AUTOBUILD_INSTALL_DIR}/resources/chrome_100_percent.pak
                     ${AUTOBUILD_INSTALL_DIR}/resources/chrome_200_percent.pak
                     ${AUTOBUILD_INSTALL_DIR}/resources/icudtl.dat
@@ -203,6 +202,32 @@ if (INSTALL)
                 DIRECTORY ${AUTOBUILD_INSTALL_DIR}/resources/locales
                 DESTINATION ${_LIB}
             )
+            if (USE_FLATPAK)
+              install(
+                  FILES
+                      ${ARCH_PREBUILT_DIRS_RELEASE}/libGLESv2.so
+                      ${ARCH_PREBUILT_DIRS_RELEASE}/libvulkan.so.1
+                  DESTINATION ${_LIB}
+              )
+            else ()
+              file(MAKE_DIRECTORY ${AUTOBUILD_INSTALL_DIR}/lib/release/${VIEWER_BINARY_NAME})
+              file(CREATE_LINK
+                  "../libGLESv2.so"
+                  "${AUTOBUILD_INSTALL_DIR}/lib/release/${VIEWER_BINARY_NAME}/libGLESv2.so"
+                  SYMBOLIC
+              )
+              file(CREATE_LINK
+                  "../libvulkan.so.1"
+                  "${AUTOBUILD_INSTALL_DIR}/lib/release/${VIEWER_BINARY_NAME}/libvulkan.so.1"
+                  SYMBOLIC
+              )
+              install(
+                  FILES
+                      ${ARCH_PREBUILT_DIRS_RELEASE}/${VIEWER_BINARY_NAME}/libGLESv2.so
+                      ${ARCH_PREBUILT_DIRS_RELEASE}/${VIEWER_BINARY_NAME}/libvulkan.so.1
+                  DESTINATION ${_LIB}
+              )
+            endif ()
         endif ()
     elseif (WINDOWS)
         set(_LIB llplugin)
