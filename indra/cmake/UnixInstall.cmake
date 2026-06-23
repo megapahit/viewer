@@ -15,7 +15,7 @@ if (INSTALL)
   endif ()
 
   if (USE_FLATPAK)
-    set(_LIB lib${ADDRESS_SIZE})
+    set(_LIB lib)
   elseif (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
     set(_LIB lib/${ARCH}-linux-gnu/${VIEWER_BINARY_NAME})
   elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed) OR (${LINUX_DISTRO} MATCHES gentoo))

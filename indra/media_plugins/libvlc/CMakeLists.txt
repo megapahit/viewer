@@ -95,7 +95,7 @@ if (INSTALL)
             DESTINATION ${_LIB}/plugins
             )
     elseif (USE_FLATPAK)
-        set(_LIB lib${ADDRESS_SIZE})
+        set(_LIB lib)
         install(
             DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE}/vlc
             DESTINATION ${_LIB}
