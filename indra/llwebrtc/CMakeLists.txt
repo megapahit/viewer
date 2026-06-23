@@ -69,6 +69,14 @@ ADD_CUSTOM_COMMAND(TARGET llwebrtc POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
                        $<TARGET_FILE:llwebrtc>
                                ${SHARED_LIB_STAGING_DIR})
+
+if (CMAKE_BUILD_TYPE MATCHES Release AND (CMAKE_CXX_COMPILER_ID STREQUAL Clang OR CMAKE_CXX_COMPILER_ID MATCHES GNU))
+  add_custom_command(
+    TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_STRIP} lib${PROJECT_NAME}.so
+    )
+endif ()
+
 # Add tests
 if (LL_TESTS)
 endif (LL_TESTS)
@@ -77,7 +85,7 @@ if (INSTALL)
     if (DARWIN)
         set(_LIB ../Frameworks)
     elseif (USE_FLATPAK)
-        set(_LIB lib${ADDRESS_SIZE})
+        set(_LIB lib)
     elseif (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
         set(_LIB lib/${ARCH}-linux-gnu/${VIEWER_BINARY_NAME})
     elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed) OR (${LINUX_DISTRO} MATCHES gentoo))

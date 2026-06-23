@@ -61,6 +61,13 @@ elseif (DARWIN)
   )
 endif ()
 
+if (CMAKE_BUILD_TYPE MATCHES Release AND (CMAKE_CXX_COMPILER_ID STREQUAL Clang OR CMAKE_CXX_COMPILER_ID MATCHES GNU))
+  add_custom_command(
+    TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_STRIP} ${PROJECT_NAME}
+    )
+endif ()
+
 if (BUILD_SHARED_LIBS)
   set_target_properties(SLPlugin PROPERTIES LINK_FLAGS_RELEASE
     "${LINK_FLAGS_RELEASE} -Wl,--allow-shlib-undefined")
