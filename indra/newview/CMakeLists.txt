@@ -1874,6 +1874,13 @@ else ()
     )
 endif ()
 
+if (CMAKE_BUILD_TYPE MATCHES Release AND (CMAKE_CXX_COMPILER_ID STREQUAL Clang OR CMAKE_CXX_COMPILER_ID MATCHES GNU))
+  add_custom_command(
+    TARGET ${VIEWER_BINARY_NAME} POST_BUILD
+    COMMAND ${CMAKE_STRIP} ${VIEWER_BINARY_NAME}
+    )
+endif ()
+
 if(USE_PRECOMPILED_HEADERS)
   target_precompile_headers( ${VIEWER_BINARY_NAME} PRIVATE llviewerprecompiledheaders.h )
 endif(USE_PRECOMPILED_HEADERS)
