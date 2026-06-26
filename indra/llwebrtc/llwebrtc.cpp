@@ -27,7 +27,7 @@
 #include "llwebrtc_impl.h"
 #include <algorithm>
 #include <string.h>
-
+#include "api/audio/create_audio_device_module.h"
 #include "api/audio_codecs/audio_decoder_factory.h"
 #include "api/audio_codecs/audio_encoder_factory.h"
 #include "api/audio_codecs/builtin_audio_decoder_factory.h"
@@ -48,6 +48,12 @@ static int16_t RECORD_DEVICE_DEFAULT  = webrtc::AudioDeviceModule::kDefaultDevic
 static int16_t PLAYOUT_DEVICE_DEFAULT = 0;
 static int16_t RECORD_DEVICE_DEFAULT  = 0;
 #endif
+
+// How long to keep the capture device running after a mute before stopping it.
+// Keeping capture alive across brief mute/unmute cycles avoids cold-starting
+// the AEC (heard as a short hiss on unmute); once the mute has been held this
+// long we stop recording so the OS "mic in use" indicator clears.
+static const int MUTE_STOP_RECORDING_DELAY_MS = 30000;
 
 
 //
@@ -134,7 +140,9 @@ int32_t LLWebRTCAudioTransport::NeedMorePlayData(size_t   number_of_frames,
     if (!engine)
     {
         // No engine sink; output silence to be safe.
-        const size_t bytes = number_of_frames * bytes_per_frame * number_of_channels;
+        // bytes_per_frame already accounts for all channels, so do not multiply
+        // by number_of_channels again (that would overrun the playout buffer).
+        const size_t bytes = number_of_frames * bytes_per_frame;
         memset(audio_data, 0, bytes);
         number_of_samples_out = bytes_per_frame;
         return 0;
@@ -250,17 +258,51 @@ void LLCustomProcessor::Process(webrtc::AudioBuffer *audio)
     mState->setMicrophoneEnergy(std::sqrt(totalSum / (audio->num_channels() * audio->num_frames() * buffer_size)));
 }
 
+
+//
+// LLWebRTCImpl implementation
+//
+
+void LLWebRTCAudioDeviceModule::SetTuning(bool tuning, bool mute)
+{
+    tuning_ = tuning;
+    if (tuning)
+    {
+        int32_t hr = inner_->InitMicrophone();
+        hr = inner_->InitRecording();
+        hr = inner_->StartRecording();
+        hr = inner_->StopPlayout();
+    }
+    else
+    {
+        if (mute)
+        {
+            inner_->StopRecording();
+        }
+        else
+        {
+            inner_->InitRecording();
+            inner_->StartRecording();
+        }
+        inner_->StartPlayout();
+    }
+}
+
 //
 // LLWebRTCImpl implementation
 //
 
 LLWebRTCImpl::LLWebRTCImpl(LLWebRTCLogCallback* logCallback) :
+    mEnv(webrtc::CreateEnvironment(webrtc::CreateDefaultTaskQueueFactory())),
     mLogSink(new LLWebRTCLogSink(logCallback)),
     mPeerCustomProcessor(nullptr),
     mMute(true),
     mTuningMode(false),
     mDevicesDeploying(0),
-    mGain(0.0f)
+    mGain(0.0f),
+    mBuiltinNS(false),
+    mBuiltinAGC(false),
+    mBuiltinAEC(false)
 {
 }
 
@@ -272,8 +314,6 @@ void LLWebRTCImpl::init()
     webrtc::LogMessage::LogToDebug(webrtc::LS_NONE);
     webrtc::LogMessage::SetLogToStderr(true);
     webrtc::LogMessage::AddLogToStream(mLogSink, webrtc::LS_VERBOSE);
-
-    mTaskQueueFactory = webrtc::CreateDefaultTaskQueueFactory();
 
     // Create the native threads.
     mNetworkThread = webrtc::Thread::CreateWithSocketServer();
@@ -290,9 +330,17 @@ void LLWebRTCImpl::init()
         [this]()
         {
             webrtc::scoped_refptr<webrtc::AudioDeviceModule> realADM =
-                webrtc::AudioDeviceModule::Create(webrtc::AudioDeviceModule::AudioLayer::kPlatformDefaultAudio, mTaskQueueFactory.get());
+                webrtc::CreateAudioDeviceModule(mEnv, webrtc::AudioDeviceModule::AudioLayer::kPlatformDefaultAudio);
             mDeviceModule = webrtc::make_ref_counted<LLWebRTCAudioDeviceModule>(realADM);
             mDeviceModule->SetObserver(this);
+            mDeviceModule->Init();
+
+            mBuiltinNS = mDeviceModule->BuiltInNSIsAvailable();
+            mBuiltinAEC = mDeviceModule->BuiltInAECIsAvailable();
+            mBuiltinAGC = mDeviceModule->BuiltInAGCIsAvailable();
+            // All audio processing is done by WebRTC's software APM (configured
+            // below); make sure the hardware processors stay off.
+            workerDisableBuiltInAudioProcessing();
         });
 
     // The custom processor allows us to retrieve audio data (and levels)
@@ -302,17 +350,22 @@ void LLWebRTCImpl::init()
     apb.SetCapturePostProcessing(std::make_unique<LLCustomProcessor>(mPeerCustomProcessor));
     mAudioProcessingModule = apb.Build(webrtc::CreateEnvironment());
 
+    // Initial software-APM state, matching setAudioConfig() so there's no
+    // window where processing differs before the viewer's first config call.
+    // All processing is done here in software (the hardware AEC/AGC/NS is kept
+    // disabled), so enable echo cancellation from the very first frame.
     webrtc::AudioProcessing::Config apm_config;
-    apm_config.echo_canceller.enabled         = false;
-    apm_config.echo_canceller.mobile_mode     = false;
-    apm_config.gain_controller1.enabled       = false;
-    apm_config.gain_controller2.enabled       = true;
-    apm_config.high_pass_filter.enabled       = true;
-    apm_config.noise_suppression.enabled      = true;
-    apm_config.noise_suppression.level        = webrtc::AudioProcessing::Config::NoiseSuppression::kVeryHigh;
-    apm_config.transient_suppression.enabled  = true;
-    apm_config.pipeline.multi_channel_render  = true;
-    apm_config.pipeline.multi_channel_capture = false;
+    apm_config.echo_canceller.enabled                    = true;
+    apm_config.echo_canceller.mobile_mode                = false;
+    apm_config.gain_controller1.enabled                  = false;
+    apm_config.gain_controller2.enabled                  = true;
+    apm_config.gain_controller2.adaptive_digital.enabled = true; // auto-level speech
+    apm_config.high_pass_filter.enabled                  = true;
+    apm_config.noise_suppression.enabled                 = true;
+    apm_config.noise_suppression.level                   = webrtc::AudioProcessing::Config::NoiseSuppression::kVeryHigh;
+    apm_config.transient_suppression.enabled             = true;
+    apm_config.pipeline.multi_channel_render             = true;
+    apm_config.pipeline.multi_channel_capture            = true;
 
     mAudioProcessingModule->ApplyConfig(apm_config);
 
@@ -344,7 +397,6 @@ void LLWebRTCImpl::init()
         {
             if (mDeviceModule)
             {
-                mDeviceModule->EnableBuiltInAEC(false);
                 updateDevices();
             }
         });
@@ -382,7 +434,6 @@ void LLWebRTCImpl::terminate()
                 mDeviceModule->Terminate();
             }
             mDeviceModule     = nullptr;
-            mTaskQueueFactory = nullptr;
         });
 
     // In case peer connections still somehow have jobs in workers,
@@ -395,47 +446,79 @@ void LLWebRTCImpl::terminate()
     webrtc::LogMessage::RemoveLogToStream(mLogSink);
 }
 
+
 void LLWebRTCImpl::setAudioConfig(LLWebRTCDeviceInterface::AudioConfig config)
 {
+    // All audio processing is handled by WebRTC's software APM here.  The
+    // platform/hardware AEC/AGC/NS is always disabled (see
+    // workerDisableBuiltInAudioProcessing), so these are enabled purely on the
+    // requested config without deferring to any built-in processor.
     webrtc::AudioProcessing::Config apm_config;
-    apm_config.echo_canceller.enabled         = config.mEchoCancellation;
-    apm_config.echo_canceller.mobile_mode     = false;
-    apm_config.gain_controller1.enabled       = false;
-    apm_config.gain_controller2.enabled       = config.mAGC;
+    apm_config.echo_canceller.enabled                    = config.mEchoCancellation;
+    apm_config.echo_canceller.mobile_mode                = false;
+    apm_config.gain_controller1.enabled                  = false;
+    apm_config.gain_controller2.enabled                  = config.mAGC;
     apm_config.gain_controller2.adaptive_digital.enabled = true; // auto-level speech
-    apm_config.high_pass_filter.enabled       = true;
-    apm_config.transient_suppression.enabled  = true;
-    apm_config.pipeline.multi_channel_render  = true;
-    apm_config.pipeline.multi_channel_capture = true;
-    apm_config.pipeline.multi_channel_capture = true;
+    apm_config.high_pass_filter.enabled                  = true;
+    apm_config.transient_suppression.enabled             = true;
+    apm_config.pipeline.multi_channel_render             = true;
+    apm_config.pipeline.multi_channel_capture            = true;
 
     switch (config.mNoiseSuppressionLevel)
     {
         case LLWebRTCDeviceInterface::AudioConfig::NOISE_SUPPRESSION_LEVEL_NONE:
             apm_config.noise_suppression.enabled = false;
-            apm_config.noise_suppression.level = webrtc::AudioProcessing::Config::NoiseSuppression::kLow;
+            apm_config.noise_suppression.level   = webrtc::AudioProcessing::Config::NoiseSuppression::kLow;
             break;
         case LLWebRTCDeviceInterface::AudioConfig::NOISE_SUPPRESSION_LEVEL_LOW:
             apm_config.noise_suppression.enabled = true;
-            apm_config.noise_suppression.level = webrtc::AudioProcessing::Config::NoiseSuppression::kLow;
+            apm_config.noise_suppression.level   = webrtc::AudioProcessing::Config::NoiseSuppression::kLow;
             break;
         case LLWebRTCDeviceInterface::AudioConfig::NOISE_SUPPRESSION_LEVEL_MODERATE:
             apm_config.noise_suppression.enabled = true;
-            apm_config.noise_suppression.level = webrtc::AudioProcessing::Config::NoiseSuppression::kModerate;
+            apm_config.noise_suppression.level   = webrtc::AudioProcessing::Config::NoiseSuppression::kModerate;
             break;
         case LLWebRTCDeviceInterface::AudioConfig::NOISE_SUPPRESSION_LEVEL_HIGH:
             apm_config.noise_suppression.enabled = true;
-            apm_config.noise_suppression.level = webrtc::AudioProcessing::Config::NoiseSuppression::kHigh;
+            apm_config.noise_suppression.level   = webrtc::AudioProcessing::Config::NoiseSuppression::kHigh;
             break;
         case LLWebRTCDeviceInterface::AudioConfig::NOISE_SUPPRESSION_LEVEL_VERY_HIGH:
             apm_config.noise_suppression.enabled = true;
-            apm_config.noise_suppression.level = webrtc::AudioProcessing::Config::NoiseSuppression::kVeryHigh;
+            apm_config.noise_suppression.level   = webrtc::AudioProcessing::Config::NoiseSuppression::kVeryHigh;
             break;
         default:
             apm_config.noise_suppression.enabled = false;
-            apm_config.noise_suppression.level = webrtc::AudioProcessing::Config::NoiseSuppression::kLow;
+            apm_config.noise_suppression.level   = webrtc::AudioProcessing::Config::NoiseSuppression::kLow;
     }
     mAudioProcessingModule->ApplyConfig(apm_config);
+
+    // Keep the hardware processors off; the APM above is the only processing.
+    PostWorkerTask([this]() { workerDisableBuiltInAudioProcessing(); });
+}
+
+void LLWebRTCImpl::workerDisableBuiltInAudioProcessing()
+{
+    if (!mDeviceModule)
+    {
+        return;
+    }
+
+    // We always use WebRTC's internal (software APM) audio processing.  Running
+    // the platform/hardware AEC, AGC, or NS alongside it causes the two to
+    // fight -- pumping levels, double noise suppression, and mismatched AEC
+    // references -- so disable any that the device exposes.
+    if (mBuiltinNS)
+    {
+        mDeviceModule->EnableBuiltInNS(false);
+    }
+    if (mBuiltinAGC)
+    {
+        mDeviceModule->EnableBuiltInAGC(false);
+    }
+    if (mBuiltinAEC)
+    {
+        mDeviceModule->EnableBuiltInAEC(false);
+    }
 }
 
 void LLWebRTCImpl::refreshDevices()
@@ -455,8 +538,11 @@ void LLWebRTCImpl::unsetDevicesObserver(LLWebRTCDevicesObserver *observer)
     }
 }
 
-// must be run in the worker thread.
-void LLWebRTCImpl::workerDeployDevices()
+// must be run in the worker thread.  Selects the user's chosen capture/playout
+// devices and (re)initializes and starts them.  Does NOT touch per-connection
+// tracks -- callers that also need mute/track state re-applied use
+// workerDeployDevices().
+void LLWebRTCImpl::workerStartDevices()
 {
     if (!mDeviceModule)
     {
@@ -500,7 +586,19 @@ void LLWebRTCImpl::workerDeployDevices()
 #endif
     mDeviceModule->InitMicrophone();
     mDeviceModule->SetStereoRecording(false);
+    mBuiltinNS  = mDeviceModule->BuiltInNSIsAvailable();
+    mBuiltinAEC = mDeviceModule->BuiltInAECIsAvailable();
+    mBuiltinAGC = mDeviceModule->BuiltInAGCIsAvailable();
+    // A newly-selected capture device may default its hardware AEC/AGC/NS on;
+    // disable before InitRecording so the recording stream is configured to
+    // use only WebRTC's software APM.
+    workerDisableBuiltInAudioProcessing();
     mDeviceModule->InitRecording();
+
+    if ((!mMute && mPeerConnections.size()) || mTuningMode)
+    {
+        mDeviceModule->ForceStartRecording();
+    }
 
     int16_t playoutDevice = PLAYOUT_DEVICE_DEFAULT;
     int16_t playout_device_start = 0;
@@ -538,15 +636,30 @@ void LLWebRTCImpl::workerDeployDevices()
     mDeviceModule->SetStereoPlayout(true);
     mDeviceModule->InitPlayout();
 
-    if ((!mMute && mPeerConnections.size()) || mTuningMode)
-    {
-        mDeviceModule->ForceStartRecording();
-    }
-
-    if (!mTuningMode)
+    // Only run playout when there's actually something to render.  Starting
+    // playout with no peer connection leaves the output device spinning with
+    // no engine data, which is heard as a buzz until a connection is made.
+    // (Recording is gated on the same condition above.)
+    if (!mTuningMode && !mPeerConnections.empty())
     {
         mDeviceModule->StartPlayout();
     }
+}
+
+// must be run in the worker thread.  Selects/starts the devices (via
+// workerStartDevices) and then re-applies per-connection mute/track state.
+// Use this for device changes and tuning; for simply bringing devices up when
+// a connection is established (without disturbing the connection's own
+// mute/track management) call workerStartDevices() directly.
+void LLWebRTCImpl::workerDeployDevices()
+{
+    if (!mDeviceModule)
+    {
+        return;
+    }
+
+    workerStartDevices();
+
     mSignalingThread->PostTask(
         [this]
         {
@@ -740,6 +853,12 @@ void LLWebRTCImpl::intSetMute(bool mute, int delay_ms)
 
     if (mMute)
     {
+        // Keep capturing for a while after muting so quick mute/unmute cycles
+        // don't cold-start the AEC (and any OS capture effect such as Windows
+        // Voice Clarity), which is heard as a short hiss on unmute.  Once the
+        // mute has been held this long, stop recording so the OS "mic in use"
+        // indicator clears.  If the user unmutes or toggles before this fires,
+        // the sequence check turns it into a no-op and capture keeps running.
         mWorkerThread->PostDelayedTask(
             [this, current_sequence]
             {
@@ -748,7 +867,7 @@ void LLWebRTCImpl::intSetMute(bool mute, int delay_ms)
                     mDeviceModule->ForceStopRecording();
                 }
             },
-            webrtc::TimeDelta::Millis(delay_ms));
+            webrtc::TimeDelta::Millis(MUTE_STOP_RECORDING_DELAY_MS));
     }
     else
     {
@@ -757,6 +876,9 @@ void LLWebRTCImpl::intSetMute(bool mute, int delay_ms)
             {
                 if (mDeviceModule && (current_sequence == mute_sequence.load()))
                 {
+                    // No-op if capture is still running (the common case, when
+                    // unmuting within the stop delay -> no AEC cold start);
+                    // restarts capture if a sustained mute had stopped it.
                     mDeviceModule->InitRecording();
                     mDeviceModule->ForceStartRecording();
                 }
@@ -770,14 +892,20 @@ void LLWebRTCImpl::intSetMute(bool mute, int delay_ms)
 
 LLWebRTCPeerConnectionInterface *LLWebRTCImpl::newPeerConnection()
 {
-    bool empty = mPeerConnections.empty();
-    webrtc::scoped_refptr<LLWebRTCPeerConnectionImpl> peerConnection = webrtc::scoped_refptr<LLWebRTCPeerConnectionImpl>(new webrtc::RefCountedObject<LLWebRTCPeerConnectionImpl>());
+    webrtc::scoped_refptr<LLWebRTCPeerConnectionImpl> peerConnection = webrtc::scoped_refptr<LLWebRTCPeerConnectionImpl>(new webrtc::RefCountedObject<LLWebRTCPeerConnectionImpl>(mEnv));
     peerConnection->init(this);
     if (mPeerConnections.empty())
     {
         intSetMute(mMute);
     }
     mPeerConnections.emplace_back(peerConnection);
+
+    // The capture/playout devices are intentionally NOT started here.  This
+    // runs when the connection is created/connecting; starting the output
+    // device now leaves it spinning with no decoded audio during the handshake,
+    // which is heard as a buzz.  The devices are (re)started from
+    // OnConnectionChange(kConnected) instead, once audio is actually
+    // established (see startAudioDevices()).
 
     peerConnection->enableSenderTracks(false);
     peerConnection->resetMute();
@@ -795,8 +923,80 @@ void LLWebRTCImpl::freePeerConnection(LLWebRTCPeerConnectionInterface* peer_conn
         if (mPeerConnections.empty())
         {
             intSetMute(true);
+            // Last connection gone: stop capture immediately rather than
+            // waiting out the mute stop-delay, so the mic isn't held open after
+            // the call, and stop playout so the output device isn't left
+            // spinning with no engine data.
+            mWorkerThread->PostTask(
+                [this]()
+                {
+                    if (mDeviceModule)
+                    {
+                        mDeviceModule->ForceStopRecording();
+                        mDeviceModule->StopPlayout();
+                    }
+                });
         }
     }
+}
+
+void LLWebRTCImpl::startAudioDevices()
+{
+    // Called when a connection's audio is established.  This is the
+    // authoritative point that brings the devices back (with the user's
+    // selected devices applied) after all connections dropped (teleport, voice
+    // restart) or for the first call of a session.  It matters because the
+    // WebRTC engine no-ops Start/StopRecording on our ADM wrapper -- only our
+    // explicit Force* calls actually drive capture -- so when the devices were
+    // stopped, nothing else will restart them.
+    //
+    // It's guarded on Playing()/Recording() so a second connection establishing
+    // won't glitch an already-running stream, and doing this at "connected"
+    // rather than at connection creation avoids running the output device with
+    // no decoded audio during the handshake.
+    mWorkerThread->PostTask(
+        [this]()
+        {
+            if (!mDeviceModule || mTuningMode)
+            {
+                return;
+            }
+
+            if (!mDeviceModule->Playing())
+            {
+                // First established connection for this call: select and start
+                // the user's *chosen* capture/playout devices
+                // (SetRecordingDevice/SetPlayoutDevice).  Just calling
+                // InitPlayout/InitRecording here would bring the devices up on
+                // whatever the ADM currently has selected -- the system default
+                // after a cold start -- which is why a p2p call (or a call after
+                // teleport/voice-restart) could come up on the wrong device.
+                //
+                // We call workerStartDevices() rather than the full
+                // deployDevices() on purpose: deployDevices() also re-applies
+                // per-connection mute/track state, which races with the
+                // viewer's own mute setup for the freshly-establishing
+                // connection and can leave the sender track disabled (recording
+                // runs but nothing transmits after teleport).
+                workerStartDevices();
+            }
+
+            // Authoritatively (re)start capture whenever we're connected and not
+            // device-muted.  This runs unconditionally -- NOT just in an else
+            // branch -- because workerStartDevices() above stops recording while
+            // re-selecting the device and only restarts it behind a gate; if
+            // that gate doesn't line up (or capture was stopped on a prior
+            // disconnect, e.g. teleport), this is what reliably brings the mic
+            // back.  No-op if capture is already running.
+            if (!mMute && !mPeerConnections.empty() && !mDeviceModule->Recording())
+            {
+                if (!mDeviceModule->RecordingIsInitialized())
+                {
+                    mDeviceModule->InitRecording();
+                }
+                mDeviceModule->ForceStartRecording();
+            }
+        });
 }
 
 
@@ -806,7 +1006,8 @@ void LLWebRTCImpl::freePeerConnection(LLWebRTCPeerConnectionInterface* peer_conn
 // Most peer connection (signaling) happens on
 // the signaling thread.
 
-LLWebRTCPeerConnectionImpl::LLWebRTCPeerConnectionImpl() :
+LLWebRTCPeerConnectionImpl::LLWebRTCPeerConnectionImpl(const webrtc::Environment& env) :
+    mEnv(env),
     mWebRTCImpl(nullptr),
     mPeerConnection(nullptr),
     mMute(MUTE_INITIAL),
@@ -1255,6 +1456,12 @@ void LLWebRTCPeerConnectionImpl::OnConnectionChange(webrtc::PeerConnectionInterf
     {
         case webrtc::PeerConnectionInterface::PeerConnectionState::kConnected:
         {
+            // Audio is established now -- (re)start the capture and playout
+            // devices.  Doing this here rather than at connection creation
+            // avoids running the output device during the handshake (heard as a
+            // buzz), and reliably restores the devices after a full teardown
+            // (teleport / voice restart).
+            mWebRTCImpl->startAudioDevices();
             mPendingJobs++;
             webrtc::scoped_refptr<LLWebRTCPeerConnectionImpl> self(this);
             mWebRTCImpl->PostWorkerTask([self]()
@@ -1267,6 +1474,7 @@ void LLWebRTCPeerConnectionImpl::OnConnectionChange(webrtc::PeerConnectionInterf
             });
             break;
         }
+
         case webrtc::PeerConnectionInterface::PeerConnectionState::kFailed:
         {
             for (auto &observer : mSignalingObserverList)
