@@ -128,6 +128,7 @@ constexpr F32 MEMORY_CHECK_WAIT_TIME = 1.0f;
 constexpr F32 MIN_VRAM_BUDGET = 768.f;
 F32 LLViewerTexture::sFreeVRAMMegabytes = MIN_VRAM_BUDGET;
 F32 LLViewerTexture::sWindowPixelArea = 1.f;
+F32 LLViewerTexture::sSysMemoryFactor   = 1.f;
 
 LLViewerTexture::EDebugTexels LLViewerTexture::sDebugTexelsMode = LLViewerTexture::DEBUG_TEXELS_OFF;
 
@@ -504,6 +505,13 @@ void LLViewerTexture::initClass()
     LLImageGL::sDefaultGLTexture = LLViewerFetchedTexture::sDefaultImagep->getGLTexture();
 }
 
+S32Megabytes get_render_free_main_memory_treshold()
+{
+    static LLCachedControl<U32> min_free_main_memory(gSavedSettings, "RenderMinFreeMainMemoryThreshold", 512);
+    const U32Megabytes MIN_FREE_MAIN_MEMORY(min_free_main_memory);
+    return MIN_FREE_MAIN_MEMORY;
+}
+
 //static
 void LLViewerTexture::updateClass()
 {
@@ -537,23 +545,24 @@ void LLViewerTexture::updateClass()
 
     // get an estimate of how much video memory we're using
     // NOTE: our metrics miss about half the vram we use, so this biases high but turns out to typically be within 5% of the real number
-    F32 used = (F32)ll_round(texture_bytes_alloc + vertex_bytes_alloc);
+    F32 vram_used = (F32)ll_round(texture_bytes_alloc + vertex_bytes_alloc);
 
     // For debugging purposes, it's useful to be able to set the VRAM budget manually.
     // But when manual control is not enabled, use the VRAM divisor.
     // While we're at it, assume we have 1024 to play with at minimum when the divisor is in use.  Works more elegantly with the logic below this.
     // -Geenz 2025-03-21
-    F32 budget = max_vram_budget == 0 ? llmax(1024, (F32)gGLManager.mVRAM / tex_vram_divisor) : (F32)max_vram_budget;
+    F32 vram_budget = max_vram_budget == 0 ? llmax(1024, (F32)gGLManager.mVRAM / tex_vram_divisor) : (F32)max_vram_budget;
 
     // Try to leave at least half a GB for everyone else and for bias,
     // but keep at least 768MB for ourselves
     // Viewer can 'overshoot' target when scene changes, if viewer goes over budget it
     // can negatively impact performance, so leave 20% of a breathing room for
     // 'bias' calculation to kick in.
-    F32 target = llmax(llmin(budget - 512.f, budget * 0.8f), MIN_VRAM_BUDGET);
-    sFreeVRAMMegabytes = target - used;
+    F32 vram_target = llmax(llmin(vram_budget - 512.f, vram_budget * 0.8f), MIN_VRAM_BUDGET);
+    sFreeVRAMMegabytes = vram_target - vram_used;
+    const S32Megabytes free_sys_mem = getFreeSystemMemory();
 
-    F32 over_pct = (used - target) / target;
+    F32 over_pct = (vram_used - vram_target) / vram_target;
 
     // Watermark-driven discard-bias controller. One clean signal: the bias
     // climbs while used VRAM is above the high watermark, relaxes below the
@@ -573,18 +582,41 @@ void LLViewerTexture::updateClass()
         static LLCachedControl<F32> bias_ramp(gSavedSettings, "TextureDiscardBiasRampRate", 2.0f);
         static LLCachedControl<F32> bias_decay(gSavedSettings, "TextureDiscardBiasDecayRate", 1.0f);
 
-        F32 high_frac = llclamp((F32)wm_high, 0.1f, 1.f);
-        F32 low_frac  = llclamp((F32)wm_low, 0.05f, high_frac);
-        F32 high = budget * high_frac;
-        F32 low  = budget * low_frac;
-        F32 cap  = llmax((F32)bias_max, 0.f);
-        F32 dt   = (F32)gFrameIntervalSeconds;
+        F32 backoff_target = vram_target * llclamp((F32)backoff_start, 0.05f, 1.f);
+        F32 cap = llmax((F32)max_mult, 1.0001f);
+        F32 dt = (F32)gFrameIntervalSeconds;
 
-        if (used > high)
+        // Skip the full-list iteration when there is no pressure to react to:
+        // mult already at baseline, last-ditch at zero, and used well clear of
+        // the backoff target. Worst case the controller picks up the spike one
+        // frame later, from `used` alone.
+        bool need_predict = sMemoryPressureMultiplier > 1.001f
+                         || sLastDitchMinDiscard > 0.f
+                         || vram_used > backoff_target * 0.5f;
+
+        S64 pending_bytes_increase = 0;
+        S64 pending_bytes_decrease = 0;
+        if (need_predict)
         {
             sDiscardBias += llmax((F32)bias_ramp, 0.f) * dt;
         }
-        else if (used < low)
+
+        // 1024 * 512 = 524288: matches the unit reduction at line 513.
+        constexpr F32 BYTES_TO_USED_UNITS = 1.f / 524288.f;
+        F32 predicted_used = vram_used
+            + (F32)pending_bytes_increase * BYTES_TO_USED_UNITS
+            - (F32)pending_bytes_decrease * BYTES_TO_USED_UNITS;
+        F32 predicted_over = predicted_used / llmax(backoff_target, 1.f);
+
+        // High water mark: when used crosses budget * high_water, skip the
+        // smoothed convergence and slam the controller into hard-cap state.
+        // Recovers the historical 90% behavior - immediate aggressive
+        // response instead of waiting for the lerp to chase the target.
+        static LLCachedControl<F32> high_water(gSavedSettings, "TextureMemoryHighWaterMark", 0.8f);
+        bool above_high_water = vram_used >= vram_budget * llclamp((F32)high_water, 0.5f, 1.f);
+
+        F32 target_mult = llclamp(powf(llmax(predicted_over, 1.f), llmax((F32)prediction_gain, 0.0001f)), 1.f, cap);
+        if (above_high_water)
         {
             sDiscardBias -= llmax((F32)bias_decay, 0.f) * dt;
         }
@@ -596,25 +628,86 @@ void LLViewerTexture::updateClass()
         if (s_pressure_log_timer.getElapsedTimeF32() > 1.f)
         {
             s_pressure_log_timer.reset();
+            F32 over = vram_used / llmax(backoff_target, 1.f);
             LL_INFOS("TextureStream") << "pressure"
-                << " discard_bias=" << sDiscardBias
-                << " progress=" << getMemoryPressureProgress()
-                << " used=" << used
-                << " budget=" << budget
-                << " high=" << high
-                << " low=" << low
-                << " over_pct=" << over_pct
-                << " legacy_bias=" << sDesiredDiscardBias
+                << " mult=" << sMemoryPressureMultiplier
+                << " target_mult=" << target_mult
+                << " progress=" << progress
+                << " used=" << vram_used
+                << " predicted=" << predicted_used
+                << " target=" << vram_target
+                << " over=" << over
+                << " pred_over=" << predicted_over
+                << " in+=" << (S32)(pending_bytes_increase / 1024 / 1024)
+                << "MB in-=" << (S32)(pending_bytes_decrease / 1024 / 1024)
+                << "MB bias=" << sDesiredDiscardBias
+                << " ldmin=" << sLastDitchMinDiscard
                 << " dsq=" << (S32)gTextureList.mDownScaleQueue.size()
                 << LL_ENDL;
         }
     }
 
     bool is_sys_low = isSystemMemoryLow();
+    bool is_sys_critically_low = isSystemMemoryCritical();
     bool is_low = is_sys_low || over_pct > 0.f;
 
     static bool was_low = false;
+    static bool sys_was_low = false;
 
+    // System memory factor
+    // sSysMemoryFactor affects draw distance
+    //
+    // We only decrement when more than 406MB is free, but increment
+    // when below 256MB free. This should provide a stable value
+    // in the 256-406MB range to avoid draw range fluctuations.
+    //
+    // Draw range reduction is a last resort, texture bias is supposed
+    // to free at least some memory before we get here.
+    // Note: textures were mostly moved to vram, we might want to
+    // detach texture bias from system memory.
+    if (is_sys_critically_low)
+    {
+        const S32Megabytes MIN_FREE_MAIN_MEMORY(get_render_free_main_memory_treshold() / 2);
+        // debt is a negative value since MIN_FREE_MAIN_MEMORY > free memory.
+        S32 sys_budget_debt = free_sys_mem - MIN_FREE_MAIN_MEMORY;
+
+        // Leave some padding, otherwise we will crash out of memory before hitting factor 2.
+        const S32Megabytes PAD_BUFFER(32);
+        S32Megabytes budget_target = MIN_FREE_MAIN_MEMORY - PAD_BUFFER;
+        if (!sys_was_low)
+        {
+            // Result should range from 1 at 0 debt to 2 at -224 debt, 2.14 at -256MB
+            F32 new_factor = 1.f - (F32)sys_budget_debt / (F32)budget_target;
+            sSysMemoryFactor = llmax(sSysMemoryFactor, new_factor);
+        }
+        else
+        {
+            // Slowly ramp up factor to free memory (increasing factor decreases draw range)
+            constexpr F32 MAX_INCREMENT = 0.05f;
+            F32 increment = MAX_INCREMENT * llmax(-(F32)sys_budget_debt / (F32)budget_target, 0.f);
+            sSysMemoryFactor += increment * gFrameIntervalSeconds;
+        }
+        sSysMemoryFactor = llclamp(sSysMemoryFactor, 1.f, 2.f);
+    }
+    else
+    {
+        const S32Megabytes MIN_FREE_MAIN_MEMORY(get_render_free_main_memory_treshold() / 2);
+        // Only start ramping down when we have breathing room.
+        // This should be under the value of isSystemMemoryLow to not throw texture
+        // bias into 1.5+ territory each time we fluctuate around isSystemMemoryLow's
+        // treshold.
+        const S32Megabytes MEM_THRESHOLD = MIN_FREE_MAIN_MEMORY + S32Megabytes(150);
+        if (free_sys_mem > MEM_THRESHOLD && sSysMemoryFactor > 1.f)
+        {
+            // Ramp down factor over time.
+            constexpr F32 DECREMENT = 0.02f;
+            sSysMemoryFactor -= DECREMENT * gFrameIntervalSeconds;
+            sSysMemoryFactor = llclamp(sSysMemoryFactor, 1.f, 2.f);
+        }
+    }
+    sys_was_low = is_sys_critically_low;
+
+    // VRAM memory bias
     if (is_low && !was_low)
     {
         if (is_sys_low)
@@ -662,12 +755,11 @@ void LLViewerTexture::updateClass()
 
         // lower discard bias over time when at least 10% of budget is free
         constexpr F32 FREE_PERCENTAGE_TRESHOLD = -0.1f;
-        constexpr U32 FREE_SYS_MEM_TRESHOLD = 100;
-        static LLCachedControl<U32> min_free_main_memory(gSavedSettings, "RenderMinFreeMainMemoryThreshold", 512);
-        const S32Megabytes MIN_FREE_MAIN_MEMORY(min_free_main_memory() + FREE_SYS_MEM_TRESHOLD);
+        constexpr U32 FREE_SYS_MEM_THRESHOLD = 100; // 100MB more than isSystemMemoryLow to avoid fluctuations.
+        const S32Megabytes MIN_FREE_MAIN_MEMORY(get_render_free_main_memory_treshold() + S32Megabytes(FREE_SYS_MEM_THRESHOLD));
         if (sDesiredDiscardBias > 1.f
             && over_pct < FREE_PERCENTAGE_TRESHOLD
-            && getFreeSystemMemory() > MIN_FREE_MAIN_MEMORY
+            && free_sys_mem > MIN_FREE_MAIN_MEMORY
             && !eviction_in_flight)
         {
             static LLCachedControl<F32> high_mem_discard_decrement(gSavedSettings, "RenderHighMemMinDiscardDecrement", .1f);
@@ -797,13 +889,6 @@ U32Megabytes LLViewerTexture::getFreeSystemMemory()
     return physical_res;
 }
 
-S32Megabytes get_render_free_main_memory_treshold()
-{
-    static LLCachedControl<U32> min_free_main_memory(gSavedSettings, "RenderMinFreeMainMemoryThreshold", 512);
-    const U32Megabytes MIN_FREE_MAIN_MEMORY(min_free_main_memory);
-    return MIN_FREE_MAIN_MEMORY;
-}
-
 //static
 bool LLViewerTexture::isSystemMemoryLow()
 {
@@ -816,18 +901,10 @@ bool LLViewerTexture::isSystemMemoryCritical()
     return getFreeSystemMemory() < get_render_free_main_memory_treshold() / 2;
 }
 
+// static
 F32 LLViewerTexture::getSystemMemoryBudgetFactor()
 {
-    const S32Megabytes MIN_FREE_MAIN_MEMORY(get_render_free_main_memory_treshold() / 2);
-    S32 free_budget = (S32Megabytes)getFreeSystemMemory() - MIN_FREE_MAIN_MEMORY;
-    if (free_budget < 0)
-    {
-        // Leave some padding, otherwise we will crash out of memory before hitting factor 2.
-        const S32Megabytes PAD_BUFFER(32);
-        // Result should range from 1 at 0 free budget to 2 at -224 free budget, 2.14 at -256MB
-        return 1.f - free_budget / (MIN_FREE_MAIN_MEMORY - PAD_BUFFER);
-    }
-    return 1.f;
+    return sSysMemoryFactor;
 }
 
 //end of static functions
