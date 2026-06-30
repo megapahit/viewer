@@ -49,12 +49,6 @@ static int16_t PLAYOUT_DEVICE_DEFAULT = 0;
 static int16_t RECORD_DEVICE_DEFAULT  = 0;
 #endif
 
-// How long to keep the capture device running after a mute before stopping it.
-// Keeping capture alive across brief mute/unmute cycles avoids cold-starting
-// the AEC (heard as a short hiss on unmute); once the mute has been held this
-// long we stop recording so the OS "mic in use" indicator clears.
-static const int MUTE_STOP_RECORDING_DELAY_MS = 30000;
-
 
 //
 // LLWebRTCAudioTransport implementation
@@ -268,24 +262,19 @@ void LLWebRTCAudioDeviceModule::SetTuning(bool tuning, bool mute)
     tuning_ = tuning;
     if (tuning)
     {
-        int32_t hr = inner_->InitMicrophone();
-        hr = inner_->InitRecording();
-        hr = inner_->StartRecording();
-        hr = inner_->StopPlayout();
+        // Ensure capture is running (it's normally already running -- capture is
+        // session-long) so the mic-level meter works, and stop rendering the
+        // call while tuning.  The recording calls are no-ops if capture is
+        // already active, so this won't cold-start it.
+        inner_->InitMicrophone();
+        inner_->InitRecording();
+        inner_->StartRecording();
+        inner_->StopPlayout();
     }
-    else
-    {
-        if (mute)
-        {
-            inner_->StopRecording();
-        }
-        else
-        {
-            inner_->InitRecording();
-            inner_->StartRecording();
-        }
-        inner_->StartPlayout();
-    }
+    // On exit, capture is deliberately left running (mute is handled by gain,
+    // not by stopping the device, so there's no AEC cold-start hiss).  Playout
+    // is restored by the caller via workerOpenPlayout(), keeping it gated on
+    // there being a connection to render.
 }
 
 //
@@ -297,6 +286,7 @@ LLWebRTCImpl::LLWebRTCImpl(LLWebRTCLogCallback* logCallback) :
     mLogSink(new LLWebRTCLogSink(logCallback)),
     mPeerCustomProcessor(nullptr),
     mMute(true),
+    mVoiceEnabled(false),
     mTuningMode(false),
     mDevicesDeploying(0),
     mGain(0.0f),
@@ -431,7 +421,7 @@ void LLWebRTCImpl::terminate()
         {
             if (mDeviceModule)
             {
-                mDeviceModule->Terminate();
+                mDeviceModule->ForceTerminate();
             }
             mDeviceModule     = nullptr;
         });
@@ -538,23 +528,25 @@ void LLWebRTCImpl::unsetDevicesObserver(LLWebRTCDevicesObserver *observer)
     }
 }
 
-// must be run in the worker thread.  Selects the user's chosen capture/playout
-// devices and (re)initializes and starts them.  Does NOT touch per-connection
-// tracks -- callers that also need mute/track state re-applied use
-// workerDeployDevices().
-void LLWebRTCImpl::workerStartDevices()
+// must be run in the worker thread.  Selects the configured capture device and
+// starts recording.  Capture runs the whole time voice is enabled (it's never
+// stopped for mute or between calls, so the AEC never cold-starts -- there's no
+// hiss on unmute), so this is a no-op when already recording.  Device changes
+// go through workerDeployDevices(), which stops recording first to force a
+// clean re-select; voice off goes through setVoiceEnabled(false).
+void LLWebRTCImpl::workerStartRecording()
 {
-    if (!mDeviceModule)
+    // Only run capture while voice is enabled, and never cold-start it when
+    // it's already running (that would cause the unmute hiss).
+    if (!mDeviceModule || !mVoiceEnabled || mDeviceModule->Recording())
     {
         return;
     }
 
     int16_t recordingDevice = RECORD_DEVICE_DEFAULT;
-    int16_t recording_device_start = 0;
-
     if (mRecordingDevice != "Default")
     {
-        for (int16_t i = recording_device_start; i < mRecordingDeviceList.size(); i++)
+        for (int16_t i = 0; i < mRecordingDeviceList.size(); i++)
         {
             if (mRecordingDeviceList[i].mID == mRecordingDevice)
             {
@@ -570,8 +562,6 @@ void LLWebRTCImpl::workerStartDevices()
         }
     }
 
-    mDeviceModule->StopPlayout();
-    mDeviceModule->ForceStopRecording();
 #if WEBRTC_WIN
     if (recordingDevice < 0)
     {
@@ -586,25 +576,32 @@ void LLWebRTCImpl::workerStartDevices()
 #endif
     mDeviceModule->InitMicrophone();
     mDeviceModule->SetStereoRecording(false);
-    mBuiltinNS  = mDeviceModule->BuiltInNSIsAvailable();
-    mBuiltinAEC = mDeviceModule->BuiltInAECIsAvailable();
-    mBuiltinAGC = mDeviceModule->BuiltInAGCIsAvailable();
     // A newly-selected capture device may default its hardware AEC/AGC/NS on;
     // disable before InitRecording so the recording stream is configured to
     // use only WebRTC's software APM.
     workerDisableBuiltInAudioProcessing();
     mDeviceModule->InitRecording();
+    mDeviceModule->ForceStartRecording();
+}
 
-    if ((!mMute && mPeerConnections.size()) || mTuningMode)
+// must be run in the worker thread.  Selects the configured playout device and
+// starts playout.  Playout only runs while there's a connection to render
+// (running the output device with no engine data is heard as a buzz), so this
+// is a no-op when there are no connections or when already playing.  Device
+// changes go through workerDeployDevices(), which stops playout first.
+void LLWebRTCImpl::workerStartPlayout()
+{
+    // Only run playout while voice is enabled and there's a connection to
+    // render (running the output device otherwise is heard as a buzz).
+    if (!mDeviceModule || !mVoiceEnabled || mTuningMode || mDeviceModule->Playing() || mPeerConnections.empty())
     {
-        mDeviceModule->ForceStartRecording();
+        return;
     }
 
     int16_t playoutDevice = PLAYOUT_DEVICE_DEFAULT;
-    int16_t playout_device_start = 0;
     if (mPlayoutDevice != "Default")
     {
-        for (int16_t i = playout_device_start; i < mPlayoutDeviceList.size(); i++)
+        for (int16_t i = 0; i < mPlayoutDeviceList.size(); i++)
         {
             if (mPlayoutDeviceList[i].mID == mPlayoutDevice)
             {
@@ -635,22 +632,14 @@ void LLWebRTCImpl::workerStartDevices()
     mDeviceModule->InitSpeaker();
     mDeviceModule->SetStereoPlayout(true);
     mDeviceModule->InitPlayout();
-
-    // Only run playout when there's actually something to render.  Starting
-    // playout with no peer connection leaves the output device spinning with
-    // no engine data, which is heard as a buzz until a connection is made.
-    // (Recording is gated on the same condition above.)
-    if (!mTuningMode && !mPeerConnections.empty())
-    {
-        mDeviceModule->StartPlayout();
-    }
+    mDeviceModule->StartPlayout();
 }
 
-// must be run in the worker thread.  Selects/starts the devices (via
-// workerStartDevices) and then re-applies per-connection mute/track state.
-// Use this for device changes and tuning; for simply bringing devices up when
-// a connection is established (without disturbing the connection's own
-// mute/track management) call workerStartDevices() directly.
+// must be run in the worker thread.  Used for device changes and tuning: forces
+// a clean re-select of both devices, then re-applies per-connection mute/track
+// state.  To merely bring playout up when a connection is established (without
+// disturbing the connection's own mute/track management) call
+// workerOpenPlayout() directly -- see startPlayout().
 void LLWebRTCImpl::workerDeployDevices()
 {
     if (!mDeviceModule)
@@ -658,7 +647,13 @@ void LLWebRTCImpl::workerDeployDevices()
         return;
     }
 
-    workerStartDevices();
+    // Stop first so the start helpers (which no-op when already running) will
+    // re-select the now-current device.
+    mDeviceModule->StopPlayout();
+    mDeviceModule->ForceStopRecording();
+
+    workerStartRecording();
+    workerStartPlayout();
 
     mSignalingThread->PostTask(
         [this]
@@ -699,6 +694,35 @@ void LLWebRTCImpl::setRenderDevice(const std::string &id)
         mPlayoutDevice = id;
         deployDevices();
     }
+}
+
+void LLWebRTCImpl::setVoiceEnabled(bool enable)
+{
+    mVoiceEnabled = enable;
+    mWorkerThread->PostTask(
+        [this, enable]()
+        {
+            if (!mDeviceModule)
+            {
+                return;
+            }
+            if (enable)
+            {
+                // Voice on: start the capture device (it then stays running
+                // across calls and mute/unmute), and start playout if there's
+                // already a connection to render.
+                mDeviceModule->Init();
+                workerDeployDevices();
+            }
+            else
+            {
+                // Voice off: release both devices so the OS mic/speaker aren't
+                // held open.
+                mDeviceModule->ForceStopRecording();
+                mDeviceModule->StopPlayout();
+                mDeviceModule->ForceTerminate();
+            }
+        });
 }
 
 // updateDevices needs to happen on the worker thread.
@@ -749,6 +773,8 @@ void LLWebRTCImpl::updateDevices()
     {
         observer->OnDevicesChanged(mPlayoutDeviceList, mRecordingDeviceList);
     }
+
+    deployDevices();
 }
 
 void LLWebRTCImpl::OnDevicesUpdated()
@@ -771,6 +797,13 @@ void LLWebRTCImpl::setTuningMode(bool enable)
         [this]
         {
             mDeviceModule->SetTuning(mTuningMode, mMute);
+            if (!mTuningMode)
+            {
+                // Restore playout after tuning, gated on there being a
+                // connection to render (so the output device isn't left
+                // spinning with no engine data).
+                workerStartPlayout();
+            }
             mSignalingThread->PostTask(
                 [this]
                 {
@@ -842,47 +875,15 @@ void LLWebRTCImpl::setMute(bool mute, int delay_ms)
 
 void LLWebRTCImpl::intSetMute(bool mute, int delay_ms)
 {
+    // Mute by zeroing the captured (post-APM) gain; the sender track is also
+    // disabled per connection (see LLWebRTCPeerConnectionImpl::setMute).  The
+    // capture device deliberately stays running for the whole session, so
+    // muting/unmuting never stops or starts it -- that's what avoids the AEC
+    // cold-start hiss on unmute.  Capture start/stop is tied to device
+    // selection (workerStartRecording) and shutdown, not to mute.
     if (mPeerCustomProcessor)
     {
         mPeerCustomProcessor->setGain(mMute ? 0.0f : mGain);
-    }
-
-    // Sequence counter to prevent race conditions from rapid requests to mute/unmute
-    static std::atomic<uint32_t> mute_sequence(0);
-    uint32_t current_sequence = ++mute_sequence;
-
-    if (mMute)
-    {
-        // Keep capturing for a while after muting so quick mute/unmute cycles
-        // don't cold-start the AEC (and any OS capture effect such as Windows
-        // Voice Clarity), which is heard as a short hiss on unmute.  Once the
-        // mute has been held this long, stop recording so the OS "mic in use"
-        // indicator clears.  If the user unmutes or toggles before this fires,
-        // the sequence check turns it into a no-op and capture keeps running.
-        mWorkerThread->PostDelayedTask(
-            [this, current_sequence]
-            {
-                if (mDeviceModule && (current_sequence == mute_sequence.load()))
-                {
-                    mDeviceModule->ForceStopRecording();
-                }
-            },
-            webrtc::TimeDelta::Millis(MUTE_STOP_RECORDING_DELAY_MS));
-    }
-    else
-    {
-        mWorkerThread->PostTask(
-            [this, current_sequence]
-            {
-                if (mDeviceModule && (current_sequence == mute_sequence.load()))
-                {
-                    // No-op if capture is still running (the common case, when
-                    // unmuting within the stop delay -> no AEC cold start);
-                    // restarts capture if a sustained mute had stopped it.
-                    mDeviceModule->InitRecording();
-                    mDeviceModule->ForceStartRecording();
-                }
-            });
     }
 }
 
@@ -900,12 +901,12 @@ LLWebRTCPeerConnectionInterface *LLWebRTCImpl::newPeerConnection()
     }
     mPeerConnections.emplace_back(peerConnection);
 
-    // The capture/playout devices are intentionally NOT started here.  This
-    // runs when the connection is created/connecting; starting the output
-    // device now leaves it spinning with no decoded audio during the handshake,
-    // which is heard as a buzz.  The devices are (re)started from
-    // OnConnectionChange(kConnected) instead, once audio is actually
-    // established (see startAudioDevices()).
+    // Playout is intentionally NOT started here.  This runs when the connection
+    // is created/connecting; starting the output device now leaves it spinning
+    // with no decoded audio during the handshake, which is heard as a buzz.
+    // Playout is started from OnConnectionChange(kConnected) instead, once audio
+    // is actually established (see startPlayout()).  Capture follows
+    // voice-enabled state, so it's not touched here either.
 
     peerConnection->enableSenderTracks(false);
     peerConnection->resetMute();
@@ -923,79 +924,42 @@ void LLWebRTCImpl::freePeerConnection(LLWebRTCPeerConnectionInterface* peer_conn
         if (mPeerConnections.empty())
         {
             intSetMute(true);
-            // Last connection gone: stop capture immediately rather than
-            // waiting out the mute stop-delay, so the mic isn't held open after
-            // the call, and stop playout so the output device isn't left
-            // spinning with no engine data.
+            // Last connection gone: stop playout (there's nothing to render).
+            // Capture stays running while voice is enabled so it's ready -- with
+            // no cold-start hiss -- when the next call comes up.  But if voice
+            // has been disabled, stop capture now: setVoiceEnabled(false) tried
+            // to, but the engine's send stream was still active then (and the
+            // engine's own StopRecording is intentionally a no-op), so the stop
+            // only sticks once the connection -- and its stream -- is gone.
             mWorkerThread->PostTask(
                 [this]()
                 {
                     if (mDeviceModule)
                     {
-                        mDeviceModule->ForceStopRecording();
                         mDeviceModule->StopPlayout();
+                        if (!mVoiceEnabled)
+                        {
+                            mDeviceModule->ForceStopRecording();
+                        }
                     }
                 });
         }
     }
 }
 
-void LLWebRTCImpl::startAudioDevices()
+void LLWebRTCImpl::startPlayout()
 {
-    // Called when a connection's audio is established.  This is the
-    // authoritative point that brings the devices back (with the user's
-    // selected devices applied) after all connections dropped (teleport, voice
-    // restart) or for the first call of a session.  It matters because the
-    // WebRTC engine no-ops Start/StopRecording on our ADM wrapper -- only our
-    // explicit Force* calls actually drive capture -- so when the devices were
-    // stopped, nothing else will restart them.
-    //
-    // It's guarded on Playing()/Recording() so a second connection establishing
-    // won't glitch an already-running stream, and doing this at "connected"
-    // rather than at connection creation avoids running the output device with
-    // no decoded audio during the handshake.
+    // Called when a connection's audio is established.  Only playout is started
+    // here: it's gated on there being a connection to render, because running
+    // the output device with no engine data is heard as a buzz.  Capture is
+    // NOT touched here -- it follows voice-enabled state (setVoiceEnabled), so
+    // it's already running if voice is on and must stay off if voice is off.
+    // Starting it here would also let a stray kConnected during voice-disable
+    // teardown re-open the mic.
     mWorkerThread->PostTask(
         [this]()
         {
-            if (!mDeviceModule || mTuningMode)
-            {
-                return;
-            }
-
-            if (!mDeviceModule->Playing())
-            {
-                // First established connection for this call: select and start
-                // the user's *chosen* capture/playout devices
-                // (SetRecordingDevice/SetPlayoutDevice).  Just calling
-                // InitPlayout/InitRecording here would bring the devices up on
-                // whatever the ADM currently has selected -- the system default
-                // after a cold start -- which is why a p2p call (or a call after
-                // teleport/voice-restart) could come up on the wrong device.
-                //
-                // We call workerStartDevices() rather than the full
-                // deployDevices() on purpose: deployDevices() also re-applies
-                // per-connection mute/track state, which races with the
-                // viewer's own mute setup for the freshly-establishing
-                // connection and can leave the sender track disabled (recording
-                // runs but nothing transmits after teleport).
-                workerStartDevices();
-            }
-
-            // Authoritatively (re)start capture whenever we're connected and not
-            // device-muted.  This runs unconditionally -- NOT just in an else
-            // branch -- because workerStartDevices() above stops recording while
-            // re-selecting the device and only restarts it behind a gate; if
-            // that gate doesn't line up (or capture was stopped on a prior
-            // disconnect, e.g. teleport), this is what reliably brings the mic
-            // back.  No-op if capture is already running.
-            if (!mMute && !mPeerConnections.empty() && !mDeviceModule->Recording())
-            {
-                if (!mDeviceModule->RecordingIsInitialized())
-                {
-                    mDeviceModule->InitRecording();
-                }
-                mDeviceModule->ForceStartRecording();
-            }
+            workerStartPlayout();
         });
 }
 
@@ -1456,12 +1420,12 @@ void LLWebRTCPeerConnectionImpl::OnConnectionChange(webrtc::PeerConnectionInterf
     {
         case webrtc::PeerConnectionInterface::PeerConnectionState::kConnected:
         {
-            // Audio is established now -- (re)start the capture and playout
-            // devices.  Doing this here rather than at connection creation
-            // avoids running the output device during the handshake (heard as a
-            // buzz), and reliably restores the devices after a full teardown
-            // (teleport / voice restart).
-            mWebRTCImpl->startAudioDevices();
+            // Audio is established now -- start playout for this connection.
+            // (Capture follows voice-enabled state, so it's already running and
+            // isn't touched here.)  Doing playout here rather than at connection
+            // creation avoids running the output device with no decoded audio
+            // during the handshake (heard as a buzz).
+            mWebRTCImpl->startPlayout();
             mPendingJobs++;
             webrtc::scoped_refptr<LLWebRTCPeerConnectionImpl> self(this);
             mWebRTCImpl->PostWorkerTask([self]()

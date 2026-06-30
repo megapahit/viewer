@@ -180,7 +180,7 @@ private:
 class LLWebRTCAudioDeviceModule : public webrtc::AudioDeviceModule
 {
 public:
-    explicit LLWebRTCAudioDeviceModule(webrtc::scoped_refptr<webrtc::AudioDeviceModule> inner) : inner_(std::move(inner)), tuning_(false)
+    explicit LLWebRTCAudioDeviceModule(webrtc::scoped_refptr<webrtc::AudioDeviceModule> inner) : inner_(inner), tuning_(false)
     {
         RTC_CHECK(inner_);
     }
@@ -197,8 +197,14 @@ public:
     }
 
     int32_t Init() override { return inner_->Init(); }
-    int32_t Terminate() override { return inner_->Terminate(); }
+    int32_t Terminate() override {
+        // libwebrtc attempts to terminate the adm when peer connections go to zero, but we don't want that,
+        // now that we're keeping the adm active throughout the session.
+        return 0;
+    }
     bool    Initialized() const override { return inner_->Initialized(); }
+
+    int32_t ForceTerminate() { return inner_->Terminate(); }
 
     // --- Device enumeration/selection (forward) ---
     int16_t PlayoutDevices() override { return inner_->PlayoutDevices(); }
@@ -422,6 +428,8 @@ class LLWebRTCImpl : public LLWebRTCDeviceInterface, public webrtc::AudioDeviceO
     void setCaptureDevice(const std::string& id) override;
     void setRenderDevice(const std::string& id) override;
 
+    void setVoiceEnabled(bool enable) override;
+
     void setTuningMode(bool enable) override;
     float getTuningAudioLevel() override;
     float getPeerConnectionAudioLevel() override;
@@ -499,16 +507,17 @@ class LLWebRTCImpl : public LLWebRTCDeviceInterface, public webrtc::AudioDeviceO
     LLWebRTCPeerConnectionInterface* newPeerConnection();
     void freePeerConnection(LLWebRTCPeerConnectionInterface* peer_connection);
 
-    // (Re)start the capture and playout devices once a connection's audio is
-    // established.  This is the authoritative point for bringing the devices
-    // back after all connections dropped (teleport, voice restart).  Idempotent
-    // and safe to call from any thread (work is posted to the worker thread).
-    void startAudioDevices();
+    // Start playout once a connection's audio is established (playout is gated
+    // on there being a connection to render).  Capture is not touched here --
+    // it follows voice-enabled state, not connection state.  Safe to call from
+    // any thread (work is posted to the worker thread).
+    void startPlayout();
 
   protected:
 
     const webrtc::Environment                                  mEnv;
-    void workerStartDevices();
+    void workerStartRecording();
+    void workerStartPlayout();
     void workerDeployDevices();
     // We always rely on WebRTC's internal (software APM) audio processing, so
     // any platform/hardware AEC/AGC/NS must be kept disabled.
@@ -547,6 +556,8 @@ class LLWebRTCImpl : public LLWebRTCDeviceInterface, public webrtc::AudioDeviceO
     LLWebRTCVoiceDeviceList                                    mPlayoutDeviceList;
 
     bool                                                       mMute;
+    // Whether voice is enabled; gates whether the capture/playout devices run.
+    bool                                                       mVoiceEnabled;
     float                                                      mGain;
 
     LLCustomProcessorStatePtr                                  mPeerCustomProcessor;
