@@ -32,9 +32,32 @@
 
 #include "llwindowmacosx-objc.h"
 
+#include <CoreServices/CoreServices.h> // Required for TIS functions
+#include <Carbon/Carbon.h>
+
 LLKeyboardMacOSX::LLKeyboardMacOSX()
 {
     // Virtual keycode mapping table.  Yes, this was as annoying to generate as it looks.
+
+    bool isAzerty = false;
+
+    TISInputSourceRef source = TISCopyCurrentKeyboardLayoutInputSource();
+    if (source)
+    {
+        CFStringRef inputSourceID = (CFStringRef)TISGetInputSourceProperty(source, kTISPropertyInputSourceID);
+        if (inputSourceID)
+        {
+            char buf[128];
+            // Convert CFString to a C-string for easy comparison
+            if (CFStringGetCString(inputSourceID, buf, sizeof(buf), kCFStringEncodingUTF8))
+            {
+                // On macOS, AZERTY layouts are identified by "French" in their Input Source ID
+                isAzerty = (strstr(buf, "French") != nullptr);
+            }
+        }
+        CFRelease(source);
+    }
+
     mTranslateKeyMap[0x00] = 'A';
     mTranslateKeyMap[0x01] = 'S';
     mTranslateKeyMap[0x02] = 'D';
@@ -52,6 +75,7 @@ LLKeyboardMacOSX::LLKeyboardMacOSX()
     mTranslateKeyMap[0x0f] = 'R';
     mTranslateKeyMap[0x10] = 'Y';
     mTranslateKeyMap[0x11] = 'T';
+
     mTranslateKeyMap[0x12] = '1';
     mTranslateKeyMap[0x13] = '2';
     mTranslateKeyMap[0x14] = '3';
@@ -131,6 +155,16 @@ LLKeyboardMacOSX::LLKeyboardMacOSX()
     mTranslateKeyMap[0x7c] = KEY_RIGHT;
     mTranslateKeyMap[0x7d] = KEY_DOWN;
     mTranslateKeyMap[0x7e] = KEY_UP;
+
+    // azerty fix
+    if(isAzerty)
+    {
+        LL_WARNS() << "keyboard is AZERTY" << LL_ENDL;
+        mTranslateKeyMap[0x00] = 'Q';
+        mTranslateKeyMap[0x06] = 'W';
+        mTranslateKeyMap[0x0c] = 'A';
+        mTranslateKeyMap[0x0d] = 'Z';
+    }
 
     // Build inverse map
     std::map<U16, KEY>::iterator iter;
