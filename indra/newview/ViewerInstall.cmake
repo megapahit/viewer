@@ -241,7 +241,7 @@ if (LINUX)
                 DESTINATION ${_LIB}
                 )
         endif ()
-        if (USE_FLATPAK)
+        if (USE_FLATPAK AND USE_OPENAL)
             install(
                 FILES
                   ${ARCH_PREBUILT_DIRS_RELEASE}/libalut.so
@@ -258,7 +258,7 @@ if (LINUX)
                 FILES
                   ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so
                   ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so.13
-                  ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so.13.34
+                  ${ARCH_PREBUILT_DIRS_RELEASE}/libfmod.so.13.35
                 DESTINATION ${_LIB}
                 )
         endif ()

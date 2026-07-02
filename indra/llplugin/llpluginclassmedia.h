@@ -134,7 +134,7 @@ public:
     // Text may be unicode (utf8 encoded)
     bool textInput(const std::string &text, MASK modifiers, LLSD native_key_data);
 
-#if LL_LINUX
+#if LL_LINUX || __FreeBSD__
     void enablePipeWireVolumeCatcher( bool enable );
 #endif
 
