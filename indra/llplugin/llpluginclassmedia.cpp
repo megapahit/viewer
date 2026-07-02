@@ -1015,7 +1015,7 @@ void LLPluginClassMedia::enableMediaPluginDebugging( bool enable )
     sendMessage( message );
 }
 
-#if LL_LINUX
+#if LL_LINUX || __FreeBSD__
 void LLPluginClassMedia::enablePipeWireVolumeCatcher( bool enable )
 {
     LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA, "enable_pipewire_volume_catcher");

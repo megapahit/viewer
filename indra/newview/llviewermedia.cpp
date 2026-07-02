@@ -1873,7 +1873,7 @@ LLPluginClassMedia* LLViewerMediaImpl::newSourceFromMediaType(std::string media_
             bool media_plugin_debugging_enabled = gSavedSettings.getBOOL("MediaPluginDebugging");
             media_source->enableMediaPluginDebugging( media_plugin_debugging_enabled  || clean_browser);
 
-#if LL_LINUX
+#if LL_LINUX || __FreeBSD__
             bool media_plugin_pipewire_volume_catcher = gSavedSettings.getBOOL("MediaPluginPipeWireVolumeCatcher");
             media_source->enablePipeWireVolumeCatcher( media_plugin_pipewire_volume_catcher );
 #endif
