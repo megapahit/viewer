@@ -15,10 +15,10 @@ if (LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
     return()
   endif()
 
-  if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
+  if (USE_FLATPAK OR (${LINUX_DISTRO} MATCHES debian) OR (${LINUX_DISTRO} MATCHES ubuntu))
     include(FindPkgConfig)
-    pkg_check_modules(Cairo REQUIRED cairo)
-    target_include_directories(ll::uilibraries SYSTEM INTERFACE ${Cairo_INCLUDE_DIRS})
+    pkg_check_modules(CAIRO REQUIRED cairo)
+    target_include_directories(ll::uilibraries SYSTEM INTERFACE ${CAIRO_INCLUDE_DIRS})
   endif ()
 
   target_link_libraries( ll::uilibraries INTERFACE
@@ -57,5 +57,26 @@ endif()
 if (USE_FLATPAK)
 target_include_directories( ll::uilibraries SYSTEM INTERFACE
         ${LIBS_PREBUILT_DIR}/include
+        )
+  pkg_check_modules(CAIRO-XLIB REQUIRED cairo-xlib)
+  pkg_check_modules(DBUS-1 REQUIRED dbus-1)
+  pkg_check_modules(LIBDECOR-0 REQUIRED libdecor-0)
+  pkg_check_modules(PANGO REQUIRED pango)
+  pkg_check_modules(PANGOCAIRO REQUIRED pangocairo)
+  pkg_check_modules(WAYLAND-CLIENT REQUIRED wayland-client)
+  pkg_check_modules(WAYLAND-CURSOR REQUIRED wayland-cursor)
+  pkg_check_modules(XKBCOMMON REQUIRED xkbcommon)
+  pkg_check_modules(XKBCOMMON-X11 REQUIRED xkbcommon-x11)
+  target_link_libraries(ll::uilibraries INTERFACE
+        ${CAIRO_LIBRARIES}
+        ${CAIRO-XLIB_LIBRARIES}
+        ${DBUS-1_LIBRARIES}
+        ${LIBDECOR-0_LIBRARIES}
+        ${PANGO_LIBRARIES}
+        ${PANGOCAIRO_LIBRARIES}
+        ${WAYLAND-CLIENT_LIBRARIES}
+        ${WAYLAND-CURSOR_LIBRARIES}
+        ${XKBCOMMON_LIBRARIES}
+        ${XKBCOMMON-X11_LIBRARIES}
         )
 endif ()

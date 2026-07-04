@@ -52,7 +52,7 @@
               <key>hash_algorithm</key>
               <string>sha1</string>
               <key>url</key>
-              <string>https://github.com/secondlife/3p-fltk/releases/download/v1.3.9-r1/fltk-1.3.9.8556992788-linux64-8556992788.tar.zst</string>
+              <string>https://megapahit.net/downloads/fltk-1.4.3-linux64.tar.zst</string>
             </map>
             <key>name</key>
             <string>linux</string>
