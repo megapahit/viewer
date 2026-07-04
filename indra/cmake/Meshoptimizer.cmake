@@ -16,20 +16,20 @@ if (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu) OR CMAKE_
 elseif (LINUX AND CMAKE_SYSTEM_PROCESSOR MATCHES x86_64 AND NOT (${LINUX_DISTRO} MATCHES gentoo))
 use_prebuilt_binary(meshoptimizer)
 elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/meshoptimizer_installed OR NOT ${meshoptimizer_installed} EQUAL 0)
-  if (NOT EXISTS ${CMAKE_BINARY_DIR}/meshoptimizer-1.0.1.tar.gz)
+  if (NOT EXISTS ${CMAKE_BINARY_DIR}/meshoptimizer-1.2.tar.gz)
     file(DOWNLOAD
-      https://github.com/zeux/meshoptimizer/archive/refs/tags/v1.0.1.tar.gz
-      ${CMAKE_BINARY_DIR}/meshoptimizer-1.0.1.tar.gz
+      https://github.com/zeux/meshoptimizer/archive/refs/tags/v1.2.tar.gz
+      ${CMAKE_BINARY_DIR}/meshoptimizer-1.2.tar.gz
       )
   endif ()
   file(ARCHIVE_EXTRACT
-    INPUT ${CMAKE_BINARY_DIR}/meshoptimizer-1.0.1.tar.gz
+    INPUT ${CMAKE_BINARY_DIR}/meshoptimizer-1.2.tar.gz
     DESTINATION ${CMAKE_BINARY_DIR}
     )
   try_compile(MESHOPTIMIZER_RESULT
     PROJECT meshoptimizer
-    SOURCE_DIR ${CMAKE_BINARY_DIR}/meshoptimizer-1.0.1
-    BINARY_DIR ${CMAKE_BINARY_DIR}/meshoptimizer-1.0.1
+    SOURCE_DIR ${CMAKE_BINARY_DIR}/meshoptimizer-1.2
+    BINARY_DIR ${CMAKE_BINARY_DIR}/meshoptimizer-1.2
     TARGET meshoptimizer
     CMAKE_FLAGS
       -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
@@ -42,7 +42,7 @@ elseif (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRA
   if (${MESHOPTIMIZER_RESULT})
     execute_process(
       COMMAND ${CMAKE_MAKE_PROGRAM} install
-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/meshoptimizer-1.0.1
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/meshoptimizer-1.2
       OUTPUT_VARIABLE meshoptimizer_installed
       )
     file(WRITE ${PREBUILD_TRACKING_DIR}/meshoptimizer_installed "${meshoptimizer_installed}")
