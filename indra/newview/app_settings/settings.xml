@@ -8035,17 +8035,6 @@
     <key>Value</key>
     <real>0.1</real>
   </map>
-  <key>RenderMaxTextureIndex</key>
-  <map>
-    <key>Comment</key>
-    <string>Maximum texture index to use for indexed texture rendering.</string>
-    <key>Persist</key>
-    <integer>1</integer>
-    <key>Type</key>
-    <string>U32</string>
-    <key>Value</key>
-    <integer>16</integer>
-  </map>
   <key>RenderMaxTextureResolution</key>
   <map>
     <key>Comment</key>
@@ -8060,7 +8049,7 @@
   <key>RenderTextureQuality</key>
   <map>
     <key>Comment</key>
-    <string>Texture quality preset: 0=Low, 1=Medium, 2=High, 3=Ultra. Drives RenderMaxTextureResolution, TexturePixelToTexelRatio, TexturePressureTightenRate, TexturePressureRelaxRate, and TextureChannelRatio* (Normal/BaseColor/Specular/Emissive). Watermarks (TextureWatermarkHigh/Low) are constant across tiers.</string>
+    <string>Texture quality preset: 0=Low, 1=Medium, 2=High, 3=Ultra. Drives RenderMaxTextureResolution, TexturePixelToTexelRatio, TexturePressureTightenRate, TexturePressureRelaxRate, and TextureChannelRatio* (Normal/BaseColor/Specular/Emissive). The pressure water marks (TexturePressureHighWater/LowWater) are constant across tiers.</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>
@@ -8078,17 +8067,6 @@
         <string>U32</string>
         <key>Value</key>
         <integer>0</integer>
-    </map>
-    <key>RenderDebugTextureBind</key>
-    <map>
-      <key>Comment</key>
-      <string>Enable texture bind performance test.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>Boolean</string>
-      <key>Value</key>
-      <integer>0</integer>
     </map>
   <key>RenderDelayCreation</key>
   <map>
@@ -9405,17 +9383,6 @@
     <string>S32</string>
     <key>Value</key>
     <integer>64</integer>
-  </map>
-  <key>RenderReservedTextureIndices</key>
-  <map>
-    <key>Comment</key>
-    <string>Count of texture indices to reserve for shadow and reflection maps when using indexed texture rendering.  Probably only want to set from the login screen.</string>
-    <key>Persist</key>
-    <integer>1</integer>
-    <key>Type</key>
-    <string>S32</string>
-    <key>Value</key>
-    <integer>14</integer>
   </map>
   <key>RenderResolutionDivisor</key>
   <map>
@@ -11937,10 +11904,10 @@
       <key>Value</key>
       <real>1.0</real>
     </map>
-    <key>TextureWatermarkHigh</key>
+    <key>TexturePressureHighWater</key>
     <map>
       <key>Comment</key>
-      <string>High watermark as a fraction of the VRAM budget. When used VRAM crosses this, the global pixel:texel ratio tightens (backs off detail). Held at 0.90 - it's a physical "crossed the budget" threshold, not a tier preference.</string>
+      <string>High water mark as a fraction of the VRAM budget. When used VRAM crosses this, the global pixel:texel ratio tightens (backs off detail) at TexturePressureTightenRate. Held at 0.90 - it's a physical "crossed the budget" threshold, not a tier preference.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
@@ -11948,10 +11915,10 @@
       <key>Value</key>
       <real>0.90</real>
     </map>
-    <key>TextureWatermarkLow</key>
+    <key>TexturePressureLowWater</key>
     <map>
       <key>Comment</key>
-      <string>Low watermark as a fraction of the VRAM budget. When used VRAM drops below this, the global pixel:texel ratio relaxes (restores detail). The band between low and high is the hysteresis zone where the ratio holds steady - wide enough to prevent sawtooth.</string>
+      <string>Low water mark as a fraction of the VRAM budget. When used VRAM drops below this, the global pixel:texel ratio relaxes (restores detail) at TexturePressureRelaxRate. The band between low and high is the hysteresis zone where the ratio holds steady - wide enough to prevent sawtooth.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>

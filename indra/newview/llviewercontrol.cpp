@@ -138,7 +138,7 @@ namespace
     //    floor (down to 0 = deepest mips), so there is no per-tier minimum.
     //  - the channel ratios coarsen specular/emissive/normal relative to base
     //    color (each is a multiplier on the global ratio).
-    // The watermarks (TextureWatermarkHigh/Low) are NOT tiered - they're a
+    // The pressure water marks (TexturePressureHighWater/LowWater) are NOT tiered - they're a
     // physical "crossed the budget" threshold (0.90 / 0.70), constant across
     // tiers. Lower tiers start blurrier (lower R_max) and tighten faster.
     //                            max_res  Rmax   tight  relax  N      BC     S      E
@@ -884,7 +884,6 @@ void settings_setup_listeners()
     setting_setup_signal_listener(gSavedSettings, "OctreeMaxNodeCapacity", handleRepartition);
     setting_setup_signal_listener(gSavedSettings, "OctreeAlphaDistanceFactor", handleRepartition);
     setting_setup_signal_listener(gSavedSettings, "OctreeAttachmentSizeFactor", handleRepartition);
-    setting_setup_signal_listener(gSavedSettings, "RenderMaxTextureIndex", handleSetShaderChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderUIBuffer", handleWindowResized);
     setting_setup_signal_listener(gSavedSettings, "RenderDepthOfField", handleReleaseGLBufferChanged);
     setting_setup_signal_listener(gSavedSettings, "RenderFSAAType", handleReleaseGLBufferChanged);

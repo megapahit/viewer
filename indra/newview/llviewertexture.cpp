@@ -547,8 +547,8 @@ void LLViewerTexture::updateClass()
     // raises every texture's desired discard, which is what actually evicts.
     {
         static LLCachedControl<F32> ratio_max(gSavedSettings, "TexturePixelToTexelRatio", 1.0f);
-        static LLCachedControl<F32> wm_high(gSavedSettings, "TextureWatermarkHigh", 0.90f);
-        static LLCachedControl<F32> wm_low(gSavedSettings, "TextureWatermarkLow", 0.70f);
+        static LLCachedControl<F32> wm_high(gSavedSettings, "TexturePressureHighWater", 0.90f);
+        static LLCachedControl<F32> wm_low(gSavedSettings, "TexturePressureLowWater", 0.70f);
         static LLCachedControl<F32> tighten_rate(gSavedSettings, "TexturePressureTightenRate", 0.30f);
         static LLCachedControl<F32> relax_rate(gSavedSettings, "TexturePressureRelaxRate", 0.10f);
 
