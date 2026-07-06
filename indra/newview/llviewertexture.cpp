@@ -3070,6 +3070,13 @@ S32 LLViewerLODTexture::computeDesiredDiscard(S32 dim_max_i, bool avatar_bake) c
     static LLCachedControl<F32> ch_emissive (gSavedSettings, "TextureChannelRatioEmissive",  0.5f);
     const F32 channel_ratio[4] = { (F32)ch_normal, (F32)ch_basecolor, (F32)ch_specular, (F32)ch_emissive };
 
+    // Downrez bias: 0 sizes each bucket to its most demanding use (the lowest
+    // texels-per-pixel variant - the quality bound); 1 sizes to its least
+    // demanding use (the most oversampled variant - frees the most memory).
+    // Values between lerp across the texture's measured coverage spread.
+    static LLCachedControl<F32> downrez_bias(gSavedSettings, "TextureDownrezCoverageBias", 0.25f);
+    const F32 cov_bias = llclampf((F32)downrez_bias);
+
     // Continuous ideal discard = sharpest (smallest) requirement across the
     // channels this texture is actually used in.
     F32 ideal = (F32)dim_max_i;   // default: coarsest, until a measurement arrives
@@ -3080,6 +3087,17 @@ S32 LLViewerLODTexture::computeDesiredDiscard(S32 dim_max_i, bool avatar_bake) c
         if (coverage <= 0.f)
         {
             continue;
+        }
+        if (cov_bias > 0.f && mChannelCoverageMin[b] > 0.f && mChannelCoverageMin[b] < coverage)
+        {
+            // Geometric (log-space) lerp between the coverage bounds. The
+            // consumer below is log4(coverage), and min/max are routinely
+            // orders of magnitude apart - a linear pixel-area lerp barely
+            // moves the resulting discard until bias approaches 1, then
+            // plunges (reads as binary). Interpolating the RATIO instead
+            // moves the discard linearly with bias: 0.5 = halfway between
+            // the two ends in mip levels.
+            coverage *= powf(mChannelCoverageMin[b] / coverage, cov_bias);
         }
         measured = true;
         F32 allowed_texels = coverage * r_global * llmax(channel_ratio[b], 0.01f);

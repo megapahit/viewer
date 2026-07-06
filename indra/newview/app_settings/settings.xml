@@ -12124,27 +12124,16 @@
       <key>Value</key>
       <string />
     </map>
-    <key>TextureScaleMinAreaFactor</key>
+    <key>TextureDownrezCoverageBias</key>
     <map>
         <key>Comment</key>
-        <string>Limits how texture scale affects area calculation.</string>
+        <string>Which end of a texture's texels-per-pixel spread sizes it. Each texture tracks the screen coverage of its most demanding use (lowest texels per pixel) and least demanding use (highest texels per pixel, most oversampled). 0 = size to the most demanding use (best quality); 1 = size to the least demanding use (frees the most memory). Interpolation is geometric (log-space), so the resulting discard level moves linearly with this value - 0.5 sits halfway between the two ends in mip levels. Default 0.25 is the best universal balance.</string>
         <key>Persist</key>
         <integer>1</integer>
         <key>Type</key>
         <string>F32</string>
         <key>Value</key>
-        <real>0.0095</real>
-    </map>
-    <key>TextureScaleMaxAreaFactor</key>
-    <map>
-        <key>Comment</key>
-        <string>Limits how texture scale affects area calculation.</string>
-        <key>Persist</key>
-        <integer>1</integer>
-        <key>Type</key>
-        <string>F32</string>
-        <key>Value</key>
-        <real>25.0</real>
+        <real>0.25</real>
     </map>
     <key>ThreadPoolSizes</key>
     <map>

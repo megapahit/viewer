@@ -356,7 +356,6 @@ S32 LLTextureEntry::setScale(F32 s, F32 t)
     {
         mScaleS = s;
         mScaleT = t;
-        mMinScaleSq = -1.f;  // invalidate cache for getMinScaleSq()
 
         retval = TEM_CHANGE_TEXTURE;
     }
@@ -369,7 +368,6 @@ S32 LLTextureEntry::setScaleS(F32 s)
     if (mScaleS != s)
     {
         mScaleS = s;
-        mMinScaleSq = -1.f;  // invalidate cache for getMinScaleSq()
         retval = TEM_CHANGE_TEXTURE;
     }
     return retval;
@@ -381,20 +379,9 @@ S32 LLTextureEntry::setScaleT(F32 t)
     if (mScaleT != t)
     {
         mScaleT = t;
-        mMinScaleSq = -1.f;  // invalidate cache for getMinScaleSq()
         retval = TEM_CHANGE_TEXTURE;
     }
     return retval;
-}
-
-F32 LLTextureEntry::getMinScaleSq() const
-{
-    if (mMinScaleSq < 0.f)
-    {
-        F32 m = llmin(fabsf(mScaleS), fabsf(mScaleT));
-        mMinScaleSq = m * m;
-    }
-    return mMinScaleSq;
 }
 
 S32 LLTextureEntry::setColor(const LLColor4 &color)

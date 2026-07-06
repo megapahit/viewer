@@ -73,6 +73,23 @@ void LLFetchedGLTFMaterial::bind(LLViewerTexture* media_tex)
     LLViewerTexture* baseColorTex = media_tex ? media_tex : mBaseColorTexture;
     LLViewerTexture* emissiveTex = media_tex ? media_tex : mEmissiveTexture;
 
+    if (media_tex)
+    {
+        // The real basecolor/emissive stay registered for coverage while
+        // media hides them - stamp them so the streaming cooldown doesn't
+        // fight that coverage (coarsen -> refetch tug-of-war) the whole
+        // time media is playing. Blinn has no hidden-texture-under-media
+        // state, so without this the two systems diverge on media faces.
+        if (mBaseColorTexture.notNull())
+        {
+            if (LLImageGL* gl_tex = mBaseColorTexture->getGLTexture()) { gl_tex->stampBound(); }
+        }
+        if (mEmissiveTexture.notNull())
+        {
+            if (LLImageGL* gl_tex = mEmissiveTexture->getGLTexture()) { gl_tex->stampBound(); }
+        }
+    }
+
     if (!LLPipeline::sShadowRender || (mAlphaMode == LLGLTFMaterial::ALPHA_MODE_MASK))
     {
         if (mAlphaMode == LLGLTFMaterial::ALPHA_MODE_MASK)
@@ -97,13 +114,33 @@ void LLFetchedGLTFMaterial::bind(LLViewerTexture* media_tex)
 
     if (!LLPipeline::sShadowRender)
     {
-        if (mNormalTexture.notNull() && mNormalTexture->getDiscardLevel() <= 4)
+        // Bind the normal map at whatever resolution is resident - matching
+        // how Blinn-Phong normal maps degrade (soft, never absent). The old
+        // "getDiscardLevel() <= 4" gate made PBR normals a cliff instead of
+        // a gradient: any material the streamer legitimately sized past
+        // discard 4 (distant / tiled) rendered with NO normal map while the
+        // equivalent Blinn content rendered a soft one, making PBR look
+        // categorically flatter. The flat-normal fallback remains only for
+        // the genuinely-not-yet-loaded window, where it is the correct
+        // normal-shaped default.
+        if (mNormalTexture.notNull() && mNormalTexture->hasGLTexture())
         {
             shader->bindTexture(LLShaderMgr::BUMP_MAP, mNormalTexture);
         }
         else
         {
             shader->bindTexture(LLShaderMgr::BUMP_MAP, LLViewerFetchedTexture::sFlatNormalImagep);
+            if (mNormalTexture.notNull())
+            {
+                // In active use, just not loaded yet - stamp it so the
+                // streaming last-bound cooldown doesn't read "unbound" as
+                // "unseen" and pin it at the deepest mip before its first
+                // real bind.
+                if (LLImageGL* gl_tex = mNormalTexture->getGLTexture())
+                {
+                    gl_tex->stampBound();
+                }
+            }
         }
 
         if (mMetallicRoughnessTexture.notNull())

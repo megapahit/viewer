@@ -64,6 +64,8 @@
 #include "llviewerwindow.h"
 #include "llsurface.h"
 #include "llvoavatarself.h"
+#include "llvovolume.h"
+#include "llviewertextureanim.h"
 #include "llprogressview.h"
 
 ////////////////////////////////////////////////////////////////////////////
@@ -916,18 +918,35 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
 {
     llassert(!gCubeSnapshot);
 
+    // Refresh spotlight priorities first: light projector textures register as
+    // LIGHT_TEX volumes (no faces), and both their fetch priority
+    // (addTextureStats inside updateSpotLightPriority) and their coverage
+    // (folded into the block below) derive from mSpotLightPriority.
+    for (S32 vi = 0; vi < imagep->getNumVolumes(LLRender::LIGHT_TEX); ++vi)
+    {
+        LLVOVolume* volume = (*imagep->getVolumeList(LLRender::LIGHT_TEX))[vi];
+        volume->updateSpotLightPriority();
+    }
+
     if (imagep->getBoostLevel() < LLViewerFetchedTexture::BOOST_HIGH)  // don't bother checking face list for boosted textures
     {
-        static LLCachedControl<F32> texture_scale_min(gSavedSettings, "TextureScaleMinAreaFactor", 0.0095f);
-        static LLCachedControl<F32> texture_scale_max(gSavedSettings, "TextureScaleMaxAreaFactor", 25.f);
+        // Bounds on the per-face UV repeat-area divisor (mined from the old
+        // getTextureVirtualSize texel_area clamp [1/64, 128]): atlas/crop boost
+        // capped at 64x (3 mips finer), tiling penalty at 128x (3.5 mips
+        // coarser) so pathological UV scales can't explode either direction.
+        constexpr F32 MIN_REPEAT_AREA = 1.f / 64.f;
+        constexpr F32 MAX_REPEAT_AREA = 128.f;
 
-        // Largest screen-space pixel coverage per priority bucket
-        // (0=Normal, 1=BaseColor, 2=Specular, 3=Emissive), plus the overall max.
-        // The per-bucket maxima drive desired discard with per-channel ratios;
-        // the overall max is the fetch priority (raw - no bias). A bucket with
-        // faces but zero coverage (all off-screen) publishes 0, which
+        // Per priority bucket (0=Normal, 1=BaseColor, 2=Specular, 3=Emissive):
+        // the HIGHEST per-face effective coverage (= the lowest texels-per-pixel
+        // use, the most demanding variant - drives desired discard) and the
+        // LOWEST positive coverage (= the highest texels-per-pixel use, the most
+        // oversampled variant - available for downrez-bias policy). The overall
+        // max is the fetch priority (raw - no bias). A bucket with faces but
+        // zero coverage (all off-screen) publishes 0, which
         // computeDesiredDiscard reads as "coarsest mip".
         F32 channel_coverage[4] = { 0.f, 0.f, 0.f, 0.f };
+        F32 channel_coverage_min[4] = { FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX };
         bool bucket_used[4] = { false, false, false, false };
         F32 max_coverage = 0.f;
 
@@ -952,7 +971,13 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
             // Used in so many places that scanning the face list isn't worth it
             // (and isn't time-sliced) - treat as full-screen so it loads sharp.
             for (S32 b = 0; b < 4; ++b)
-                if (bucket_used[b]) channel_coverage[b] = (F32)MAX_IMAGE_AREA;
+            {
+                if (bucket_used[b])
+                {
+                    channel_coverage[b] = (F32)MAX_IMAGE_AREA;
+                    channel_coverage_min[b] = (F32)MAX_IMAGE_AREA;
+                }
+            }
             max_coverage = (F32)MAX_IMAGE_AREA;
         }
         else
@@ -980,20 +1005,163 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
                         face->mLastTextureUpdate = gFrameCount;
                     }
 
-                    F32 vsize = face->getPixelArea();
+                    // Most-demanding-point measurement: the spec is that the
+                    // LOWEST pixel:texel ratio governs, so pixel density is
+                    // evaluated at the face's NEAREST point and applied to the
+                    // face's true world area. The previous whole-face average
+                    // (bounding-disc pixel area) under-resolved perspective
+                    // surfaces: on a floor, the tile at your feet covers far
+                    // more screen than the average tile, and the GPU samples
+                    // fine mips right there - tiled (PBR-heavy) content went
+                    // soft while untiled content looked fine.
+                    const LLVector4a* ext = face->isState(LLFace::RIGGED) ? face->mRiggedExtents : face->mExtents;
+                    LLVector4a diag;
+                    diag.setSub(ext[1], ext[0]);
+                    // World area of the face ~ product of the two largest AABB
+                    // dims (max pairwise product; robust for flat faces).
+                    F32 dx = diag[0], dy = diag[1], dz = diag[2];
+                    F32 area_world = llmax(dx * dy, llmax(dx * dz, dy * dz));
+                    // Pixels per meter at the nearest point. Distance floored:
+                    // nearer than this the screen clamp below governs anyway.
+                    F32 dist = llmax(face->mDistanceToCamera, 0.5f);
+                    F32 ppm = LLDrawable::sCurPixelAngle / dist;
+                    F32 face_px = area_world * ppm * ppm;
+                    if (face_px <= 0.f)
+                    {
+                        // Degenerate extents: the face hasn't been through a
+                        // geometry build yet (or a rigged face has no rigged
+                        // extents) - it isn't renderable, so it must not be
+                        // measured. Skipping matters especially for the
+                        // per-bucket MIN bound: any invented placeholder
+                        // value (the old fallback hit LLFace::init's 16px
+                        // default) becomes the texture's least-demanding
+                        // "use" and, under TextureDownrezCoverageBias, drags
+                        // the whole texture to its deepest mip - and it
+                        // poisoned BP and PBR asymmetrically since the two
+                        // systems register faces at different points in the
+                        // geometry lifecycle.
+                        continue;
+                    }
 
-                    // Scale coverage by texture repeat: a texture shown at a
-                    // fraction of a face (atlas) needs only that fraction of
-                    // texels; a tiled texture needs more. getMinScaleSq() is the
-                    // cached min(|scaleS|,|scaleT|)^2, invalidated by setScale*.
+                    // Effective UV repeat AREA across this face: the tiling
+                    // term of texels-drawn-per-screen-pixel. More tiling =>
+                    // each tile is smaller on screen => coarser mips suffice
+                    // (penalty). Repeats < 1 (atlas/crop) => only a sub-rect
+                    // of the image is shown, but discard levels are whole-
+                    // image, so the full image must be resident at 1/repeats
+                    // times the crop's pixel count (boost).
                     S32 te_offset = face->getTEOffset();  // offset is -1 if not inited
                     LLViewerObject* objp = face->getViewerObject();
                     const LLTextureEntry* te = (te_offset < 0 || te_offset >= objp->getNumTEs()) ? nullptr : objp->getTE(te_offset);
-                    F32 min_scale = te ? llclamp(te->getMinScaleSq(), texture_scale_min(), texture_scale_max()) : 1.f;
-                    vsize /= min_scale;
+
+                    F32 repeats = 1.f;
+                    if (te)
+                    {
+                        // UV scale source: every channel reads the repeat
+                        // values ITS renderer actually applies, then flows
+                        // through the identical pipeline below. Sources:
+                        //   diffuse           -> TE scale
+                        //   Blinn normal/spec -> LLMaterial per-map repeats
+                        //   PBR channels      -> KHR texture_transform scale
+                        // Fallback for any missing material is the TE scale -
+                        // never a silent hardcoded 1.
+                        F32 scale_s = te->getScaleS();
+                        F32 scale_t = te->getScaleT();
+                        if (i >= LLRender::BASECOLOR_MAP)
+                        {
+                            // LLRender channel -> LLGLTFMaterial::TextureInfo
+                            static const S32 gltf_info[4] = {
+                                LLGLTFMaterial::GLTF_TEXTURE_INFO_BASE_COLOR,         // BASECOLOR_MAP (3)
+                                LLGLTFMaterial::GLTF_TEXTURE_INFO_METALLIC_ROUGHNESS, // METALLIC_ROUGHNESS_MAP (4)
+                                LLGLTFMaterial::GLTF_TEXTURE_INFO_NORMAL,             // GLTF_NORMAL_MAP (5)
+                                LLGLTFMaterial::GLTF_TEXTURE_INFO_EMISSIVE,           // EMISSIVE_MAP (6)
+                            };
+                            if (const LLGLTFMaterial* gltf_mat = te->getGLTFRenderMaterial())
+                            {
+                                const LLVector2& s = gltf_mat->mTextureTransform[gltf_info[i - LLRender::BASECOLOR_MAP]].mScale;
+                                scale_s = s.mV[0];
+                                scale_t = s.mV[1];
+                            }
+                        }
+                        else if (i == LLRender::NORMAL_MAP || i == LLRender::SPECULAR_MAP)
+                        {
+                            // Blinn-Phong normal/specular maps carry their own
+                            // repeats in LLMaterial - the renderer builds their
+                            // texture matrices from these, NOT from the TE's
+                            // diffuse scale. Reading the diffuse scale here made
+                            // Blinn normals scale differently than PBR normals
+                            // (whose per-channel transform IS read above).
+                            if (const LLMaterial* mat = te->getMaterialParams().get())
+                            {
+                                if (i == LLRender::NORMAL_MAP)
+                                {
+                                    mat->getNormalRepeat(scale_s, scale_t);
+                                }
+                                else
+                                {
+                                    mat->getSpecularRepeat(scale_s, scale_t);
+                                }
+                            }
+                        }
+
+                        // Continuously-animated scale (llSetTextureAnim SCALE)
+                        // bypasses both static sources via mTextureMatrix -
+                        // the live animated values win on either path.
+                        if (LLVOVolume* vvo = face->getDrawable() ? face->getDrawable()->getVOVolume() : nullptr)
+                        {
+                            LLViewerTextureAnim* anim = vvo->mTextureAnimp;
+                            if (anim && (anim->mMode & LLTextureAnim::ON) && (anim->mMode & LLTextureAnim::SCALE)
+                                && (anim->mFace < 0 || anim->mFace == te_offset))
+                            {
+                                scale_s = anim->mScaleS;
+                                scale_t = anim->mScaleT;
+                            }
+                        }
+
+                        repeats = fabsf(scale_s * scale_t);
+
+                        // Mesh atlas sub-rect: a face whose intrinsic UVs span
+                        // only part of [0,1]^2 shows that fraction of the
+                        // image. Applies identically to both paths - the
+                        // transforms above stack on the raw face UVs.
+                        if (LLVolume* vol = objp->getVolume())
+                        {
+                            if (te_offset >= 0 && te_offset < vol->getNumVolumeFaces())
+                            {
+                                const LLVolumeFace& vf = vol->getVolumeFace(te_offset);
+                                F32 span = fabsf((vf.mTexCoordExtents[1].mV[0] - vf.mTexCoordExtents[0].mV[0])
+                                               * (vf.mTexCoordExtents[1].mV[1] - vf.mTexCoordExtents[0].mV[1]));
+                                if (span > 0.f)
+                                {
+                                    repeats *= span;
+                                }
+                            }
+                        }
+                    }
+
+                    repeats = llclamp(repeats, MIN_REPEAT_AREA, MAX_REPEAT_AREA);
+
+                    // Apply the two sides of the repeat term in the right
+                    // order relative to the screen clamp:
+                    //  - tiling (repeats > 1): the per-tile footprint at the
+                    //    nearest point, THEN clamped - one tile can't draw
+                    //    more pixels than the screen. (Clamping the whole
+                    //    face first and then dividing crushed near tiles.)
+                    //  - atlas/crop (repeats < 1): boost AFTER the clamp -
+                    //    whole-image residency for a crop legitimately
+                    //    demands more than its screen coverage.
+                    F32 tiling = llmax(repeats, 1.f);
+                    F32 crop   = llmin(repeats, 1.f);
+                    F32 vsize = llmin(face_px / tiling, LLViewerTexture::sWindowPixelArea) / crop;
 
                     if (bucket >= 0 && bucket < 4)
+                    {
                         channel_coverage[bucket] = llmax(channel_coverage[bucket], vsize);
+                        if (vsize > 0.f)
+                        {
+                            channel_coverage_min[bucket] = llmin(channel_coverage_min[bucket], vsize);
+                        }
+                    }
                     max_coverage = llmax(max_coverage, vsize);
                 }
             }
@@ -1010,15 +1178,34 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
             // Floor so terrain never collapses to nothing at draw distance.
             F32 cov = LLViewerTexture::sWindowPixelArea * llmax(near_frac, 0.05f);
             channel_coverage[1] = cov;  // terrain detail maps are diffuse / base color
+            channel_coverage_min[1] = cov;
             max_coverage = cov;
+        }
+
+        // Light projector textures register as LIGHT_TEX volumes, not faces.
+        // mSpotLightPriority (refreshed above) is already a screen-pixel-area
+        // estimate of the lit radius - fold it in as BaseColor coverage so
+        // projectors stream view-dependently like everything else.
+        for (S32 vi = 0; vi < imagep->getNumVolumes(LLRender::LIGHT_TEX); ++vi)
+        {
+            LLVOVolume* volume = (*imagep->getVolumeList(LLRender::LIGHT_TEX))[vi];
+            F32 cov = llmin(volume->getSpotLightPriority(), LLViewerTexture::sWindowPixelArea);
+            if (cov > 0.f)
+            {
+                channel_coverage[1] = llmax(channel_coverage[1], cov);
+                channel_coverage_min[1] = llmin(channel_coverage_min[1], cov);
+                max_coverage = llmax(max_coverage, cov);
+            }
         }
 
         imagep->addTextureStats(max_coverage);
 
-        // Publish per-bucket coverage for LLViewerLODTexture::computeDesiredDiscard.
+        // Publish per-bucket coverage bounds for
+        // LLViewerLODTexture::computeDesiredDiscard.
         for (S32 b = 0; b < 4; ++b)
         {
             imagep->mChannelCoverage[b] = channel_coverage[b];
+            imagep->mChannelCoverageMin[b] = (channel_coverage_min[b] == FLT_MAX) ? 0.f : channel_coverage_min[b];
         }
     }
 
@@ -1029,13 +1216,6 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
         imagep->getWidth(),
         imagep->getFullWidth()));
 #endif
-
-    // make sure to addTextureStats for any spotlights that are using this texture
-    for (S32 vi = 0; vi < imagep->getNumVolumes(LLRender::LIGHT_TEX); ++vi)
-    {
-        LLVOVolume* volume = (*imagep->getVolumeList(LLRender::LIGHT_TEX))[vi];
-        volume->updateSpotLightPriority();
-    }
 
     F32 max_inactive_time = 20.f; // inactive time before deleting saved raw image
     S32 min_refs = 3; // 1 for mImageList, 1 for mUUIDMap, and 1 for "entries" in updateImagesFetchTextures

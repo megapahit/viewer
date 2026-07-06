@@ -150,6 +150,11 @@ public:
 
     virtual F32  getMaxVirtualSize() ;
 
+    // Read-only debug access to the per-bucket coverage bounds (see
+    // mChannelCoverage) - used by the RENDER_DEBUG_TEXTURE_PRIORITY overlay.
+    F32 getChannelCoverage(S32 bucket) const { return (bucket >= 0 && bucket < 4) ? mChannelCoverage[bucket] : 0.f; }
+    F32 getChannelCoverageMin(S32 bucket) const { return (bucket >= 0 && bucket < 4) ? mChannelCoverageMin[bucket] : 0.f; }
+
     LLFrameTimer* getLastReferencedTimer() { return &mLastReferencedTimer; }
 
     S32 getFullWidth() const { return mFullWidth; }
@@ -205,13 +210,17 @@ protected:
     mutable S32  mMaxVirtualSizeResetInterval;
     LLFrameTimer mLastReferencedTimer;
 
-    // Largest screen-space pixel coverage among the texture's faces, per
+    // Screen-space pixel coverage bounds among the texture's faces, per
     // priority bucket (0=Normal, 1=BaseColor, 2=Specular, 3=Emissive). 0 = the
     // texture is not used in that channel (or hasn't been measured yet).
     // Populated by LLViewerTextureList::updateImageDecodePriority; consumed by
     // LLViewerLODTexture::computeDesiredDiscard. This is the only view-dependent
-    // streaming signal - distance, size, and channel role all collapse into it.
+    // streaming signal - distance, size, tiling, and channel role all collapse
+    // into it. Max = the most demanding use (lowest texels-per-pixel variant,
+    // the quality bound); Min = the least demanding positive use (highest
+    // texels-per-pixel, most oversampled - the downrez-bias end).
     F32 mChannelCoverage[4] = { 0.f, 0.f, 0.f, 0.f };
+    F32 mChannelCoverageMin[4] = { 0.f, 0.f, 0.f, 0.f };
 
     ll_face_list_t    mFaceList[LLRender::NUM_TEXTURE_CHANNELS]; //reverse pointer pointing to the faces using this image as texture
     U32               mNumFaces[LLRender::NUM_TEXTURE_CHANNELS];

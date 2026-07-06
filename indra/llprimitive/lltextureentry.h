@@ -143,13 +143,6 @@ public:
     F32  getScaleS() const { return mScaleS; }
     F32  getScaleT() const { return mScaleT; }
 
-    // Cached min(|mScaleS|, |mScaleT|)^2, lazily computed and invalidated
-    // in setScale/setScaleS/setScaleT. Used by the texture streaming face
-    // loop (updateImageDecodePriority) to avoid the per-face per-frame
-    // sqrt/abs/min/multiply chain. Returns the raw (unclamped) value;
-    // callers still apply TextureScaleMin/MaxAreaFactor clamps.
-    F32  getMinScaleSq() const;
-
     void getOffset(F32 *s, F32 *t) const { *s = mOffsetS; *t = mOffsetT; }
     F32  getOffsetS() const { return mOffsetS; }
     F32  getOffsetT() const { return mOffsetT; }
@@ -224,13 +217,6 @@ public:
     F32                 mOffsetS;               // S, T offset
     F32                 mOffsetT;               // S, T offset
     F32                 mRotation;              // anti-clockwise rotation in rad about the bottom left corner
-
-private:
-    // Cache for getMinScaleSq(). -1.f sentinel = stale. Invalidated by
-    // setScale/setScaleS/setScaleT. Mutable so getMinScaleSq() can fill it
-    // on first read without breaking const correctness for read-only callers.
-    mutable F32 mMinScaleSq = -1.f;
-public:
 
     static const LLTextureEntry null;
 
