@@ -8060,7 +8060,7 @@
   <key>RenderTextureQuality</key>
   <map>
     <key>Comment</key>
-    <string>Texture quality preset: 0=Low, 1=Medium, 2=High, 3=Ultra. Drives RenderMaxTextureResolution, TextureDiscardBiasMax, TextureCloseBubbleMeters/MinMeters/ShrinkThreshold, TextureChannelOffset* (four), TexturePressureDiscardScale, TextureMinCapPressureRelaxScale, TextureUpdateCountPressureMaxMultiplier, TextureScreenSizeOversample/UnderPressure, TextureAgentAvatarOversampleMultiplier, TextureBackgroundFactorRatePerSec, TextureDiscardBackgroundedTime. Watermarks (TextureWatermarkHigh/Low) are constant across tiers.</string>
+    <string>Texture quality preset: 0=Low, 1=Medium, 2=High, 3=Ultra. Drives RenderMaxTextureResolution, TexturePixelToTexelRatio, TexturePressureTightenRate, TexturePressureRelaxRate, and TextureChannelRatio* (Normal/BaseColor/Specular/Emissive). Watermarks (TextureWatermarkHigh/Low) are constant across tiers.</string>
     <key>Persist</key>
     <integer>1</integer>
     <key>Type</key>
@@ -11871,49 +11871,49 @@
       <key>Value</key>
       <real>20.0</real>
     </map>
-    <key>TextureChannelOffsetNormal</key>
+    <key>TextureChannelRatioNormal</key>
     <map>
       <key>Comment</key>
-      <string>Additive discard offset for normal maps (integer mip levels). 0 = no shift; positive = N more discard levels (worse quality). Driven by the RenderTextureQuality preset.</string>
+      <string>Per-channel pixel:texel ratio multiplier for normal maps (texels per pixel, applied on top of the global TexturePixelToTexelRatio). 1.0 = full quality; lower = coarser. Driven by the RenderTextureQuality preset.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
-      <string>S32</string>
+      <string>F32</string>
       <key>Value</key>
-      <integer>0</integer>
+      <real>1.0</real>
     </map>
-    <key>TextureChannelOffsetBaseColor</key>
+    <key>TextureChannelRatioBaseColor</key>
     <map>
       <key>Comment</key>
-      <string>Additive discard offset for base color / diffuse (integer mip levels). 0 = no shift; positive = N more discard levels. Driven by the RenderTextureQuality preset.</string>
+      <string>Per-channel pixel:texel ratio multiplier for base color / diffuse (texels per pixel, applied on top of the global TexturePixelToTexelRatio). 1.0 = full quality. Driven by the RenderTextureQuality preset.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
-      <string>S32</string>
+      <string>F32</string>
       <key>Value</key>
-      <integer>0</integer>
+      <real>1.0</real>
     </map>
-    <key>TextureChannelOffsetSpecular</key>
+    <key>TextureChannelRatioSpecular</key>
     <map>
       <key>Comment</key>
-      <string>Additive discard offset for specular / metallic-roughness (integer mip levels). Higher = more aggressive (specular detail is usually less perceptible than diffuse). Driven by the RenderTextureQuality preset.</string>
+      <string>Per-channel pixel:texel ratio multiplier for specular / metallic-roughness (texels per pixel, applied on top of the global TexturePixelToTexelRatio). 0.5 = half resolution (specular detail is usually less perceptible than diffuse). Driven by the RenderTextureQuality preset.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
-      <string>S32</string>
+      <string>F32</string>
       <key>Value</key>
-      <integer>1</integer>
+      <real>0.5</real>
     </map>
-    <key>TextureChannelOffsetEmissive</key>
+    <key>TextureChannelRatioEmissive</key>
     <map>
       <key>Comment</key>
-      <string>Additive discard offset for emissive (integer mip levels). Higher = more aggressive. Driven by the RenderTextureQuality preset.</string>
+      <string>Per-channel pixel:texel ratio multiplier for emissive (texels per pixel, applied on top of the global TexturePixelToTexelRatio). 0.5 = half resolution. Driven by the RenderTextureQuality preset.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
-      <string>S32</string>
+      <string>F32</string>
       <key>Value</key>
-      <integer>1</integer>
+      <real>0.5</real>
     </map>
     <key>TextureMaxDiscardOverride</key>
     <map>
@@ -11926,10 +11926,21 @@
       <key>Value</key>
       <integer>0</integer>
     </map>
+    <key>TexturePixelToTexelRatio</key>
+    <map>
+      <key>Comment</key>
+      <string>Global maximum pixel:texel ratio, expressed as texels per screen pixel (the "R" in 1:R). 1.0 = one texel per pixel, the best quality the streamer will allocate. A texture is sized so its most-demanding on-screen face stays at or below this many texels per pixel; everything coarser falls out by distance. VRAM pressure walks the effective ratio down from here toward 0 (no floor).</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>F32</string>
+      <key>Value</key>
+      <real>1.0</real>
+    </map>
     <key>TextureWatermarkHigh</key>
     <map>
       <key>Comment</key>
-      <string>High watermark as a fraction of the VRAM budget. When used VRAM crosses this, the global discard bias climbs (backs off detail). Held at 0.90 across quality tiers - it's a physical "crossed the budget" threshold, not a tier preference.</string>
+      <string>High watermark as a fraction of the VRAM budget. When used VRAM crosses this, the global pixel:texel ratio tightens (backs off detail). Held at 0.90 - it's a physical "crossed the budget" threshold, not a tier preference.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
@@ -11940,7 +11951,7 @@
     <key>TextureWatermarkLow</key>
     <map>
       <key>Comment</key>
-      <string>Low watermark as a fraction of the VRAM budget. When used VRAM drops below this, the global discard bias relaxes (restores detail). The band between low and high is the hysteresis zone where the bias holds steady - wide enough to prevent sawtooth without prediction/smoothing.</string>
+      <string>Low watermark as a fraction of the VRAM budget. When used VRAM drops below this, the global pixel:texel ratio relaxes (restores detail). The band between low and high is the hysteresis zone where the ratio holds steady - wide enough to prevent sawtooth.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
@@ -11948,54 +11959,43 @@
       <key>Value</key>
       <real>0.70</real>
     </map>
-    <key>TextureDiscardBiasMax</key>
+    <key>TexturePressureTightenRate</key>
     <map>
       <key>Comment</key>
-      <string>Upper bound on the watermark-driven global discard bias. Caps how steep the distance-floor ramp can get under sustained pressure: at the cap with TexturePressureDiscardScale=1.0 the floor forces max discard at ~1/(1+max) of draw distance. Also the denominator for getMemoryPressureProgress.</string>
+      <string>Rate (ratio units/sec) at which the global pixel:texel ratio drops while used VRAM is above the high watermark. Deliberately slow so eviction (scaleDown draining) frees bytes before the next step - prevents over-shoot / thrash.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>12.0</real>
+      <real>0.30</real>
     </map>
-    <key>TextureDiscardBiasRampRate</key>
+    <key>TexturePressureRelaxRate</key>
     <map>
       <key>Comment</key>
-      <string>Rate (bias units/sec) at which the global discard bias climbs while used VRAM is above the high watermark. Deliberately slow so eviction (scaleDown draining) catches up before the next step - prevents over-shoot / thrash.</string>
+      <string>Rate (ratio units/sec) at which the global pixel:texel ratio climbs back toward TexturePixelToTexelRatio while used VRAM is below the low watermark. Typically slower than the tighten rate so detail returns gradually as headroom appears.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>2.0</real>
+      <real>0.10</real>
     </map>
-    <key>TextureDiscardBiasDecayRate</key>
+    <key>TextureUpRezMargin</key>
     <map>
       <key>Comment</key>
-      <string>Rate (bias units/sec) at which the global discard bias relaxes while used VRAM is below the low watermark. Typically slower than the ramp so detail returns gradually as headroom appears.</string>
+      <string>Hysteresis dead-band (in mip levels) around a texture's current discard. A texture only fetches a finer mip when its ideal discard falls more than this below the current level, and only evicts when it rises more than this above - prevents fetch/scaleDown thrash at mip boundaries when an object slowly recedes.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>1.0</real>
+      <real>0.2</real>
     </map>
-    <key>TexturePressureDiscardScale</key>
+    <key>TextureCooldownStepSeconds</key>
     <map>
       <key>Comment</key>
-      <string>Modulates the distance-floor pressure response. compression = 1 + sDiscardBias * scale; the floor forces max discard at ~1/compression of draw distance. At scale=1.0 with bias=12, max discard is forced at ~8% of draw distance; higher scale = steeper / closer. Driven by the RenderTextureQuality preset.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>1.0</real>
-    </map>
-    <key>TextureMinCapPressureRelaxScale</key>
-    <map>
-      <key>Comment</key>
-      <string>Modulates the relaxation of mMinDesiredDiscardLevel under pressure. add = floor(progress * room * scale), where room is the gap to max discard and progress is sDiscardBias/TextureDiscardBiasMax. At 0 disables relaxation entirely.</string>
+      <string>Seconds an unseen texture waits per mip level before stepping down. When a texture stops being bound (occluded / off-screen) or the window is backgrounded, its discard rises one level every this many seconds until it reaches the deepest mip, instead of snapping there immediately - so briefly-unseen content isn't thrown away and refetched (cache thrash) if it reappears. Resets the moment the texture is bound again.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
@@ -12003,184 +12003,6 @@
       <key>Value</key>
       <real>1.0</real>
     </map>
-    <key>TextureUpdateCountPressureMaxMultiplier</key>
-    <map>
-      <key>Comment</key>
-      <string>Hard cap on per-frame update_count scale-up factor in updateImagesFetchTextures under pressure. Replaces unbounded max(bias, mult) blow-up. At default 6, the full-list sweep takes at minimum mUUIDMap.size()/6 frames per round-trip under high pressure - bounded CPU cost even at peak.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>6.0</real>
-    </map>
-    <key>TextureFetchBiasTrackRate</key>
-    <map>
-      <key>Comment</key>
-      <string>First-order low-pass rate for the fetch-pressure bias contribution (1/sec). The bias floor decays independently of VRAM headroom, so queue-driven bias releases naturally as fetches drain. Default ~1s convergence.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>1.0</real>
-    </map>
-    <key>TextureTerrainDistanceFloor</key>
-    <map>
-      <key>Comment</key>
-      <string>Minimum distance factor for BOOST_TERRAIN textures. Keeps combined &gt; 0 so VRAM pressure can evict terrain. Lower = higher idle quality, less pressure response.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>0.01</real>
-    </map>
-    <key>TextureTerrainCoverageFraction</key>
-    <map>
-      <key>Comment</key>
-      <string>Synthetic on-screen coverage fraction for BOOST_TERRAIN textures (no faces are registered). Higher = higher idle quality, less pressure response.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>0.99</real>
-    </map>
-    <key>TextureAgentAvatarOversampleMultiplier</key>
-    <map>
-      <key>Comment</key>
-      <string>Oversample multiplier for textures on the agent's avatar (rigged mesh / animated objects). 1.0 = no boost; 2.0 = 4x texels per pixel = exactly -1 discard level. Preference, not exemption - pressure can still evict via the distance floor.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>2.0</real>
-    </map>
-    <key>TextureBackgroundFactorRatePerSec</key>
-    <map>
-      <key>Comment</key>
-      <string>Per-second ramp rate of the background-window discard floor (0..1). Snaps to 0 in foreground. Default 0.011 ~ 90s to saturate.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>0.011</real>
-    </map>
-    <key>TextureBackgroundDiscardOffset</key>
-    <map>
-      <key>Comment</key>
-      <string>Backgrounded textures will only discard up to (dim_max - offset). e.g. a 2048 texture (dim_max 11) with offset 2 caps the background floor at discard 9. 0 disables the cap (background can drive to max discard).</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>S32</string>
-      <key>Value</key>
-      <integer>2</integer>
-    </map>
-
-    <key>TextureCloseBubbleMeters</key>
-    <map>
-      <key>Comment</key>
-      <string>Close-camera bubble (meters). Faces inside this distance get dist_factor = 0 (no discard contribution); the ramp to 1 spans (bubble, draw_distance]. Shrinks toward TextureCloseBubbleMinMeters as VRAM pressure ramps the multiplier toward its cap.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>5.0</real>
-    </map>
-    <key>TextureCloseBubbleMinMeters</key>
-    <map>
-      <key>Comment</key>
-      <string>Floor (meters) for the close-camera bubble under maximum VRAM pressure. As the discard bias approaches TextureDiscardBiasMax the bubble collapses toward this value, allowing eviction of even close textures when nothing else fits.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>3.0</real>
-    </map>
-    <key>TextureCloseBubbleShrinkThreshold</key>
-    <map>
-      <key>Comment</key>
-      <string>Bubble stays at full size until mult_progress exceeds this fraction (0..1) of its range to the cap. Above that, bubble lerps from full to TextureCloseBubbleMinMeters. Keeps the bubble out of the normal feedback loop.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>0.8</real>
-    </map>
-    <key>TextureCloseBubbleTrackRate</key>
-    <map>
-      <key>Comment</key>
-      <string>Rate (1/sec) at which the actual bubble tracks its target. Lower = smoother, slower to react. Damps short-term multiplier swings so close textures don't yo-yo.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>0.5</real>
-    </map>
-    <key>TextureScreenSizeOversample</key>
-    <map>
-      <key>Comment</key>
-      <string>Texels per screen pixel kept by the per-texture pixel-area discard cap. 1.0 = 1:1 with on-screen contribution; higher = sharper distant textures, more VRAM. Driven by RenderTextureQuality.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>1.5</real>
-    </map>
-    <key>TextureScreenSizeOversampleUnderPressure</key>
-    <map>
-      <key>Comment</key>
-      <string>Floor that TextureScreenSizeOversample collapses toward as the discard bias walks up toward TextureDiscardBiasMax. Lower = allow distant textures to drop below their on-screen contribution under pressure.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>0.5</real>
-    </map>
-    <key>TextureStalenessIntervalSeconds</key>
-    <map>
-      <key>Comment</key>
-      <string>Seconds per staleness step. Per-interval increment is 1/max_discard so any texture saturates after interval * max_discard seconds idle.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>5.0</real>
-    </map>
-    <key>TextureBindDecaySeconds</key>
-    <map>
-      <key>Comment</key>
-      <string>Grace seconds after a bind during which the staleness factor stays at 0. Prevents intermittently-bound textures from ramping. 0 disables the grace period.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>5.0</real>
-    </map>
-    <key>TextureFetchPressureScale</key>
-    <map>
-      <key>Comment</key>
-      <string>Pending-fetch divisor for the bias floor: bias floor = 1 + clamp(pending / scale, 0, 3). Lower = bias rises sooner under load floods.</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>F32</string>
-      <key>Value</key>
-      <real>1000.0</real>
-    </map>
-
     <key>TextureDecodeDisabled</key>
     <map>
       <key>Comment</key>
@@ -12213,28 +12035,6 @@
       <string>U32</string>
       <key>Value</key>
       <integer>0</integer>
-    </map>
-    <key>TextureDiscardBackgroundedTime</key>
-    <map>
-        <key>Comment</key>
-        <string>Specify how long to wait before discarding texture data after viewer is backgrounded.  (zero or negative to disable)</string>
-        <key>Persist</key>
-        <integer>1</integer>
-        <key>Type</key>
-        <string>F32</string>
-        <key>Value</key>
-        <real>60.0</real>
-    </map>
-    <key>TextureDiscardMinimizedTime</key>
-    <map>
-        <key>Comment</key>
-        <string>Specify how long to wait before discarding texture data after viewer is minimized.  (zero or negative to disable)</string>
-        <key>Persist</key>
-        <integer>1</integer>
-        <key>Type</key>
-        <string>F32</string>
-        <key>Value</key>
-        <real>1.0</real>
     </map>
     <key>TextureFetchConcurrency</key>
     <map>

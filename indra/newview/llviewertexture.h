@@ -205,24 +205,13 @@ protected:
     mutable S32  mMaxVirtualSizeResetInterval;
     LLFrameTimer mLastReferencedTimer;
 
-    // 0=Normal, 1=BaseColor, 2=Specular, 3=Emissive. -1 -> base color.
-    S8 mPriorityChannel = -1;
-
-    // Bind-staleness floor, 0..1. Per-interval increment is 1/max_discard
-    // so any texture saturates after interval x max_discard seconds idle.
-    F32 mStalenessFactor = 0.f;
-
-    // Closest face's face_distance / draw_distance, clamped 0..1.
-    // Defaults to 1 so never-measured textures resolve to deepest discard.
-    F32 mMinDistanceFactor = 1.f;
-
-    // Largest per-face screen-space coverage in pixels. Raw - no bias or
-    // channel-priority contamination.
-    F32 mMaxOnScreenSize = 0.f;
-
-    // Any face on the agent's avatar (rigged / animated). Drives the
-    // own-avatar quality boost in processTextureStats.
-    bool mOnAgentAvatar = false;
+    // Largest screen-space pixel coverage among the texture's faces, per
+    // priority bucket (0=Normal, 1=BaseColor, 2=Specular, 3=Emissive). 0 = the
+    // texture is not used in that channel (or hasn't been measured yet).
+    // Populated by LLViewerTextureList::updateImageDecodePriority; consumed by
+    // LLViewerLODTexture::computeDesiredDiscard. This is the only view-dependent
+    // streaming signal - distance, size, and channel role all collapse into it.
+    F32 mChannelCoverage[4] = { 0.f, 0.f, 0.f, 0.f };
 
     ll_face_list_t    mFaceList[LLRender::NUM_TEXTURE_CHANNELS]; //reverse pointer pointing to the faces using this image as texture
     U32               mNumFaces[LLRender::NUM_TEXTURE_CHANNELS];
@@ -244,28 +233,21 @@ public:
     static S32 sRawCount;
     static S32 sAuxCount;
     static LLFrameTimer sEvaluationTimer;
-    static F32 sDesiredDiscardBias;
-    // Backgrounded-window discard floor, 0..1. Ramps while backgrounded,
-    // snaps to 0 in foreground. Avatar bakes exempt.
-    static F32 sBackgroundFactor;
 
-    // Watermark-driven global discard bias, [0, TextureDiscardBiasMax].
-    // The single VRAM-pressure controller: climbs while used VRAM is above
-    // the high watermark, relaxes below the low watermark, holds in the
-    // hysteresis band between. Replaces the old sMemoryPressureMultiplier +
-    // sLastDitchMinDiscard pair (and the predict-scan apparatus). Feeds the
-    // distance-weighted pressure floor in processTextureStats: close content
-    // is protected, distant content is evicted first, and as the bias climbs
-    // the "force max discard" distance moves inward from draw distance toward
-    // the bubble. Subsumes last-ditch - at max bias the distance floor forces
-    // everything outside the bubble to its deepest mip.
-    static F32 sDiscardBias;
+    // The single VRAM-pressure knob: the global maximum pixel:texel ratio,
+    // expressed as texels per screen pixel (the "R" in 1:R). Starts at
+    // TexturePixelToTexelRatio (1.0 = one texel per pixel) and the watermark
+    // controller in updateClass() walks it down toward 0 (no floor)
+    // while used VRAM is above the high watermark, back up below the low
+    // watermark, holding in the band between. Lowering it raises every
+    // texture's desired discard, which drives scaleDown eviction. Consumed by
+    // LLViewerLODTexture::computeDesiredDiscard.
+    static F32 sPixelToTexelRatio;
 
-    // 0..1 progress of sDiscardBias from baseline (0) to its configured cap
-    // (TextureDiscardBiasMax). Gates bubble shrink, pixel-area oversample
-    // collapse, the per-frame update count, and the min-cap relax.
-    static F32 getMemoryPressureProgress();
-    static U32 sBiasTexturesUpdated;
+    // Seconds the app has been backgrounded/minimized (0 in foreground). Drives
+    // the background half of the per-texture cooldown in computeDesiredDiscard.
+    static F32 sBackgroundSeconds;
+
     static S32 sMaxSculptRez ;
     static U32 sMinLargeImageSize ;
     static U32 sMaxSmallImageSize ;
@@ -333,27 +315,6 @@ public:
             || boost_level == BOOST_AVATAR_SELF
             || boost_level == BOOST_AVATAR_BAKED_SELF;
     }
-
-public:
-
-    struct Compare
-    {
-        // lhs < rhs
-        bool operator()(const LLPointer<LLViewerFetchedTexture> &lhs, const LLPointer<LLViewerFetchedTexture> &rhs) const
-        {
-            const LLViewerFetchedTexture* lhsp = (const LLViewerFetchedTexture*)lhs;
-            const LLViewerFetchedTexture* rhsp = (const LLViewerFetchedTexture*)rhs;
-
-            // greater priority is "less"
-            const F32 lpriority = lhsp->mMaxVirtualSize;
-            const F32 rpriority = rhsp->mMaxVirtualSize;
-            if (lpriority > rpriority) // higher priority
-                return true;
-            if (lpriority < rpriority)
-                return false;
-            return lhsp < rhsp;
-        }
-    };
 
 public:
     /*virtual*/ S8 getType() const override;
@@ -607,22 +568,15 @@ public:
 private:
     void init(bool firstinit) ;
 
-    // Streaming discard pipeline, factored out of processTextureStats so each
-    // stage is individually readable and testable. Execution order:
-    //   base = computeBaseDiscard()            // canonical texels/pixel (or UI-pinned)
-    //   if not UI-pinned:
-    //     base = applyChannelOffset(base)      // per-channel additive bias
-    //     base = applyPressureFloor(base)      // distance-weighted VRAM floor
-    //     base = applyStalenessBackgroundFloors(base)
-    //   ... per-texture caps ...
-    //   final = applyMinDesiredCap(final)      // caller-set min, relaxed under pressure
-    // Each reads per-texture member state directly; avatar_bake and the
-    // dim-max values are computed once by the caller and threaded through.
-    S32 computeBaseDiscard(S32 dim_max_i) const;
-    S32 applyChannelOffset(S32 discard) const;
-    S32 applyPressureFloor(S32 discard, F32 dim_max, bool avatar_bake) const;
-    S32 applyStalenessBackgroundFloors(S32 discard, F32 dim_max, bool avatar_bake) const;
-    S32 applyMinDesiredCap(S32 discard, S32 dim_max_i, bool avatar_bake) const;
+    // The whole streaming pipeline: desired discard from the pixel:texel ratio.
+    // For each channel bucket the texture is used in, the most-demanding
+    // (largest coverage) face sets that bucket's requirement at
+    // floor(log4(texels / (R_global * channelRatio[b] * coverage))); the sharpest
+    // requirement across buckets wins (one GL image serves all its channels).
+    // A per-mip hysteresis dead-band against the current discard level prevents
+    // fetch/scaleDown thrash. avatar_bake textures use the configured max ratio
+    // instead of the pressure-driven sPixelToTexelRatio (anti cloud-bug).
+    S32 computeDesiredDiscard(S32 dim_max_i, bool avatar_bake) const;
 };
 
 //

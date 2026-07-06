@@ -121,43 +121,32 @@ namespace
     {
         const char* name;
         U32 max_resolution;
-        F32 discard_bias_max;       // TextureDiscardBiasMax: ceiling on the watermark bias
-        F32 close_bubble_meters;
-        F32 close_bubble_min_meters;
-        F32 close_bubble_shrink_threshold;
-        F32 screen_size_oversample;
-        F32 screen_size_oversample_under_pressure;
-        F32 background_factor_rate_per_sec;
-        F32 discard_backgrounded_time;
-        F32 pressure_discard_scale;
-        F32 min_cap_relax_scale;
-        F32 update_count_max_mult;
-        F32 avatar_oversample_mult;
-        S32 channel_off_normal;
-        S32 channel_off_basecolor;
-        S32 channel_off_specular;
-        S32 channel_off_emissive;
+        F32 pixel_to_texel_ratio;       // TexturePixelToTexelRatio   (R_max, texels per pixel)
+        F32 pressure_tighten_rate;      // TexturePressureTightenRate  (ratio units/sec)
+        F32 pressure_relax_rate;        // TexturePressureRelaxRate    (ratio units/sec)
+        F32 channel_ratio_normal;       // TextureChannelRatioNormal
+        F32 channel_ratio_basecolor;    // TextureChannelRatioBaseColor
+        F32 channel_ratio_specular;     // TextureChannelRatioSpecular
+        F32 channel_ratio_emissive;     // TextureChannelRatioEmissive
     };
 
     // Tier values: Low (2-4GB), Medium (4-8GB), High (8-16GB), Ultra (16+GB).
-    // Pressure-aggression ladder: Low burns hot, Ultra barely sweats.
-    //
+    // Quality ladder, expressed in pixel:texel (texels per pixel):
+    //  - pixel_to_texel_ratio is the baseline quality: how many texels per
+    //    screen pixel the tier allocates when VRAM is comfortable (1.0 = 1:1).
+    //    Under pressure the runtime drives the global ratio below this with no
+    //    floor (down to 0 = deepest mips), so there is no per-tier minimum.
+    //  - the channel ratios coarsen specular/emissive/normal relative to base
+    //    color (each is a multiplier on the global ratio).
     // The watermarks (TextureWatermarkHigh/Low) are NOT tiered - they're a
     // physical "crossed the budget" threshold (0.90 / 0.70), constant across
-    // tiers. Tier aggression is expressed via discard_bias_max (how steep the
-    // ramp can get) and pressure_discard_scale (how fast it steepens). At the
-    // cap, compression = 1 + bias_max*scale; the floor forces max discard at
-    // ~1/compression of draw distance:
-    //   Low:    1+16*1.5 = 25  -> ~4% of draw distance
-    //   Medium: 1+12*1.2 = 15  -> ~7%
-    //   High:   1+10*1.0 = 11  -> ~9%
-    //   Ultra:  1+ 8*0.75 = 7  -> ~14% (the old "mult 8" feel)
-    //                            max_res  biasMax bub   bub_min sh_th  oS    oSp   bgRt   bgT    pScl   relax  uMul  avO   N  BC S  E
+    // tiers. Lower tiers start blurrier (lower R_max) and tighten faster.
+    //                            max_res  Rmax   tight  relax  N      BC     S      E
     static constexpr TexturePreset TEXTURE_PRESETS[4] = {
-        /* 0 Low    */ { "Low",    1024,   16.0f,  3.0f,  0.0f,  0.70f, 0.75f, 0.50f, 0.020f,  30.0f, 1.5f,  1.5f,  8.0f, 1.5f,  7, 0, 4, 1 },
-        /* 1 Medium */ { "Medium", 2048,   12.0f,  5.0f,  1.0f,  0.80f, 1.00f, 0.50f, 0.011f,  60.0f, 1.2f,  1.2f,  6.0f, 1.75f, 0, 0, 1, 1 },
-        /* 2 High   */ { "High",   2048,   10.0f,  8.0f,  2.0f,  0.90f, 1.50f, 0.75f, 0.005f, 120.0f, 1.0f,  1.0f,  4.0f, 2.0f,  0, 0, 1, 0 },
-        /* 3 Ultra  */ { "Ultra",  2048,    8.0f, 12.0f,  4.0f,  0.95f, 2.00f, 1.00f, 0.002f, 300.0f, 0.75f, 0.75f, 2.0f, 2.0f,  0, 0, 0, 0 },
+        /* 0 Low    */ { "Low",    1024,   0.10f, 0.50f, 0.05f, 0.50f, 1.00f, 0.25f, 0.25f },
+        /* 1 Medium */ { "Medium", 2048,   0.40f, 0.35f, 0.08f, 1.00f, 1.00f, 0.50f, 0.50f },
+        /* 2 High   */ { "High",   2048,   0.80f, 0.25f, 0.10f, 1.00f, 1.00f, 0.50f, 1.00f },
+        /* 3 Ultra  */ { "Ultra",  2048,   1.00f, 0.15f, 0.12f, 1.00f, 1.00f, 1.00f, 1.00f },
     };
 }
 
@@ -167,23 +156,14 @@ static bool handleRenderTextureQualityChanged(const LLSD& newvalue)
     if (quality > 3) quality = 3;
     const TexturePreset& p = TEXTURE_PRESETS[quality];
 
-    gSavedSettings.setU32("RenderMaxTextureResolution",                p.max_resolution);
-    gSavedSettings.setF32("TextureDiscardBiasMax",                     p.discard_bias_max);
-    gSavedSettings.setF32("TextureCloseBubbleMeters",                  p.close_bubble_meters);
-    gSavedSettings.setF32("TextureCloseBubbleMinMeters",               p.close_bubble_min_meters);
-    gSavedSettings.setF32("TextureCloseBubbleShrinkThreshold",         p.close_bubble_shrink_threshold);
-    gSavedSettings.setF32("TextureScreenSizeOversample",               p.screen_size_oversample);
-    gSavedSettings.setF32("TextureScreenSizeOversampleUnderPressure",  p.screen_size_oversample_under_pressure);
-    gSavedSettings.setF32("TextureBackgroundFactorRatePerSec",         p.background_factor_rate_per_sec);
-    gSavedSettings.setF32("TextureDiscardBackgroundedTime",            p.discard_backgrounded_time);
-    gSavedSettings.setF32("TexturePressureDiscardScale",               p.pressure_discard_scale);
-    gSavedSettings.setF32("TextureMinCapPressureRelaxScale",           p.min_cap_relax_scale);
-    gSavedSettings.setF32("TextureUpdateCountPressureMaxMultiplier",   p.update_count_max_mult);
-    gSavedSettings.setF32("TextureAgentAvatarOversampleMultiplier",    p.avatar_oversample_mult);
-    gSavedSettings.setS32("TextureChannelOffsetNormal",                p.channel_off_normal);
-    gSavedSettings.setS32("TextureChannelOffsetBaseColor",             p.channel_off_basecolor);
-    gSavedSettings.setS32("TextureChannelOffsetSpecular",              p.channel_off_specular);
-    gSavedSettings.setS32("TextureChannelOffsetEmissive",              p.channel_off_emissive);
+    gSavedSettings.setU32("RenderMaxTextureResolution",     p.max_resolution);
+    gSavedSettings.setF32("TexturePixelToTexelRatio",       p.pixel_to_texel_ratio);
+    gSavedSettings.setF32("TexturePressureTightenRate",     p.pressure_tighten_rate);
+    gSavedSettings.setF32("TexturePressureRelaxRate",       p.pressure_relax_rate);
+    gSavedSettings.setF32("TextureChannelRatioNormal",      p.channel_ratio_normal);
+    gSavedSettings.setF32("TextureChannelRatioBaseColor",   p.channel_ratio_basecolor);
+    gSavedSettings.setF32("TextureChannelRatioSpecular",    p.channel_ratio_specular);
+    gSavedSettings.setF32("TextureChannelRatioEmissive",    p.channel_ratio_emissive);
 
     LL_INFOS("TextureStream") << "Applied texture quality preset: " << p.name << LL_ENDL;
     return true;
