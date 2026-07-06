@@ -1154,6 +1154,20 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
                     F32 crop   = llmin(repeats, 1.f);
                     F32 vsize = llmin(face_px / tiling, LLViewerTexture::sWindowPixelArea) / crop;
 
+                    // Avatar bonus: worn attachments get a coverage
+                    // multiplier - avatars are what people look at, and
+                    // rigged extents make attachment coverage measurement
+                    // unreliable anyway. Multiplicative, not a slam: a
+                    // nearby avatar gains ~a mip of headroom while a distant
+                    // one still downrezzes naturally with its coverage.
+                    // (System-avatar bakes get the same bonus in the
+                    // no-faces branch below.)
+                    if (objp->isAttachment())
+                    {
+                        static LLCachedControl<F32> avatar_boost(gSavedSettings, "TextureAvatarBoost", 4.f);
+                        vsize *= llmax((F32)avatar_boost, 1.f);
+                    }
+
                     if (bucket >= 0 && bucket < 4)
                     {
                         channel_coverage[bucket] = llmax(channel_coverage[bucket], vsize);
@@ -1180,6 +1194,25 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
             channel_coverage[1] = cov;  // terrain detail maps are diffuse / base color
             channel_coverage_min[1] = cov;
             max_coverage = cov;
+        }
+        // Baked avatar textures render on system-avatar body meshes whose
+        // joint meshes never register faces with the texture list
+        // (LLAvatarJointMesh::setTexture just stores the pointer).
+        // LLVOAvatar::updateTextures feeds their on-screen pixel area through
+        // addTextureStats every frame - use that as BaseColor coverage, with
+        // the same avatar bonus attachments get above.
+        else if (face_count == 0
+                 && (imagep->getFTType() == FTT_SERVER_BAKE || imagep->getFTType() == FTT_HOST_BAKE))
+        {
+            static LLCachedControl<F32> avatar_boost(gSavedSettings, "TextureAvatarBoost", 4.f);
+            F32 cov = llmin(imagep->getMaxVirtualSize(), LLViewerTexture::sWindowPixelArea)
+                      * llmax((F32)avatar_boost, 1.f);
+            if (cov > 0.f)
+            {
+                channel_coverage[1] = cov;
+                channel_coverage_min[1] = cov;
+                max_coverage = cov;
+            }
         }
 
         // Light projector textures register as LIGHT_TEX volumes, not faces.

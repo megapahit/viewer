@@ -12124,6 +12124,17 @@
       <key>Value</key>
       <string />
     </map>
+    <key>TextureAvatarBoost</key>
+    <map>
+        <key>Comment</key>
+        <string>Coverage multiplier for avatar textures: worn attachments (rigged extents make their measurement unreliable) and baked system-avatar textures. 4.0 = one mip finer than measured. A bonus, not a pin - nearby avatars gain headroom while distant avatars still downrez with their measured coverage. 1.0 disables.</string>
+        <key>Persist</key>
+        <integer>1</integer>
+        <key>Type</key>
+        <string>F32</string>
+        <key>Value</key>
+        <real>4.0</real>
+    </map>
     <key>TextureDownrezCoverageBias</key>
     <map>
         <key>Comment</key>
