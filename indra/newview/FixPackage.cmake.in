@@ -158,9 +158,9 @@ execute_process(
     COMMAND lipo libbz2.1.0.8.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libbz2.1.0.8.dylib
-    COMMAND lipo libexpat.1.12.1.dylib
+    COMMAND lipo libexpat.1.12.2.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libexpat.1.12.1.dylib
+        -output libexpat.1.12.2.dylib
     COMMAND lipo libfreetype.6.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libfreetype.6.dylib
