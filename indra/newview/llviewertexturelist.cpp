@@ -64,6 +64,7 @@
 #include "llviewerwindow.h"
 #include "llsurface.h"
 #include "llvoavatarself.h"
+#include "lldrawable.h"
 #include "llvovolume.h"
 #include "llviewertextureanim.h"
 #include "llprogressview.h"
@@ -950,6 +951,7 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
         bool bucket_used[4] = { false, false, false, false };
         F32 max_coverage = 0.f;
 
+
         U32 face_count = 0;
         const U32 max_faces_to_check = 1024;
 
@@ -1387,6 +1389,7 @@ F32 LLViewerTextureList::updateImagesCreateTextures(F32 max_time)
                 img->scaleDown(image->getDesiredDiscardLevel());
             }
 
+            image->setPendingByteDelta(0);   // pending-free settled (or abandoned)
             image->mDownScalePending = false;
             mDownScaleQueue.pop();
 

@@ -60,6 +60,7 @@
 #include "llmediaentry.h"
 #include "llvovolume.h"
 #include "llviewermedia.h"
+#include "lldrawable.h"
 #include "lltexturecache.h"
 #include "llviewerwindow.h"
 #include "llwindow.h"
@@ -87,7 +88,12 @@ S32 LLViewerTexture::sRawCount = 0;
 S32 LLViewerTexture::sAuxCount = 0;
 LLFrameTimer LLViewerTexture::sEvaluationTimer;
 F32 LLViewerTexture::sPixelToTexelRatio = 1.f;
-F32 LLViewerTexture::sBackgroundSeconds = 0.f;
+U32 LLViewerTexture::sGCSuspendedFrame = 0;
+S64 LLViewerTexture::sPendingAllocBytes = 0;
+S64 LLViewerTexture::sPendingFreeBytes = 0;
+U32 LLViewerTexture::sUprezRequestCount = 0;
+U32 LLViewerTexture::sDownscaleEnqueueCount = 0;
+U32 LLViewerTexture::sCooldownFlooredCount = 0;
 
 S32 LLViewerTexture::sMaxSculptRez = 128; //max sculpt image size
 constexpr S32 MAX_CACHED_RAW_IMAGE_AREA = 64 * 64;
@@ -108,6 +114,9 @@ F32 LLViewerTexture::sSysMemoryFactor   = 1.f;
 LLViewerTexture::EDebugTexels LLViewerTexture::sDebugTexelsMode = LLViewerTexture::DEBUG_TEXELS_OFF;
 
 const F64 log_2 = log(2.0);
+
+// GC evict->refetch cycle samples for the 1Hz TextureStream log (main thread).
+static U32 sGCRefetchCount = 0;
 
 //----------------------------------------------------------------------------------------------
 //namespace: LLViewerTextureAccess
@@ -537,33 +546,41 @@ void LLViewerTexture::updateClass()
     sFreeVRAMMegabytes = vram_target - vram_used;
     const S32Megabytes free_sys_mem = getFreeSystemMemory();
 
-    // Single VRAM-pressure knob: the global maximum pixel:texel ratio (texels
-    // per screen pixel, the "R" in 1:R). It tightens (drops toward 0, no floor)
-    // while used VRAM is above the high watermark,
-    // relaxes back toward TexturePixelToTexelRatio below the low watermark, and
-    // holds steady in the hysteresis band between - the band is what prevents
-    // sawtooth. The ramp is deliberately slow so eviction (scaleDown draining
-    // mDownScaleQueue) frees bytes before the next step. Lowering the ratio
-    // raises every texture's desired discard, which is what actually evicts.
+    // VRAM pressure controller for the global pixel:texel ratio. Tightens above
+    // the high watermark, relaxes below the low one, holds in the band (the band
+    // stops sawtooth). Rates are slow so eviction frees bytes before the next step.
     {
         static LLCachedControl<F32> ratio_max(gSavedSettings, "TexturePixelToTexelRatio", 1.0f);
+        static LLCachedControl<F32> bg_min_ratio(gSavedSettings, "TextureBackgroundMinRatio", 0.001f);
         static LLCachedControl<F32> wm_high(gSavedSettings, "TexturePressureHighWater", 0.90f);
         static LLCachedControl<F32> wm_low(gSavedSettings, "TexturePressureLowWater", 0.70f);
         static LLCachedControl<F32> tighten_rate(gSavedSettings, "TexturePressureTightenRate", 0.30f);
         static LLCachedControl<F32> relax_rate(gSavedSettings, "TexturePressureRelaxRate", 0.10f);
+        static LLCachedControl<F32> cooldown_step(gSavedSettings, "TextureCooldownStepSeconds", 5.f);
 
-        // Unbounded downward: pressure drives the ratio all the way to 0 if it
-        // has to. There is no quality floor - at 0 every texture resolves to
-        // its deepest mip (computeDesiredDiscard treats zero allowed texels as
-        // dim_max), and desired discard is clamped to dim_max anyway, so it
-        // saturates on its own. Only the top is bounded, by the configured max.
+        // No lower bound: pressure can drive the ratio to 0 (deepest mip for
+        // everything). Only the top is capped, by the configured max.
         F32 r_max = llmax((F32)ratio_max, 0.f);
         F32 high_frac = llclamp((F32)wm_high, 0.1f, 1.f);
         F32 high = vram_budget * high_frac;
         F32 low  = vram_budget * llclamp((F32)wm_low, 0.05f, high_frac);
         F32 dt   = (F32)gFrameIntervalSeconds;
 
-        if (vram_used > high)
+        bool in_background = (gViewerWindow && !gViewerWindow->getWindow()->getVisible()) || !gFocusMgr.getAppHasFocus();
+
+        if (in_background)
+        {
+            // Backgrounded: decay toward bg_min to free VRAM for other apps, one
+            // mip per cooldown_step seconds (multiplicative). Don't relax back up
+            // until we're focused again. Pressure can still push below bg_min.
+            F32 bg_min = llclamp((F32)bg_min_ratio, 0.f, r_max);
+            if (sPixelToTexelRatio > bg_min)
+            {
+                const F32 step = llmax((F32)cooldown_step, 0.01f);
+                sPixelToTexelRatio = llmax(sPixelToTexelRatio * powf(0.25f, dt / step), bg_min);
+            }
+        }
+        else if (vram_used > high)
         {
             sPixelToTexelRatio -= llmax((F32)tighten_rate, 0.f) * dt;
         }
@@ -574,26 +591,44 @@ void LLViewerTexture::updateClass()
         // else: hold in the hysteresis band.
         sPixelToTexelRatio = llclamp(sPixelToTexelRatio, 0.f, r_max);
 
-        // Background cooldown clock: grows while backgrounded/minimized, resets in
-        // foreground. Feeds the per-texture cooldown in computeDesiredDiscard so
-        // backgrounding steps every texture up its mip chain over time instead of
-        // snapping straight to the deepest mip.
-        bool in_background = (gViewerWindow && !gViewerWindow->getWindow()->getVisible()) || !gFocusMgr.getAppHasFocus();
-        sBackgroundSeconds = in_background ? (sBackgroundSeconds + dt) : 0.f;
+        // Keep the GC-suspend frame current while backgrounded. This suppresses
+        // the foreground GC now, and gives it a grace window after we come back so
+        // visible content can re-stamp its bind frames before anything is collected.
+        if (in_background)
+        {
+            sGCSuspendedFrame = LLFrameTimer::getFrameCount();
+        }
 
-        // 1 Hz pressure log.
+        // 1 Hz pressure log. `used` units are the doubled-bytes metric
+        // (bytes/524288, see above); pending ledgers are converted to match so
+        // eff(ective) = what used will read once in-flight work settles.
         static LLFrameTimer s_pressure_log_timer;
         if (s_pressure_log_timer.getElapsedTimeF32() > 1.f)
         {
             s_pressure_log_timer.reset();
+            constexpr F32 BYTES_TO_USED_UNITS = 1.f / 524288.f;
+            F32 pend_alloc = (F32)sPendingAllocBytes * BYTES_TO_USED_UNITS;
+            F32 pend_free  = (F32)sPendingFreeBytes * BYTES_TO_USED_UNITS;
             LL_INFOS("TextureStream") << "pressure"
                 << " ratio=" << sPixelToTexelRatio
                 << " used=" << vram_used
+                << " eff=" << vram_used + pend_alloc - pend_free
+                << " pend+=" << pend_alloc
+                << " pend-=" << pend_free
                 << " budget=" << vram_budget
                 << " high=" << high
                 << " low=" << low
                 << " dsq=" << (S32)gTextureList.mDownScaleQueue.size()
+                << " uprez/s=" << sUprezRequestCount
+                << " dscale/s=" << sDownscaleEnqueueCount
+                << " cdfloor/s=" << sCooldownFlooredCount
+                << " gcref/s=" << sGCRefetchCount
+                << " gloom=" << LLImageGL::sOOMErrorCount.load()
                 << LL_ENDL;
+            sUprezRequestCount = 0;
+            sDownscaleEnqueueCount = 0;
+            sCooldownFlooredCount = 0;
+            sGCRefetchCount = 0;
         }
     }
 
@@ -1237,6 +1272,7 @@ FTType LLViewerFetchedTexture::getFTType() const
 void LLViewerFetchedTexture::cleanup()
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE;
+    setPendingByteDelta(0);   // never leak ledger entries on teardown
     for(callback_list_t::iterator iter = mLoadedCallbackList.begin();
         iter != mLoadedCallbackList.end(); )
     {
@@ -1436,15 +1472,20 @@ void LLViewerFetchedTexture::addToCreateTexture()
         //just update some variables, not to create a real GL texture.
         createGLTexture(mRawDiscardLevel, mRawImage, 0, false);
         mNeedsCreateTexture = false;
+        setPendingByteDelta(0);   // no GL bytes will be committed
         destroyRawImage();
     }
     else if(!force_update && getDiscardLevel() > -1 && getDiscardLevel() <= mRawDiscardLevel)
     {
         mNeedsCreateTexture = false;
+        setPendingByteDelta(0);   // nothing to create; commitment over
         destroyRawImage();
     }
     else
     {
+        // Dims are exact now (raw decoded) - refine the ledger entry to the
+        // discard level that will actually be created.
+        setPendingByteDelta(estimatedVRAMBytesAtDiscard(mRawDiscardLevel) - residentVRAMBytes());
         scheduleCreateTexture();
     }
     return;
@@ -1569,6 +1610,61 @@ bool LLViewerFetchedTexture::preCreateTexture(S32 usename/*= 0*/)
     return res;
 }
 
+S64 LLViewerFetchedTexture::estimatedVRAMBytesAtDiscard(S32 discard) const
+{
+    if (discard < 0)
+    {
+        return 0;
+    }
+    if (mFullWidth <= 0 || mFullHeight <= 0)
+    {
+        // Dims unknown (header not fetched yet): nominal placeholder,
+        // corrected as soon as the first decode reports real dimensions.
+        return 64 * 64 * 4;
+    }
+    S32 w = llmax(1, (S32)mFullWidth >> discard);
+    S32 h = llmax(1, (S32)mFullHeight >> discard);
+    S64 bytes = (S64)w * h * 4;   // GL pads most formats to 4 components
+    bytes = bytes * 4 / 3;        // mip chain
+    if (LLImageGL::sCompressTextures)
+    {
+        bytes /= 4;               // rough DXT ratio
+    }
+    return bytes;
+}
+
+S64 LLViewerFetchedTexture::residentVRAMBytes() const
+{
+    return mGLTexturep.notNull() ? (S64)mGLTexturep->mTextureMemory.value() : 0;
+}
+
+void LLViewerFetchedTexture::setPendingByteDelta(S64 delta)
+{
+    if (delta == mPendingByteDelta)
+    {
+        return;
+    }
+    // retire the previous contribution
+    if (mPendingByteDelta > 0)
+    {
+        sPendingAllocBytes -= mPendingByteDelta;
+    }
+    else if (mPendingByteDelta < 0)
+    {
+        sPendingFreeBytes -= -mPendingByteDelta;
+    }
+    // apply the new one
+    if (delta > 0)
+    {
+        sPendingAllocBytes += delta;
+    }
+    else if (delta < 0)
+    {
+        sPendingFreeBytes += -delta;
+    }
+    mPendingByteDelta = delta;
+}
+
 bool LLViewerFetchedTexture::createTexture(S32 usename/*= 0*/)
 {
     if (!mNeedsCreateTexture)
@@ -1611,6 +1707,7 @@ void LLViewerFetchedTexture::postCreateTexture()
     }
     destroyRawImage(); // will save raw image if needed
 
+    setPendingByteDelta(0);   // commitment realized - bytes now in LLImageGL accounting
     mNeedsCreateTexture = false;
 }
 
@@ -2139,6 +2236,30 @@ bool LLViewerFetchedTexture::updateFetch()
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - current < min");
         make_request = false;
     }
+    else
+    {
+        // Only fetch streamed world textures the renderer is actually drawing
+        // (mLastBindFrame is stamped per drawn frame). Out-of-view content gets
+        // no residency. Exempt: boosted/UI, avatar bakes, textures with loaded
+        // callbacks, and bake uploads.
+        static LLCachedControl<U32> vis_frames(gSavedSettings, "TextureFetchVisibilityFrames", 5);
+        const bool visibility_gated = mBoostLevel < LLGLTexture::BOOST_HIGH
+            && mUseMipMaps
+            && !mDontDiscard
+            && !isAgentAvatarBoost(mBoostLevel)
+            && !mForceToSaveRawImage
+            && mLoadedCallbackList.empty();
+        if (visibility_gated && mGLTexturep.notNull())
+        {
+            const U32 last = mGLTexturep->mLastBindFrame;
+            const U32 now = LLFrameTimer::getFrameCount();
+            if (last == 0 || now - last > llmax((U32)vis_frames, 1u))
+            {
+                LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - not visible");
+                make_request = false;
+            }
+        }
+    }
 
     if (make_request)
     {
@@ -2194,6 +2315,19 @@ bool LLViewerFetchedTexture::updateFetch()
             // in some cases createRequest can modify discard, as an example
             // bake textures are always at discard 0
             mRequestedDiscardLevel = llmin(desired_discard, fetch_request_response);
+
+            // Open the committed-bytes ledger entry: bytes this request will make
+            // resident minus what's resident now. Settled at postCreateTexture (or
+            // on the cancel/failure paths).
+            setPendingByteDelta(estimatedVRAMBytesAtDiscard(mRequestedDiscardLevel) - residentVRAMBytes());
+            ++sUprezRequestCount;
+
+            if (mGCEvicted)
+            {
+                // GC evict->refetch cycle; counted as gcref/s, should be ~0 when settled.
+                mGCEvicted = false;
+                ++sGCRefetchCount;
+            }
             mFetchState = LLAppViewer::getTextureFetch()->getFetchState(mID, mDownloadProgress, mRequestedDownloadPriority,
                 mFetchPriority, mFetchDeltaTime, mRequestDeltaTime, mCanUseHTTP);
         }
@@ -2242,6 +2376,12 @@ bool LLViewerFetchedTexture::updateFetch()
             LL_DEBUGS("Texture") << "exceeded idle time " << FETCH_IDLE_TIME << ", deleting request: " << getID() << LL_ENDL;
             LLAppViewer::getTextureFetch()->deleteRequest(getID(), true);
             mHasFetcher = false;
+            if (!mNeedsCreateTexture && !mCreatePending)
+            {
+                // fetch retired without delivering anything still queued -
+                // settle the ledger (delivered data settles at postCreateTexture)
+                setPendingByteDelta(0);
+            }
         }
     }
 
@@ -2270,6 +2410,10 @@ void LLViewerFetchedTexture::forceToDeleteRequest()
     {
         mHasFetcher = false;
         mIsFetching = false;
+    }
+    if (!mNeedsCreateTexture && !mCreatePending)
+    {
+        setPendingByteDelta(0);   // request dead, nothing queued to create
     }
 
     resetTextureStats();
@@ -2308,6 +2452,7 @@ void LLViewerFetchedTexture::setIsMissingAsset(bool is_missing)
             mFetchState = 0;
             mFetchPriority = 0;
         }
+        setPendingByteDelta(0);   // nothing will be committed for a missing asset
     }
     else
     {
@@ -3147,31 +3292,37 @@ S32 LLViewerLODTexture::computeDesiredDiscard(S32 dim_max_i, bool avatar_bake) c
         desired = current;                                  // inside the dead-band -> hold
     }
 
-    // Cooldown: don't snap an unseen texture straight to its deepest mip - step
-    // it up one level per TextureCooldownStepSeconds so briefly-occluded or
-    // backgrounded content isn't thrown away (and doesn't thrash the cache) when
-    // we look at it again. Driven by whichever is longer: time since last bind,
-    // or time backgrounded. It only raises discard and resets the moment the
-    // texture is bound again. One frame interval is subtracted so a
-    // continuously-visible texture (whose last bind is a frame old here, since
-    // this pass runs a frame ahead of its own render) reads as zero. Avatar
-    // bakes exempt.
+    // Foreground visibility GC (avatar bakes exempt). Background degradation is
+    // handled by the ratio decay in updateClass, and the GC self-suppresses while
+    // backgrounded via the sGCSuspendedFrame check below, so the two don't fight.
+    //
+    // For every gc_cooldown frames a texture goes without a camera bind, drop its
+    // mip by gc_step, walking gradually toward the deepest mip instead of slamming.
+    // Content drawn within the last cooldown stays full-res, so a fast camera pan
+    // finds it only a step or two coarse on the way back. Resets when drawn again.
     if (!avatar_bake)
     {
-        static LLCachedControl<F32> cooldown_step(gSavedSettings, "TextureCooldownStepSeconds", 1.f);
-        const F32 step = llmax((F32)cooldown_step, 0.01f);
-        F32 unbound = 0.f;
         if (LLImageGL* gli = getGLTexture())
         {
-            const F32 ref = llmax(gli->mLastBindTime, gli->mGLCreateTime);
-            if (ref > 0.f)
+            static LLCachedControl<U32> gc_cooldown_frames(gSavedSettings, "TextureGCStepFrames", 5);
+            static LLCachedControl<U32> gc_step_mips(gSavedSettings, "TextureGCStepMips", 1);
+            constexpr U32 GC_RESUME_GRACE_FRAMES = 10;
+            const U32 now = LLFrameTimer::getFrameCount();
+            mGCFloored = false;
+            if (gli->mLastBindFrame > 0                                  // drawn at least once
+                && now - sGCSuspendedFrame > GC_RESUME_GRACE_FRAMES)     // not just back from background
             {
-                unbound = llmax(0.f, LLImageGL::sLastFrameTime - ref - (F32)gFrameIntervalSeconds);
+                const U32 cooldown = llmax((U32)gc_cooldown_frames, 1u);
+                const S32 periods = (S32)((now - gli->mLastBindFrame) / cooldown);
+                if (periods > 0)
+                {
+                    const S32 step_mips = (S32)llmax((U32)gc_step_mips, 1u);
+                    desired = llclamp(desired + periods * step_mips, desired, dim_max_i);
+                    mGCFloored = true;
+                    ++sCooldownFlooredCount;
+                }
             }
         }
-        const F32 cooldown_seconds = llmax(unbound, sBackgroundSeconds);
-        const S32 cooldown_floor = llclamp((S32)floor(cooldown_seconds / step), 0, dim_max_i);
-        desired = llmax(desired, cooldown_floor);
     }
 
     return llclamp(desired, 0, dim_max_i);
@@ -3255,6 +3406,10 @@ void LLViewerLODTexture::processTextureStats()
         S32 current_discard = getDiscardLevel();
         if (!avatar_bake && current_discard >= 0 && current_discard < mDesiredDiscardLevel && !mForceToSaveRawImage)
         {
+            if (mGCFloored)
+            {
+                mGCEvicted = true;   // eviction attributable to the visibility GC
+            }
             scaleDown();
         }
 
@@ -3283,12 +3438,7 @@ bool LLViewerLODTexture::scaleDown()
         return false;
     }
 
-    // Hard structural blocks only. Per-texture policy (icons pinned to full
-    // res, etc.) lives in processTextureStats; if that policy is later
-    // relaxed (e.g. honor mKnownDrawWidth for icons rendered at 8x8 in a
-    // friend list) the scaleDown path stays open.
-    // BOOST_HIGH is the emergency-out for GLTF's "force full res" hack;
-    // the other two flags are structural.
+    // Structural blocks only; per-texture policy lives in processTextureStats.
     if (!mUseMipMaps || mDontDiscard || mBoostLevel >= LLGLTexture::BOOST_HIGH)
     {
         return false;
@@ -3303,6 +3453,9 @@ bool LLViewerLODTexture::scaleDown()
     {
         mDownScalePending = true;
         gTextureList.mDownScaleQueue.push(this);
+        // Pending-free ledger entry: bytes decided-freed, returned when the queue drains.
+        setPendingByteDelta(estimatedVRAMBytesAtDiscard(mDesiredDiscardLevel) - residentVRAMBytes());
+        ++sDownscaleEnqueueCount;
     }
 
     return true;

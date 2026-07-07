@@ -243,19 +243,27 @@ public:
     static S32 sAuxCount;
     static LLFrameTimer sEvaluationTimer;
 
-    // The single VRAM-pressure knob: the global maximum pixel:texel ratio,
-    // expressed as texels per screen pixel (the "R" in 1:R). Starts at
-    // TexturePixelToTexelRatio (1.0 = one texel per pixel) and the watermark
-    // controller in updateClass() walks it down toward 0 (no floor)
-    // while used VRAM is above the high watermark, back up below the low
-    // watermark, holding in the band between. Lowering it raises every
-    // texture's desired discard, which drives scaleDown eviction. Consumed by
-    // LLViewerLODTexture::computeDesiredDiscard.
+    // The global max pixel:texel ratio (texels per screen pixel, the "R" in 1:R).
+    // The watermark controller in updateClass walks it between TexturePixelToTexelRatio
+    // and 0 as VRAM pressure changes; lower means coarser desired discards.
     static F32 sPixelToTexelRatio;
 
-    // Seconds the app has been backgrounded/minimized (0 in foreground). Drives
-    // the background half of the per-texture cooldown in computeDesiredDiscard.
-    static F32 sBackgroundSeconds;
+    // Frame index the GC was last suspended (kept current while backgrounded).
+    // The foreground GC only runs once getFrameCount() is a grace window past
+    // this, so content can re-stamp after an alt-tab before anything is collected.
+    static U32 sGCSuspendedFrame;
+
+    // Committed-but-not-yet-realized VRAM, in bytes (main thread only).
+    // effective_used = resident + sPendingAllocBytes - sPendingFreeBytes.
+    // Maintained by setPendingByteDelta; shown in the 1Hz pressure log.
+    static S64 sPendingAllocBytes;      // in-flight toward allocation
+    static S64 sPendingFreeBytes;       // queued for release, not yet returned
+
+    // 1Hz churn counters (main thread; reset each pressure-log tick). High
+    // uprez+downscale with no memory pressure = per-texture oscillation.
+    static U32 sUprezRequestCount;      // finer-mip fetch requests issued
+    static U32 sDownscaleEnqueueCount;  // scaleDown enqueues
+    static U32 sCooldownFlooredCount;   // desired raised by the cooldown floor
 
     static S32 sMaxSculptRez ;
     static U32 sMinLargeImageSize ;
@@ -445,6 +453,26 @@ public:
     bool mCreatePending = false;    // if true, this is in gTextureList.mCreateTextureList
     mutable bool mDownScalePending = false; // if true, this is in gTextureList.mDownScaleQueue
 
+    // GC-cycle diagnostics (main thread): mGCFloored = the visibility GC
+    // raised desired on the last computeDesiredDiscard; mGCEvicted = this
+    // texture was actually evicted because of it. A subsequent uprez fetch
+    // request while mGCEvicted is a full evict->refetch cycle - the churn
+    // signature - and gets sampled into the 1Hz TextureStream log.
+    mutable bool mGCFloored = false;
+    bool mGCEvicted = false;
+
+    // --- committed-bytes ledger (main thread only) ---
+    // Estimated VRAM bytes this texture would occupy resident at `discard`
+    // (components ~4, x4/3 mip chain, /4 rough DXT when compression is on).
+    // Nominal small placeholder before dims are known.
+    S64  estimatedVRAMBytesAtDiscard(S32 discard) const;
+    // Actual bytes currently resident (LLImageGL accounting), 0 if none.
+    S64  residentVRAMBytes() const;
+    // Open/adjust/settle this texture's contribution to the global pending
+    // ledgers. delta > 0 = in-flight toward allocation; delta < 0 = queued
+    // free; 0 = settled. Replaces any previous contribution.
+    void setPendingByteDelta(S64 delta);
+
 protected:
     S32 getCurrentDiscardLevelForFetching() ;
     void forceToRefetchTexture(S32 desired_discard = 0, F32 kept_time = 60.f);
@@ -532,6 +560,10 @@ protected:
     // Timers
     LLFrameTimer mLastPacketTimer;      // Time since last packet.
     LLFrameTimer mStopFetchingTimer;    // Time since mDecodePriority == 0.f.
+
+    // This texture's open contribution to the pending-bytes ledgers
+    // (see setPendingByteDelta). 0 = no open commitment. Main thread only.
+    S64   mPendingByteDelta = 0;
 
     bool  mInImageList;             // true if image is in list (in which case don't reset priority!)
     // This needs to be atomic, since it is written both in the main thread
