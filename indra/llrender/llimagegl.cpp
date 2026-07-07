@@ -493,7 +493,7 @@ bool LLImageGL::create(LLPointer<LLImageGL>& dest, const LLImageRaw* imageraw, b
 //----------------------------------------------------------------------------
 
 LLImageGL::LLImageGL(bool usemipmaps/* = true*/, bool allow_compression/* = true*/)
-:   mSaveData(0), mExternalTexture(false)
+:   mExternalTexture(false)
 {
     init(usemipmaps, allow_compression);
     setSize(0, 0, 0);
@@ -502,7 +502,7 @@ LLImageGL::LLImageGL(bool usemipmaps/* = true*/, bool allow_compression/* = true
 }
 
 LLImageGL::LLImageGL(U32 width, U32 height, U8 components, bool usemipmaps/* = true*/, bool allow_compression/* = true*/)
-:   mSaveData(0), mExternalTexture(false)
+:   mExternalTexture(false)
 {
     llassert( components <= 4 );
     init(usemipmaps, allow_compression);
@@ -512,7 +512,7 @@ LLImageGL::LLImageGL(U32 width, U32 height, U8 components, bool usemipmaps/* = t
 }
 
 LLImageGL::LLImageGL(const LLImageRaw* imageraw, bool usemipmaps/* = true*/, bool allow_compression/* = true*/)
-:   mSaveData(0), mExternalTexture(false)
+:   mExternalTexture(false)
 {
     init(usemipmaps, allow_compression);
     setSize(0, 0, 0);
@@ -621,8 +621,6 @@ void LLImageGL::cleanup()
         destroyGLTexture();
     }
     freePickMask();
-
-    mSaveData = NULL; // deletes data
 }
 
 //----------------------------------------------------------------------------

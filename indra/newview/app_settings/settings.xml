@@ -8002,17 +8002,6 @@
       <key>Value</key>
       <integer>1</integer>
   </map>
-  <key>RenderMinFreeMainMemoryThreshold</key>
-  <map>
-    <key>Comment</key>
-    <string>If available free physical memory is below this value textures get agresively scaled down</string>
-    <key>Persist</key>
-    <integer>0</integer>
-    <key>Type</key>
-    <string>U32</string>
-    <key>Value</key>
-    <integer>512</integer>
-  </map>
   <key>RenderLowMemMinDiscardIncrement</key>
   <map>
     <key>Comment</key>

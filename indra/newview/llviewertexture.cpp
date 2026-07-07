@@ -91,9 +91,6 @@ F32 LLViewerTexture::sPixelToTexelRatio = 1.f;
 U32 LLViewerTexture::sGCSuspendedFrame = 0;
 S64 LLViewerTexture::sPendingAllocBytes = 0;
 S64 LLViewerTexture::sPendingFreeBytes = 0;
-U32 LLViewerTexture::sUprezRequestCount = 0;
-U32 LLViewerTexture::sDownscaleEnqueueCount = 0;
-U32 LLViewerTexture::sCooldownFlooredCount = 0;
 
 S32 LLViewerTexture::sMaxSculptRez = 128; //max sculpt image size
 constexpr S32 MAX_CACHED_RAW_IMAGE_AREA = 64 * 64;
@@ -105,18 +102,13 @@ U32 LLViewerTexture::sMinLargeImageSize = 65536; //256 * 256.
 U32 LLViewerTexture::sMaxSmallImageSize = MAX_CACHED_RAW_IMAGE_AREA;
 F32 LLViewerTexture::sCurrentTime = 0.0f;
 
-constexpr F32 MEMORY_CHECK_WAIT_TIME = 1.0f;
 constexpr F32 MIN_VRAM_BUDGET = 768.f;
 F32 LLViewerTexture::sFreeVRAMMegabytes = MIN_VRAM_BUDGET;
 F32 LLViewerTexture::sWindowPixelArea = 1.f;
-F32 LLViewerTexture::sSysMemoryFactor   = 1.f;
 
 LLViewerTexture::EDebugTexels LLViewerTexture::sDebugTexelsMode = LLViewerTexture::DEBUG_TEXELS_OFF;
 
 const F64 log_2 = log(2.0);
-
-// GC evict->refetch cycle samples for the 1Hz TextureStream log (main thread).
-static U32 sGCRefetchCount = 0;
 
 //----------------------------------------------------------------------------------------------
 //namespace: LLViewerTextureAccess
@@ -489,13 +481,6 @@ void LLViewerTexture::initClass()
     LLImageGL::sDefaultGLTexture = LLViewerFetchedTexture::sDefaultImagep->getGLTexture();
 }
 
-S32Megabytes get_render_free_main_memory_treshold()
-{
-    static LLCachedControl<U32> min_free_main_memory(gSavedSettings, "RenderMinFreeMainMemoryThreshold", 512);
-    const U32Megabytes MIN_FREE_MAIN_MEMORY(min_free_main_memory);
-    return MIN_FREE_MAIN_MEMORY;
-}
-
 //static
 void LLViewerTexture::updateClass()
 {
@@ -544,7 +529,6 @@ void LLViewerTexture::updateClass()
     // 'bias' calculation to kick in.
     F32 vram_target = llmax(llmin(vram_budget - 512.f, vram_budget * 0.8f), MIN_VRAM_BUDGET);
     sFreeVRAMMegabytes = vram_target - vram_used;
-    const S32Megabytes free_sys_mem = getFreeSystemMemory();
 
     // VRAM pressure controller for the global pixel:texel ratio. Tightens above
     // the high watermark, relaxes below the low one, holds in the band (the band
@@ -598,135 +582,7 @@ void LLViewerTexture::updateClass()
         {
             sGCSuspendedFrame = LLFrameTimer::getFrameCount();
         }
-
-        // 1 Hz pressure log. `used` units are the doubled-bytes metric
-        // (bytes/524288, see above); pending ledgers are converted to match so
-        // eff(ective) = what used will read once in-flight work settles.
-        static LLFrameTimer s_pressure_log_timer;
-        if (s_pressure_log_timer.getElapsedTimeF32() > 1.f)
-        {
-            s_pressure_log_timer.reset();
-            constexpr F32 BYTES_TO_USED_UNITS = 1.f / 524288.f;
-            F32 pend_alloc = (F32)sPendingAllocBytes * BYTES_TO_USED_UNITS;
-            F32 pend_free  = (F32)sPendingFreeBytes * BYTES_TO_USED_UNITS;
-            LL_INFOS("TextureStream") << "pressure"
-                << " ratio=" << sPixelToTexelRatio
-                << " used=" << vram_used
-                << " eff=" << vram_used + pend_alloc - pend_free
-                << " pend+=" << pend_alloc
-                << " pend-=" << pend_free
-                << " budget=" << vram_budget
-                << " high=" << high
-                << " low=" << low
-                << " dsq=" << (S32)gTextureList.mDownScaleQueue.size()
-                << " uprez/s=" << sUprezRequestCount
-                << " dscale/s=" << sDownscaleEnqueueCount
-                << " cdfloor/s=" << sCooldownFlooredCount
-                << " gcref/s=" << sGCRefetchCount
-                << " gloom=" << LLImageGL::sOOMErrorCount.load()
-                << LL_ENDL;
-            sUprezRequestCount = 0;
-            sDownscaleEnqueueCount = 0;
-            sCooldownFlooredCount = 0;
-            sGCRefetchCount = 0;
-        }
     }
-
-    // System-memory -> draw-distance factor. Separate from the VRAM ratio above:
-    // this is a last-resort response to running low on *system* RAM and only
-    // affects draw distance (via getSystemMemoryBudgetFactor, consumed by
-    // llviewerdisplay). Textures were mostly moved to VRAM, so this rarely fires.
-    bool is_sys_critically_low = isSystemMemoryCritical();
-    static bool sys_was_low = false;
-
-    // System memory factor
-    // sSysMemoryFactor affects draw distance
-    //
-    // We only decrement when more than 406MB is free, but increment
-    // when below 256MB free. This should provide a stable value
-    // in the 256-406MB range to avoid draw range fluctuations.
-    //
-    // Draw range reduction is a last resort, texture bias is supposed
-    // to free at least some memory before we get here.
-    // Note: textures were mostly moved to vram, we might want to
-    // detach texture bias from system memory.
-    if (is_sys_critically_low)
-    {
-        const S32Megabytes MIN_FREE_MAIN_MEMORY(get_render_free_main_memory_treshold() / 2);
-        // debt is a negative value since MIN_FREE_MAIN_MEMORY > free memory.
-        S32 sys_budget_debt = free_sys_mem - MIN_FREE_MAIN_MEMORY;
-
-        // Leave some padding, otherwise we will crash out of memory before hitting factor 2.
-        const S32Megabytes PAD_BUFFER(32);
-        S32Megabytes budget_target = MIN_FREE_MAIN_MEMORY - PAD_BUFFER;
-        if (!sys_was_low)
-        {
-            // Result should range from 1 at 0 debt to 2 at -224 debt, 2.14 at -256MB
-            F32 new_factor = 1.f - (F32)sys_budget_debt / (F32)budget_target;
-            sSysMemoryFactor = llmax(sSysMemoryFactor, new_factor);
-        }
-        else
-        {
-            // Slowly ramp up factor to free memory (increasing factor decreases draw range)
-            constexpr F32 MAX_INCREMENT = 0.05f;
-            F32 increment = MAX_INCREMENT * llmax(-(F32)sys_budget_debt / (F32)budget_target, 0.f);
-            sSysMemoryFactor += increment * gFrameIntervalSeconds;
-        }
-        sSysMemoryFactor = llclamp(sSysMemoryFactor, 1.f, 2.f);
-    }
-    else
-    {
-        const S32Megabytes MIN_FREE_MAIN_MEMORY(get_render_free_main_memory_treshold() / 2);
-        // Only start ramping down when we have breathing room.
-        // This should be under the value of isSystemMemoryLow to not throw texture
-        // bias into 1.5+ territory each time we fluctuate around isSystemMemoryLow's
-        // treshold.
-        const S32Megabytes MEM_THRESHOLD = MIN_FREE_MAIN_MEMORY + S32Megabytes(150);
-        if (free_sys_mem > MEM_THRESHOLD && sSysMemoryFactor > 1.f)
-        {
-            // Ramp down factor over time.
-            constexpr F32 DECREMENT = 0.02f;
-            sSysMemoryFactor -= DECREMENT * gFrameIntervalSeconds;
-            sSysMemoryFactor = llclamp(sSysMemoryFactor, 1.f, 2.f);
-        }
-    }
-    sys_was_low = is_sys_critically_low;
-}
-
-//static
-U32Megabytes LLViewerTexture::getFreeSystemMemory()
-{
-    static LLFrameTimer timer;
-    static U32Megabytes physical_res = U32Megabytes(U32_MAX);
-
-    if (timer.getElapsedTimeF32() < MEMORY_CHECK_WAIT_TIME) //call this once per second.
-    {
-        return physical_res;
-    }
-
-    timer.reset();
-
-    LLMemory::updateMemoryInfo();
-    physical_res = LLMemory::getAvailableMemKB();
-    return physical_res;
-}
-
-//static
-bool LLViewerTexture::isSystemMemoryLow()
-{
-    return getFreeSystemMemory() < get_render_free_main_memory_treshold();
-}
-
-//static
-bool LLViewerTexture::isSystemMemoryCritical()
-{
-    return getFreeSystemMemory() < get_render_free_main_memory_treshold() / 2;
-}
-
-// static
-F32 LLViewerTexture::getSystemMemoryBudgetFactor()
-{
-    return sSysMemoryFactor;
 }
 
 //end of static functions
@@ -2320,14 +2176,7 @@ bool LLViewerFetchedTexture::updateFetch()
             // resident minus what's resident now. Settled at postCreateTexture (or
             // on the cancel/failure paths).
             setPendingByteDelta(estimatedVRAMBytesAtDiscard(mRequestedDiscardLevel) - residentVRAMBytes());
-            ++sUprezRequestCount;
 
-            if (mGCEvicted)
-            {
-                // GC evict->refetch cycle; counted as gcref/s, should be ~0 when settled.
-                mGCEvicted = false;
-                ++sGCRefetchCount;
-            }
             mFetchState = LLAppViewer::getTextureFetch()->getFetchState(mID, mDownloadProgress, mRequestedDownloadPriority,
                 mFetchPriority, mFetchDeltaTime, mRequestDeltaTime, mCanUseHTTP);
         }
@@ -3308,7 +3157,6 @@ S32 LLViewerLODTexture::computeDesiredDiscard(S32 dim_max_i, bool avatar_bake) c
             static LLCachedControl<U32> gc_step_mips(gSavedSettings, "TextureGCStepMips", 1);
             constexpr U32 GC_RESUME_GRACE_FRAMES = 10;
             const U32 now = LLFrameTimer::getFrameCount();
-            mGCFloored = false;
             if (gli->mLastBindFrame > 0                                  // drawn at least once
                 && now - sGCSuspendedFrame > GC_RESUME_GRACE_FRAMES)     // not just back from background
             {
@@ -3318,8 +3166,6 @@ S32 LLViewerLODTexture::computeDesiredDiscard(S32 dim_max_i, bool avatar_bake) c
                 {
                     const S32 step_mips = (S32)llmax((U32)gc_step_mips, 1u);
                     desired = llclamp(desired + periods * step_mips, desired, dim_max_i);
-                    mGCFloored = true;
-                    ++sCooldownFlooredCount;
                 }
             }
         }
@@ -3406,10 +3252,6 @@ void LLViewerLODTexture::processTextureStats()
         S32 current_discard = getDiscardLevel();
         if (!avatar_bake && current_discard >= 0 && current_discard < mDesiredDiscardLevel && !mForceToSaveRawImage)
         {
-            if (mGCFloored)
-            {
-                mGCEvicted = true;   // eviction attributable to the visibility GC
-            }
             scaleDown();
         }
 
@@ -3455,7 +3297,6 @@ bool LLViewerLODTexture::scaleDown()
         gTextureList.mDownScaleQueue.push(this);
         // Pending-free ledger entry: bytes decided-freed, returned when the queue drains.
         setPendingByteDelta(estimatedVRAMBytesAtDiscard(mDesiredDiscardLevel) - residentVRAMBytes());
-        ++sDownscaleEnqueueCount;
     }
 
     return true;

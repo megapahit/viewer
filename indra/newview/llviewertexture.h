@@ -114,11 +114,6 @@ protected:
 public:
     static void initClass();
     static void updateClass();
-    static bool isSystemMemoryLow();
-    static bool isSystemMemoryCritical();
-
-    // Ranges from 1 (no RAM deficit) to 2 (RAM deficit)
-    static F32 getSystemMemoryBudgetFactor();
 
     LLViewerTexture(bool usemipmaps = true);
     LLViewerTexture(const LLUUID& id, bool usemipmaps) ;
@@ -198,8 +193,6 @@ private:
     friend class LLBumpImageList;
     friend class LLUIImageList;
 
-    static U32Megabytes getFreeSystemMemory();
-
 protected:
     friend class LLViewerTextureList;
     LLUUID mID;
@@ -259,12 +252,6 @@ public:
     static S64 sPendingAllocBytes;      // in-flight toward allocation
     static S64 sPendingFreeBytes;       // queued for release, not yet returned
 
-    // 1Hz churn counters (main thread; reset each pressure-log tick). High
-    // uprez+downscale with no memory pressure = per-texture oscillation.
-    static U32 sUprezRequestCount;      // finer-mip fetch requests issued
-    static U32 sDownscaleEnqueueCount;  // scaleDown enqueues
-    static U32 sCooldownFlooredCount;   // desired raised by the cooldown floor
-
     static S32 sMaxSculptRez ;
     static U32 sMinLargeImageSize ;
     static U32 sMaxSmallImageSize ;
@@ -273,7 +260,6 @@ public:
     // estimated free memory for textures, by bias calculation
     static F32 sFreeVRAMMegabytes;
 
-    static F32 sSysMemoryFactor;
     // Viewport pixel area, refreshed once per frame. Hoisted to keep the
     // per-texture hot path out of gViewerWindow.
     static F32 sWindowPixelArea;
@@ -452,14 +438,6 @@ public:
 
     bool mCreatePending = false;    // if true, this is in gTextureList.mCreateTextureList
     mutable bool mDownScalePending = false; // if true, this is in gTextureList.mDownScaleQueue
-
-    // GC-cycle diagnostics (main thread): mGCFloored = the visibility GC
-    // raised desired on the last computeDesiredDiscard; mGCEvicted = this
-    // texture was actually evicted because of it. A subsequent uprez fetch
-    // request while mGCEvicted is a full evict->refetch cycle - the churn
-    // signature - and gets sampled into the 1Hz TextureStream log.
-    mutable bool mGCFloored = false;
-    bool mGCEvicted = false;
 
     // --- committed-bytes ledger (main thread only) ---
     // Estimated VRAM bytes this texture would occupy resident at `discard`

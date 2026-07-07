@@ -256,7 +256,6 @@ private:
     void freePickMask();
     bool isCompressed();
 
-    LLPointer<LLImageRaw> mSaveData; // used for destroyGL/restoreGL
     LL::WorkQueue::weak_t mMainQueue;
     U8* mPickMask;  //downsampled bitmap approximation of alpha channel.  NULL if no alpha channel
     U16 mPickMaskWidth;
