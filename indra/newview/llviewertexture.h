@@ -246,12 +246,6 @@ public:
     // this, so content can re-stamp after an alt-tab before anything is collected.
     static U32 sGCSuspendedFrame;
 
-    // Committed-but-not-yet-realized VRAM, in bytes (main thread only).
-    // effective_used = resident + sPendingAllocBytes - sPendingFreeBytes.
-    // Maintained by setPendingByteDelta; shown in the 1Hz pressure log.
-    static S64 sPendingAllocBytes;      // in-flight toward allocation
-    static S64 sPendingFreeBytes;       // queued for release, not yet returned
-
     static S32 sMaxSculptRez ;
     static U32 sMinLargeImageSize ;
     static U32 sMaxSmallImageSize ;
@@ -439,18 +433,6 @@ public:
     bool mCreatePending = false;    // if true, this is in gTextureList.mCreateTextureList
     mutable bool mDownScalePending = false; // if true, this is in gTextureList.mDownScaleQueue
 
-    // --- committed-bytes ledger (main thread only) ---
-    // Estimated VRAM bytes this texture would occupy resident at `discard`
-    // (components ~4, x4/3 mip chain, /4 rough DXT when compression is on).
-    // Nominal small placeholder before dims are known.
-    S64  estimatedVRAMBytesAtDiscard(S32 discard) const;
-    // Actual bytes currently resident (LLImageGL accounting), 0 if none.
-    S64  residentVRAMBytes() const;
-    // Open/adjust/settle this texture's contribution to the global pending
-    // ledgers. delta > 0 = in-flight toward allocation; delta < 0 = queued
-    // free; 0 = settled. Replaces any previous contribution.
-    void setPendingByteDelta(S64 delta);
-
 protected:
     S32 getCurrentDiscardLevelForFetching() ;
     void forceToRefetchTexture(S32 desired_discard = 0, F32 kept_time = 60.f);
@@ -538,10 +520,6 @@ protected:
     // Timers
     LLFrameTimer mLastPacketTimer;      // Time since last packet.
     LLFrameTimer mStopFetchingTimer;    // Time since mDecodePriority == 0.f.
-
-    // This texture's open contribution to the pending-bytes ledgers
-    // (see setPendingByteDelta). 0 = no open commitment. Main thread only.
-    S64   mPendingByteDelta = 0;
 
     bool  mInImageList;             // true if image is in list (in which case don't reset priority!)
     // This needs to be atomic, since it is written both in the main thread

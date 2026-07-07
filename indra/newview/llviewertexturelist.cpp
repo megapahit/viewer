@@ -1389,7 +1389,6 @@ F32 LLViewerTextureList::updateImagesCreateTextures(F32 max_time)
                 img->scaleDown(image->getDesiredDiscardLevel());
             }
 
-            image->setPendingByteDelta(0);   // pending-free settled (or abandoned)
             image->mDownScalePending = false;
             mDownScaleQueue.pop();
 

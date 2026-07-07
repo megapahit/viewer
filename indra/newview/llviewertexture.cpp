@@ -89,8 +89,6 @@ S32 LLViewerTexture::sAuxCount = 0;
 LLFrameTimer LLViewerTexture::sEvaluationTimer;
 F32 LLViewerTexture::sPixelToTexelRatio = 1.f;
 U32 LLViewerTexture::sGCSuspendedFrame = 0;
-S64 LLViewerTexture::sPendingAllocBytes = 0;
-S64 LLViewerTexture::sPendingFreeBytes = 0;
 
 S32 LLViewerTexture::sMaxSculptRez = 128; //max sculpt image size
 constexpr S32 MAX_CACHED_RAW_IMAGE_AREA = 64 * 64;
@@ -1128,7 +1126,6 @@ FTType LLViewerFetchedTexture::getFTType() const
 void LLViewerFetchedTexture::cleanup()
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE;
-    setPendingByteDelta(0);   // never leak ledger entries on teardown
     for(callback_list_t::iterator iter = mLoadedCallbackList.begin();
         iter != mLoadedCallbackList.end(); )
     {
@@ -1328,20 +1325,15 @@ void LLViewerFetchedTexture::addToCreateTexture()
         //just update some variables, not to create a real GL texture.
         createGLTexture(mRawDiscardLevel, mRawImage, 0, false);
         mNeedsCreateTexture = false;
-        setPendingByteDelta(0);   // no GL bytes will be committed
         destroyRawImage();
     }
     else if(!force_update && getDiscardLevel() > -1 && getDiscardLevel() <= mRawDiscardLevel)
     {
         mNeedsCreateTexture = false;
-        setPendingByteDelta(0);   // nothing to create; commitment over
         destroyRawImage();
     }
     else
     {
-        // Dims are exact now (raw decoded) - refine the ledger entry to the
-        // discard level that will actually be created.
-        setPendingByteDelta(estimatedVRAMBytesAtDiscard(mRawDiscardLevel) - residentVRAMBytes());
         scheduleCreateTexture();
     }
     return;
@@ -1466,61 +1458,6 @@ bool LLViewerFetchedTexture::preCreateTexture(S32 usename/*= 0*/)
     return res;
 }
 
-S64 LLViewerFetchedTexture::estimatedVRAMBytesAtDiscard(S32 discard) const
-{
-    if (discard < 0)
-    {
-        return 0;
-    }
-    if (mFullWidth <= 0 || mFullHeight <= 0)
-    {
-        // Dims unknown (header not fetched yet): nominal placeholder,
-        // corrected as soon as the first decode reports real dimensions.
-        return 64 * 64 * 4;
-    }
-    S32 w = llmax(1, (S32)mFullWidth >> discard);
-    S32 h = llmax(1, (S32)mFullHeight >> discard);
-    S64 bytes = (S64)w * h * 4;   // GL pads most formats to 4 components
-    bytes = bytes * 4 / 3;        // mip chain
-    if (LLImageGL::sCompressTextures)
-    {
-        bytes /= 4;               // rough DXT ratio
-    }
-    return bytes;
-}
-
-S64 LLViewerFetchedTexture::residentVRAMBytes() const
-{
-    return mGLTexturep.notNull() ? (S64)mGLTexturep->mTextureMemory.value() : 0;
-}
-
-void LLViewerFetchedTexture::setPendingByteDelta(S64 delta)
-{
-    if (delta == mPendingByteDelta)
-    {
-        return;
-    }
-    // retire the previous contribution
-    if (mPendingByteDelta > 0)
-    {
-        sPendingAllocBytes -= mPendingByteDelta;
-    }
-    else if (mPendingByteDelta < 0)
-    {
-        sPendingFreeBytes -= -mPendingByteDelta;
-    }
-    // apply the new one
-    if (delta > 0)
-    {
-        sPendingAllocBytes += delta;
-    }
-    else if (delta < 0)
-    {
-        sPendingFreeBytes += -delta;
-    }
-    mPendingByteDelta = delta;
-}
-
 bool LLViewerFetchedTexture::createTexture(S32 usename/*= 0*/)
 {
     if (!mNeedsCreateTexture)
@@ -1563,7 +1500,6 @@ void LLViewerFetchedTexture::postCreateTexture()
     }
     destroyRawImage(); // will save raw image if needed
 
-    setPendingByteDelta(0);   // commitment realized - bytes now in LLImageGL accounting
     mNeedsCreateTexture = false;
 }
 
@@ -2172,11 +2108,6 @@ bool LLViewerFetchedTexture::updateFetch()
             // bake textures are always at discard 0
             mRequestedDiscardLevel = llmin(desired_discard, fetch_request_response);
 
-            // Open the committed-bytes ledger entry: bytes this request will make
-            // resident minus what's resident now. Settled at postCreateTexture (or
-            // on the cancel/failure paths).
-            setPendingByteDelta(estimatedVRAMBytesAtDiscard(mRequestedDiscardLevel) - residentVRAMBytes());
-
             mFetchState = LLAppViewer::getTextureFetch()->getFetchState(mID, mDownloadProgress, mRequestedDownloadPriority,
                 mFetchPriority, mFetchDeltaTime, mRequestDeltaTime, mCanUseHTTP);
         }
@@ -2225,12 +2156,6 @@ bool LLViewerFetchedTexture::updateFetch()
             LL_DEBUGS("Texture") << "exceeded idle time " << FETCH_IDLE_TIME << ", deleting request: " << getID() << LL_ENDL;
             LLAppViewer::getTextureFetch()->deleteRequest(getID(), true);
             mHasFetcher = false;
-            if (!mNeedsCreateTexture && !mCreatePending)
-            {
-                // fetch retired without delivering anything still queued -
-                // settle the ledger (delivered data settles at postCreateTexture)
-                setPendingByteDelta(0);
-            }
         }
     }
 
@@ -2259,10 +2184,6 @@ void LLViewerFetchedTexture::forceToDeleteRequest()
     {
         mHasFetcher = false;
         mIsFetching = false;
-    }
-    if (!mNeedsCreateTexture && !mCreatePending)
-    {
-        setPendingByteDelta(0);   // request dead, nothing queued to create
     }
 
     resetTextureStats();
@@ -2301,7 +2222,6 @@ void LLViewerFetchedTexture::setIsMissingAsset(bool is_missing)
             mFetchState = 0;
             mFetchPriority = 0;
         }
-        setPendingByteDelta(0);   // nothing will be committed for a missing asset
     }
     else
     {
@@ -3295,8 +3215,6 @@ bool LLViewerLODTexture::scaleDown()
     {
         mDownScalePending = true;
         gTextureList.mDownScaleQueue.push(this);
-        // Pending-free ledger entry: bytes decided-freed, returned when the queue drains.
-        setPendingByteDelta(estimatedVRAMBytesAtDiscard(mDesiredDiscardLevel) - residentVRAMBytes());
     }
 
     return true;
