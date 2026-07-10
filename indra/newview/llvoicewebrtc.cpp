@@ -1711,6 +1711,14 @@ void LLWebRTCVoiceClient::setVoiceEnabled(bool enabled)
         mVoiceEnabled = enabled;
         LLVoiceClientStatusObserver::EStatusType status;
 
+        // Gate the audio devices on voice being enabled: the capture mic and
+        // playout speaker only run while voice is on, and the mic isn't held
+        // open when voice is off.
+        if (mWebRTCDeviceInterface)
+        {
+            mWebRTCDeviceInterface->setVoiceEnabled(enabled);
+        }
+
         if (enabled)
         {
             LL_DEBUGS("Voice") << "enabling" << LL_ENDL;

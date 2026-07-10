@@ -6,27 +6,18 @@ include(Prebuilt)
 
 add_library( ll::webrtc INTERFACE IMPORTED )
 target_include_directories( ll::webrtc SYSTEM INTERFACE "${LIBS_PREBUILT_DIR}/include/webrtc" "${LIBS_PREBUILT_DIR}/include/webrtc/third_party/abseil-cpp")
-if (DARWIN OR WINDOWS)
-use_prebuilt_binary(webrtc)
-elseif (NOT (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES aarch64)))
+if (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64 AND LINUX)
     target_compile_definitions(ll::webrtc INTERFACE CM_WEBRTC=1)
     if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/webrtc_installed OR NOT ${webrtc_installed} EQUAL 0)
-        if (DARWIN)
-            set(WEBRTC_PLATFORM macos-arm64)
-        elseif (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
-            set(WEBRTC_PLATFORM linux-arm64)
-        else ()
-            set(WEBRTC_PLATFORM linux-x64)
-        endif ()
-        if (NOT EXISTS ${CMAKE_BINARY_DIR}/libwebrtc-${WEBRTC_PLATFORM}.tar.xz)
+        if (NOT EXISTS ${CMAKE_BINARY_DIR}/libwebrtc-linux-arm64.tar.xz)
             file(DOWNLOAD
-                https://github.com/crow-misia/libwebrtc-bin/releases/download/137.7151.3.1/libwebrtc-${WEBRTC_PLATFORM}.tar.xz
-                ${CMAKE_BINARY_DIR}/libwebrtc-${WEBRTC_PLATFORM}.tar.xz
+                https://github.com/crow-misia/libwebrtc-bin/releases/download/139.7258.3.1/libwebrtc-linux-arm64.tar.xz
+                ${CMAKE_BINARY_DIR}/libwebrtc-linux-arm64.tar.xz
                 SHOW_PROGRESS
                 )
         endif ()
         file(ARCHIVE_EXTRACT
-            INPUT ${CMAKE_BINARY_DIR}/libwebrtc-${WEBRTC_PLATFORM}.tar.xz
+            INPUT ${CMAKE_BINARY_DIR}/libwebrtc-linux-arm64.tar.xz
             DESTINATION ${LIBS_PREBUILT_DIR}
             )
         file(REMOVE_RECURSE ${LIBS_PREBUILT_DIR}/include/webrtc)
@@ -34,7 +25,6 @@ elseif (NOT (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES a
         foreach(directory
             api
             audio
-            base
             build
             buildtools
             call
@@ -67,16 +57,10 @@ elseif (NOT (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES a
             ${LIBS_PREBUILT_DIR}/lib/libwebrtc.a
             ${ARCH_PREBUILT_DIRS_RELEASE}/libwebrtc.a
             )
-        if (CMAKE_OSX_ARCHITECTURES MATCHES arm64)
-            file(REMOVE_RECURSE ${ARCH_PREBUILT_DIRS_RELEASE}/WebRTC.framework)
-            file(RENAME
-                ${LIBS_PREBUILT_DIR}/Frameworks/WebRTC.xcframework/${WEBRTC_PLATFORM}/WebRTC.framework
-                ${ARCH_PREBUILT_DIRS_RELEASE}/WebRTC.framework
-                )
-            file(REMOVE_RECURSE ${LIBS_PREBUILT_DIR}/Frameworks)
-        endif ()
         file(WRITE ${PREBUILD_TRACKING_DIR}/webrtc_installed "0")
     endif ()
+elseif (NOT (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES aarch64)))
+use_prebuilt_binary(webrtc)
 endif ()
 
 find_library(WEBRTC_LIBRARY
