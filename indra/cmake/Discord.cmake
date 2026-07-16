@@ -45,6 +45,12 @@ if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKIN
             COPY ${CMAKE_BINARY_DIR}/discord_social_sdk/lib/release${DISCORD_PLATFORM}/${LIBRARY_PREFIX}discord_partner_sdk.${LIBRARY_EXTENSION}
             DESTINATION ${ARCH_PREBUILT_DIRS_RELEASE}
             )
+        if (CMAKE_BUILD_TYPE MATCHES Release AND LINUX)
+            execute_process(
+                COMMAND ${CMAKE_STRIP} libdiscord_partner_sdk.so
+                WORKING_DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE}
+            )
+        endif ()
     endif ()
     file(WRITE ${PREBUILD_TRACKING_DIR}/discord_sdk_installed "0")
 endif ()
