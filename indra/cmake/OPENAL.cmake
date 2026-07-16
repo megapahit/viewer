@@ -18,21 +18,26 @@ endif()
 
 if (USE_OPENAL)
   add_library( ll::openal INTERFACE IMPORTED )
-
-  if (NOT USE_FLATPAK)
-    target_compile_definitions( ll::openal INTERFACE LL_OPENAL=1)
-    include(FindPkgConfig)
-    pkg_check_modules(Openal REQUIRED freealut)
-    target_include_directories(ll::openal SYSTEM INTERFACE ${Openal_INCLUDE_DIRS})
-    target_link_directories(ll::openal INTERFACE ${Openal_LIBRARY_DIRS})
-    target_link_libraries(ll::openal INTERFACE ${Openal_LIBRARIES})
-    return ()
+  if (USE_FLATPAK)
+  target_include_directories( ll::openal SYSTEM INTERFACE "${LIBS_PREBUILT_DIR}/include/AL")
+  endif ()
+  target_compile_definitions( ll::openal INTERFACE LL_OPENAL=1)
+  if (USE_FLATPAK)
+  use_prebuilt_binary(openal)
+      file(REMOVE
+          ${ARCH_PREBUILT_DIRS_RELEASE}/libopenal.so
+          ${ARCH_PREBUILT_DIRS_RELEASE}/libopenal.so.1
+          ${ARCH_PREBUILT_DIRS_RELEASE}/libopenal.so.1.24.2
+          ${LIBS_PREBUILT_DIR}/include/AL/al.h
+          ${LIBS_PREBUILT_DIR}/include/AL/alc.h
+          ${LIBS_PREBUILT_DIR}/include/AL/alext.h
+          ${LIBS_PREBUILT_DIR}/include/AL/efx-creative.h
+          ${LIBS_PREBUILT_DIR}/include/AL/efx-presets.h
+          ${LIBS_PREBUILT_DIR}/include/AL/efx.h
+  )
   endif ()
 
-  target_include_directories( ll::openal SYSTEM INTERFACE "${LIBS_PREBUILT_DIR}/include/AL")
-  target_compile_definitions( ll::openal INTERFACE LL_OPENAL=1)
-  use_prebuilt_binary(openal)
-
+  if (FALSE)
   find_library(OPENAL_LIBRARY
       NAMES
       OpenAL32
@@ -40,7 +45,11 @@ if (USE_OPENAL)
       libopenal.dylib
       libopenal.so
       PATHS "${ARCH_PREBUILT_DIRS_RELEASE}" REQUIRED NO_DEFAULT_PATH)
+  endif ()
 
+  include(FindPkgConfig)
+  if (USE_FLATPAK)
+      pkg_search_module(Openal REQUIRED openal)
   find_library(ALUT_LIBRARY
       NAMES
       alut
@@ -49,5 +58,12 @@ if (USE_OPENAL)
       PATHS "${ARCH_PREBUILT_DIRS_RELEASE}" REQUIRED NO_DEFAULT_PATH)
 
   target_link_libraries(ll::openal INTERFACE ${OPENAL_LIBRARY} ${ALUT_LIBRARY})
+  else ()
+      pkg_search_module(Openal REQUIRED freealut)
+  endif ()
+
+  target_include_directories(ll::openal SYSTEM INTERFACE ${Openal_INCLUDE_DIRS})
+  target_link_directories(ll::openal INTERFACE ${Openal_LIBRARY_DIRS})
+  target_link_libraries(ll::openal INTERFACE ${Openal_LIBRARIES})
 
 endif ()

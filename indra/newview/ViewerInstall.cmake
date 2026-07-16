@@ -247,9 +247,6 @@ if (LINUX)
                   ${ARCH_PREBUILT_DIRS_RELEASE}/libalut.so
                   ${ARCH_PREBUILT_DIRS_RELEASE}/libalut.so.0
                   ${ARCH_PREBUILT_DIRS_RELEASE}/libalut.so.0.0.0
-                  ${ARCH_PREBUILT_DIRS_RELEASE}/libopenal.so
-                  ${ARCH_PREBUILT_DIRS_RELEASE}/libopenal.so.1
-                  ${ARCH_PREBUILT_DIRS_RELEASE}/libopenal.so.1.24.2
                 DESTINATION ${_LIB}
                 )
         endif ()
