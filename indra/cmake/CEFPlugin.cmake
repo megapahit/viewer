@@ -59,6 +59,12 @@ if (${LINUX_DISTRO} MATCHES arch)
                 COPY ${CMAKE_BINARY_DIR}/dullahan-1.31.0-CEF_148.0.9/dullahan_host
                 DESTINATION ${LIBS_PREBUILT_DIR}/bin/release
             )
+            if (CMAKE_BUILD_TYPE MATCHES Release)
+                execute_process(
+                    COMMAND ${CMAKE_STRIP} dullahan_host
+                    WORKING_DIRECTORY ${LIBS_PREBUILT_DIR}/bin/release
+                )
+            endif ()
             file(
                 COPY ${CMAKE_BINARY_DIR}/dullahan-1.31.0-CEF_148.0.9/libdullahan.a
                 DESTINATION ${ARCH_PREBUILT_DIRS_RELEASE}
@@ -127,6 +133,12 @@ elseif (${LINUX_DISTRO} MATCHES fedora)
                 COPY ${CMAKE_BINARY_DIR}/dullahan-1.29.0-CEF_146.0.12/dullahan_host
                 DESTINATION ${LIBS_PREBUILT_DIR}/bin/release
             )
+            if (CMAKE_BUILD_TYPE MATCHES Release)
+                execute_process(
+                    COMMAND ${CMAKE_STRIP} dullahan_host
+                    WORKING_DIRECTORY ${LIBS_PREBUILT_DIR}/bin/release
+                )
+            endif ()
             file(
                 COPY ${CMAKE_BINARY_DIR}/dullahan-1.29.0-CEF_146.0.12/libdullahan.a
                 DESTINATION ${ARCH_PREBUILT_DIRS_RELEASE}
@@ -172,11 +184,29 @@ elseif (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
                 -DPROJECT_ARCH:STRING=${CMAKE_SYSTEM_PROCESSOR}
         )
         if (${DULLAHAN_RESULT})
+            if (CMAKE_BUILD_TYPE MATCHES Release)
+                execute_process(
+                    COMMAND ${CMAKE_STRIP}
+                        chrome-sandbox
+                        libEGL.so
+                        libGLESv2.so
+                        libcef.so
+                        libvk_swiftshader.so
+                        libvulkan.so.1
+                    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40/_deps/cef_prebuild-src/${CMAKE_BUILD_TYPE}
+                )
+            endif ()
             execute_process(
                 COMMAND ${CMAKE_MAKE_PROGRAM} install
                 WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40
                 OUTPUT_VARIABLE dullahan_installed
             )
+            if (CMAKE_BUILD_TYPE MATCHES Release)
+                execute_process(
+                    COMMAND ${CMAKE_STRIP} dullahan_host
+                    WORKING_DIRECTORY ${LIBS_PREBUILT_DIR}/bin/release
+                )
+            endif ()
             file(
                 COPY
                     ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40/src/dullahan.h
@@ -189,23 +219,6 @@ elseif (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
 else ()
 use_prebuilt_binary(dullahan)
 endif ()
-
-execute_process(
-    COMMAND patchelf --set-rpath ${INSTALL_LIBRARY_DIR} bin/release/dullahan_host
-    WORKING_DIRECTORY ${LIBS_PREBUILT_DIR}
-)
-
-if (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES fedora))
-    target_include_directories( ll::cef SYSTEM INTERFACE /usr/include/cef/include)
-    if (${LINUX_DISTRO} MATCHES fedora)
-        set(LIB_SUFFIX ${ADDRESS_SIZE})
-    endif ()
-    execute_process(
-        COMMAND patchelf --add-rpath ${INSTALL_PREFIX}/lib${LIB_SUFFIX}/cef bin/release/dullahan_host
-        WORKING_DIRECTORY ${LIBS_PREBUILT_DIR}
-    )
-endif ()
-
 target_include_directories( ll::cef SYSTEM INTERFACE  ${LIBS_PREBUILT_DIR}/include/cef)
 
 if (WINDOWS)
@@ -270,13 +283,32 @@ elseif (DARWIN)
             -output libdullahan.a
         WORKING_DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE}
     )
-
 elseif (LINUX)
+    if (NOT USE_FLATPAK)
+        execute_process(
+            COMMAND patchelf --set-rpath ${INSTALL_LIBRARY_DIR} dullahan_host
+            WORKING_DIRECTORY ${LIBS_PREBUILT_DIR}/bin/release
+        )
+    endif ()
     if (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES fedora))
+        target_include_directories( ll::cef SYSTEM INTERFACE /usr/include/cef/include)
         if (${LINUX_DISTRO} MATCHES fedora)
             set(LIB_SUFFIX ${ADDRESS_SIZE})
         endif ()
         target_link_directories( ll::cef INTERFACE ${INSTALL_PREFIX}/lib${LIB_SUFFIX}/cef )
+        execute_process(
+            COMMAND patchelf --add-rpath ${INSTALL_PREFIX}/lib${LIB_SUFFIX}/cef dullahan_host
+            WORKING_DIRECTORY ${LIBS_PREBUILT_DIR}/bin/release
+        )
+    elseif (CMAKE_SYSTEM_PROCESSOR MATCHES x86_64 AND (CMAKE_BUILD_TYPE MATCHES Release))
+        execute_process(
+            COMMAND ${CMAKE_STRIP}
+                bin/release/chrome-sandbox
+                bin/release/dullahan_host
+                lib/release/libEGL.so
+                lib/release/libvk_swiftshader.so
+            WORKING_DIRECTORY ${LIBS_PREBUILT_DIR}
+        )
     endif ()
     target_link_libraries( ll::cef INTERFACE
         libdullahan.a
