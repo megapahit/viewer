@@ -3406,7 +3406,7 @@ LLSD LLAppViewer::getViewerInfo() const
         url = LLTrans::getString("RELEASE_NOTES_BASE_URL");
         if (!LLStringUtil::endsWith(url, "/"))
             url += "/";
-        url += LLURI::escape(versionInfo.getVersion()) + ".html";
+        url += "#" + LLURI::escape(versionInfo.getVersion()); // + ".html";
     }
     info["VIEWER_RELEASE_NOTES_URL"] = url;
 
