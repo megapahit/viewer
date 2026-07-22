@@ -29,26 +29,26 @@ if (${LINUX_DISTRO} MATCHES arch)
                 DESTINATION ${ARCH_PREBUILT_DIRS_RELEASE}
             )
         endif ()
-        if (NOT EXISTS ${CMAKE_BINARY_DIR}/dullahan-1.31.0-CEF_148.0.9.tar.gz)
+        if (NOT EXISTS ${CMAKE_BINARY_DIR}/dullahan-1.40.0-CEF_150.0.13.accel.tar.gz)
             file(DOWNLOAD
-                https://github.com/secondlife/dullahan/archive/refs/tags/v1.31.0-CEF_148.0.9.tar.gz
-                ${CMAKE_BINARY_DIR}/dullahan-1.31.0-CEF_148.0.9.tar.gz
+                https://github.com/secondlife/dullahan/archive/refs/tags/v1.40.0-CEF_150.0.13.accel.tar.gz
+                ${CMAKE_BINARY_DIR}/dullahan-1.40.0-CEF_150.0.13.accel.tar.gz
             )
         endif ()
         file(ARCHIVE_EXTRACT
-            INPUT ${CMAKE_BINARY_DIR}/dullahan-1.31.0-CEF_148.0.9.tar.gz
+            INPUT ${CMAKE_BINARY_DIR}/dullahan-1.40.0-CEF_150.0.13.accel.tar.gz
             DESTINATION ${CMAKE_BINARY_DIR}
         )
         try_compile(DULLAHAN_RESULT
             PROJECT dullahan
-            SOURCE_DIR ${CMAKE_BINARY_DIR}/dullahan-1.31.0-CEF_148.0.9
-            BINARY_DIR ${CMAKE_BINARY_DIR}/dullahan-1.31.0-CEF_148.0.9
+            SOURCE_DIR ${CMAKE_BINARY_DIR}/dullahan-1.40.0-CEF_150.0.13.accel
+            BINARY_DIR ${CMAKE_BINARY_DIR}/dullahan-1.40.0-CEF_150.0.13.accel
             CMAKE_FLAGS
                 -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
                 -DCMAKE_INSTALL_PREFIX:PATH=${LIBS_PREBUILT_DIR}
                 -DCMAKE_INSTALL_LIBDIR:PATH=${ARCH_PREBUILT_DIRS_RELEASE}
                 -DCEF_WRAPPER_DIR:PATH=/usr/include/cef
-                -DCEF_WRAPPER_BUILD_DIR:PATH=${CMAKE_BINARY_DIR}/dullahan-1.31.0-CEF_148.0.9
+                -DCEF_WRAPPER_BUILD_DIR:PATH=${CMAKE_BINARY_DIR}/dullahan-1.40.0-CEF_150.0.13.accel
                 -DCEF_LIBRARY_RELEASE:FILEPATH=${INSTALL_PREFIX}/lib/cef/libcef.so
                 -DCEF_DLL_LIBRARY_RELEASE:FILEPATH=${ARCH_PREBUILT_DIRS_RELEASE}/libcef_dll_wrapper.a
                 "-DCMAKE_CXX_FLAGS:STRING=-I/usr/include/cef -I/usr/src/cef -DWRAPPING_CEF_SHARED"
@@ -56,7 +56,7 @@ if (${LINUX_DISTRO} MATCHES arch)
         if (${DULLAHAN_RESULT})
             file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/bin/release)
             file(
-                COPY ${CMAKE_BINARY_DIR}/dullahan-1.31.0-CEF_148.0.9/dullahan_host
+                COPY ${CMAKE_BINARY_DIR}/dullahan-1.40.0-CEF_150.0.13.accel/dullahan_host
                 DESTINATION ${LIBS_PREBUILT_DIR}/bin/release
             )
             if (CMAKE_BUILD_TYPE MATCHES Release)
@@ -66,14 +66,14 @@ if (${LINUX_DISTRO} MATCHES arch)
                 )
             endif ()
             file(
-                COPY ${CMAKE_BINARY_DIR}/dullahan-1.31.0-CEF_148.0.9/libdullahan.a
+                COPY ${CMAKE_BINARY_DIR}/dullahan-1.40.0-CEF_150.0.13.accel/libdullahan.a
                 DESTINATION ${ARCH_PREBUILT_DIRS_RELEASE}
             )
             file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/include/cef)
             file(
                 COPY
-                    ${CMAKE_BINARY_DIR}/dullahan-1.31.0-CEF_148.0.9/src/dullahan.h
-                    ${CMAKE_BINARY_DIR}/dullahan-1.31.0-CEF_148.0.9/src/dullahan_version.h
+                    ${CMAKE_BINARY_DIR}/dullahan-1.40.0-CEF_150.0.13.accel/src/dullahan.h
+                    ${CMAKE_BINARY_DIR}/dullahan-1.40.0-CEF_150.0.13.accel/src/dullahan_version.h
                 DESTINATION ${LIBS_PREBUILT_DIR}/include/cef
             )
             file(WRITE ${PREBUILD_TRACKING_DIR}/dullahan_installed "0")

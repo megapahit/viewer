@@ -266,9 +266,43 @@ install(DIRECTORY skins app_settings fonts
         PATTERN ".svn" EXCLUDE
         )
 
+if (USE_FLATPAK)
+    file(
+        COPY ${CMAKE_CURRENT_SOURCE_DIR}/icons/hicolor
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+        )
+    file(RENAME
+        ${CMAKE_CURRENT_BINARY_DIR}/hicolor/48x48/apps/${VIEWER_BINARY_NAME}.png
+        ${CMAKE_CURRENT_BINARY_DIR}/hicolor/48x48/apps/net.${VIEWER_BINARY_NAME}.Viewer.png
+        )
+    file(RENAME
+        ${CMAKE_CURRENT_BINARY_DIR}/hicolor/64x64/apps/${VIEWER_BINARY_NAME}.png
+        ${CMAKE_CURRENT_BINARY_DIR}/hicolor/64x64/apps/net.${VIEWER_BINARY_NAME}.Viewer.png
+        )
+    file(RENAME
+        ${CMAKE_CURRENT_BINARY_DIR}/hicolor/96x96/apps/${VIEWER_BINARY_NAME}.png
+        ${CMAKE_CURRENT_BINARY_DIR}/hicolor/96x96/apps/net.${VIEWER_BINARY_NAME}.Viewer.png
+        )
+    file(RENAME
+        ${CMAKE_CURRENT_BINARY_DIR}/hicolor/128x128/apps/${VIEWER_BINARY_NAME}.png
+        ${CMAKE_CURRENT_BINARY_DIR}/hicolor/128x128/apps/net.${VIEWER_BINARY_NAME}.Viewer.png
+        )
+    file(RENAME
+        ${CMAKE_CURRENT_BINARY_DIR}/hicolor/256x256/apps/${VIEWER_BINARY_NAME}.png
+        ${CMAKE_CURRENT_BINARY_DIR}/hicolor/256x256/apps/net.${VIEWER_BINARY_NAME}.Viewer.png
+        )
+    file(RENAME
+        ${CMAKE_CURRENT_BINARY_DIR}/hicolor/512x512/apps/${VIEWER_BINARY_NAME}.png
+        ${CMAKE_CURRENT_BINARY_DIR}/hicolor/512x512/apps/net.${VIEWER_BINARY_NAME}.Viewer.png
+        )
+    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/hicolor
+            DESTINATION share/icons
+            )
+else ()
 install(DIRECTORY icons/hicolor
         DESTINATION share/icons
         )
+endif ()
 
 find_file(IS_ARTWORK_PRESENT NAMES have_artwork_bundle.marker
           PATHS ${VIEWER_DIR}/newview/res)
@@ -305,8 +339,22 @@ install(FILES ${SCRIPTS_DIR}/messages/message_template.msg
         DESTINATION share/${VIEWER_BINARY_NAME}/app_settings
         )
 
+if (USE_FLATPAK)
+    file(COPY_FILE
+        ${CMAKE_CURRENT_SOURCE_DIR}/linux_tools/${VIEWER_BINARY_NAME}.desktop
+        ${CMAKE_CURRENT_BINARY_DIR}/net.${VIEWER_BINARY_NAME}.Viewer.desktop
+        )
+    execute_process(
+        COMMAND sed -i "s/Icon=megapahit/Icon=net.megapahit.Viewer/" net.${VIEWER_BINARY_NAME}.Viewer.desktop
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    )
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/net.${VIEWER_BINARY_NAME}.Viewer.desktop
+        DESTINATION share/applications
+        )
+else ()
     install(FILES linux_tools/${VIEWER_BINARY_NAME}.desktop
         DESTINATION share/applications
         )
+endif ()
 
 endif (DARWIN)

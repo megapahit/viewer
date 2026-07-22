@@ -388,7 +388,7 @@ void LLLoginInstance::handleLoginFailure(const LLSD& event)
             relnotes = LLTrans::getString("RELEASE_NOTES_BASE_URL");
             if (!LLStringUtil::endsWith(relnotes, "/"))
                 relnotes += "/";
-            relnotes += LLURI::escape(login_version) + ".html";
+            relnotes += "#" + LLURI::escape(login_version); // + ".html";
         }
 
         if (gViewerWindow)
