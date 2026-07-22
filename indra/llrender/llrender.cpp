@@ -197,10 +197,6 @@ void LLTexUnit::bindFast(LLTexture* texture)
     glActiveTexture(GL_TEXTURE0 + mIndex);
     gGL.mCurrTextureUnitIndex = mIndex;
     mCurrTexture = gl_tex->getTexName();
-    mCurrTexType = gl_tex->getTarget();
-    // bindFast bypasses updateBindStats(); stamp directly so the staleness
-    // signal sees per-frame use of batched textures.
-    gl_tex->stampBound();
     if (!mCurrTexture)
     {
         LL_PROFILE_ZONE_NAMED("MISSING TEXTURE");
@@ -253,17 +249,11 @@ bool LLTexUnit::bind(LLTexture* texture, bool for_rendering, bool forceBind)
                         setTextureFilteringOption(gl_tex->mFilterOption);
                     }
                 }
-                else
-                {
-                    // Already current - still being used, keep it fresh.
-                    gl_tex->stampBound();
-                }
             }
             else
             {
                 //if deleted, will re-generate it immediately
                 texture->forceImmediateUpdate() ;
-                gl_tex->stampBound();
 
                 gl_tex->forceUpdateBindStats() ;
                 return texture->bindDefaultImage(mIndex);
@@ -334,11 +324,6 @@ bool LLTexUnit::bind(LLImageGL* texture, bool for_rendering, bool forceBind, S32
             setTextureFilteringOption(texture->mFilterOption);
             stop_glerror();
         }
-    }
-    else
-    {
-        // Already current - still being used, keep it fresh.
-        texture->stampBound();
     }
 
     stop_glerror();
@@ -1733,16 +1718,7 @@ LLVertexBuffer* LLRender::genBuffer(U32 attribute_mask, S32 count)
     LLVertexBuffer * vb = new LLVertexBuffer(attribute_mask);
     vb->allocateBuffer(count, 0);
 
-    // Non-Apple path uses glBufferSubData inside setXxxData, so the VBO
-    // must already be bound. On Apple, the VBO is lazily created in
-    // _unmapBuffer (LLAppleVBOPool); calling setBuffer() here would bind
-    // mGLBuffer == 0 and then setupVertexBuffer would issue
-    // glVertexAttribIPointer with a non-null offset against no bound
-    // GL_ARRAY_BUFFER -> GL_INVALID_OPERATION in core profile.
-    if (!gGLManager.mIsApple)
-    {
-        vb->setBuffer();
-    }
+    vb->setBuffer();
 
     vb->setPositionData(mVerticesp.get());
 
@@ -1757,9 +1733,6 @@ LLVertexBuffer* LLRender::genBuffer(U32 attribute_mask, S32 count)
     }
 
 #if LL_DARWIN
-    // unmapBuffer creates the GL buffer, uploads, and leaves it bound,
-    // drawBuffer's later setBuffer() then runs setupVertexBuffer against
-    // a valid VBO.
     vb->unmapBuffer();
 #endif
     vb->unbind();
