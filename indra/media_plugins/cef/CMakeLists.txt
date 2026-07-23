@@ -194,9 +194,11 @@ if (INSTALL)
         if (NOT (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES fedora)))
             install(
                 FILES
+                    ${ARCH_PREBUILT_DIRS_RELEASE}/libEGL.so
+                    ${ARCH_PREBUILT_DIRS_RELEASE}/libGLESv2.so
                     ${ARCH_PREBUILT_DIRS_RELEASE}/libcef.so
                     ${ARCH_PREBUILT_DIRS_RELEASE}/libvk_swiftshader.so
-                    ${ARCH_PREBUILT_DIRS_RELEASE}/libEGL.so
+                    ${ARCH_PREBUILT_DIRS_RELEASE}/libvulkan.so.1
                     ${ARCH_PREBUILT_DIRS_RELEASE}/v8_context_snapshot.bin
                     ${ARCH_PREBUILT_DIRS_RELEASE}/vk_swiftshader_icd.json
                     ${AUTOBUILD_INSTALL_DIR}/resources/chrome_100_percent.pak
@@ -207,36 +209,6 @@ if (INSTALL)
             )
             install(
                 DIRECTORY ${AUTOBUILD_INSTALL_DIR}/resources/locales
-                DESTINATION ${_LIB}
-            )
-            file(MAKE_DIRECTORY ${AUTOBUILD_INSTALL_DIR}/lib/release/${VIEWER_BINARY_NAME})
-            if (USE_FLATPAK)
-              file(CREATE_LINK
-                  "/usr/lib/${ARCH}-linux-gnu/libGLESv2.so.2"
-                  "${AUTOBUILD_INSTALL_DIR}/lib/release/${VIEWER_BINARY_NAME}/libGLESv2.so"
-                  SYMBOLIC
-              )
-              file(CREATE_LINK
-                  "/usr/lib/${ARCH}-linux-gnu/libvulkan.so.1"
-                  "${AUTOBUILD_INSTALL_DIR}/lib/release/${VIEWER_BINARY_NAME}/libvulkan.so.1"
-                  SYMBOLIC
-              )
-            else ()
-              file(CREATE_LINK
-                  "../libGLESv2.so"
-                  "${AUTOBUILD_INSTALL_DIR}/lib/release/${VIEWER_BINARY_NAME}/libGLESv2.so"
-                  SYMBOLIC
-              )
-              file(CREATE_LINK
-                  "../libvulkan.so.1"
-                  "${AUTOBUILD_INSTALL_DIR}/lib/release/${VIEWER_BINARY_NAME}/libvulkan.so.1"
-                  SYMBOLIC
-              )
-            endif ()
-            install(
-                FILES
-                    ${ARCH_PREBUILT_DIRS_RELEASE}/${VIEWER_BINARY_NAME}/libGLESv2.so
-                    ${ARCH_PREBUILT_DIRS_RELEASE}/${VIEWER_BINARY_NAME}/libvulkan.so.1
                 DESTINATION ${_LIB}
             )
         endif ()
