@@ -306,7 +306,9 @@ elseif (LINUX)
                 bin/release/chrome-sandbox
                 bin/release/dullahan_host
                 lib/release/libEGL.so
+                lib/release/libGLESv2.so
                 lib/release/libvk_swiftshader.so
+                lib/release/libvulkan.so.1
             WORKING_DIRECTORY ${LIBS_PREBUILT_DIR}
         )
     endif ()
