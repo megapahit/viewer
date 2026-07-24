@@ -351,6 +351,15 @@ if (USE_FLATPAK)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/net.${VIEWER_BINARY_NAME}.Viewer.desktop
         DESTINATION share/applications
         )
+    string(TIMESTAMP TODAY_DATE "%Y-%m-%d" UTC)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/net.megapahit.Viewer.metainfo.xml.in
+        ${CMAKE_CURRENT_BINARY_DIR}/net.megapahit.Viewer.metainfo.xml
+        )
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/net.megapahit.Viewer.metainfo.xml
+        DESTINATION share/metainfo
+        )
 else ()
     install(FILES linux_tools/${VIEWER_BINARY_NAME}.desktop
         DESTINATION share/applications
