@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+    <id>net.megapahit.Viewer</id>
+    <launchable type="desktop-id">net.megapahit.Viewer.desktop</launchable>
+    <metadata_license>CC0-1.0</metadata_license>
+    <project_license>LGPL-2.1</project_license>
+    <name>Megapahit</name>
+    <developer id="net.megapahit">
+        <name>Megapahit</name>
+    </developer>
+    <summary>A fork of the Second Life viewer</summary>
+    <description>
+        <p>An entrance to virtual empires in only megabytes. A shelter for the metaverse refugees, especially those from less supported operating systems.</p>
+    </description>
+    <url type="homepage">https://megapahit.net/</url>
+    <url type="vcs-browser">https://megapahit.org</url>
+    <url type="bugtracker">https://megapahit.com</url>
+    <releases>
+        <release version="${VIEWER_VERSION_MAJOR}.${VIEWER_VERSION_MINOR}.${VIEWER_VERSION_PATCH}.${VIEWER_VERSION_REVISION}" date="${TODAY_DATE}" />
+    </releases>
+</component>
