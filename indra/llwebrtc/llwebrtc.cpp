@@ -56,8 +56,8 @@ webrtc::LossBasedBweV2::Config::Config()
 namespace llwebrtc
 {
 #if WEBRTC_WIN
-static int16_t PLAYOUT_DEVICE_DEFAULT = webrtc::AudioDeviceModule::kDefaultDevice;
-static int16_t RECORD_DEVICE_DEFAULT  = webrtc::AudioDeviceModule::kDefaultDevice;
+static int16_t PLAYOUT_DEVICE_DEFAULT = webrtc::AudioDeviceModule::kDefaultCommunicationDevice;
+static int16_t RECORD_DEVICE_DEFAULT  = webrtc::AudioDeviceModule::kDefaultCommunicationDevice;
 #else
 static int16_t PLAYOUT_DEVICE_DEFAULT = 0;
 static int16_t RECORD_DEVICE_DEFAULT  = 0;

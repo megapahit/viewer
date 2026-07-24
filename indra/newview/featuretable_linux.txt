@@ -67,6 +67,7 @@ RenderDeferredSSAO			1	1
 RenderUseAdvancedAtmospherics 1 0
 RenderShadowDetail			1	2
 RenderFSAASamples			1	16
+RenderMaxTextureIndex		1	16
 RenderMirrors				1	1
 
 //
@@ -499,6 +500,7 @@ RenderVBOEnable				1	0
 
 list OpenGLPre30
 RenderDeferred				0	0
+RenderMaxTextureIndex		1	1
 
 list Intel
 RenderAnisotropic			1	0
