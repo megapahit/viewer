@@ -2369,6 +2369,11 @@ if (LINUX)
 
   if (PACKAGE)
     if (${LINUX_DISTRO} MATCHES arch)
+      if (CMAKE_SYSTEM_PROCESSOR MATCHES x86_64)
+        set(ARCH_DEPS cef)
+      else ()
+        set(ARCH_DEPS "at-spi2-core minizip")
+      endif ()
       configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/PKGBUILD.in
         ${CMAKE_BINARY_DIR}/PKGBUILD

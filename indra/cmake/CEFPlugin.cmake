@@ -5,7 +5,7 @@ include(Prebuilt)
 include_guard()
 add_library( ll::cef INTERFACE IMPORTED )
 
-if (${LINUX_DISTRO} MATCHES arch)
+if (${LINUX_DISTRO} MATCHES arch AND (CMAKE_SYSTEM_PROCESSOR MATCHES x86_64))
     if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/dullahan_installed OR NOT ${dullahan_installed} EQUAL 0)
         file(
             COPY /usr/src/cef/libcef_dll
@@ -290,7 +290,7 @@ elseif (LINUX)
             WORKING_DIRECTORY ${LIBS_PREBUILT_DIR}/bin/release
         )
     endif ()
-    if (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES fedora))
+    if (${LINUX_DISTRO} MATCHES arch AND (CMAKE_SYSTEM_PROCESSOR MATCHES x86_64) OR (${LINUX_DISTRO} MATCHES fedora))
         target_include_directories( ll::cef SYSTEM INTERFACE /usr/include/cef/include)
         if (${LINUX_DISTRO} MATCHES fedora)
             set(LIB_SUFFIX ${ADDRESS_SIZE})
