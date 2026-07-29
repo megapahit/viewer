@@ -51,7 +51,7 @@ if (LINUX)
 
   list(APPEND media_plugin_cef_SOURCE_FILES ${LINUX_VOLUME_CATCHER})
   set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--build-id")
-  if (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES fedora))
+  if (${LINUX_DISTRO} MATCHES arch AND (CMAKE_SYSTEM_PROCESSOR MATCHES x86_64) OR (${LINUX_DISTRO} MATCHES fedora))
     if (${LINUX_DISTRO} MATCHES fedora)
         set(LIB_SUFFIX ${ADDRESS_SIZE})
     endif ()
@@ -178,6 +178,12 @@ if (INSTALL)
                 PROGRAMS ${AUTOBUILD_INSTALL_DIR}/bin/release/dullahan_host
                 DESTINATION lib/${VIEWER_BINARY_NAME}
             )
+            if (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+                install(
+                    PROGRAMS ${AUTOBUILD_INSTALL_DIR}/bin/release/chrome-sandbox
+                    DESTINATION lib/${VIEWER_BINARY_NAME}
+                )
+            endif ()
         elseif (${LINUX_DISTRO} MATCHES fedora)
             install(
                 PROGRAMS ${AUTOBUILD_INSTALL_DIR}/bin/release/dullahan_host
@@ -191,7 +197,7 @@ if (INSTALL)
                 DESTINATION libexec/${VIEWER_BINARY_NAME}
             )
         endif ()
-        if (NOT (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES fedora)))
+        if (NOT (${LINUX_DISTRO} MATCHES arch AND (CMAKE_SYSTEM_PROCESSOR MATCHES x86_64) OR (${LINUX_DISTRO} MATCHES fedora)))
             install(
                 FILES
                     ${ARCH_PREBUILT_DIRS_RELEASE}/libEGL.so
