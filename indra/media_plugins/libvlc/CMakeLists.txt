@@ -94,7 +94,7 @@ if (INSTALL)
                 /Volumes/VLC\ media\ player/VLC.app/Contents/MacOS/lib/libvlccore.dylib
             DESTINATION ${_LIB}/plugins
             )
-    elseif (USE_FLATPAK)
+    elseif (${LINUX_DISTRO} MATCHES freedesktop)
         set(_LIB lib)
         install(
             DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE}/vlc

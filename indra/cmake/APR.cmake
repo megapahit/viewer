@@ -5,7 +5,7 @@ include_guard()
 
 add_library( ll::apr INTERFACE IMPORTED )
 
-if (NOT USE_FLATPAK)
+if (NOT (${LINUX_DISTRO} MATCHES freedesktop))
   if (WINDOWS)
     target_include_directories(ll::apr SYSTEM INTERFACE ${prefix_result}/../include)
     target_link_directories(ll::apr INTERFACE ${prefix_result})

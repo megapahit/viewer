@@ -284,7 +284,7 @@ elseif (DARWIN)
         WORKING_DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE}
     )
 elseif (LINUX)
-    if (NOT USE_FLATPAK)
+    if (NOT (${LINUX_DISTRO} MATCHES freedesktop))
         execute_process(
             COMMAND patchelf --set-rpath ${INSTALL_LIBRARY_DIR} dullahan_host
             WORKING_DIRECTORY ${LIBS_PREBUILT_DIR}/bin/release

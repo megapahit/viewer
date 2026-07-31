@@ -6,7 +6,7 @@ set(INSTALL OFF CACHE BOOL
     "Generate install target.")
 
 if (INSTALL)
-  if (USE_FLATPAK OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
+  if (${LINUX_DISTRO} MATCHES freedesktop OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
       set(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX} CACHE PATH
           "Top-level installation directory.")
   else ()
@@ -14,7 +14,7 @@ if (INSTALL)
       "Top-level installation directory.")
   endif ()
 
-  if (USE_FLATPAK)
+  if (${LINUX_DISTRO} MATCHES freedesktop)
     set(_LIB lib)
   elseif (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
     set(_LIB lib/${ARCH}-linux-gnu/${VIEWER_BINARY_NAME})
@@ -37,7 +37,7 @@ if (INSTALL)
   set(APP_SHARE_DIR ${INSTALL_SHARE_DIR}/${VIEWER_BINARY_NAME}
       CACHE PATH
       "Installation directory for read-only data files.")
-  if (USE_FLATPAK)
+  if (${LINUX_DISTRO} MATCHES freedesktop)
     set(APP_LIBEXEC_DIR ${INSTALL_PREFIX}/libexec
         CACHE PATH
         "Installation directory for non-manual executables.")

@@ -226,7 +226,7 @@ install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${VIEWER_BINARY_NAME}
         )
 
 if (LINUX)
-        if (USE_FLATPAK)
+        if (${LINUX_DISTRO} MATCHES freedesktop)
                 set(_LIB lib)
         elseif (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
                 set(_LIB lib/${ARCH}-linux-gnu/${VIEWER_BINARY_NAME})
@@ -241,7 +241,7 @@ if (LINUX)
                 DESTINATION ${_LIB}
                 )
         endif ()
-        if (USE_FLATPAK AND USE_OPENAL)
+	if (USE_OPENAL AND (${LINUX_DISTRO} MATCHES freedesktop))
             install(
                 FILES
                   ${ARCH_PREBUILT_DIRS_RELEASE}/libalut.so
@@ -266,7 +266,7 @@ install(DIRECTORY skins app_settings fonts
         PATTERN ".svn" EXCLUDE
         )
 
-if (USE_FLATPAK)
+if (${LINUX_DISTRO} MATCHES freedesktop)
     file(
         COPY ${CMAKE_CURRENT_SOURCE_DIR}/icons/hicolor
         DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
@@ -339,7 +339,7 @@ install(FILES ${SCRIPTS_DIR}/messages/message_template.msg
         DESTINATION share/${VIEWER_BINARY_NAME}/app_settings
         )
 
-if (USE_FLATPAK)
+if (${LINUX_DISTRO} MATCHES freedesktop)
     file(COPY_FILE
         ${CMAKE_CURRENT_SOURCE_DIR}/linux_tools/${VIEWER_BINARY_NAME}.desktop
         ${CMAKE_CURRENT_BINARY_DIR}/net.${VIEWER_BINARY_NAME}.Viewer.desktop

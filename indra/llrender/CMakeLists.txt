@@ -105,7 +105,7 @@ target_link_libraries(llrender
         OpenGL::GL
         )
 
-if (USE_FLATPAK)
+if (${LINUX_DISTRO} MATCHES freedesktop)
   target_link_libraries(${PROJECT_NAME} ll::glu)
 else ()
   target_link_libraries(${PROJECT_NAME} OpenGL::GLU)
