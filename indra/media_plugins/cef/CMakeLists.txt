@@ -157,7 +157,7 @@ if (INSTALL)
             DESTINATION ${_LIB}
             )
     elseif (LINUX)
-        if (USE_FLATPAK)
+        if (${LINUX_DISTRO} MATCHES freedesktop)
             set(_LIB lib)
         elseif (${LINUX_DISTRO} MATCHES debian OR (${LINUX_DISTRO} MATCHES ubuntu))
             set(_LIB lib/${ARCH}-linux-gnu/${VIEWER_BINARY_NAME})
@@ -166,7 +166,7 @@ if (INSTALL)
         else ()
             set(_LIB lib/${VIEWER_BINARY_NAME})
         endif ()
-        if (USE_FLATPAK)
+        if (${LINUX_DISTRO} MATCHES freedesktop)
             install(
                 PROGRAMS
                     ${AUTOBUILD_INSTALL_DIR}/bin/release/chrome-sandbox

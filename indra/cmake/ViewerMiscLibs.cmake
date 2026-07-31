@@ -16,7 +16,7 @@ endif()
 use_prebuilt_binary(slvoice)
 endif (FALSE)
 
-if (DARWIN OR USE_FLATPAK)
+if (DARWIN OR (${LINUX_DISTRO} MATCHES freedesktop))
 use_prebuilt_binary(nanosvg)
 endif ()
 use_prebuilt_binary(viewer-fonts)

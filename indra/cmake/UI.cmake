@@ -6,7 +6,7 @@ include(GLIB)
 add_library( ll::uilibraries INTERFACE IMPORTED )
 
 if (LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
-  if (USE_FLATPAK)
+  if (${LINUX_DISTRO} MATCHES freedesktop)
   use_prebuilt_binary(fltk)
   endif ()
   target_compile_definitions(ll::uilibraries INTERFACE LL_FLTK=1 LL_X11=1 )
@@ -15,7 +15,7 @@ if (LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
     return()
   endif()
 
-  if (USE_FLATPAK OR (${LINUX_DISTRO} MATCHES debian) OR (${LINUX_DISTRO} MATCHES ubuntu))
+  if (${LINUX_DISTRO} MATCHES freedesktop OR (${LINUX_DISTRO} MATCHES debian) OR (${LINUX_DISTRO} MATCHES ubuntu))
     include(FindPkgConfig)
     pkg_check_modules(CAIRO REQUIRED cairo)
     target_include_directories(ll::uilibraries SYSTEM INTERFACE ${CAIRO_INCLUDE_DIRS})
@@ -54,7 +54,7 @@ if( WINDOWS )
           )
 endif()
 
-if (USE_FLATPAK)
+if (${LINUX_DISTRO} MATCHES freedesktop)
 target_include_directories( ll::uilibraries SYSTEM INTERFACE
         ${LIBS_PREBUILT_DIR}/include
         )

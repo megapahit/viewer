@@ -18,11 +18,11 @@ endif()
 
 if (USE_OPENAL)
   add_library( ll::openal INTERFACE IMPORTED )
-  if (USE_FLATPAK)
+  if (${LINUX_DISTRO} MATCHES freedesktop)
   target_include_directories( ll::openal SYSTEM INTERFACE "${LIBS_PREBUILT_DIR}/include/AL")
   endif ()
   target_compile_definitions( ll::openal INTERFACE LL_OPENAL=1)
-  if (USE_FLATPAK)
+  if (${LINUX_DISTRO} MATCHES freedesktop)
   use_prebuilt_binary(openal)
       file(REMOVE
           ${ARCH_PREBUILT_DIRS_RELEASE}/libopenal.so
@@ -48,7 +48,7 @@ if (USE_OPENAL)
   endif ()
 
   include(FindPkgConfig)
-  if (USE_FLATPAK)
+  if (${LINUX_DISTRO} MATCHES freedesktop)
       pkg_search_module(Openal REQUIRED openal)
   find_library(ALUT_LIBRARY
       NAMES

@@ -21,7 +21,7 @@ endif()
 #use_system_binary( colladadom )
 
 #use_prebuilt_binary(colladadom)
-if (USE_FLATPAK)
+if (${LINUX_DISTRO} MATCHES freedesktop)
 use_prebuilt_binary(minizip-ng) # needed for colladadom
 #use_prebuilt_binary(libxml2)
 
@@ -49,12 +49,12 @@ endif()
 endif (FALSE)
 
 include(FindPkgConfig)
-if (NOT USE_FLATPAK)
+if (NOT (${LINUX_DISTRO} MATCHES freedesktop))
     pkg_search_module(Minizip REQUIRED minizip)
 endif ()
 if (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES gentoo) OR DARWIN OR WINDOWS)
     set(Minizip_INCLUDE_DIRS ${Minizip_INCLUDE_DIRS}/minizip)
-elseif (USE_FLATPAK)
+elseif (${LINUX_DISTRO} MATCHES freedesktop)
     set(Minizip_INCLUDE_DIRS ${LIBS_PREBUILT_DIR}/include/minizip-ng)
     set(Minizip_LIBRARY_DIRS ${ARCH_PREBUILT_DIRS_RELEASE})
 endif ()
@@ -129,7 +129,7 @@ if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKIN
             COMMAND sed -i "" -e "s/linux/FreeBSD/" dae/daeUtils.cpp
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r11/src
         )
-    elseif (USE_FLATPAK)
+    elseif (${LINUX_DISTRO} MATCHES freedesktop)
         set(BOOST_CFLAGS -I${LIBS_PREBUILT_DIR}/include)
         set(BOOST_LIBS -L${ARCH_PREBUILT_DIRS_RELEASE})
     endif ()
