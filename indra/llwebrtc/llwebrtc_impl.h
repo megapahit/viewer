@@ -698,6 +698,9 @@ class LLWebRTCPeerConnectionImpl : public LLWebRTCPeerConnectionInterface,
     webrtc::PeerConnectionInterface::PeerConnectionState mPeerConnectionState;
     uint32_t mDisconnectCount;
 
+    // Accessed only on the WebRTC signaling thread.
+    bool mStatsRequestPending;
+
     std::atomic<int> mPendingJobs;
 };
 
