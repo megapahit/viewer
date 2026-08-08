@@ -87,7 +87,7 @@ Megapahit is brought to you by:
        enabled="false"
        font="Monospace"
        follows="top|left"
-       height="200"
+       height="180"
        bg_readonly_color="Transparent"
        left="5"
        text_color="LtGray"
@@ -99,12 +99,10 @@ Erik Kundiman                 LinneNoir
 milo (observeur)              Fritigern Gothly
 Kou Ayashi                    Hadet Sonnenkern
 Remmy (Secret Foxtail)        Eris Ravenwood
-gwigz (nya)                   EmilyAmiee
-Bavid Dailey                  Aria (Tashia Redrose)
-Cate (32a)                    Hiroo Ono
-Melodey                       Keysin (scoutkeysin)
-Padoria Teuden                ~ ( ^-^ ) ~ (cutie_qu)
-Markus Teuden
+EmilyAmiee                    Bavid Dailey
+Aria (Tashia Redrose)         Cate (32a)
+Hiroo Ono                     Melodey
+Keysin                        ~ ( ^-^ ) ~ (cutie_qu)
     </text_editor>
     <text
           follows="top|left"
@@ -120,7 +118,7 @@ with special thanks to:
 <text_editor
        enabled="false"
        follows="top|left"
-       height="130"
+       height="150"
        bg_readonly_color="Transparent"
        left="5"
        text_color="LtGray"
@@ -135,6 +133,7 @@ Vir Linden - Making it possible for the project to have a place in SL
 nutsobvious - Early testing and video proof
 Soft Linden - Security testing
 Kyle Linden - Giving TPV parcel 2 to Erik Kundiman
+gwigz (nya) - Feature contributions
 Signal Linden - Opening opportunities for Megapahit to contribute more
     </text_editor>
     </panel>

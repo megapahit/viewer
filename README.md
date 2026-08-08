@@ -17,7 +17,7 @@ $ mkdir build-`uname -s|tr '[:upper:]' '[:lower:]'`-`uname -m`
 $ cd build-`uname -s|tr '[:upper:]' '[:lower:]'`-`uname -m`
 ```
 
-### Arch ARM
+### Arch aarch64
 ```
 $ sudo pacman -S cmake base-devel patchelf python freealut apr-util boost fltk glm glu hunspell minizip nanosvg libnghttp2 openjpeg2 libpipewire sdl2 vlc libvorbis xxhash
 $ export LL_BUILD="-O3 -std=c++20 -fPIC -DLL_LINUX=1"
@@ -41,24 +41,12 @@ $ sudo pacman -D --asdeps freealut apr-util cef fltk glu hunspell libnghttp2 ope
 $ megapahit
 ```
 
-### Debian amd64
+### Debian
 
 ```
 $ sudo apt install cmake patchelf pkg-config libxml2-utils libalut-dev libaprutil1-dev libboost-fiber-dev libboost-json-dev libboost-program-options-dev libboost-regex-dev libboost-url-dev libexpat1-dev libfltk1.4-dev libfontconfig-dev libfreetype-dev libglu1-mesa-dev libhunspell-dev libjpeg-dev libmeshoptimizer-dev libminizip-dev libnanosvg-dev libnghttp2-dev libopenjp2-7-dev libpipewire-0.3-dev libpng-dev libsdl2-dev libvlc-dev libvlccore-dev libvorbis-dev libxft-dev libxml2-dev libxxhash-dev
 $ export LL_BUILD="-O3 -std=c++20 -fPIC -DLL_LINUX=1"
-$ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=ON -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON ../indra
-$ make -j`nproc`
-$ cpack -G DEB
-$ sudo apt install ./megapahit-`cat newview/viewer_version.txt`-Linux.deb
-$ megapahit
-```
-
-### Debian arm64
-
-```
-$ sudo apt install cmake patchelf pkg-config libxml2-utils libalut-dev libaprutil1-dev libboost-fiber-dev libboost-json-dev libboost-program-options-dev libboost-regex-dev libboost-url-dev libexpat1-dev libfltk1.4-dev libfontconfig-dev libfreetype-dev libglu1-mesa-dev libhunspell-dev libjpeg-dev libmeshoptimizer-dev libminizip-dev libnanosvg-dev libnghttp2-dev libopenjp2-7-dev libpipewire-0.3-dev libpng-dev libsdl2-dev libvlc-dev libvlccore-dev libvorbis-dev libxft-dev libxml2-dev libxxhash-dev
-$ export LL_BUILD="-O3 -std=c++20 -fPIC -DLL_LINUX=1"
-$ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=ON -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON -DOPENGL_glu_LIBRARY:FILEPATH=/usr/lib/aarch64-linux-gnu/libGLU.so -DOPENGL_glx_LIBRARY:FILEPATH=/usr/lib/aarch64-linux-gnu/libGLX.so -DOPENGL_opengl_LIBRARY:FILEPATH=/usr/lib/aarch64-linux-gnu/libOpenGL.so ../indra
+$ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=ON -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON -DOPENGL_glu_LIBRARY:FILEPATH=/usr/lib/`uname -m`-linux-gnu/libGLU.so -DOPENGL_glx_LIBRARY:FILEPATH=/usr/lib/`uname -m`-linux-gnu/libGLX.so -DOPENGL_opengl_LIBRARY:FILEPATH=/usr/lib/`uname -m`-linux-gnu/libOpenGL.so ../indra
 $ make -j`nproc`
 $ cpack -G DEB
 $ sudo apt install ./megapahit-`cat newview/viewer_version.txt`-Linux.deb
@@ -141,7 +129,7 @@ $ megapahit
 ```
 $ sudo apt install cmake patchelf pkg-config libxml2-utils libalut-dev libaprutil1-dev libboost-fiber-dev libboost-json-dev libboost-program-options-dev libboost-regex-dev libboost-url-dev libexpat1-dev libfltk1.4-dev libfontconfig-dev libfreetype-dev libglm-dev libglu1-mesa-dev libhunspell-dev libjpeg-dev libmeshoptimizer-dev libminizip-dev libnanosvg-dev libnghttp2-dev libopenjp2-7-dev libpipewire-0.3-dev libpng-dev libsdl2-dev libvlc-dev libvlccore-dev libvorbis-dev libxft-dev libxml2-dev libxxhash-dev
 $ export LL_BUILD="-O3 -std=c++20 -fPIC -DLL_LINUX=1"
-$ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=ON -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON ../indra
+$ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=ON -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON -DOPENGL_glu_LIBRARY:FILEPATH=/usr/lib/`uname -m`-linux-gnu/libGLU.so -DOPENGL_glx_LIBRARY:FILEPATH=/usr/lib/`uname -m`-linux-gnu/libGLX.so -DOPENGL_opengl_LIBRARY:FILEPATH=/usr/lib/`uname -m`-linux-gnu/libOpenGL.so ../indra
 $ make -j`nproc`
 $ cpack -G DEB
 $ sudo apt install ./megapahit-`cat newview/viewer_version.txt`-Linux.deb

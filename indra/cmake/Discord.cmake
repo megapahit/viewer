@@ -14,7 +14,7 @@ if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKIN
         set(PREFIX_PATH $ENV{HOME}/Downloads)
     endif ()
     file(ARCHIVE_EXTRACT
-        INPUT ${PREFIX_PATH}/DiscordSocialSdk-1.10.18247.zip
+        INPUT ${PREFIX_PATH}/DiscordSocialSdk-1.10.18369.zip
         DESTINATION ${CMAKE_BINARY_DIR}
         )
     file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/include/discord_sdk)
