@@ -321,15 +321,6 @@
    name="sound_on_collisions"
    top_pad="10"
    width="200" />
-  <check_box
-   control_name="DoubleClickZoomIn"
-   height="20"
-   label="Double click on nearby list to zoom in on avatar"
-   layout="topleft"
-   left="83"
-   name="double_click_zoom_in"
-   top_pad="10"
-   width="200" />
   <button
    height="23"
    label="Other Devices"
@@ -342,6 +333,22 @@
      parameter="pref_joystick" />
   </button>
 
+    </panel>
+
+    <panel
+     label="Clicking"
+     name="clicking_panel"
+     layout="topleft"
+     follows="top|left">
+      <check_box
+       control_name="DoubleClickZoomIn"
+       height="20"
+       label="Double click on nearby list to zoom in on avatar"
+       layout="topleft"
+       left="83"
+       name="double_click_zoom_in"
+       top_pad="10"
+       width="200" />
     </panel>
 
     <!-- ── Over-The-Shoulder tab ──────────────────────────────────────── -->
