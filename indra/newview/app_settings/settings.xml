@@ -2763,6 +2763,17 @@
       <key>Value</key>
       <integer>0</integer>
     </map>
+    <key>PreventClickToSit</key>
+    <map>
+      <key>Comment</key>
+      <string>Prevent sitting on a chair on a click</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>0</integer>
+    </map>
     <key>DynamicCameraStrength</key>
     <map>
       <key>Comment</key>

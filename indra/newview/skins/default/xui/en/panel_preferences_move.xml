@@ -349,6 +349,15 @@
        name="double_click_zoom_in"
        top_pad="10"
        width="200" />
+      <check_box
+       control_name="PreventClickToSit"
+       height="20"
+       label="Prevent sitting on a chair on a click"
+       layout="topleft"
+       left="83"
+       name="prevent_click_to_sit"
+       top_pad="10"
+       width="200" />
     </panel>
 
     <!-- ── Over-The-Shoulder tab ──────────────────────────────────────── -->

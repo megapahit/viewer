@@ -237,6 +237,7 @@ bool LLToolPie::handleScrollHWheel(S32 x, S32 y, S32 clicks)
 // True if you selected an object.
 bool LLToolPie::handleLeftClickPick()
 {
+    static LLCachedControl<bool> prevent_click_to_sit(gSavedSettings, "PreventClickToSit");
     S32 x = mPick.mMousePt.mX;
     S32 y = mPick.mMousePt.mY;
     MASK mask = mPick.mKeyMask;
@@ -303,7 +304,7 @@ bool LLToolPie::handleLeftClickPick()
             break;
         case CLICK_ACTION_SIT:
             {
-                if (isAgentAvatarValid() && !gAgentAvatarp->isSitting()) // agent not already sitting
+                if (!prevent_click_to_sit && isAgentAvatarValid() && !gAgentAvatarp->isSitting()) // agent not already sitting
                 {
                     handle_object_sit_or_stand();
                     // put focus in world when sitting on an object
@@ -498,6 +499,7 @@ U8 final_click_action(LLViewerObject* obj)
 
 ECursorType LLToolPie::cursorFromObject(LLViewerObject* object)
 {
+    static LLCachedControl<bool> prevent_click_to_sit(gSavedSettings, "PreventClickToSit");
     LLViewerObject* parent = NULL;
     if (object)
     {
@@ -509,7 +511,7 @@ ECursorType LLToolPie::cursorFromObject(LLViewerObject* object)
     {
     case CLICK_ACTION_SIT:
         {
-            if (isAgentAvatarValid() && !gAgentAvatarp->isSitting()) // not already sitting?
+            if (!prevent_click_to_sit && isAgentAvatarValid() && !gAgentAvatarp->isSitting()) // not already sitting?
             {
                 cursor = UI_CURSOR_TOOLSIT;
             }
