@@ -1206,7 +1206,8 @@ void LLIMProcessing::processNewMessage(LLUUID from_id,
         case IM_LURE_USER:
         case IM_TELEPORT_REQUEST:
         {
-            if (is_muted)
+            static LLCachedControl<bool> block_teleport_offers(gSavedSettings, "BlockTeleportOffers");
+            if (is_muted || block_teleport_offers)
             {
                 return;
             }
