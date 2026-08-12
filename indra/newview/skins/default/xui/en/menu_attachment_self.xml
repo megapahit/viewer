@@ -49,6 +49,12 @@
        function="Object.ShowOriginal" />
     </menu_item_call>
     <menu_item_call
+     label="Object profile"
+     name="Object Inspect">
+      <menu_item_call.on_click
+       function="Object.Inspect" />
+    </menu_item_call>
+    <menu_item_call
      label="Add to favorites"
      layout="topleft"
      name="Add to favorites">
