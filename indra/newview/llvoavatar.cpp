@@ -6374,6 +6374,7 @@ LLUUID LLVOAvatar::remapMotionID(const LLUUID& id)
 // virtual
 bool LLVOAvatar::startMotion(const LLUUID& id, F32 time_offset)
 {
+    static LLCachedControl<bool> disable_pre_jump_land(gSavedSettings, "DisablePreJumpLand");
     LL_DEBUGS("Motion") << "motion requested " << id.asString() << " " << gAnimLibrary.animationName(id) << LL_ENDL;
 
     LLUUID remap_id = remapMotionID(id);
@@ -6383,9 +6384,17 @@ bool LLVOAvatar::startMotion(const LLUUID& id, F32 time_offset)
         LL_DEBUGS("Motion") << "motion resultant " << remap_id.asString() << " " << gAnimLibrary.animationName(remap_id) << LL_ENDL;
     }
 
-    if (isSelf() && remap_id == ANIM_AGENT_AWAY)
+    if (isSelf())
     {
+        if (remap_id == ANIM_AGENT_AWAY)
+        {
         gAgent.setAFK();
+        }
+        else if (disable_pre_jump_land && (remap_id == ANIM_AGENT_PRE_JUMP || remap_id == ANIM_AGENT_LAND || remap_id == ANIM_AGENT_MEDIUM_LAND))
+        {
+            gAgent.setControlFlags(AGENT_CONTROL_FINISH_ANIM);
+            return false;
+        }
     }
 
     return LLCharacter::startMotion(remap_id, time_offset);

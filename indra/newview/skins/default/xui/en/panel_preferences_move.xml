@@ -360,6 +360,22 @@
        width="200" />
     </panel>
 
+    <panel
+     label="Jumping"
+     name="jumping_panel"
+     layout="topleft"
+     follows="top|left">
+      <check_box
+       control_name="DisablePreJumpLand"
+       height="20"
+       label="Disable pre-jump and jump animations"
+       layout="topleft"
+       left="83"
+       name="disable_pre_jump_land"
+       top_pad="10"
+       width="200" />
+    </panel>
+
     <!-- ── Over-The-Shoulder tab ──────────────────────────────────────── -->
     <panel
      label="Over-The-Shoulder"

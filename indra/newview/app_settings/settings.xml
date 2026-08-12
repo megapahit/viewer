@@ -2774,6 +2774,17 @@
       <key>Value</key>
       <integer>0</integer>
     </map>
+    <key>DisablePreJumpLand</key>
+    <map>
+      <key>Comment</key>
+      <string>Disable pre-jump and jump animations</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>0</integer>
+    </map>
     <key>BlockTeleportOffers</key>
     <map>
       <key>Comment</key>
