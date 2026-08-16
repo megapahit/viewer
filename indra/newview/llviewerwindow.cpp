@@ -1881,8 +1881,8 @@ LLViewerWindow::LLViewerWindow(const Params& p)
     mToolStored( NULL ),
     mHideCursorPermanent( false ),
     mCursorHidden(false),
-    mResDirty(false),
-    mStatesDirty(false),
+    mResDirty(true),
+    mStatesDirty(true),
     mProgressView(NULL)
 {
     // gKeyboard is still NULL, so it doesn't do LLWindowListener any good to
@@ -6023,6 +6023,11 @@ void LLViewerWindow::checkSettings()
     // We want to update the resolution AFTER the states getting refreshed not before.
     if (mResDirty)
     {
+        LLCoordWindow size;
+        mWindow->getSize(&size);
+        mWindowRectRaw.set(0, size.mY, size.mX, 0);
+        mWindowRectScaled.set(0, ll_round((F32)size.mY / mDisplayScale.mV[VY]), ll_round((F32)size.mX / mDisplayScale.mV[VX]), 0);
+
         reshape(getWindowWidthRaw(), getWindowHeightRaw());
         mResDirty = false;
     }

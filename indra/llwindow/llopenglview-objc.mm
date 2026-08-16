@@ -226,12 +226,12 @@ attributedStringInfo getSegments(NSAttributedString *str)
 
 - (id) init
 {
-    return [self initWithFrame:[self bounds] withSamples:2 andVsync:TRUE];
+    return [self initWithFrame:[self bounds] withSamples:0 andVsync:FALSE];
 }
 
 - (id) initWithSamples:(NSUInteger)samples
 {
-    return [self initWithFrame:[self bounds] withSamples:samples andVsync:TRUE];
+    return [self initWithFrame:[self bounds] withSamples:samples andVsync:FALSE];
 }
 
 - (id) initWithSamples:(NSUInteger)samples andVsync:(BOOL)vsync
@@ -247,8 +247,9 @@ attributedStringInfo getSegments(NSAttributedString *str)
 
 - (id) initWithFrame:(NSRect)frame withSamples:(NSUInteger)samples andVsync:(BOOL)vsync
 {
-    [self registerForDraggedTypes:[NSArray arrayWithObject:NSPasteboardTypeURL]];
-    [self initWithFrame:frame];
+    NSRect fixedFrame = NSMakeRect(0, 0, NSWidth(frame), NSHeight(frame));
+    [self initWithFrame:fixedFrame];
+    [self setWantsBestResolutionOpenGLSurface:gHiDPISupport];
 
     // Initialize with a default "safe" pixel format that will work with versions dating back to OS X 10.6.
     // Any specialized pixel formats, i.e. a core profile pixel format, should be initialized through rebuildContextWithFormat.
@@ -260,7 +261,7 @@ attributedStringInfo getSegments(NSAttributedString *str)
         NSOpenGLPFAClosestPolicy,
         NSOpenGLPFAAccelerated,
         NSOpenGLPFADepthSize, 24,
-        NSOpenGLPFAColorSize, 32,
+        NSOpenGLPFAColorSize, 24,
         NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion4_1Core,
         0
     };
@@ -271,8 +272,8 @@ attributedStringInfo getSegments(NSAttributedString *str)
         NSOpenGLPFAClosestPolicy,
         NSOpenGLPFAAccelerated,
         NSOpenGLPFAColorFloat,
-        NSOpenGLPFAColorSize, 64,
         NSOpenGLPFADepthSize, 24,
+        NSOpenGLPFAColorSize, 48,
         NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion4_1Core,
         0
     };
@@ -327,9 +328,6 @@ attributedStringInfo getSegments(NSAttributedString *str)
         NSLog(@"Extended color space applied for HDR Display", nil);
     }
 
-    //for retina support
-    [self setWantsBestResolutionOpenGLSurface:gHiDPISupport];
-
     [self setOpenGLContext:glContext];
 
     [glContext setView:self];
@@ -350,6 +348,8 @@ attributedStringInfo getSegments(NSAttributedString *str)
 
     GLint opacity = 1;
     [glContext setValues:&opacity forParameter:NSOpenGLCPSurfaceOpacity];
+
+    [self registerForDraggedTypes:[NSArray arrayWithObject:NSPasteboardTypeURL]];
 
     return self;
 }
