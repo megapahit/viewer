@@ -51,7 +51,7 @@
 #include <IOKit/usb/IOUSBLib.h>
 
 extern bool gDebugWindowProc;
-bool gHiDPISupport = true;
+bool gHiDPISupport = false;
 bool gHDRDisplaySupport = false;
 
 const S32   BITS_PER_PIXEL = 32;
@@ -761,7 +761,7 @@ bool LLWindowMacOSX::createContext(int x, int y, int width, int height, int bits
                 kCGLPFAMultisample,
                 kCGLPFASampleBuffers, static_cast<CGLPixelFormatAttribute>((mFSAASamples > 0 ? 1 : 0)),
                 kCGLPFASamples, static_cast<CGLPixelFormatAttribute>(mFSAASamples),
-                kCGLPFAStencilSize, static_cast<CGLPixelFormatAttribute>(8),
+                //kCGLPFAStencilSize, static_cast<CGLPixelFormatAttribute>(8),
                 kCGLPFADepthSize, static_cast<CGLPixelFormatAttribute>(24),
                 kCGLPFAAlphaSize, static_cast<CGLPixelFormatAttribute>(8),
                 kCGLPFAColorSize, static_cast<CGLPixelFormatAttribute>(24),
@@ -939,9 +939,10 @@ bool LLWindowMacOSX::getVisible()
     if(mFullscreen)
     {
         result = true;
-    }if (mWindow)
+    }
+    if (mWindow)
     {
-            result = true;
+        result = true;
     }
 
     return(result);

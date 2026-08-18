@@ -171,7 +171,6 @@ void LLViewerJointAttachment::setupDrawable(LLViewerObject *object)
 //-----------------------------------------------------------------------------
 bool LLViewerJointAttachment::addObject(LLViewerObject* object)
 {
-//     object->extractAttachmentItemID();
 
     // Same object reattached
     if (isObjectAttached(object))

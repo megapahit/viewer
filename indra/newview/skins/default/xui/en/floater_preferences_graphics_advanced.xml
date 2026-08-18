@@ -141,14 +141,6 @@
      tool_tip="Maximum resolution for 'level of detail' textures"
      width="90">
         <combo_box.item
-          label="128"
-          name="128"
-          value="128"/>
-        <combo_box.item
-          label="256"
-          name="256"
-          value="256"/>
-        <combo_box.item
           label="512"
           name="512"
           value="512"/>

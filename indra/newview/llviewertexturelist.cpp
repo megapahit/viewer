@@ -1106,7 +1106,17 @@ F32 LLViewerTextureList::updateImagesCreateTextures(F32 max_time)
 
     while (!mCreateTextureList.empty())
     {
-        LLViewerFetchedTexture* imagep = mCreateTextureList.front();
+        // Hold a smart pointer to keep the texture alive throughout processing,
+        // even if side effects (e.g. pipeline rebuilds, GL operations) indirectly
+        // cause other references to be released. (see: #5426)
+        LLPointer<LLViewerFetchedTexture> imagep = mCreateTextureList.front();
+        mCreateTextureList.pop();
+
+        if (!imagep)
+        {
+            continue;
+        }
+
         llassert(imagep->mCreatePending);
 
         // desired discard may change while an image is being decoded. If the texture in VRAM is sufficient
@@ -1132,8 +1142,6 @@ F32 LLViewerTextureList::updateImagesCreateTextures(F32 max_time)
             imagep->scaleDown();
         }
 
-        mCreateTextureList.pop();
-
         if (create_timer.getElapsedTimeF32() > max_time)
         {
             break;
@@ -1155,10 +1163,11 @@ F32 LLViewerTextureList::updateImagesCreateTextures(F32 max_time)
         // give time to downscaling first -- if mDownScaleQueue is not empty, we're running out of memory and need
         // to free up memory by discarding off screen textures quickly
 
+        S32 min_count = (S32)mCreateTextureList.size() / 20 + 3;
         // do at least 5 and make sure we don't get too far behind even if it violates
         // the time limit.  If we don't downscale quickly the viewer will hit swap and may
         // freeze.
-        S32 min_count = (S32)mCreateTextureList.size() / 20 + 3;
+        //S32 min_count = (S32)mCreateTextureList.size() / 20 + 5;
 
         create_timer.reset();
         while (!mDownScaleQueue.empty())
@@ -1204,8 +1213,18 @@ F32 LLViewerTextureList::updateImagesLoadingFastCache(F32 max_time)
     LLTimer timer;
     image_list_t::iterator enditer = mFastCacheList.begin();
     {
-        // prelock fast cache mutex to avoid waiting multiple times.
-        LLMutexLock cache_lock(LLAppViewer::getTextureCache()->getFastCacheMutex());
+        // Prelock fast cache mutex to avoid waiting multiple times.
+        LLMutexTrylock fast_cache_lock(LLAppViewer::getTextureCache()->getFastCacheMutex());
+        if (!fast_cache_lock.isLocked())
+        {
+            // Cache is busy, skip this update cycle to avoid blocking the main thread.
+            //
+            // Generally fast cache operations are brief and rare in comparison to writing
+            // main texture body, but if disk is busy, it can get stuck for multiple
+            // seconds, waiting for that long is not practical.
+            // But some variant of a timed try lock for 0.1ms or less might be optimal.
+            return 0.0f;
+        }
         for (image_list_t::iterator iter = mFastCacheList.begin();
             iter != mFastCacheList.end();)
         {

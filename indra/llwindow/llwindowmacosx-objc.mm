@@ -223,8 +223,8 @@ OSErr setImageCursor(CursorRef ref)
 NSWindowRef createNSWindow(int x, int y, int width, int height)
 {
     LLNSWindow *window = [[LLNSWindow alloc]initWithContentRect:NSMakeRect(x, y, width, height)
-                                                      styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskResizable | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable
-                                                        backing:NSBackingStoreBuffered defer:NO];
+                                                      styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskResizable | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskFullSizeContentView
+                                                        backing:NSBackingStoreBuffered defer:YES];
     [window makeKeyAndOrderFront:nil];
     [window setAcceptsMouseMovedEvents:TRUE];
     [window setRestorable:FALSE]; // Viewer manages state from own settings
@@ -347,7 +347,7 @@ void convertWindowToScreen(NSWindowRef window, float *coord)
     NSRect rect = NSMakeRect(coord[0], coord[1], 0, 0);
     rect = [(LLNSWindow*)window convertRectToScreen:rect];
 
-      coord[0] = rect.origin.x;
+    coord[0] = rect.origin.x;
     coord[1] = [[NSScreen screens][0] frame].size.height - rect.origin.y;
 }
 
