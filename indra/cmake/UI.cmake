@@ -15,7 +15,7 @@ if (LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
     return()
   endif()
 
-  if (${LINUX_DISTRO} MATCHES freedesktop OR (${LINUX_DISTRO} MATCHES debian) OR (${LINUX_DISTRO} MATCHES ubuntu))
+  if (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES debian) OR (${LINUX_DISTRO} MATCHES freedesktop) OR (${LINUX_DISTRO} MATCHES ubuntu))
     include(FindPkgConfig)
     pkg_check_modules(CAIRO REQUIRED cairo)
     target_include_directories(ll::uilibraries SYSTEM INTERFACE ${CAIRO_INCLUDE_DIRS})
