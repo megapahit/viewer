@@ -407,9 +407,9 @@ ECmdRet CommandHandlerBaseImpl<EParamType::AddRem>::processCommand(const RlvComm
 {
     auto param = rlvCmd.getParam();
     bool toggle = false;
-    if (param == "y")
+    if (param == "y" || param == "add")
         toggle = true;
-    else if (param != "n")
+    else if (param != "n" && param != "rem")
         return ECmdRet::FailedParam;
     return (*pHandler)(rlvCmd, toggle);
 }
