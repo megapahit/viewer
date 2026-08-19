@@ -77,6 +77,7 @@ public:
     static void startChat(const char* line);
     static void stopChat();
 
+    static void addOrRemoveRedirChatChannel(S32 channel, bool add);
     static void sendChatFromViewer(const std::string &utf8text, EChatType type, bool animate);
     static void sendChatFromViewer(const LLWString &wtext, EChatType type, bool animate);
 

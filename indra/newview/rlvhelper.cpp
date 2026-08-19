@@ -66,6 +66,7 @@ BehaviourDictionary::BehaviourDictionary()
     addEntry(new ForceProcessor<EBehaviour::Detach>("detach"));
 
     // AddRem
+    addEntry(new BehaviourProcessor<EBehaviour::RedirChat>("redirchat"));
     addEntry(new BehaviourProcessor<EBehaviour::Sit>("sit"));
     addEntry(new BehaviourProcessor<EBehaviour::Unsit>("unsit"));
     addEntry(new BehaviourProcessor<EBehaviour::Detach>("detach"));

@@ -29,6 +29,7 @@
 #include "llagent.h"
 #include "llstartup.h"
 #include "llappearancemgr.h"
+#include "llfloaterimnearbychat.h"
 #include "llinventoryfunctions.h"
 #include "llinventorymodel.h"
 #include "llmoveview.h"
@@ -412,6 +413,13 @@ ECmdRet CommandHandlerBaseImpl<EParamType::AddRem>::processCommand(const RlvComm
     else if (param != "n" && param != "rem")
         return ECmdRet::FailedParam;
     return (*pHandler)(rlvCmd, toggle);
+}
+
+template<> template<>
+ECmdRet BehaviourToggleHandler<EBehaviour::RedirChat>::onCommand(const RlvCommand& rlvCmd, bool& toggle)
+{
+    LLFloaterIMNearbyChat::addOrRemoveRedirChatChannel(std::stoi(rlvCmd.getOption()), toggle);
+    return ECmdRet::Succeeded;
 }
 
 template<> template<>

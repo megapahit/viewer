@@ -69,6 +69,7 @@
 #include "lltranslate.h"
 #include "llautoreplace.h"
 #include "lluiusage.h"
+#include "rlvactions.h"
 
 S32 LLFloaterIMNearbyChat::sLastSpecialChatChannel = 0;
 
@@ -90,6 +91,8 @@ static LLChatTypeTrigger sChatTypeTriggers[] = {
     { "/whisper"    , CHAT_TYPE_WHISPER},
     { "/shout"  , CHAT_TYPE_SHOUT}
 };
+
+static std::unordered_set<S32> sRedirChatChannels;
 
 bool cb_do_nothing()
 {
@@ -475,7 +478,7 @@ void LLFloaterIMNearbyChat::onChatBoxKeystroke()
 
     auto length = raw_text.length();
 
-    if( (length > 0) && (raw_text[0] != '/') )  // forward slash is used for escape (eg. emote) sequences
+    if( (length > 0) && (raw_text[0] != '/') && !(RlvActions::isRlvEnabled() && !sRedirChatChannels.empty()) )  // forward slash is used for escape (eg. emote) sequences
     {
         gAgent.startTyping();
     }
@@ -699,6 +702,14 @@ void LLFloaterIMNearbyChat::displaySpeakingIndicator()
     }
 }
 
+void LLFloaterIMNearbyChat::addOrRemoveRedirChatChannel(S32 channel, bool add)
+{
+    if (add)
+        sRedirChatChannels.insert(channel);
+    else
+        sRedirChatChannels.erase(channel);
+}
+
 void LLFloaterIMNearbyChat::sendChatFromViewer(const std::string &utf8text, EChatType type, bool animate)
 {
     sendChatFromViewer(utf8str_to_wstring(utf8text), type, animate);
@@ -716,6 +727,15 @@ void LLFloaterIMNearbyChat::sendChatFromViewer(const LLWString &wtext, EChatType
     if (!utf8_text.empty())
     {
         utf8_text = utf8str_truncate(utf8_text, MAX_STRING - 1);
+    }
+
+    auto prefix = utf8_out_text.substr(0, 4);
+    if (RlvActions::isRlvEnabled() && channel == 0 && !sRedirChatChannels.empty() && prefix != "/me " && prefix != "/me'")
+    {
+        std::for_each(sRedirChatChannels.begin(), sRedirChatChannels.end(), [utf8_out_text,type](S32 channel){
+            send_chat_from_viewer(utf8_out_text, type, channel);
+        });
+        return;
     }
 
     // Don't animate for chats people can't hear (chat to scripts)
