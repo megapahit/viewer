@@ -5104,6 +5104,7 @@ bool LLViewerWindow::rawSnapshot(LLImageRaw *raw, S32 image_width, S32 image_hei
 
     // if not showing ui, use full window to render world view
     updateWorldViewRect(!show_ui);
+    gResizeScreenTexture = false;
 
     // Copy screen to a buffer
     // crop sides or top and bottom, if taking a snapshot of different aspect ratio
@@ -5135,8 +5136,7 @@ bool LLViewerWindow::rawSnapshot(LLImageRaw *raw, S32 image_width, S32 image_hei
     F32 scale_factor = 1.0f ;
     if (!keep_window_aspect || (image_width > window_width) || (image_height > window_height))
     {
-        if ((image_width <= gGLManager.mGLMaxTextureSize && image_height <= gGLManager.mGLMaxTextureSize) &&
-            (image_width > window_width || image_height > window_height) && LLPipeline::sRenderDeferred && !show_ui)
+        if ((image_width <= gGLManager.mGLMaxTextureSize && image_height <= gGLManager.mGLMaxTextureSize) && LLPipeline::sRenderDeferred && !show_ui)
         {
             U32 color_fmt = type == LLSnapshotModel::SNAPSHOT_TYPE_DEPTH ? GL_DEPTH_COMPONENT : GL_RGBA;
             if (scratch_space.allocate(image_width, image_height, color_fmt, true))
@@ -5144,7 +5144,7 @@ bool LLViewerWindow::rawSnapshot(LLImageRaw *raw, S32 image_width, S32 image_hei
                 original_width = gPipeline.mRT->deferredScreen.getWidth();
                 original_height = gPipeline.mRT->deferredScreen.getHeight();
 
-                if (gPipeline.allocateScreenBuffer(image_width, image_height))
+                if (gPipeline.allocateScreenBuffer(image_width, image_height, 1))
                 {
                     window_width = image_width;
                     window_height = image_height;
@@ -5417,7 +5417,7 @@ bool LLViewerWindow::simpleSnapshot(LLImageRaw* raw, S32 image_width, S32 image_
     U32 color_fmt = GL_RGBA;
     if (scratch_space.allocate(image_width, image_height, color_fmt, true))
     {
-        if (gPipeline.allocateScreenBuffer(image_width, image_height))
+        if (gPipeline.allocateScreenBuffer(image_width, image_height, 1))
         {
             mWorldViewRectRaw.set(0, image_height, image_width, 0);
 
