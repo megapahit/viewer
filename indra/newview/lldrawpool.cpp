@@ -369,9 +369,7 @@ void LLFacePool::LLOverrideFaceColor::setColor(const LLColor4& color)
 
 void LLFacePool::LLOverrideFaceColor::setColor(const LLColor4U& color)
 {
-#if GL_VERSION_1_1
-    glColor4ubv(color.mV);
-#endif
+    gGL.diffuseColor4ubv(color.mV);
 }
 
 void LLFacePool::LLOverrideFaceColor::setColor(F32 r, F32 g, F32 b, F32 a)
@@ -442,7 +440,11 @@ void LLRenderPass::pushBatches(U32 type, bool texture, bool batch_textures)
             LLDrawInfo* pparams = *i;
             LLCullResult::increment_iterator(i, end);
 
-            pushBatch(*pparams, texture, batch_textures);
+            llassert(pparams); // figure out how null got here, it shouldn't be happening
+            if (pparams)
+            {
+                pushBatch(*pparams, texture, batch_textures);
+            }
         }
     }
     else
@@ -461,7 +463,10 @@ void LLRenderPass::pushUntexturedBatches(U32 type)
         LLDrawInfo* pparams = *i;
         LLCullResult::increment_iterator(i, end);
 
-        pushUntexturedBatch(*pparams);
+        if (pparams)
+        {
+            pushUntexturedBatch(*pparams);
+        }
     }
 }
 
@@ -481,7 +486,7 @@ void LLRenderPass::pushRiggedBatches(U32 type, bool texture, bool batch_textures
             LLDrawInfo* pparams = *i;
             LLCullResult::increment_iterator(i, end);
 
-            if (uploadMatrixPalette(pparams->mAvatar, pparams->mSkinInfo, lastAvatar, lastMeshId, skipLastSkin))
+            if (pparams && uploadMatrixPalette(pparams->mAvatar, pparams->mSkinInfo, lastAvatar, lastMeshId, skipLastSkin))
             {
                 pushBatch(*pparams, texture, batch_textures);
             }
@@ -506,7 +511,7 @@ void LLRenderPass::pushUntexturedRiggedBatches(U32 type)
         LLDrawInfo* pparams = *i;
         LLCullResult::increment_iterator(i, end);
 
-        if (uploadMatrixPalette(pparams->mAvatar, pparams->mSkinInfo, lastAvatar, lastMeshId, skipLastSkin))
+        if (pparams && uploadMatrixPalette(pparams->mAvatar, pparams->mSkinInfo, lastAvatar, lastMeshId, skipLastSkin))
         {
             pushUntexturedBatch(*pparams);
         }
@@ -522,8 +527,11 @@ void LLRenderPass::pushMaskBatches(U32 type, bool texture, bool batch_textures)
     {
         LLDrawInfo* pparams = *i;
         LLCullResult::increment_iterator(i, end);
-        LLGLSLShader::sCurBoundShaderPtr->setMinimumAlpha(pparams->mAlphaMaskCutoff);
-        pushBatch(*pparams, texture, batch_textures);
+        if (pparams)
+        {
+            LLGLSLShader::sCurBoundShaderPtr->setMinimumAlpha(pparams->mAlphaMaskCutoff);
+            pushBatch(*pparams, texture, batch_textures);
+        }
     }
 }
 
@@ -541,13 +549,16 @@ void LLRenderPass::pushRiggedMaskBatches(U32 type, bool texture, bool batch_text
 
         LLCullResult::increment_iterator(i, end);
 
-        llassert(pparams);
+        llassert(pparams); // figure out how null got here, it shouldn't be happening
 
-        LLGLSLShader::sCurBoundShaderPtr->setMinimumAlpha(pparams->mAlphaMaskCutoff);
-
-        if (uploadMatrixPalette(pparams->mAvatar, pparams->mSkinInfo, lastAvatar, lastMeshId, skipLastSkin))
+        if (pparams)
         {
-            pushBatch(*pparams, texture, batch_textures);
+            LLGLSLShader::sCurBoundShaderPtr->setMinimumAlpha(pparams->mAlphaMaskCutoff);
+
+            if (uploadMatrixPalette(pparams->mAvatar, pparams->mSkinInfo, lastAvatar, lastMeshId, skipLastSkin))
+            {
+                pushBatch(*pparams, texture, batch_textures);
+            }
         }
     }
 }

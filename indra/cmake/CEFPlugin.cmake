@@ -155,25 +155,25 @@ elseif (${LINUX_DISTRO} MATCHES fedora)
     endif ()
 elseif (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
     if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/dullahan_installed OR NOT ${dullahan_installed} EQUAL 0)
-        if (NOT EXISTS ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40.tar.gz)
+        if (NOT EXISTS ${CMAKE_BINARY_DIR}/dullahan-1.26.0-CEF_139.0.40.tar.gz)
             file(DOWNLOAD
-                https://github.com/secondlife/dullahan/archive/refs/tags/v1.24.0-CEF_139.0.40.tar.gz
-                ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40.tar.gz
+                https://github.com/secondlife/dullahan/archive/refs/tags/v1.26.0-CEF_139.0.40.tar.gz
+                ${CMAKE_BINARY_DIR}/dullahan-1.26.0-CEF_139.0.40.tar.gz
                 )
         endif ()
         file(ARCHIVE_EXTRACT
-            INPUT ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40.tar.gz
+            INPUT ${CMAKE_BINARY_DIR}/dullahan-1.26.0-CEF_139.0.40.tar.gz
             DESTINATION ${CMAKE_BINARY_DIR}
             )
         execute_process(
             COMMAND sed -i "/#include <vector>/a #include <cstdint>" dullahan.h
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40/src
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dullahan-1.26.0-CEF_139.0.40/src
             )
         file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/include/cef)
         try_compile(DULLAHAN_RESULT
             PROJECT dullahan
-            SOURCE_DIR ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40
-            BINARY_DIR ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40
+            SOURCE_DIR ${CMAKE_BINARY_DIR}/dullahan-1.26.0-CEF_139.0.40
+            BINARY_DIR ${CMAKE_BINARY_DIR}/dullahan-1.26.0-CEF_139.0.40
             CMAKE_FLAGS
                 -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
                 -DCMAKE_INSTALL_PREFIX:PATH=${LIBS_PREBUILT_DIR}
@@ -193,12 +193,12 @@ elseif (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
                         libcef.so
                         libvk_swiftshader.so
                         libvulkan.so.1
-                    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40/_deps/cef_prebuild-src/${CMAKE_BUILD_TYPE}
+                    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dullahan-1.26.0-CEF_139.0.40/_deps/cef_prebuild-src/${CMAKE_BUILD_TYPE}
                 )
             endif ()
             execute_process(
                 COMMAND ${CMAKE_MAKE_PROGRAM} install
-                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40
+                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/dullahan-1.26.0-CEF_139.0.40
                 OUTPUT_VARIABLE dullahan_installed
             )
             if (CMAKE_BUILD_TYPE MATCHES Release)
@@ -209,8 +209,8 @@ elseif (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
             endif ()
             file(
                 COPY
-                    ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40/src/dullahan.h
-                    ${CMAKE_BINARY_DIR}/dullahan-1.24.0-CEF_139.0.40/src/dullahan_version.h
+                    ${CMAKE_BINARY_DIR}/dullahan-1.26.0-CEF_139.0.40/src/dullahan.h
+                    ${CMAKE_BINARY_DIR}/dullahan-1.26.0-CEF_139.0.40/src/dullahan_version.h
                 DESTINATION ${LIBS_PREBUILT_DIR}/include/cef
                 )
             file(WRITE ${PREBUILD_TRACKING_DIR}/dullahan_installed "${dullahan_installed}")
@@ -223,9 +223,9 @@ target_include_directories( ll::cef SYSTEM INTERFACE  ${LIBS_PREBUILT_DIR}/inclu
 
 if (WINDOWS)
     target_link_libraries( ll::cef INTERFACE
-        libcef.lib
-        libcef_dll_wrapper.lib
-        dullahan.lib
+        ${ARCH_PREBUILT_DIRS_RELEASE}/libcef.lib
+        ${ARCH_PREBUILT_DIRS_RELEASE}/libcef_dll_wrapper.lib
+        ${ARCH_PREBUILT_DIRS_RELEASE}/dullahan.lib
     )
 elseif (DARWIN)
     FIND_LIBRARY(APPKIT_LIBRARY AppKit)
@@ -313,8 +313,8 @@ elseif (LINUX)
         )
     endif ()
     target_link_libraries( ll::cef INTERFACE
-        libdullahan.a
-        cef
-        cef_dll_wrapper.a
+            libdullahan.a
+            cef
+            cef_dll_wrapper.a
     )
 endif (WINDOWS)

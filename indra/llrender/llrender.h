@@ -44,10 +44,11 @@
 #include "llglheaders.h"
 #include "llmatrix4a.h"
 #include "glm/mat4x4.hpp"
-#include <boost/align/aligned_allocator.hpp>
 
 #include <array>
+#include <chrono>
 #include <list>
+#include <vector>
 
 class LLVertexBuffer;
 class LLCubeMap;
@@ -246,8 +247,6 @@ protected:
     bool                mHasMipMaps;
 
     void debugTextureUnit(void);
-    GLint getTextureSource(eTextureBlendSrc src);
-    GLint getTextureSourceType(eTextureBlendSrc src, bool isAlpha = false);
 };
 
 class LLLightState
@@ -479,6 +478,8 @@ public:
     LLLightState* getLight(U32 index);
     void setAmbientLightColor(const LLColor4& color);
 
+    void setLineWidth(F32 width);
+
     LLTexUnit* getTexUnit(U32 index);
 
     U32 getCurrentTexUnitIndex(void) const { return mCurrTextureUnitIndex; }
@@ -499,6 +500,7 @@ public:
 public:
     static U32 sUICalls;
     static U32 sUIVerts;
+    static F32 sAnisotropicFilteringLevel;
     static bool sGLCoreProfile;
     static bool sNsightDebugSupport;
     static LLVector2 sUIGLScaleFactor;
@@ -524,7 +526,8 @@ private:
     U32             mCount;
     U32             mMode;
     U32             mCurrTextureUnitIndex;
-    bool                mCurrColorMask[4];
+    bool            mCurrColorMask[4];
+    F32             mLineWidth = 1.f;
 
     LLPointer<LLVertexBuffer>   mBuffer;
     LLStrider<LLVector4a>       mVerticesp;
@@ -539,8 +542,17 @@ private:
     eBlendFactor mCurrBlendAlphaSFactor;
     eBlendFactor mCurrBlendAlphaDFactor;
 
-    std::vector<LLVector4a, boost::alignment::aligned_allocator<LLVector4a, 16> > mUIOffset;
-    std::vector<LLVector4a, boost::alignment::aligned_allocator<LLVector4a, 16> > mUIScale;
+    std::vector<LLVector4a> mUIOffset;
+    std::vector<LLVector4a> mUIScale;
+
+    struct LLVBCache
+    {
+        LLPointer<LLVertexBuffer> vb;
+        std::chrono::steady_clock::time_point touched;
+    };
+
+    std::unordered_map<U64, LLVBCache> mVBCache;
+    std::list<LLVertexBufferData>* mBufferDataList = nullptr;
 };
 
 extern F32 gGLModelView[16];

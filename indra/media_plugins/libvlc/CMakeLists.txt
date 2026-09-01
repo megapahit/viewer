@@ -57,6 +57,7 @@ if (DARWIN)
         -change "/opt/local/libexec/boost/1.88/lib/libboost_context-mt.dylib" "@loader_path/libboost_context-mt.dylib"
         -change "/opt/local/libexec/boost/1.88/lib/libboost_fiber-mt.dylib" "@loader_path/libboost_fiber-mt.dylib"
         -change "/opt/local/libexec/boost/1.88/lib/libboost_filesystem-mt.dylib" "@loader_path/libboost_filesystem-mt.dylib"
+        -change "/opt/local/libexec/boost/1.88/lib/libboost_process-mt.dylib" "@loader_path/libboost_process-mt.dylib"
         -change "/opt/local/libexec/boost/1.88/lib/libboost_program_options-mt.dylib" "@loader_path/libboost_program_options-mt.dylib"
         -change "/opt/local/libexec/boost/1.88/lib/libboost_thread-mt.dylib" "@loader_path/libboost_thread-mt.dylib"
         -change "/opt/local/libexec/boost/1.88/lib/libboost_url-mt.dylib" "@loader_path/libboost_url-mt.dylib"

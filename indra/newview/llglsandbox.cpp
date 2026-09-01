@@ -805,9 +805,7 @@ void LLSky::renderSunMoonBeacons(const LLVector3& pos_agent, const LLVector3& di
     {
         pos_end.mV[i] = pos_agent.mV[i] + (50 * direction.mV[i]);
     }
-
     LLRender2D::setLineWidth((GLfloat)LLPipeline::DebugBeaconLineWidth);
-
     gGL.begin(LLRender::LINES);
     color.mV[3] *= 0.5f;
     gGL.color4fv(color.mV);
@@ -818,6 +816,7 @@ void LLSky::renderSunMoonBeacons(const LLVector3& pos_agent, const LLVector3& di
     gGL.end();
 
     LLRender2D::setLineWidth(1.f);
+
 }
 
 //-----------------------------------------------------------------------------

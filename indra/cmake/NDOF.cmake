@@ -48,27 +48,29 @@ if (NDOF)
     use_prebuilt_binary(open-libndofdev)
     else ()
       if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/libndofdev_installed OR NOT ${libndofdev_installed} EQUAL 0)
-        file(DOWNLOAD
-          https://github.com/janoc/libndofdev/archive/refs/tags/v0.14.tar.gz
-          ${CMAKE_BINARY_DIR}/libndofdev-0.14.tar.gz
-          )
+        if (NOT EXISTS ${CMAKE_BINARY_DIR}/libndofdev-master.zip)
+          file(DOWNLOAD
+            https://github.com/janoc/libndofdev/archive/refs/heads/master.zip
+            ${CMAKE_BINARY_DIR}/libndofdev-master.zip
+            )
+        endif ()
         file(ARCHIVE_EXTRACT
-          INPUT ${CMAKE_BINARY_DIR}/libndofdev-0.14.tar.gz
+          INPUT ${CMAKE_BINARY_DIR}/libndofdev-master.zip
           DESTINATION ${CMAKE_BINARY_DIR}
           )
-        set(ENV{USE_SDL2} 1)
+        set(ENV{USE_SDL3} 1)
         execute_process(
           COMMAND make -j${MAKE_JOBS}
-          WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/libndofdev-0.14
+          WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/libndofdev-master
           RESULT_VARIABLE libndofdev_installed
           )
-        unset(ENV{USE_SDL2})
+        unset(ENV{USE_SDL3})
         file(
-          COPY ${CMAKE_BINARY_DIR}/libndofdev-0.14/ndofdev_external.h
+          COPY ${CMAKE_BINARY_DIR}/libndofdev-master/ndofdev_external.h
           DESTINATION ${LIBS_PREBUILT_DIR}/include
           )
         file(
-          COPY ${CMAKE_BINARY_DIR}/libndofdev-0.14/libndofdev.a
+          COPY ${CMAKE_BINARY_DIR}/libndofdev-master/libndofdev.a
           DESTINATION ${ARCH_PREBUILT_DIRS_RELEASE}
           )
         file(WRITE ${PREBUILD_TRACKING_DIR}/libndofdev_installed "${libndofdev_installed}")
@@ -82,7 +84,14 @@ if (NDOF)
       ndofdev
       PATHS "${ARCH_PREBUILT_DIRS_RELEASE}" REQUIRED NO_DEFAULT_PATH)
 
-  target_link_libraries(ll::ndof INTERFACE ${NDOF_LIBRARY})
+  if (LINUX)
+    include(SDL3)
+    target_link_libraries(ll::ndof INTERFACE ${NDOF_LIBRARY} ll::SDL3)
+  else()
+    target_link_libraries(ll::ndof INTERFACE ${NDOF_LIBRARY})
+  endif()
 
   target_compile_definitions(ll::ndof INTERFACE LIB_NDOF=1)
 endif (NDOF)
+
+

@@ -34,52 +34,28 @@
 #include "llurldispatcher.h"        // SLURL from other app instance
 #include "llviewernetwork.h"
 #include "llviewercontrol.h"
-#include "llwindowsdl.h"
 #include "llmd5.h"
 #include "llfindlocale.h"
+#include "llversioninfo.h"
 
 #include <exception>
 
-#if LL_GLIB
+#define SDL_MAIN_USE_CALLBACKS
+#include <SDL3/SDL_main.h>
+
+#include "SDL3/SDL.h"
+
+#include "llsdl.h"
+#include "llwindowsdl.h"
+
+#ifdef LL_GLIB
 #include <gio/gio.h>
-#endif
-#include <netinet/in.h>
-#include <resolv.h>
-
-#if (__GLIBC__*1000 + __GLIBC_MINOR__) >= 2034
-extern "C"
-{
-  int __res_nquery(res_state statep,
-                   const char *dname, int qclass, int type,
-                   unsigned char *answer, int anslen)
-  {
-    return res_nquery( statep, dname, qclass, type, answer, anslen );
-  }
-
-  int __dn_expand(const unsigned char *msg,
-                  const unsigned char *eomorig,
-                  const unsigned char *comp_dn, char *exp_dn,
-                  int length)
-  {
-    return dn_expand( msg,eomorig,comp_dn,exp_dn,length);
-  }
-}
-#endif
-
-#if LL_SEND_CRASH_REPORTS
-#include "breakpad/client/linux/handler/exception_handler.h"
-#include "breakpad/common/linux/http_upload.h"
-#include "lldir.h"
-#include "../llcrashlogger/llcrashlogger.h"
-#include "jsoncpp/reader.h" // JSON
-
 #endif
 
 #define VIEWERAPI_SERVICE "com.secondlife.ViewerAppAPIService"
 #define VIEWERAPI_PATH "/com/secondlife/ViewerAppAPI"
 #define VIEWERAPI_INTERFACE "com.secondlife.ViewerAppAPI"
 
-#if LL_GLIB
 static const char * DBUS_SERVER = "<node name=\"/com/secondlife/ViewerAppAPI\">\n"
                                   "  <interface name=\"com.secondlife.ViewerAppAPI\">\n"
                                   "    <annotation name=\"org.freedesktop.DBus.GLib.CSymbol\" value=\"viewer_app_api\"/>\n"
@@ -94,15 +70,110 @@ typedef struct
 {
     GObject parent;
 } ViewerAppAPI;
-#endif
 
 namespace
 {
     int gArgC = 0;
     char **gArgV = NULL;
+    LLAppViewerLinux* gViewerAppPtr = NULL;
     void (*gOldTerminateHandler)() = NULL;
 }
 
+// Initialize static members
+guint32 LLAppViewerLinux::sPowerInhibitCookie = 0;
+bool LLAppViewerLinux::sPowerInhibitActive = false;
+
+void check_vm_bloat()
+{
+#if LL_LINUX
+    // watch our own VM and RSS sizes, warn if we bloated rapidly
+    static const std::string STATS_FILE = "/proc/self/stat";
+    FILE *fp = fopen(STATS_FILE.c_str(), "r");
+    if (fp)
+    {
+        static long long last_vm_size = 0;
+        static long long last_rss_size = 0;
+        const long long significant_vm_difference = 250 * 1024*1024;
+        const long long significant_rss_difference = 50 * 1024*1024;
+        long long this_vm_size = 0;
+        long long this_rss_size = 0;
+
+        ssize_t res;
+        size_t dummy;
+        char *ptr = nullptr;
+        for (int i=0; i<22; ++i) // parse past the values we don't want
+        {
+            res = getdelim(&ptr, &dummy, ' ', fp);
+            if (-1 == res)
+            {
+                LL_WARNS() << "Unable to parse " << STATS_FILE << LL_ENDL;
+                goto finally;
+            }
+            free(ptr);
+            ptr = nullptr;
+        }
+        // 23rd space-delimited entry is vsize
+        res = getdelim(&ptr, &dummy, ' ', fp);
+        llassert(ptr);
+        if (-1 == res)
+        {
+            LL_WARNS() << "Unable to parse " << STATS_FILE << LL_ENDL;
+            goto finally;
+        }
+        this_vm_size = atoll(ptr);
+        free(ptr);
+        ptr = nullptr;
+        // 24th space-delimited entry is RSS
+        res = getdelim(&ptr, &dummy, ' ', fp);
+        llassert(ptr);
+        if (-1 == res)
+        {
+            LL_WARNS() << "Unable to parse " << STATS_FILE << LL_ENDL;
+            goto finally;
+        }
+        this_rss_size = getpagesize() * atoll(ptr);
+        free(ptr);
+        ptr = nullptr;
+
+        LL_INFOS() << "VM SIZE IS NOW " << (this_vm_size/(1024*1024)) << " MB, RSS SIZE IS NOW " << (this_rss_size/(1024*1024)) << " MB" << LL_ENDL;
+
+        if (llabs(last_vm_size - this_vm_size) > significant_vm_difference)
+        {
+            if (this_vm_size > last_vm_size)
+            {
+                LL_WARNS() << "VM size grew by " << (this_vm_size - last_vm_size)/(1024*1024) << " MB in last frame" << LL_ENDL;
+            }
+            else
+            {
+                LL_INFOS() << "VM size shrank by " << (last_vm_size - this_vm_size)/(1024*1024) << " MB in last frame" << LL_ENDL;
+            }
+        }
+
+        if (llabs(last_rss_size - this_rss_size) > significant_rss_difference)
+        {
+            if (this_rss_size > last_rss_size)
+            {
+                LL_WARNS() << "RSS size grew by " << (this_rss_size - last_rss_size)/(1024*1024) << " MB in last frame" << LL_ENDL;
+            }
+            else
+            {
+                LL_INFOS() << "RSS size shrank by " << (last_rss_size - this_rss_size)/(1024*1024) << " MB in last frame" << LL_ENDL;
+            }
+        }
+
+        last_rss_size = this_rss_size;
+        last_vm_size = this_vm_size;
+
+finally:
+        if (ptr)
+        {
+            free(ptr);
+            ptr = nullptr;
+        }
+        fclose(fp);
+    }
+#endif // LL_LINUX
+}
 
 static void exceptionTerminateHandler()
 {
@@ -116,17 +187,19 @@ static void exceptionTerminateHandler()
     gOldTerminateHandler(); // call old terminate() handler
 }
 
-int main( int argc, char **argv )
+SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
     // Call Tracy first thing to have it allocate memory
     // https://github.com/wolfpld/tracy/issues/196
     LL_PROFILER_FRAME_END;
     LL_PROFILER_SET_THREAD_NAME("App");
 
+    gSDLMainHandled = true;
+
     gArgC = argc;
     gArgV = argv;
 
-    LLAppViewer* viewer_app_ptr = new LLAppViewerLinux();
+    gViewerAppPtr = new LLAppViewerLinux();
 
     // install unexpected exception handler
     gOldTerminateHandler = std::set_terminate(exceptionTerminateHandler);
@@ -137,18 +210,68 @@ int main( int argc, char **argv )
     setenv("LD_PRELOAD", "libpthread.so libGL.so.1", 1);
 # endif
     setenv("__GL_THREADED_OPTIMIZATIONS", "1", 0);
+    //unsetenv( "LD_PRELOAD" ); // <FS:ND/> Get rid of any preloading, we do not want this to happen during startup of plugins.
 
-    bool ok = viewer_app_ptr->init();
+    // This needs to be set as early as possible
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING, LLVersionInfo::getInstance()->getChannel().c_str());
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_VERSION_STRING, LLVersionInfo::getInstance()->getVersion().c_str());
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_IDENTIFIER_STRING, "com.secondlife.indra.viewer");
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_CREATOR_STRING, "Linden Research Inc");
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING, "Copyright (c) Linden Research, Inc. 2025");
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, "https://www.secondlife.com");
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "game");
+
+    bool ok = gViewerAppPtr->init();
     if(!ok)
     {
         LL_WARNS() << "Application init failed." << LL_ENDL;
-        return -1;
+        return SDL_APP_FAILURE;
     }
 
-        // Run the application main loop
-    while (! viewer_app_ptr->frame())
-    {}
+    return SDL_APP_CONTINUE;
+}
 
+SDL_AppResult SDL_AppIterate(void *appstate)
+{
+    // Run the application main loop
+    if (!gViewerAppPtr->frame())
+    {
+#if LL_GLIB
+        // Pump until we've nothing left to do or passed 1/15th of a
+        // second pumping for this frame.
+        static LLTimer pump_timer;
+        pump_timer.reset();
+        pump_timer.setTimerExpirySec(1.0f / 15.0f);
+        do
+        {
+            g_main_context_iteration(g_main_context_default(), false);
+        } while( g_main_context_pending(g_main_context_default()) && !pump_timer.hasExpired());
+#endif
+
+        // hack - doesn't belong here - but this is just for debugging
+        if (getenv("LL_DEBUG_BLOAT"))
+        {
+            check_vm_bloat();
+        }
+
+        return SDL_APP_CONTINUE;
+    }
+
+    if(LLApp::isError())
+    {
+        return SDL_APP_FAILURE;
+    }
+
+    return SDL_APP_SUCCESS;
+}
+
+SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
+{
+    return LLWindowSDL::handleEvents(*event);
+}
+
+void SDL_AppQuit(void *appstate, SDL_AppResult result)
+{
     if (!LLApp::isError())
     {
         //
@@ -156,11 +279,11 @@ int main( int argc, char **argv )
         // the assumption is that the error handler is responsible for doing
         // app cleanup if there was a problem.
         //
-        viewer_app_ptr->cleanup();
+        gViewerAppPtr->cleanup();
     }
-    delete viewer_app_ptr;
-    viewer_app_ptr = NULL;
-    return 0;
+
+    delete gViewerAppPtr;
+    gViewerAppPtr = nullptr;
 }
 
 LLAppViewerLinux::LLAppViewerLinux()
@@ -169,76 +292,22 @@ LLAppViewerLinux::LLAppViewerLinux()
 
 LLAppViewerLinux::~LLAppViewerLinux()
 {
-}
-
-#if LL_SEND_CRASH_REPORTS
-std::string gCrashLogger;
-std::string gVersion;
-std::string gBugsplatDB;
-std::string gCrashBehavior;
-
-static bool dumpCallback(const google_breakpad::MinidumpDescriptor& descriptor, void* context, bool succeeded)
-{
-    if( fork() == 0 )
-        execl( gCrashLogger.c_str(), gCrashLogger.c_str(), descriptor.path(), gVersion.c_str(), gBugsplatDB.c_str(),  gCrashBehavior.c_str(), nullptr );
-    return succeeded;
-}
-
-void setupBreadpad()
-{
-    std::string build_data_fname(gDirUtilp->getExpandedFilename(LL_PATH_EXECUTABLE, "build_data.json"));
-    gCrashLogger =  gDirUtilp->getExpandedFilename(LL_PATH_EXECUTABLE, "linux-crash-logger.bin");
-
-    llifstream inf(build_data_fname.c_str());
-    if(!inf.is_open())
+    // Clean up any power management inhibition on exit
+    if (sPowerInhibitActive)
     {
-        LL_WARNS("BUGSPLAT") << "Can't initialize BugSplat, can't read '" << build_data_fname << "'" << LL_ENDL;
-        return;
+        uninhibitPowerManagement();
     }
-
-    Json::Reader reader;
-    Json::Value build_data;
-    if(!reader.parse(inf, build_data, false))
-    {
-        LL_WARNS("BUGSPLAT") << "Can't initialize BugSplat, can't parse '" << build_data_fname << "': "
-                             << reader.getFormatedErrorMessages() << LL_ENDL;
-        return;
-    }
-
-    Json::Value BugSplat_DB = build_data["BugSplat DB"];
-    if(!BugSplat_DB)
-    {
-        LL_WARNS("BUGSPLAT") << "Can't initialize BugSplat, no 'BugSplat DB' entry in '" << build_data_fname
-                             << "'" << LL_ENDL;
-        return;
-    }
-    gVersion = STRINGIZE(
-            LL_VIEWER_VERSION_MAJOR << '.' << LL_VIEWER_VERSION_MINOR << '.' << LL_VIEWER_VERSION_PATCH
-                                    << '.' << LL_VIEWER_VERSION_BUILD);
-    gBugsplatDB = BugSplat_DB.asString();
-
-    LL_INFOS("BUGSPLAT") << "Initializing with crash logger: " << gCrashLogger << " database: " << gBugsplatDB << " version: " << gVersion << LL_ENDL;
-
-    google_breakpad::MinidumpDescriptor *descriptor = new google_breakpad::MinidumpDescriptor(gDirUtilp->getExpandedFilename(LL_PATH_DUMP, ""));
-    google_breakpad::ExceptionHandler *eh = new google_breakpad::ExceptionHandler(*descriptor, NULL, dumpCallback, NULL, true, -1);
 }
-#endif
 
 bool LLAppViewerLinux::init()
 {
     bool success = LLAppViewer::init();
 
 #if LL_SEND_CRASH_REPORTS
-    S32 nCrashSubmitBehavior = gCrashSettings.getS32("CrashSubmitBehavior");
-
-    // For the first version we just consider always send and create a nice dialog for CRASH_BEHAVIOR_ASK later.
-    if (success && nCrashSubmitBehavior != CRASH_BEHAVIOR_NEVER_SEND )
+    if (success)
     {
-        if( nCrashSubmitBehavior == CRASH_BEHAVIOR_ASK )
-            gCrashBehavior = "ask";
-        else
-            gCrashBehavior = "send";
-        setupBreadpad();
+        LLAppViewer* pApp = LLAppViewer::instance();
+        pApp->initCrashReporting();
     }
 #endif
 
@@ -403,67 +472,180 @@ bool LLAppViewerLinux::sendURLToOtherInstance(const std::string& url)
 }
 #endif // LL_GLIB
 
-void LLAppViewerLinux::initCrashReporting(bool reportFreeze)
+
+#if LL_GLIB
+
+namespace
 {
-    std::string cmd =gDirUtilp->getExecutableDir();
-    cmd += gDirUtilp->getDirDelimiter();
-//#if LL_LINUX
-    cmd += "linux-crash-logger.bin";
-/*
-#else
-# error Unknown platform
-#endif
-*/
-
-    std::stringstream pid_str;
-    pid_str <<  LLApp::getPid();
-    std::string logdir = gDirUtilp->getExpandedFilename(LL_PATH_DUMP, "");
-    std::string appname = gDirUtilp->getExecutableFilename();
-    std::string grid{ LLGridManager::getInstance()->getGridId() };
-    std::string title{ LLAppViewer::instance()->getSecondLifeTitle() };
-    std::string pidstr{ pid_str.str() };
-    // launch the actual crash logger
-    const char * cmdargv[] =
-        {cmd.c_str(),
-         "-user",
-         grid.c_str(),
-         "-name",
-         title.c_str(),
-         "-pid",
-         pidstr.c_str(),
-         "-dumpdir",
-         logdir.c_str(),
-         "-procname",
-         appname.c_str(),
-         NULL};
-    fflush(NULL);
-
-    pid_t pid = fork();
-    if (pid == 0)
-    { // child
-        execv(cmd.c_str(), (char* const*) cmdargv);     /* Flawfinder: ignore */
-        LL_WARNS() << "execv failure when trying to start " << cmd << LL_ENDL;
-        _exit(1); // avoid atexit()
-    }
-    else
+    // Session-bus sleep inhibitors, tried in order; both hand back a uint cookie.
+    struct PowerInhibitor
     {
-        if (pid > 0)
+        const char* service;
+        const char* path;
+        const char* iface;
+        const char* uninhibit;
+        bool gnome_args;
+    };
+
+    const PowerInhibitor POWER_INHIBITORS[] =
+    {
+        { "org.freedesktop.PowerManagement", "/org/freedesktop/PowerManagement/Inhibit",
+          "org.freedesktop.PowerManagement.Inhibit", "UnInhibit", false },
+        { "org.gnome.SessionManager", "/org/gnome/SessionManager",
+          "org.gnome.SessionManager", "Uninhibit", true }
+    };
+
+    const PowerInhibitor* sActiveInhibitor = nullptr;
+
+    // Returns the reply, or null on failure. Takes ownership of args.
+    GVariant* call_power_manager(const PowerInhibitor& inhibitor, const char* method, GVariant* args,
+                                 const GVariantType* reply_type)
+    {
+        g_variant_ref_sink(args);
+
+        GDBusConnection* bus = g_bus_get_sync(G_BUS_TYPE_SESSION, nullptr, nullptr);
+        if (!bus)
         {
-            // DO NOT wait for child proc to die; we want
-            // the logger to outlive us while we quit to
-            // free up the screen/keyboard/etc.
-            ////int childExitStatus;
-            ////waitpid(pid, &childExitStatus, 0);
+            LL_WARNS("OS") << "Getting dbus failed." << LL_ENDL;
+            g_variant_unref(args);
+            return nullptr;
+        }
+
+        GError* error = nullptr;
+        GVariant* result = g_dbus_connection_call_sync(bus, inhibitor.service, inhibitor.path,
+                                                       inhibitor.iface, method, args, reply_type,
+                                                       G_DBUS_CALL_FLAGS_NONE, -1, nullptr, &error);
+        if (!result)
+        {
+            LL_DEBUGS("OS") << inhibitor.service << "." << method << " failed: "
+                            << (error ? error->message : "unknown error") << LL_ENDL;
+        }
+        if (error)
+        {
+            g_error_free(error);
+        }
+
+        g_variant_unref(args);
+        g_object_unref(bus);
+        return result;
+    }
+}
+
+#endif // LL_GLIB
+
+void LLAppViewerLinux::setOSHibernationMode(eHibernationMode mode)
+{
+    if (mode == LL_HIBERNATE_MODE_DEFAULT)
+    {
+        // Allow OS to sleep/hibernate - remove any inhibition
+        if (sPowerInhibitActive)
+        {
+            uninhibitPowerManagement();
+            LL_INFOS("OS") << "Permitted OS hibernation/sleep" << LL_ENDL;
+        }
+    }
+    else if (mode == LL_HIBERNATE_MODE_PREVENT)
+    {
+        // Prevent system sleep, but allow display to turn off
+        // Release any existing inhibition first to allow mode switching
+        if (sPowerInhibitActive)
+        {
+            uninhibitPowerManagement();
+        }
+
+        if (inhibitPowerManagement(false))
+        {
+            LL_INFOS("OS") << "Prevented OS hibernation/sleep, display sleep allowed" << LL_ENDL;
         }
         else
         {
-            LL_WARNS() << "fork failure." << LL_ENDL;
+            LL_WARNS("OS") << "Failed to prevent OS hibernation/sleep" << LL_ENDL;
         }
     }
-    // Sometimes signals don't seem to quit the viewer.  Also, we may
-    // have been called explicitly instead of from a signal handler.
-    // Make sure we exit so as to not totally confuse the user.
-    //_exit(1); // avoid atexit(), else we may re-crash in dtors.
+    else if (mode == LL_HIBERNATE_MODE_PREVENT_SCREEN)
+    {
+        // Prevent both system and display sleep
+        // Release any existing inhibition first to allow mode switching
+        if (sPowerInhibitActive)
+        {
+            uninhibitPowerManagement();
+        }
+
+        if (inhibitPowerManagement(true))
+        {
+            LL_INFOS("OS") << "Prevented OS hibernation/sleep and display sleep" << LL_ENDL;
+        }
+        else
+        {
+            LL_WARNS("OS") << "Failed to prevent OS hibernation/sleep and display sleep" << LL_ENDL;
+        }
+    }
+}
+
+// TODO: This is AI Generated!!!, needs review and testing.
+bool LLAppViewerLinux::inhibitPowerManagement(bool inhibit_display)
+{
+#if LL_GLIB
+    const char* reason = inhibit_display ?
+        "Viewer active - preventing system and display sleep" :
+        "Viewer active - preventing system sleep";
+
+    for (const PowerInhibitor& inhibitor : POWER_INHIBITORS)
+    {
+        // Inhibit(app: s, reason: s) -> u, or GNOME's Inhibit(app: s, xid: u, reason: s, flags: u) -> u
+        // GNOME flags: 4 = suspend, 8 = idle (display), 12 = both
+        GVariant* args = inhibitor.gnome_args ?
+            g_variant_new("(susu)", "SecondLifeViewer", (guint32)0, reason,
+                          (guint32)(inhibit_display ? 12 : 4)) :
+            g_variant_new("(ss)", "Second Life Viewer", reason);
+
+        GVariant* result = call_power_manager(inhibitor, "Inhibit", args, G_VARIANT_TYPE("(u)"));
+        if (!result)
+        {
+            continue;
+        }
+
+        guint32 cookie = 0;
+        g_variant_get(result, "(u)", &cookie);
+        g_variant_unref(result);
+
+        sPowerInhibitCookie = cookie;
+        sPowerInhibitActive = true;
+        sActiveInhibitor = &inhibitor;
+        LL_INFOS("OS") << "Successfully inhibited power management using "
+            << inhibitor.service << LL_ENDL;
+        return true;
+    }
+#endif // LL_GLIB
+
+    return false;
+}
+
+void LLAppViewerLinux::uninhibitPowerManagement()
+{
+#if LL_GLIB
+    if (sPowerInhibitActive && sActiveInhibitor)
+    {
+        GVariant* result = call_power_manager(*sActiveInhibitor, sActiveInhibitor->uninhibit,
+                                              g_variant_new("(u)", (guint32)sPowerInhibitCookie),
+                                              nullptr);
+        if (result)
+        {
+            g_variant_unref(result);
+            LL_INFOS("OS") << "Successfully uninhibited power management using "
+                << sActiveInhibitor->service << LL_ENDL;
+        }
+
+        sActiveInhibitor = nullptr;
+    }
+#endif // LL_GLIB
+
+    sPowerInhibitCookie = 0;
+    sPowerInhibitActive = false;
+}
+
+void LLAppViewerLinux::initCrashReporting(bool reportFreeze)
+{
 }
 
 bool LLAppViewerLinux::beingDebugged()
@@ -494,7 +676,7 @@ bool LLAppViewerLinux::beingDebugged()
                     base += 1;
                 }
 
-                if (strcmp(base, "gdb") == 0)
+                if (strcmp(base, "gdb") == 0 || strcmp(base, "lldb") == 0)
                 {
                     debugged = yes;
                 }
@@ -504,18 +686,6 @@ bool LLAppViewerLinux::beingDebugged()
     }
 
     return debugged == yes;
-}
-
-void LLAppViewerLinux::initLoggingAndGetLastDuration()
-{
-    // Remove the last stack trace, if any
-    // This file is no longer created, since the move to Google Breakpad
-    // The code is left here to clean out any old state in the log dir
-    std::string old_stack_file =
-        gDirUtilp->getExpandedFilename(LL_PATH_LOGS,"stack_trace.log");
-    LLFile::remove(old_stack_file);
-
-    LLAppViewer::initLoggingAndGetLastDuration();
 }
 
 bool LLAppViewerLinux::initParseCommandLine(LLCommandLineParser& clp)

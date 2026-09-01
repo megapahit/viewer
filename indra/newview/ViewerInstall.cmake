@@ -174,6 +174,7 @@ elseif (WINDOWS)
             ${prefix_result}/../bin/boost_fiber${BOOST_DLL_SFX}.dll
             ${prefix_result}/../bin/boost_filesystem${BOOST_DLL_SFX}.dll
             ${prefix_result}/../bin/boost_json${BOOST_DLL_SFX}.dll
+            ${prefix_result}/../bin/boost_process${BOOST_DLL_SFX}.dll
             ${prefix_result}/../bin/boost_program_options${BOOST_DLL_SFX}.dll
             ${prefix_result}/../bin/boost_thread${BOOST_DLL_SFX}.dll
             ${prefix_result}/../bin/boost_url${BOOST_DLL_SFX}.dll

@@ -1,26 +1,12 @@
 # -*- cmake -*-
 
 add_subdirectory(base)
+if (NOT (CMAKE_SYSTEM_NAME MATCHES FreeBSD))
+add_subdirectory(cef)
+endif ()
+add_subdirectory(libvlc)
+add_subdirectory(example)
 
-if (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-    add_subdirectory(example)
-    add_subdirectory(libvlc)
-endif (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-
-if (LINUX)
-    add_subdirectory(cef)
-    add_subdirectory(example)
-    add_subdirectory(libvlc)
-endif (LINUX)
-
-if (DARWIN)
-    add_subdirectory(cef)
-    add_subdirectory(libvlc)
-    add_subdirectory(example)
-endif (DARWIN)
-
-if (WINDOWS)
-    add_subdirectory(cef)
-    add_subdirectory(libvlc)
-    add_subdirectory(example)
-endif (WINDOWS)
+if (FALSE)
+    add_subdirectory(gstreamer10)
+endif ()

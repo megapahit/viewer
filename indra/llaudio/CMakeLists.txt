@@ -71,3 +71,7 @@ if( TARGET ll::fmodstudio )
 endif()
 
 include(LibraryInstall)
+
+if (USE_PRECOMPILED_HEADERS)
+    target_precompile_headers(llaudio REUSE_FROM llprecompiled)
+endif ()

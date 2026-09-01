@@ -72,6 +72,10 @@ else()
     target_compile_options(llwebrtc PRIVATE -Wno-deprecated-declarations) # webrtc::CreateAudioDeviceWithDataObserver is deprecated
 endif (WINDOWS)
 
+if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
+    set_source_files_properties(llwebrtc.cpp PROPERTIES COMPILE_FLAGS -Wno-delete-non-virtual-dtor)
+endif ()
+
 ADD_CUSTOM_COMMAND(TARGET llwebrtc POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
                        $<TARGET_FILE:llwebrtc>

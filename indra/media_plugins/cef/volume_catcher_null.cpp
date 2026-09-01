@@ -1,4 +1,4 @@
-/** 
+/**
  * @file volume_catcher_null.cpp
  * @brief A null implementation of volume level control of all audio channels opened by a process.
  *        We are using this for the macOS version for now until we can understand how to make the
@@ -51,3 +51,9 @@ void VolumeCatcher::setPan(F32 pan)
 void VolumeCatcher::pump()
 {
 }
+
+#if LL_LINUX
+void VolumeCatcher::onEnablePipeWireVolumeCatcher(bool enable)
+{
+}
+#endif

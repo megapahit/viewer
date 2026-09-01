@@ -842,7 +842,7 @@ void gl_line_3d( const LLVector3& start, const LLVector3& end, const LLColor4& c
     }
     gGL.end();
 
-    LLRender2D::setLineWidth(1.f);
+    gGL.setLineWidth(1.f);
 }
 
 void gl_arc_2d(F32 center_x, F32 center_y, F32 radius, S32 steps, bool filled, F32 start_angle, F32 end_angle)
@@ -1797,18 +1797,8 @@ void LLRender2D::loadIdentity()
 // static
 void LLRender2D::setLineWidth(F32 width)
 {
-    gGL.flush();
-    // If outside the allowed range, glLineWidth fails with "invalid value".
-    // On Darwin, the range is [1, 1].
-    static GLfloat range[2]{0.0};
-#if GL_VERSION_1_2
-    if (range[1] == 0)
-    {
-        glGetFloatv(GL_SMOOTH_LINE_WIDTH_RANGE, range);
-    }
-#endif
     width *= lerp(LLRender::sUIGLScaleFactor.mV[VX], LLRender::sUIGLScaleFactor.mV[VY], 0.5f);
-    glLineWidth(llclamp(width, range[0], range[1]));
+    gGL.setLineWidth(width);
 }
 
 LLPointer<LLUIImage> LLRender2D::getUIImageByID(const LLUUID& image_id, S32 priority)

@@ -33,11 +33,10 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
-#include <boost/filesystem.hpp>
-#include <boost/regex.hpp>
 
 #include "llagent.h"
 #include "llagentcamera.h"
+#include "llcallbacklist.h"
 #include "llcommandhandler.h"
 #include "llcommunicationchannel.h"
 #include "llfloaterreg.h"
@@ -188,7 +187,6 @@
 #include "llviewerjoystick.h"
 #include "llviewermenufile.h" // LLFilePickerReplyThread
 #include "llviewernetwork.h"
-#include "llpostprocess.h"
 #include "llfloaterimnearbychat.h"
 #include "llagentui.h"
 #include "llwearablelist.h"
@@ -782,14 +780,14 @@ public:
             addText(xpos, ypos, "Projection Matrix");
             ypos += y_inc;
 
-#if LL_DARWIN
+#if LL_CLANG
 // For sprintf deprecation
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #endif
             // View last column is always <0,0,0,1>
             MATRIX_ROW_F32_TO_STR(gGLModelView, 12,camera_lines[3]); addText(xpos, ypos, std::string(camera_lines[3])); ypos += y_inc;
-#if LL_DARWIN
+#if LL_CLANG
 #pragma clang diagnostic pop
 #endif
             MATRIX_ROW_N32_TO_STR(gGLModelView,  8,camera_lines[2]); addText(xpos, ypos, std::string(camera_lines[2])); ypos += y_inc;
@@ -1467,12 +1465,68 @@ void LLViewerWindow::handleMouseLeave(LLWindow *window)
     LLToolTipMgr::instance().blockToolTips();
 }
 
+void LLViewerWindow::handlePreCloseRequest()
+{
+    // WINDOW THREAD! since we need this to act fast.
+    if (!LLApp::isExiting() && !LLApp::isStopped())
+    {
+        LLAppViewer::instance()->createCloseRequestMarker();
+    }
+}
+
+void LLViewerWindow::handleCloseRequestCanceled()
+{
+    // WINDOW THREAD! since we need this to act fast.
+    if (!LLApp::isExiting() && !LLApp::isStopped())
+    {
+        LLAppViewer::instance()->removeCloseRequestMarker();
+    }
+}
+
+void LLViewerWindow::handleSuspendRequest()
+{
+    static LLCachedControl<S32> os_hibernation_mode(gSavedSettings, "OSHibernationMode", 0);
+    if (os_hibernation_mode == 0)
+    {
+        LL_INFOS() << "Got a 'suspend' event from OS" << LL_ENDL;
+        // Viewer doesn't handle hibernation.
+        // Just send statistics.
+        LLAppViewer::instance()->sendViewerStatistics(false);
+    }
+    else
+    {
+        LL_INFOS() << "Got a 'suspend' event from OS, disconnecting" << LL_ENDL;
+        // Viewer is set to prevent hibernation if agent isn't away.
+        // If we got here, likely Agent 'went' away then viewer got
+        // a hibernation message.
+        // We have a limited timeframe. Sends stats then disconnect.
+        LLViewerRegion* region = gAgent.getRegion();
+        if (region)
+        {
+            LLAppViewer::instance()->sendViewerStatistics(true);
+            LLAppViewer::instance()->metricsSend(!gDisconnected);
+            // Make sure to show a message.
+            LLAppViewer::instance()->forceDisconnect(LLTrans::getString("YouHaveBeenDisconnected"));
+        }
+    }
+}
+
 bool LLViewerWindow::handleCloseRequest(LLWindow *window, bool from_user)
 {
     if (!LLApp::isExiting() && !LLApp::isStopped())
     {
         if (from_user)
         {
+            // Task naamger kills viewer after 1 second, 3 seconds
+            // is overkill, but decided to be on a safe side.
+            doAfterInterval([]()
+            {
+                // if user quits, marker will be cleaned by cleanup,
+                // if user cancels quit, marker will be cleaned here,
+                // but if task manager kills us, marker stays.
+                LLAppViewer::instance()->removeCloseRequestMarker();
+            }, 3.0f);
+
             // User has indicated they want to close, but we may need to ask
             // about modified documents.
             LLAppViewer::instance()->userQuit();
@@ -1493,6 +1547,9 @@ bool LLViewerWindow::handleSessionExit(LLWindow* window)
     {
         // Viewer received WM_ENDSESSION and app will be killed soon if it doesn't respond
         LLAppViewer* app = LLAppViewer::instance();
+        // Normally we'd include preferences, but serializing them can be expensive.
+        // There is also a chance this won't be processed if the logout request arrives first.
+        app->sendViewerStatistics(false /*no preferences*/);
         app->sendSimpleLogoutRequest();
         app->earlyExitNoNotify();
 
@@ -1903,7 +1960,7 @@ LLViewerWindow::LLViewerWindow(const Params& p)
     LLNotifications::instance().setIgnoreAllNotifications(ignore);
     if (ignore)
     {
-    LL_INFOS() << "NOTE: ALL NOTIFICATIONS THAT OCCUR WILL GET ADDED TO IGNORE LIST FOR LATER RUNS." << LL_ENDL;
+        LL_INFOS("Window") << "NOTE: ALL NOTIFICATIONS THAT OCCUR WILL GET ADDED TO IGNORE LIST FOR LATER RUNS." << LL_ENDL;
     }
 
 
@@ -1941,13 +1998,8 @@ LLViewerWindow::LLViewerWindow(const Params& p)
         ms_sleep(5000) ; //wait for 5 seconds.
 
         LLSplashScreen::update(LLTrans::getString("ShuttingDown"));
-#if LL_LINUX
-        LL_WARNS() << "Unable to create window, be sure screen is set at 32-bit color and your graphics driver is configured correctly.  See README-linux.txt for further information."
-                << LL_ENDL;
-#else
         LL_WARNS("Window") << "Unable to create window, be sure screen is set at 32-bit color in Control Panels->Display->Settings"
                 << LL_ENDL;
-#endif
         LLAppViewer::instance()->fastQuit(1);
     }
     else if (!LLViewerShaderMgr::sInitialized)
@@ -1976,6 +2028,23 @@ LLViewerWindow::LLViewerWindow(const Params& p)
             gSavedSettings.setF32("UIScaleFactor", 1.f);
         }
         gSavedSettings.setBOOL("ResetUIScaleOnFirstRun", false);
+        LL_DEBUGS("Window") << "ResetUIScaleOnFirstRun fired:"
+            << " system_ui_size=" << mWindow->getSystemUISize()
+            << " UIScaleFactor_after_reset=" << gSavedSettings.getF32("UIScaleFactor")
+            << " screen_size=" << scr.mX << "x" << scr.mY
+            << " pixel_aspect_ratio=" << mWindow->getPixelAspectRatio()
+            << " ResetUIScaleOnFirstRun=" << gSavedSettings.getBOOL("ResetUIScaleOnFirstRun")
+            << LL_ENDL;
+    }
+    else
+    {
+        LL_DEBUGS("Window") << "Display init diagnostics:"
+            << " screen_size=" << scr.mX << "x" << scr.mY
+            << " system_ui_size=" << mWindow->getSystemUISize()
+            << " pixel_aspect_ratio=" << mWindow->getPixelAspectRatio()
+            << " saved_UIScaleFactor=" << gSavedSettings.getF32("UIScaleFactor")
+            << " ResetUIScaleOnFirstRun=" << gSavedSettings.getBOOL("ResetUIScaleOnFirstRun")
+            << LL_ENDL;
     }
 
     // Get the real window rect the window was created with (since there are various OS-dependent reasons why
@@ -1984,6 +2053,12 @@ LLViewerWindow::LLViewerWindow(const Params& p)
 
     mDisplayScale.setVec(llmax(1.f / mWindow->getPixelAspectRatio(), 1.f), llmax(mWindow->getPixelAspectRatio(), 1.f));
     mDisplayScale *= ui_scale_factor;
+    LL_DEBUGS("Window") << "Display scale computed:"
+        << " ui_scale_factor=" << ui_scale_factor
+        << " mDisplayScale=" << mDisplayScale
+        << " (clamped_to=[" << MIN_UI_SCALE << ", " << MAX_UI_SCALE << "])"
+        << LL_ENDL;
+
     LLUI::setScaleFactor(mDisplayScale);
     LLFontGL::sResolutionGeneration++;
 
@@ -3071,7 +3146,7 @@ bool LLViewerWindow::handleKey(KEY key, MASK mask)
     {
         if ((focusedFloaterName == "nearby_chat") || (focusedFloaterName == "im_container") || (focusedFloaterName == "impanel"))
         {
-            LLCachedControl<bool> key_move(gSavedSettings, "ArrowKeysAlwaysMove");
+            static LLCachedControl<bool> key_move(gSavedSettings, "ArrowKeysAlwaysMove");
             if (key_move())
             {
                 // let Control-Up and Control-Down through for chat line history,
@@ -3930,7 +4005,7 @@ void LLViewerWindow::updateLayout()
 
 void LLViewerWindow::updateMouseDelta()
 {
-#if LL_WINDOWS && !LL_SDL
+#if LL_WINDOWS && !LL_SDL_WINDOW
     LLCoordCommon delta;
     mWindow->getCursorDelta(&delta);
     S32 dx = delta.mX;
@@ -4859,14 +4934,10 @@ void LLViewerWindow::saveImageLocal(LLImageFormatted *image, const snapshot_save
         return;
     }
 
-// Check if there is enough free space to save snapshot
-#ifdef LL_WINDOWS
-    boost::filesystem::path b_path(ll_convert<std::wstring>(lastSnapshotDir));
-#else
-    boost::filesystem::path b_path(lastSnapshotDir);
-#endif
-    boost::system::error_code ec;
-    if (!boost::filesystem::is_directory(b_path, ec) || ec.failed())
+    // Check if there is enough free space to save snapshot
+    std::filesystem::path b_path = fsyspath(lastSnapshotDir);
+    std::error_code ec;
+    if (!std::filesystem::is_directory(b_path, ec) || ec)
     {
         LLSD args;
         args["PATH"] = lastSnapshotDir;
@@ -4875,8 +4946,8 @@ void LLViewerWindow::saveImageLocal(LLImageFormatted *image, const snapshot_save
         failure_cb();
         return;
     }
-    boost::filesystem::space_info b_space = boost::filesystem::space(b_path, ec);
-    if (ec.failed())
+    std::filesystem::space_info b_space = std::filesystem::space(b_path, ec);
+    if (ec)
     {
         LLSD args;
         args["PATH"] = lastSnapshotDir;
@@ -5685,11 +5756,6 @@ void* LLViewerWindow::getPlatformWindow() const
     return mWindow->getPlatformWindow();
 }
 
-void* LLViewerWindow::getMediaWindow()  const
-{
-    return mWindow->getMediaWindow();
-}
-
 void LLViewerWindow::focusClient()      const
 {
     return mWindow->focusClient();
@@ -5910,11 +5976,6 @@ void LLViewerWindow::stopGL()
         }
 
         gBox.cleanupGL();
-
-        if(gPostProcess)
-        {
-            gPostProcess->invalidate();
-        }
 
         gTextureList.destroyGL();
         stop_glerror();

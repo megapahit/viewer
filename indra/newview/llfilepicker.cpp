@@ -36,14 +36,9 @@
 #include "llviewercontrol.h"
 #include "llwindow.h"   // beforeDialog()
 
-#if LL_SDL
+#if LL_SDL_WINDOW
 #include "llwindowsdl.h" // for some X/GTK utils to help with filepickers
 #endif // LL_SDL
-
-#ifdef LL_FLTK
-  #include "FL/Fl.H"
-  #include "FL/Fl_Native_File_Chooser.H"
-#endif
 
 #if LL_LINUX || __FreeBSD__
 #include "llhttpconstants.h"    // file picker uses some of thes constants on Linux
@@ -55,7 +50,7 @@
 
 LLFilePicker LLFilePicker::sInstance;
 
-#if LL_WINDOWS
+#if LL_WINDOWS && !LL_SDL_WINDOW
 #define SOUND_FILTER L"Sounds (*.wav)\0*.wav\0"
 #define IMAGE_FILTER L"Images (*.tga; *.bmp; *.jpg; *.jpeg; *.png)\0*.tga;*.bmp;*.jpg;*.jpeg;*.png\0"
 #define ANIM_FILTER L"Animations (*.bvh; *.anim)\0*.bvh;*.anim\0"
@@ -68,7 +63,7 @@ LLFilePicker LLFilePicker::sInstance;
 #define MATERIAL_FILTER L"GLTF Files (*.gltf; *.glb)\0*.gltf;*.glb\0"
 #define HDRI_FILTER L"HDRI Files (*.exr)\0*.exr\0"
 #define MATERIAL_TEXTURES_FILTER L"GLTF Import (*.gltf; *.glb; *.tga; *.bmp; *.jpg; *.jpeg; *.png)\0*.gltf;*.glb;*.tga;*.bmp;*.jpg;*.jpeg;*.png\0"
-#define SCRIPT_FILTER L"Script files (*.lsl)\0*.lsl\0"
+#define SCRIPT_FILTER L"Script files (*.lsl; *.lua; *.luau)\0*.lsl;*.lua;*.luau\0"
 #define DICTIONARY_FILTER L"Dictionary files (*.dic; *.xcu)\0*.dic;*.xcu\0"
 #endif
 
@@ -87,7 +82,7 @@ LLFilePicker::LLFilePicker()
 {
     reset();
 
-#if LL_WINDOWS
+#if LL_WINDOWS && !LL_SDL_WINDOW
     mOFN.lStructSize = sizeof(OPENFILENAMEW);
     mOFN.hwndOwner = NULL;  // Set later
     mOFN.hInstance = NULL;
@@ -107,7 +102,7 @@ LLFilePicker::LLFilePicker()
     mOFN.lpfnHook = NULL;
     mOFN.lpTemplateName = NULL;
     mFilesW[0] = '\0';
-#elif LL_DARWIN
+#elif LL_DARWIN && !LL_SDL_WINDOW
     mPickOptions = 0;
 #endif
 
@@ -172,7 +167,453 @@ void LLFilePicker::reset()
     mCurrentFile = 0;
 }
 
-#if LL_WINDOWS
+#if LL_SDL_WINDOW
+
+namespace
+{
+    std::vector<SDL_DialogFileFilter> setupLoadFilter(LLFilePicker::ELoadFilter filter)
+    {
+        std::vector<SDL_DialogFileFilter> filter_vec;
+
+        switch (filter)
+        {
+        case LLFilePicker::FFLOAD_ALL:
+        case LLFilePicker::FFLOAD_EXE:
+            filter_vec.push_back({ "All Files (*.*)", "*" });
+            filter_vec.push_back({ "Sounds (*.wav)", "wav" });
+            filter_vec.push_back({ "Images (*.tga; *.bmp; *.jpg; *.jpeg; *.png)", "tga;bmp;jpg;jpeg;png" });
+            filter_vec.push_back({ "Animations (*.bvh; *.anim)", "bvh;anim" });
+            filter_vec.push_back({ "GLTF Files (*.gltf; *.glb)", "gltf;glb" });
+            break;
+        case LLFilePicker::FFLOAD_WAV:
+            filter_vec.push_back({ "Sounds (*.wav)", "wav" });
+            break;
+        case LLFilePicker::FFLOAD_IMAGE:
+            filter_vec.push_back({ "Images (*.tga; *.bmp; *.jpg; *.jpeg; *.png)", "tga;bmp;jpg;jpeg;png" });
+            break;
+        case LLFilePicker::FFLOAD_ANIM:
+            filter_vec.push_back({ "Animations (*.bvh; *.anim)", "bvh;anim" });
+            break;
+        case LLFilePicker::FFLOAD_GLTF:
+            filter_vec.push_back({ "glTF (*.gltf; *.glb)", "gltf;glb" });
+            break;
+        case LLFilePicker::FFLOAD_COLLADA:
+            filter_vec.push_back({ "Scene (*.dae)", "dae" });
+            break;
+        case LLFilePicker::FFLOAD_XML:
+            filter_vec.push_back({ "XML files (*.xml)", "xml" });
+            break;
+        case LLFilePicker::FFLOAD_SLOBJECT:
+            filter_vec.push_back({ "Objects (*.slobject)", "slobject" });
+            break;
+        case LLFilePicker::FFLOAD_RAW:
+            filter_vec.push_back({ "RAW files (*.raw)", "raw" });
+            break;
+        case LLFilePicker::FFLOAD_MODEL:
+            filter_vec.push_back({ "Model files (*.dae; *.gltf; *.glb)", "dae;gltf;glb" });
+            filter_vec.push_back({ "Collada files (*.dae)", "dae" });
+            filter_vec.push_back({ "GLTF Files (*.gltf; *.glb)", "gltf;glb" });
+            break;
+        case LLFilePicker::FFLOAD_MATERIAL:
+            filter_vec.push_back({ "GLTF Files (*.gltf; *.glb)", "gltf;glb" });
+            break;
+        case LLFilePicker::FFLOAD_MATERIAL_TEXTURE:
+            filter_vec.push_back({ "GLTF Import (*.gltf; *.glb; *.tga; *.bmp; *.jpg; *.jpeg; *.png)", "gltf;glb;tga;bmp;jpg;jpeg;png" });
+            filter_vec.push_back({ "GLTF Files (*.gltf; *.glb)", "gltf;glb" });
+            filter_vec.push_back({ "Images (*.tga; *.bmp; *.jpg; *.jpeg; *.png)", "tga;bmp;jpg;jpeg;png" });
+            break;
+        case LLFilePicker::FFLOAD_HDRI:
+            filter_vec.push_back({ "HDRI Files (*.exr)", "exr" });
+            break;
+        case LLFilePicker::FFLOAD_SCRIPT:
+            filter_vec.push_back({ "Script files (*.lsl; *.lua; *.luau)", "lsl;lua;luau" });
+            break;
+        case LLFilePicker::FFLOAD_DICTIONARY:
+            filter_vec.push_back({ "Dictionary files (*.dic; *.xcu)", "dic;xcu" });
+            break;
+        default:
+            break;
+        }
+        return filter_vec;
+    }
+}
+
+bool LLFilePicker::getOpenFile(ELoadFilter filter, bool blocking)
+{
+    LL_ERRS() << "NOT IMPLEMENTED" << LL_ENDL;
+    return false;
+}
+
+bool LLFilePicker::getOpenFileModeless(ELoadFilter filter,
+    void (*callback)(bool, std::vector<std::string>&, void*),
+    void* userdata)
+{
+    if (mLocked)
+    {
+        return false;
+    }
+
+    // if local file browsing is turned off, return without opening dialog
+    if (!check_local_file_access_enabled())
+    {
+        return false;
+    }
+
+    auto file_filters = setupLoadFilter(filter);
+
+    reset();
+
+    {
+        struct LLSDLFileUserdata
+        {
+            LLSDLFileUserdata(void (*callback_func)(bool, std::vector<std::string>&, void*), void* callback_userdata)
+                : mCallback(callback_func), mUserdata(callback_userdata)
+            {
+            }
+            void (*mCallback)(bool, std::vector<std::string>&, void*);
+            void* mUserdata;
+        };
+
+        auto sdl_callback = [](void* userdata, const char* const* filelist, int filter)
+            {
+                LLSDLFileUserdata* callback_struct = (LLSDLFileUserdata*)userdata;
+
+                auto* callback_func = callback_struct->mCallback;
+                auto* callback_data = callback_struct->mUserdata;
+                delete callback_struct; // delete callback container
+
+                std::vector<std::string> rtn;
+
+                if (!filelist)
+                {
+                    LL_WARNS() << "Error during SDL file picking: " << SDL_GetError() << LL_ENDL;
+                    callback_func(false, rtn, callback_data);
+                    return;
+                }
+                else if (!*filelist)
+                {
+                    LL_INFOS() << "User did not select any file. Dialog likely cancelled." << LL_ENDL;
+                    callback_func(false, rtn, callback_data);
+                    return;
+                }
+
+                while (*filelist)
+                {
+                    rtn.push_back(std::string(*filelist));
+                    filelist++;
+                }
+
+                callback_func(true, rtn, callback_data);
+
+            };
+
+        LLSDLFileUserdata* llfilecallback = new LLSDLFileUserdata(callback, userdata);
+
+        SDL_PropertiesID props = SDL_CreateProperties();
+        SDL_SetPointerProperty(props, SDL_PROP_FILE_DIALOG_FILTERS_POINTER, file_filters.data());
+        SDL_SetNumberProperty(props, SDL_PROP_FILE_DIALOG_NFILTERS_NUMBER, file_filters.size());
+        SDL_SetPointerProperty(props, SDL_PROP_FILE_DIALOG_WINDOW_POINTER, SDL_GL_GetCurrentWindow());
+        SDL_SetBooleanProperty(props, SDL_PROP_FILE_DIALOG_MANY_BOOLEAN, false);
+
+        SDL_ShowFileDialogWithProperties(SDL_FILEDIALOG_OPENFILE, sdl_callback, llfilecallback, props);
+
+        SDL_DestroyProperties(props);
+    }
+    return true;
+}
+
+bool LLFilePicker::getMultipleOpenFiles(ELoadFilter filter, bool blocking)
+{
+    LL_ERRS() << "NOT IMPLEMENTED" << LL_ENDL;
+    return false;
+}
+
+bool LLFilePicker::getMultipleOpenFilesModeless(ELoadFilter filter,
+    void (*callback)(bool, std::vector<std::string>&, void*),
+    void* userdata)
+{
+    if (mLocked)
+    {
+        return false;
+    }
+
+    // if local file browsing is turned off, return without opening dialog
+    if (!check_local_file_access_enabled())
+    {
+        return false;
+    }
+
+    auto file_filters = setupLoadFilter(filter);
+
+    reset();
+
+    {
+        struct LLSDLFileUserdata
+        {
+            LLSDLFileUserdata(void (*callback_func)(bool, std::vector<std::string>&, void*), void* callback_userdata)
+                : mCallback(callback_func), mUserdata(callback_userdata)
+            {
+            }
+            void (*mCallback)(bool, std::vector<std::string>&, void*);
+            void* mUserdata;
+        };
+
+        auto sdl_callback = [](void* userdata, const char* const* filelist, int filter)
+            {
+                LLSDLFileUserdata* callback_struct = (LLSDLFileUserdata*)userdata;
+
+                auto* callback_func = callback_struct->mCallback;
+                auto* callback_data = callback_struct->mUserdata;
+                delete callback_struct; // delete callback container
+
+                std::vector<std::string> rtn;
+
+                if (!filelist)
+                {
+                    LL_WARNS() << "Error during SDL file picking: " << SDL_GetError() << LL_ENDL;
+                    callback_func(false, rtn, callback_data);
+                    return;
+                }
+                else if (!*filelist)
+                {
+                    LL_INFOS() << "User did not select any file. Dialog likely cancelled." << LL_ENDL;
+                    callback_func(false, rtn, callback_data);
+                    return;
+                }
+
+                while (*filelist)
+                {
+                    rtn.push_back(std::string(*filelist));
+                    filelist++;
+                }
+
+                callback_func(true, rtn, callback_data);
+
+            };
+
+        LLSDLFileUserdata* llfilecallback = new LLSDLFileUserdata(callback, userdata);
+
+        SDL_PropertiesID props = SDL_CreateProperties();
+        SDL_SetPointerProperty(props, SDL_PROP_FILE_DIALOG_FILTERS_POINTER, file_filters.data());
+        SDL_SetNumberProperty(props, SDL_PROP_FILE_DIALOG_NFILTERS_NUMBER, file_filters.size());
+        SDL_SetPointerProperty(props, SDL_PROP_FILE_DIALOG_WINDOW_POINTER, SDL_GL_GetCurrentWindow());
+        SDL_SetBooleanProperty(props, SDL_PROP_FILE_DIALOG_MANY_BOOLEAN, true);
+
+        SDL_ShowFileDialogWithProperties(SDL_FILEDIALOG_OPENFILE, sdl_callback, llfilecallback, props);
+
+        SDL_DestroyProperties(props);
+    }
+
+    return true;
+}
+
+bool LLFilePicker::getSaveFile(ESaveFilter filter, const std::string& filename, bool blocking)
+{
+    LL_ERRS() << "NOT IMPLEMENTED" << LL_ENDL;
+    return false;
+}
+
+bool LLFilePicker::getSaveFileModeless(ESaveFilter filter,
+    const std::string& filename,
+    void (*callback)(bool, std::string&, void*),
+    void* userdata)
+{
+    if (mLocked)
+    {
+        return false;
+    }
+
+    // if local file browsing is turned off, return without opening dialog
+    if (!check_local_file_access_enabled())
+    {
+        return false;
+    }
+
+    std::string default_filename;
+    if (!filename.empty())
+    {
+        default_filename = filename;
+    }
+
+    std::vector<SDL_DialogFileFilter> file_filters;
+
+    switch (filter)
+    {
+    case FFSAVE_ALL:
+        file_filters.push_back({ "All Files (*.*)", "*" });
+        file_filters.push_back({ "WAV Sounds (*.wav)", "wav" });
+        file_filters.push_back({ "Targa, Bitmap Images (*.tga; *.bmp)", "tga;bmp" });
+        break;
+    case FFSAVE_WAV:
+        if (default_filename.empty())
+        {
+            default_filename = "untitled.wav";
+        }
+        file_filters.push_back({ "WAV Sounds (*.wav)", "wav" });
+        break;
+    case FFSAVE_TGA:
+        if (default_filename.empty())
+        {
+            default_filename = "untitled.tga";
+        }
+        file_filters.push_back({ "Targa Images (*.tga)", "tga" });
+        break;
+    case FFSAVE_BMP:
+        if (default_filename.empty())
+        {
+            default_filename = "untitled.bmp";
+        }
+        file_filters.push_back({ "Bitmap Images (*.bmp)", "bmp" });
+        break;
+    case FFSAVE_PNG:
+        if (default_filename.empty())
+        {
+            default_filename = "untitled.png";
+        }
+        file_filters.push_back({ "PNG Images (*.png)", "png" });
+        break;
+    case FFSAVE_TGAPNG:
+        if (default_filename.empty())
+        {
+            //PNG by default
+            default_filename = "untitled.png";
+        }
+        file_filters.push_back({ "PNG Images (*.png)", "png" });
+        file_filters.push_back({ "Targa Images (*.tga)", "tga" });
+        break;
+
+    case FFSAVE_JPEG:
+        if (default_filename.empty())
+        {
+            default_filename = "untitled.jpeg";
+        }
+        file_filters.push_back({ "JPEG Images (*.jpg *.jpeg)", "jpg;jpeg" });
+        break;
+    case FFSAVE_AVI:
+        if (default_filename.empty())
+        {
+            default_filename = "untitled.avi";
+        }
+        file_filters.push_back({ "AVI Movie File (*.avi)", "avi" });
+        break;
+    case FFSAVE_ANIM:
+        if (default_filename.empty())
+        {
+            default_filename = "untitled.xaf";
+        }
+        file_filters.push_back({ "XAF Anim File (*.xaf)", "xaf" });
+        break;
+    case FFSAVE_GLTF:
+        if (default_filename.empty())
+        {
+            default_filename = "untitled.gltf";
+        }
+        file_filters.push_back({ "glTF Asset File (*.gltf)", "gltf" });
+        break;
+    case FFSAVE_XML:
+        if (default_filename.empty())
+        {
+            default_filename = "untitled.xml";
+        }
+        file_filters.push_back({ "XML File (*.xml)", "xml" });
+        break;
+    case FFSAVE_COLLADA:
+        if (default_filename.empty())
+        {
+            default_filename = "untitled.collada";
+        }
+        file_filters.push_back({ "COLLADA File (*.collada)", "collada" });
+        break;
+    case FFSAVE_RAW:
+        if (default_filename.empty())
+        {
+            default_filename = "untitled.raw";
+        }
+        file_filters.push_back({ "RAW files (*.raw)", "raw" });
+        break;
+    case FFSAVE_J2C:
+        if (default_filename.empty())
+        {
+            default_filename = "untitled.j2c";
+        }
+        file_filters.push_back({ "Compressed Images (*.j2c)", "j2c" });
+        break;
+    case FFSAVE_SCRIPT:
+        if (default_filename.empty())
+        {
+            default_filename = "untitled.lsl";
+        }
+        file_filters.push_back({ "Script files (*.lsl; *.lua; *.luau)", "lsl;lua;luau" });
+        break;
+    default:
+        return false;
+    }
+
+    reset();
+
+    {
+        struct LLSDLFileUserdata
+        {
+            LLSDLFileUserdata(void (*callback_func)(bool, std::string&, void*), void* callback_userdata)
+                : mCallback(callback_func), mUserdata(callback_userdata)
+            {
+            }
+            void (*mCallback)(bool, std::string&, void*);
+            void* mUserdata;
+        };
+
+        auto sdl_callback = [](void* userdata, const char* const* filelist, int filter)
+            {
+                LLSDLFileUserdata* callback_struct = (LLSDLFileUserdata*)userdata;
+
+                auto* callback_func = callback_struct->mCallback;
+                auto* callback_data = callback_struct->mUserdata;
+                delete callback_struct; // delete callback container
+
+                std::string rtn;
+                if (!filelist)
+                {
+                    LL_WARNS() << "Error during SDL file picking: " << SDL_GetError() << LL_ENDL;
+                    callback_func(false, rtn, callback_data);
+                    return;
+                }
+                else if (!*filelist)
+                {
+                    LL_INFOS() << "User did not select any file. Dialog likely cancelled." << LL_ENDL;
+                    callback_func(false, rtn, callback_data);
+                    return;
+                }
+
+                while (*filelist) {
+                    rtn = std::string(*filelist);
+                    break;
+                }
+                callback_func(true, rtn, callback_data);
+
+            };
+
+        LLSDLFileUserdata* llfilecallback = new LLSDLFileUserdata(callback, userdata);
+
+        SDL_PropertiesID props = SDL_CreateProperties();
+        SDL_SetPointerProperty(props, SDL_PROP_FILE_DIALOG_FILTERS_POINTER, file_filters.data());
+        SDL_SetNumberProperty(props, SDL_PROP_FILE_DIALOG_NFILTERS_NUMBER, file_filters.size());
+        SDL_SetPointerProperty(props, SDL_PROP_FILE_DIALOG_WINDOW_POINTER, SDL_GL_GetCurrentWindow());
+
+        // Disabled default file name functionality currently due to inconsistency between various SDL3 backends
+        // if(!default_filename.empty())
+        // {
+        //     SDL_SetStringProperty(props, SDL_PROP_FILE_DIALOG_LOCATION_STRING, default_filename.c_str());
+        // }
+        SDL_SetBooleanProperty(props, SDL_PROP_FILE_DIALOG_MANY_BOOLEAN, false);
+
+        SDL_ShowFileDialogWithProperties(SDL_FILEDIALOG_SAVEFILE, sdl_callback, llfilecallback, props);
+
+        SDL_DestroyProperties(props);
+    }
+
+    return true;
+}
+#elif LL_WINDOWS
 
 bool LLFilePicker::setupFilter(ELoadFilter filter)
 {
@@ -691,6 +1132,8 @@ std::unique_ptr<std::vector<std::string>> LLFilePicker::navOpenFilterProc(ELoadF
             break;
         case FFLOAD_SCRIPT:
             allowedv->push_back("lsl");
+            allowedv->push_back("lua");
+            allowedv->push_back("luau");
             break;
         case FFLOAD_DICTIONARY:
             allowedv->push_back("dic");
@@ -824,7 +1267,7 @@ void set_nav_save_data(LLFilePicker::ESaveFilter filter, std::string &extension,
         case LLFilePicker::FFSAVE_SCRIPT:
             type = "LSL ";
             creator = "\?\?\?\?";
-            extension = "lsl";
+            extension = "lsl;lua;luau";
             break;
 
         case LLFilePicker::FFSAVE_ALL:
@@ -1112,231 +1555,6 @@ bool LLFilePicker::getSaveFileModeless(ESaveFilter filter,
 
 #elif LL_LINUX || __FreeBSD__
 
-#if LL_FLTK
-
-bool LLFilePicker::getSaveFileModeless(ESaveFilter filter,
-                                       const std::string& filename,
-                                       void (*callback)(bool, std::string&, void*),
-                                       void *userdata)
-{
-    LL_ERRS() << "NOT IMPLEMENTED" << LL_ENDL;
-    return FALSE;
-}
-
-bool LLFilePicker::getOpenFileModeless(ELoadFilter filter,
-                                       void (*callback)(bool, std::vector<std::string> &, void*),
-                                       void *userdata)
-{
-    LL_ERRS() << "NOT IMPLEMENTED" << LL_ENDL;
-    return FALSE;
-}
-
-bool LLFilePicker::getMultipleOpenFilesModeless(ELoadFilter filter,
-                                                void (*callback)(bool, std::vector<std::string> &, void*),
-                                                void *userdata )
-{
-    LL_ERRS() << "NOT IMPLEMENTED" << LL_ENDL;
-    return FALSE;
-}
-
-
-
-bool LLFilePicker::getSaveFile( ESaveFilter filter, const std::string& filename, bool blocking )
-{
-    return openFileDialog( filter, blocking, eSaveFile );
-}
-
-bool LLFilePicker::getOpenFile( ELoadFilter filter, bool blocking )
-{
-    return openFileDialog( filter, blocking, eOpenFile );
-}
-
-bool LLFilePicker::getMultipleOpenFiles( ELoadFilter filter, bool blocking)
-{
-    return openFileDialog( filter, blocking, eOpenMultiple );
-}
-
-bool LLFilePicker::openFileDialog( int32_t filter, bool blocking, EType aType )
-{
-    if ( check_local_file_access_enabled() == false )
-        return false;
-    gViewerWindow->getWindow()->beforeDialog();
-    reset();
-    Fl_Native_File_Chooser::Type flType = Fl_Native_File_Chooser::BROWSE_FILE;
-    if( aType == eOpenMultiple )
-        flType = Fl_Native_File_Chooser::BROWSE_MULTI_FILE;
-    else if( aType == eSaveFile )
-        flType = Fl_Native_File_Chooser::BROWSE_SAVE_FILE;
-    Fl_Native_File_Chooser flDlg;
-    std::string file_dialog_title;
-    std::string file_dialog_filter;
-    if (aType == EType::eSaveFile)
-    {
-        std::string file_type("all_files");
-        switch ((ESaveFilter) filter)
-        {
-            case FFSAVE_ALL:
-                break;
-            case FFSAVE_TGA:
-                file_type = "targa_image_files";
-                file_dialog_filter = "*.tga";
-                break;
-            case FFSAVE_BMP:
-                file_type = "bitmap_image_files";
-                file_dialog_filter = "*.bmp";
-                break;
-            case FFSAVE_AVI:
-                file_type = "avi_movie_file";
-                file_dialog_filter = "*.avi";
-                break;
-            case FFSAVE_ANIM:
-                file_type = "xaf_animation_file";
-                file_dialog_filter = "*.xaf";
-                break;
-            case FFSAVE_XML:
-                file_type = "xml_file";
-                file_dialog_filter = "*.xml";
-                break;
-            case FFSAVE_COLLADA:
-                file_type = "collada_files";
-                file_dialog_filter = "*.dae";
-                break;
-            case FFSAVE_RAW:
-                file_type = "raw_file";
-                file_dialog_filter = "*.raw";
-                break;
-            case FFSAVE_J2C:
-                file_type = "compressed_image_files";
-                file_dialog_filter = "*.j2c";
-                break;
-            case FFSAVE_PNG:
-                file_type = "png_image_files";
-                file_dialog_filter = "*.png";
-                break;
-            case FFSAVE_JPEG:
-                file_type = "jpeg_image_files";
-                file_dialog_filter = "*.{jpg,jpeg}";
-                break;
-            case FFSAVE_SCRIPT:
-                file_type = "script_files";
-                file_dialog_filter = "*.lsl";
-                break;
-            case FFSAVE_TGAPNG:
-                file_type = "save_texture_image_files";
-                file_dialog_filter = "*.{tga,png}";
-                break;
-            case FFSAVE_WAV:
-                file_type = "sound_files";
-                file_dialog_filter = "*.wav";
-                break;
-            case FFSAVE_GLTF:
-                file_type = "gltf_asset_file";
-                file_dialog_filter = "*.{gltf,glb}";
-                break;
-        }
-        file_dialog_title = LLTrans::getString("save_file_verb") + " " + LLTrans::getString(file_type);
-        file_dialog_filter = LLTrans::getString(file_type) + " \t" + file_dialog_filter;
-    }
-    else
-    {
-        std::string file_type("all_files");
-        switch ((ELoadFilter) filter)
-        {
-            case FFLOAD_ALL:
-                break;
-            case FFLOAD_WAV:
-                file_type = "sound_files";
-                file_dialog_filter = "*.wav";
-                break;
-            case FFLOAD_IMAGE:
-                file_type = "image_files";
-                file_dialog_filter = "*.{tga,bmp,jpg,jpeg,png}";
-                break;
-            case FFLOAD_ANIM:
-                file_type = "animation_files";
-                file_dialog_filter = "*.{bvh,anim}";
-                break;
-            case FFLOAD_XML:
-                file_type = "xml_file";
-                file_dialog_filter = "*.xml";
-                break;
-            case FFLOAD_SLOBJECT:
-                file_type = "xml_file";
-                file_dialog_filter = "*.slobject";
-                break;
-            case FFLOAD_RAW:
-                file_type = "raw_file";
-                file_dialog_filter = "*.raw";
-                break;
-            case FFLOAD_MODEL:
-            case FFLOAD_COLLADA:
-                file_type = "collada_files";
-                file_dialog_filter = "*.dae";
-                break;
-            case FFLOAD_SCRIPT:
-                file_type = "script_files";
-                file_dialog_filter = "*.lsl";
-                break;
-            case FFLOAD_DICTIONARY:
-                file_type = "dictionary_files";
-                file_dialog_filter = "*.{dic,xcu}";
-                break;
-            case FFLOAD_DIRECTORY:
-                file_type = "choose_the_directory";
-                break;
-            case FFLOAD_EXE:
-                file_type = "executable_files";
-                break;
-            case FFLOAD_GLTF:
-            case FFLOAD_MATERIAL:
-                file_type = "gltf_asset_file";
-                file_dialog_filter = "*.{gltg,glb}";
-                break;
-            case FFLOAD_MATERIAL_TEXTURE:
-                file_dialog_filter = "*.{gltf,glb,tga,bmp,jpg,jpeg,png}";
-                file_type = "image_files";
-                break;
-            case FFLOAD_HDRI:
-                file_dialog_filter = "*.exr";
-
-        }
-        if (aType == EType::eOpenMultiple)
-        {
-            file_dialog_title = LLTrans::getString("load_files");
-        }
-        else
-        {
-            file_dialog_title = LLTrans::getString("load_file_verb") + " " + LLTrans::getString(file_type);
-            file_dialog_filter = LLTrans::getString(file_type) + " \t" + file_dialog_filter;
-        }
-    }
-    flDlg.title(file_dialog_title.c_str());
-    flDlg.type(flType);
-    if (!file_dialog_filter.empty())
-    {
-        flDlg.filter(file_dialog_filter.c_str());
-    }
-    int res = flDlg.show();
-    gViewerWindow->getWindow()->afterDialog();
-    if( res == 0 )
-    {
-        int32_t count = flDlg.count();
-        if( count < 0 )
-            count = 0;
-        for( int32_t i = 0; i < count; ++i )
-        {
-            char const *pFile = flDlg.filename(i);
-            if( pFile && strlen(pFile) > 0 )
-                mFiles.push_back( pFile  );
-        }
-    }
-    else if( res == -1 )
-    {
-        LL_WARNS() << "FLTK failed: " <<  flDlg.errmsg() << LL_ENDL;
-    }
-    return mFiles.empty()?FALSE:TRUE;
-}
-#else
 // Hacky stubs designed to facilitate fake getSaveFile and getOpenFile with
 // static results, when we don't have a real filepicker.
 
@@ -1423,8 +1641,6 @@ bool LLFilePicker::getMultipleOpenFilesModeless(ELoadFilter filter,
     LL_ERRS() << "NOT IMPLEMENTED" << LL_ENDL;
     return false;
 }
-
-#endif // LL_FLTK
 
 #else // not implemented
 

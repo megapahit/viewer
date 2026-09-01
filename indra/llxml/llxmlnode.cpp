@@ -29,7 +29,7 @@
 
 #include <iostream>
 #include <map>
-#if LL_SDL
+#if LL_SDL_WINDOW
 #include <SDL_rwops.h>
 #endif
 

@@ -274,9 +274,6 @@ void LLManipRotate::render()
             }
 
             LLGLEnable cull_face(GL_CULL_FACE);
-#if GL_VERSION_1_1
-            LLGLEnable clip_plane0(GL_CLIP_PLANE0);
-#endif
             LLGLDepthTest gls_depth(GL_FALSE);
             //LLGLDisable gls_stencil(GL_STENCIL_TEST);
 

@@ -119,11 +119,13 @@ EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
 metadata=()
 symbolfile=()
 physicstpv=()
+appearanceutility=()
 # and dump them to GITHUB_OUTPUT when done
 cleanup="$cleanup ; \
 arrayoutput metadata ; \
 arrayoutput symbolfile ; \
-arrayoutput physicstpv"
+arrayoutput physicstpv ; \
+arrayoutput appearanceutility"
 trap "$cleanup" EXIT
 
 arrayoutput()
@@ -148,6 +150,7 @@ pre_build()
 
     RELEASE_CRASH_REPORTING=OFF
     HAVOK=OFF
+    TESTING=OFF
     SIGNING=()
     if [[ "$variant" != *OS ]]
     then
@@ -167,16 +170,11 @@ pre_build()
     then
       # RELEASE_CRASH_REPORTING is tuned on unconditionaly, this is fine but not for Linux as of now (due to missing breakpad/crashpad support)
       RELEASE_CRASH_REPORTING=OFF
+    fi
 
-      # Builds turn on HAVOK even when config is ReleaseOS.
-      # This needs AUTOBUILD_GITHUB_TOKEN to be set in the environment. But this is not set for PRs apparently.
-      # Still this seemlingy works on Windows and Mac, why not on the Linux runner? Mystery to be solved elsewhere.
-
-
-      if [[ "$variant" == "ReleaseOS" ]]
-      then
-          HAVOK=OFF
-      fi
+    if $build_tests
+    then
+      TESTING=ON
     fi
 
     if [ "${RELEASE_CRASH_REPORTING:-}" != "OFF" ]
@@ -201,17 +199,9 @@ pre_build()
     # honor autobuild_configure_parameters same as sling-buildscripts
     eval_autobuild_configure_parameters=$(eval $(echo echo $autobuild_configure_parameters))
 
-    # We build the viewer on Linux, but we haven't committed to support the
-    # Linux viewer. As of 2024-05-30, Linux build-time test infrastructure is
-    # not in place, so don't even bother running tests on Linux.
-    if [[ "$RUNNER_OS" == "Linux" ]]
-    then LL_TESTS=OFF
-    else LL_TESTS=ON
-    fi
-
     "$autobuild" configure --quiet -c $variant \
      ${eval_autobuild_configure_parameters:---} \
-     -DLL_TESTS:BOOL=$LL_TESTS \
+     -DLL_TESTS:BOOL="$TESTING" \
      -DPACKAGE:BOOL=ON \
      -DHAVOK:BOOL="$HAVOK" \
      -DRELEASE_CRASH_REPORTING:BOOL="$RELEASE_CRASH_REPORTING" \
@@ -220,7 +210,6 @@ pre_build()
      -DVIEWER_CHANNEL:STRING="${viewer_channel}" \
      -DGRID:STRING="\"$viewer_grid\"" \
      -DTEMPLATE_VERIFIER_OPTIONS:STRING="$template_verifier_options" $template_verifier_master_url \
-     $CMAKE_OPTIONS \
      "${SIGNING[@]}" \
     || fatal "$variant configuration failed"
 
@@ -263,7 +252,18 @@ package_llphysicsextensions_tpv()
 build()
 {
   local variant="$1"
-  if $build_viewer
+  if $build_tests
+  then
+    begin_section "autobuild $variant tests"
+    # honor autobuild_build_parameters same as sling-buildscripts
+    export CTEST_OUTPUT_ON_FAILURE=1 # Output log on test failure
+    eval_autobuild_build_parameters=$(eval $(echo echo $autobuild_build_parameters))
+    "$autobuild" build --no-configure -c $variant \
+         $eval_autobuild_build_parameters -- --target BUILD_AND_RUN_TESTS \
+    || fatal "failed building $variant tests"
+    echo true >"$build_dir"/build_ok
+    end_section "autobuild $variant tests"
+  elif $build_viewer
   then
     begin_section "autobuild $variant"
     # honor autobuild_build_parameters same as sling-buildscripts
@@ -419,12 +419,7 @@ do
                   python_cmd "$helpers/codeticket.py" addoutput "Autobuild Metadata" "$build_dir/autobuild-package.xml" --mimetype text/xml \
                       || fatal "Upload of autobuild metadata failed"
                   metadata+=("$build_dir/autobuild-package.xml")
-                  if [ "$arch" != "Linux" ]
-                  then
-                      record_dependencies_graph "$build_dir/autobuild-package.xml" # defined in buildscripts/hg/bin/build.sh
-                  else
-                      record_event "TBD - no dependency graph for linux (probable python version dependency)"
-                  fi
+                  record_dependencies_graph "$build_dir/autobuild-package.xml" # defined in buildscripts/hg/bin/build.sh
                   end_section "Autobuild metadata"
               else
                   record_event "no autobuild metadata at '$build_dir/autobuild-package.xml'"
@@ -560,6 +555,14 @@ then
         fi
         # Upload crash reporter file
         symbolfile+=("$symbol_file")
+    fi
+
+    # Upload our apperance utility packages for linux
+    if [ "$arch" == "Linux" ]
+    then
+        appearance_utility_dir="${build_dir}/llappearanceutility"
+        appearanceutility+=("${appearance_utility_dir}/appearance-utility-bin")
+        appearanceutility+=("${appearance_utility_dir}/appearance-utility-headless-bin")
     fi
 
     # Upload the llphysicsextensions_tpv package, if one was produced

@@ -163,6 +163,7 @@ void LLKeyboard::resetKeyDownAndHandle()
             mCallbacks->handleTranslatedKeyUp(i, mask);
         }
     }
+    mCurTranslatedKey = KEY_NONE;
 }
 
 // BUG this has to be called when an OS dialog is shown, otherwise modifier key state
@@ -198,7 +199,6 @@ void LLKeyboard::resetKeys()
 
 bool LLKeyboard::translateKey(const NATIVE_KEY_TYPE os_key, KEY *out_key)
 {
-
     // Only translate keys in the map, ignore all other keys for now
     auto iter = mTranslateKeyMap.find(os_key);
     if (iter == mTranslateKeyMap.end())
@@ -228,7 +228,7 @@ LLKeyboard::NATIVE_KEY_TYPE LLKeyboard::inverseTranslateKey(const KEY translated
 }
 
 
-bool LLKeyboard::handleTranslatedKeyDown(KEY translated_key, U32 translated_mask)
+bool LLKeyboard::handleTranslatedKeyDown(KEY translated_key, MASK translated_mask)
 {
     bool handled = false;
     bool repeated = false;
@@ -256,7 +256,7 @@ bool LLKeyboard::handleTranslatedKeyDown(KEY translated_key, U32 translated_mask
 }
 
 
-bool LLKeyboard::handleTranslatedKeyUp(KEY translated_key, U32 translated_mask)
+bool LLKeyboard::handleTranslatedKeyUp(KEY translated_key, MASK translated_mask)
 {
     bool handled = false;
     if( mKeyLevel[translated_key] )

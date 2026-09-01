@@ -28,4 +28,9 @@ target_link_libraries( llimagej2coj
         ll::openjpeg
     )
 
+
 include(LibraryInstall)
+
+if (USE_PRECOMPILED_HEADERS)
+  target_precompile_headers(llimagej2coj REUSE_FROM llprecompiled)
+endif ()

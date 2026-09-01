@@ -2,10 +2,7 @@ include(Prebuilt)
 
 include_guard()
 
-add_library(ll::discord_sdk INTERFACE IMPORTED)
-target_compile_definitions(ll::discord_sdk INTERFACE LL_DISCORD=1)
-
-#use_prebuilt_binary(discord_sdk)
+option(USE_DISCORD "Enable Discord SDK" OFF)
 
 if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/discord_sdk_installed OR NOT ${discord_sdk_installed} EQUAL 0)
     if (${LINUX_DISTRO} MATCHES gentoo)
@@ -60,9 +57,21 @@ if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKIN
     file(WRITE ${PREBUILD_TRACKING_DIR}/discord_sdk_installed "0")
 endif ()
 
-target_include_directories(ll::discord_sdk SYSTEM INTERFACE ${LIBS_PREBUILT_DIR}/include/discord_sdk)
-find_library(DISCORD_LIBRARY
-    NAMES
-    discord_partner_sdk
-    PATHS "${ARCH_PREBUILT_DIRS_RELEASE}" REQUIRED NO_DEFAULT_PATH)
-target_link_libraries(ll::discord_sdk INTERFACE ${DISCORD_LIBRARY})
+if(USE_DISCORD)
+    add_library(ll::discord_sdk INTERFACE IMPORTED)
+
+    target_compile_definitions(ll::discord_sdk INTERFACE LL_DISCORD=1)
+
+    #use_prebuilt_binary(discord_sdk)
+
+    find_library(DISCORD_SDK_LIBRARY
+        NAMES
+        discord_partner_sdk
+        discord_partner_sdk.lib
+        libdiscord_partner_sdk.so
+        libdiscord_partner_sdk.dylib
+        PATHS "${ARCH_PREBUILT_DIRS_ARCH_RELEASE}" "${ARCH_PREBUILT_DIRS_RELEASE}" REQUIRED NO_DEFAULT_PATH)
+
+    target_include_directories(ll::discord_sdk SYSTEM INTERFACE ${LIBS_PREBUILT_DIR}/include/discord_sdk)
+    target_link_libraries(ll::discord_sdk INTERFACE ${DISCORD_SDK_LIBRARY})
+endif()

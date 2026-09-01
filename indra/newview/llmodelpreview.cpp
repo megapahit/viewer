@@ -3597,7 +3597,7 @@ bool LLModelPreview::render()
                     gGL.diffuseColor4fv(PREVIEW_EDGE_COL.mV);
                     if (show_edges)
                     {
-                        glLineWidth(PREVIEW_EDGE_WIDTH);
+                        gGL.setLineWidth(PREVIEW_EDGE_WIDTH);
 #if GL_VERSION_1_1
                         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 #endif
@@ -3605,7 +3605,7 @@ bool LLModelPreview::render()
 #if GL_VERSION_1_1
                         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 #endif
-                        glLineWidth(1.f);
+                        gGL.setLineWidth(1.f);
                     }
                     buffer->unmapBuffer();
                 }
@@ -3653,7 +3653,7 @@ bool LLModelPreview::render()
                         LLPhysicsDecomp* decomp = gMeshRepo.mDecompThread;
                         if (decomp)
                         {
-                            LLMutexLock(decomp->mMutex);
+                            LLMutexLock decomp_lock(decomp->mMutex);
 
                             LLModel::Decomposition& physics = model->mPhysics;
 
@@ -3728,6 +3728,7 @@ bool LLModelPreview::render()
                                     buffer->drawRange(LLRender::TRIANGLES, 0, buffer->getNumVerts() - 1, buffer->getNumIndices(), 0);
 
                                     gGL.diffuseColor4fv(PREVIEW_PSYH_EDGE_COL.mV);
+                                    gGL.setLineWidth(PREVIEW_PSYH_EDGE_WIDTH);
 #if GL_VERSION_1_1
                                     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 #endif
@@ -3736,6 +3737,7 @@ bool LLModelPreview::render()
 #if GL_VERSION_1_1
                                     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 #endif
+                                    gGL.setLineWidth(1.f);
 
                                     buffer->unmapBuffer();
                                 }
@@ -3747,6 +3749,7 @@ bool LLModelPreview::render()
                     // only do this if mDegenerate was set in the preceding mesh checks [Check this if the ordering ever breaks]
                     if (mHasDegenerate)
                     {
+                        gGL.setLineWidth(PREVIEW_DEG_EDGE_WIDTH);
 #if GL_VERSION_1_1
                         glPointSize(PREVIEW_DEG_POINT_SIZE);
 #endif
@@ -3777,7 +3780,7 @@ bool LLModelPreview::render()
                             LLPhysicsDecomp* decomp = gMeshRepo.mDecompThread;
                             if (decomp)
                             {
-                                LLMutexLock(decomp->mMutex);
+                                LLMutexLock decomp_lock(decomp->mMutex);
 
                                 LLModel::Decomposition& physics = model->mPhysics;
 
@@ -3818,7 +3821,7 @@ bool LLModelPreview::render()
 
                             gGL.popMatrix();
                         }
-                        //glLineWidth(1.f);
+                        //gGL.setLineWidth(1.f);
 #if GL_VERSION_1_1
                         glPointSize(1.f);
 #endif
@@ -3942,7 +3945,7 @@ bool LLModelPreview::render()
                             {
                                 gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
                                 gGL.diffuseColor4fv(PREVIEW_EDGE_COL.mV);
-                                //glLineWidth(PREVIEW_EDGE_WIDTH);
+                                //gGL.setLineWidth(PREVIEW_EDGE_WIDTH);
 #if GL_VERSION_1_1
                                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 #endif
@@ -3950,6 +3953,7 @@ bool LLModelPreview::render()
 #if GL_VERSION_1_1
                                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 #endif
+                                gGL.setLineWidth(1.f);
                             }
                         }
                     }

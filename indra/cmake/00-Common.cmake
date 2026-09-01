@@ -11,15 +11,32 @@
 #
 #   Also realize that CMAKE_CXX_FLAGS may already be partially populated on
 #   entry to this file.
+#
+#   Additionally CMAKE_C_FLAGS is prepended to CMAKE_CXX_FLAGS_RELEASE and
+#   CMAKE_CXX_FLAGS_RELWITHDEBINFO which risks having flags overriden by cmake
+#   inserting additional options that are part of the build config type.
 #*****************************************************************************
 include_guard()
 
 include(Variables)
-include(Linker)
+include(Linking)
 include(UnixInstall)
 
 # We go to some trouble to set LL_BUILD to the set of relevant compiler flags.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} $ENV{LL_BUILD}")
+
+if (DARWIN)
+  # LL_BUILD carries a literal -mmacosx-version-min=<ver> from
+  # viewer-build-variables. We derive the macOS deployment target in
+  # Variables.cmake (clamping up to the SDK's supported minimum when needed)
+  # and let CMAKE_OSX_DEPLOYMENT_TARGET emit the flag to both compiler and
+  # linker. Strip the verbatim flag here so it can't conflict with the
+  # clamped deployment target.
+  string(REGEX REPLACE "-mmacosx-version-min=[0-9.]+" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+endif (DARWIN)
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} $ENV{LL_BUILD_RELEASE}")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} $ENV{LL_BUILD_RELWITHDEBINFO}")
+
 # Given that, all the flags you see added below are flags NOT present in
 # https://bitbucket.org/lindenlab/viewer-build-variables/src/tip/variables.
 # Before adding new ones here, it's important to ask: can this flag really be
@@ -27,7 +44,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} $ENV{LL_BUILD}")
 # as well?
 
 # Portable compilation flags.
-add_compile_definitions( ADDRESS_SIZE=${ADDRESS_SIZE})
+add_compile_definitions(ADDRESS_SIZE=${ADDRESS_SIZE})
 # Because older versions of Boost.Bind dumped placeholders _1, _2 et al. into
 # the global namespace, Boost now requires either BOOST_BIND_NO_PLACEHOLDERS
 # to avoid that or BOOST_BIND_GLOBAL_PLACEHOLDERS to state that we require it
@@ -116,7 +133,7 @@ if (NOT CMAKE_CXX_COMPILER_ID MATCHES GNU AND WINDOWS)
 
   #ND: When using something like buildcache (https://github.com/mbitsnbites/buildcache)
   # to make those wrappers work /Zi must be changed to /Z7, as /Zi due to it's nature is not compatible with caching
-  if(${CMAKE_CXX_COMPILER_LAUNCHER} MATCHES ".*cache.*")
+  if (${CMAKE_CXX_COMPILER_LAUNCHER} MATCHES ".*cache.*")
     add_compile_options( /Z7 )
     string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
@@ -124,9 +141,9 @@ if (NOT CMAKE_CXX_COMPILER_ID MATCHES GNU AND WINDOWS)
     string(REPLACE "/Zi" "/Z7" CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
     string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
   endif()
-endif (NOT CMAKE_CXX_COMPILER_ID MATCHES GNU AND WINDOWS)
+endif ()
 
-if (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+if (LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
   set( CMAKE_BUILD_WITH_INSTALL_RPATH TRUE )
   set( CMAKE_INSTALL_RPATH ${INSTALL_LIBRARY_DIR} )
   set(CMAKE_EXE_LINKER_FLAGS "-Wl,--exclude-libs,ALL")
@@ -137,10 +154,10 @@ if (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
     set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_EXE} )
   endif()
 
-  # LL_IGNORE_SIGCHLD
-  # don't catch SIGCHLD in our base application class for the viewer - some of
-  # our 3rd party libs may need their *own* SIGCHLD handler to work. Sigh! The
-  # viewer doesn't need to catch SIGCHLD anyway.
+   # LL_IGNORE_SIGCHLD
+   # don't catch SIGCHLD in our base application class for the viewer - some of
+   # our 3rd party libs may need their *own* SIGCHLD handler to work. Sigh! The
+   # viewer doesn't need to catch SIGCHLD anyway.
 
   add_compile_definitions(
           _REENTRANT
@@ -148,38 +165,66 @@ if (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
           LL_IGNORE_SIGCHLD
   )
 
-  if( ENABLE_ASAN )
-      add_compile_options(-U_FORTIFY_SOURCE
-        -fsanitize=address
-        --param asan-stack=0
-      )
+  option(ENABLE_ASAN "Enable Address Sanitizer" OFF)
+  option(ENABLE_UBSAN "Enable Undefined Behavior Sanitizer" OFF)
+  option(ENABLE_THREADSAN "Enable Thread Sanitizer" OFF)
+  if(ENABLE_ASAN OR ENABLE_UBSAN OR ENABLE_THREADSAN)
+    set(GCC_DISABLE_FATAL_WARNINGS ON) # Disable warnings as errors during sanitizer builds due to false positives
+
+    add_compile_options(
+      -U_FORTIFY_SOURCE
+      -fno-omit-frame-pointer
+      -fno-common
+      -fsanitize-recover=all
+    )
+
+    # libwebrtc is incompatible with sanitizers
+    set(DISABLE_WEBRTC ON)
+    add_compile_definitions(DISABLE_WEBRTC=1)
+
+    if(ENABLE_ASAN)
+      add_compile_options(-fsanitize=address)
       add_link_options(-fsanitize=address)
-  elseif( NOT (${LINUX_DISTRO} MATCHES freedesktop) )
-   add_compile_definitions( _FORTIFY_SOURCE=2 )
+    endif()
+
+    if(ENABLE_UBSAN)
+      add_compile_options(-fsanitize=undefined)
+      add_link_options(-fsanitize=undefined)
+    endif()
+
+    if(ENABLE_THREADSAN)
+      add_compile_options(-fsanitize=thread)
+      add_link_options(-fsanitize=thread)
+    endif()
+  elseif(NOT (${LINUX_DISTRO} MATCHES freedesktop))
+    add_compile_definitions($<$<CONFIG:Release>:_FORTIFY_SOURCE=2>)
   endif()
 
-  if (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+  if (CMAKE_SYSTEM_NAME MATCHES FreeBSD)
     add_compile_definitions(EXTERNAL_TOS)
-  endif (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+  endif ()
 
   add_compile_options(
-      -fexceptions
-      -fno-math-errno
-      -fno-strict-aliasing
-      -fsigned-char
-      -pthread
+          $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-fstack-protector>
+          -fexceptions
+          -fno-math-errno
+          -fno-strict-aliasing
+          -fsigned-char
+          #-g
+          -pthread
   )
 
   if (CMAKE_SYSTEM_NAME MATCHES x86_64)
-    add_compile_options(
-        -msse2
-        -mfpmath=sse
-    )
+      add_compile_options(
+          -msse2
+      )
   endif ()
 
   if (NOT BUILD_SHARED_LIBS)
-    add_compile_options(-fvisibility=hidden)
-  endif (NOT BUILD_SHARED_LIBS)
+      add_compile_options(
+          -fvisibility=hidden
+      )
+  endif ()
 
   set(GCC_CLANG_COMPATIBLE_WARNINGS
       -Wno-parentheses
@@ -189,8 +234,6 @@ if (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
   )
 
   set(CLANG_WARNINGS
-      ${GCC_CLANG_COMPATIBLE_WARNINGS}
-      # Put clang specific warning configuration here
       -Wno-inconsistent-missing-override
   )
 
@@ -207,15 +250,15 @@ if (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
   endif ()
   add_link_options(
           -Wl,--no-keep-memory
-          -Wl,--build-id
-          -Wl,--no-undefined
+          "LINKER:-z,relro"
+          "LINKER:-z,now"
+          "LINKER:--build-id"
+          "LINKER:--as-needed"
+          "LINKER:--no-undefined"
   )
   if (NOT GCC_DISABLE_FATAL_WARNINGS)
     add_compile_options( -Werror )
   endif (NOT GCC_DISABLE_FATAL_WARNINGS)
-
-  # this stops us requiring a really recent glibc at runtime
-  add_compile_options(-fno-stack-protector)
 
   if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     # ND: clang is a bit more picky than GCC, the latter seems to auto include -lstdc++ and -lm. The former not so and thus fails to link
@@ -227,33 +270,48 @@ if (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
   else()
     add_compile_options(${GCC_WARNINGS})
   endif()
-endif (LINUX OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+endif ()
 
 if (DARWIN)
   # Use rpath loading on macos
   set(CMAKE_MACOSX_RPATH TRUE)
 
-  # Warnings should be fatal -- thanks, Nicky Perian, for spotting reversed default
-  set(CLANG_DISABLE_FATAL_WARNINGS OFF)
   set(CMAKE_CXX_LINK_FLAGS "-Wl,-headerpad_max_install_names,-search_paths_first")
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_CXX_LINK_FLAGS}")
 
-  # required for clang-15/xcode-15 since our boost package still uses deprecated std::unary_function/binary_function
-  # see https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes#C++-Standard-Library
-  #add_compile_definitions(_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
+  # Ensure debug symbols are always generated
+  add_compile_options(-g --debug) # --debug is a clang synonym for -g that bypasses cmake behaviors
 
-  set(GCC_WARNINGS -Wall -Wno-sign-compare -Wno-trigraphs)
+  # Silence GL deprecation warnings
+  add_compile_definitions(GL_SILENCE_DEPRECATION=1)
 
-  list(APPEND GCC_WARNINGS -Wno-reorder -Wno-non-virtual-dtor )
-
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
-    list(APPEND GCC_WARNINGS -Wno-unused-but-set-variable -Wno-unused-variable )
-  endif()
-
+  add_compile_options(-Wno-inconsistent-missing-override)
   if (CMAKE_OSX_ARCHITECTURES MATCHES arm64)
-    list(APPEND GCC_WARNINGS "-Wno-#warnings" )
+    add_compile_options("-Wno-#warnings")
+  endif()
+endif(DARWIN)
+
+if (LINUX OR DARWIN OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
+  add_compile_options(-Wall -Wno-sign-compare -Wno-trigraphs -Wno-reorder -Wno-unused-but-set-variable -Wno-unused-variable)
+
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_compile_options(-Wno-unused-private-field)
   endif()
 
-  add_compile_options(${GCC_WARNINGS})
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    add_compile_options(-Wno-unused-local-typedef)
+  endif()
+
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(-Wno-stringop-truncation -Wno-stringop-overflow -Wno-parentheses -Wno-maybe-uninitialized -Wno-unused-local-typedefs)
+  endif ()
+
+  if (NOT GCC_DISABLE_FATAL_WARNINGS AND NOT CLANG_DISABLE_FATAL_WARNINGS)
+    add_compile_options(-Werror)
+  endif ()
+
+  if (NOT (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64))
   add_compile_options(-m${ADDRESS_SIZE})
+  endif ()
 endif ()
+

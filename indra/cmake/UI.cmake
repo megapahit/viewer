@@ -3,35 +3,36 @@ include(Prebuilt)
 include(FreeType)
 include(GLIB)
 
+include_guard()
 add_library( ll::uilibraries INTERFACE IMPORTED )
 
 if (LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
-  if (${LINUX_DISTRO} MATCHES freedesktop)
-  use_prebuilt_binary(fltk)
-  endif ()
-  target_compile_definitions(ll::uilibraries INTERFACE LL_FLTK=1 LL_X11=1 )
-
   if( USE_CONAN )
     return()
   endif()
 
-  if (${LINUX_DISTRO} MATCHES arch OR (${LINUX_DISTRO} MATCHES debian) OR (${LINUX_DISTRO} MATCHES freedesktop) OR (${LINUX_DISTRO} MATCHES ubuntu))
-    include(FindPkgConfig)
-    pkg_check_modules(CAIRO REQUIRED cairo)
-    target_include_directories(ll::uilibraries SYSTEM INTERFACE ${CAIRO_INCLUDE_DIRS})
-  endif ()
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(WAYLAND_CLIENT wayland-client)
+
+  if(WAYLAND_CLIENT_FOUND)
+      target_include_directories(ll::uilibraries INTERFACE ${WAYLAND_CLIENT_INCLUDE_DIRS})
+      target_compile_definitions(ll::uilibraries INTERFACE LL_WAYLAND=1)
+  else()
+      message("pkgconfig could not find wayland client, compiling without full wayland support")
+  endif()
+
+  find_package(X11)
+  if(X11_FOUND)
+      target_compile_definitions(ll::uilibraries INTERFACE LL_X11=1)
+  else()
+      message("Could not find X11, compiling without full X11 support")
+  endif()
+
 
   target_link_libraries( ll::uilibraries INTERFACE
-          fltk
-          Xrender
-          Xcursor
-          Xfixes
-          Xext
-          Xft
-          Xinerama
           ll::fontconfig
           ll::freetype
-          ll::SDL
+          ll::SDL3
           ll::glib
           ll::gio
   )
@@ -54,29 +55,9 @@ if( WINDOWS )
           )
 endif()
 
-if (${LINUX_DISTRO} MATCHES freedesktop)
+if (FALSE)
 target_include_directories( ll::uilibraries SYSTEM INTERFACE
         ${LIBS_PREBUILT_DIR}/include
         )
-  pkg_check_modules(CAIRO-XLIB REQUIRED cairo-xlib)
-  pkg_check_modules(DBUS-1 REQUIRED dbus-1)
-  pkg_check_modules(LIBDECOR-0 REQUIRED libdecor-0)
-  pkg_check_modules(PANGO REQUIRED pango)
-  pkg_check_modules(PANGOCAIRO REQUIRED pangocairo)
-  pkg_check_modules(WAYLAND-CLIENT REQUIRED wayland-client)
-  pkg_check_modules(WAYLAND-CURSOR REQUIRED wayland-cursor)
-  pkg_check_modules(XKBCOMMON REQUIRED xkbcommon)
-  pkg_check_modules(XKBCOMMON-X11 REQUIRED xkbcommon-x11)
-  target_link_libraries(ll::uilibraries INTERFACE
-        ${CAIRO_LIBRARIES}
-        ${CAIRO-XLIB_LIBRARIES}
-        ${DBUS-1_LIBRARIES}
-        ${LIBDECOR-0_LIBRARIES}
-        ${PANGO_LIBRARIES}
-        ${PANGOCAIRO_LIBRARIES}
-        ${WAYLAND-CLIENT_LIBRARIES}
-        ${WAYLAND-CURSOR_LIBRARIES}
-        ${XKBCOMMON_LIBRARIES}
-        ${XKBCOMMON-X11_LIBRARIES}
-        )
+
 endif ()

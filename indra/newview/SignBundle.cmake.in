@@ -11,8 +11,10 @@ execute_process(
         Frameworks/libaprutil-1.0.dylib
         Frameworks/libboost_atomic-mt.dylib
         Frameworks/libboost_context-mt.dylib
+        Frameworks/libboost_date_time-mt.dylib
         Frameworks/libboost_fiber-mt.dylib
         Frameworks/libboost_filesystem-mt.dylib
+        Frameworks/libboost_process-mt.dylib
         Frameworks/libboost_program_options-mt.dylib
         Frameworks/libboost_regex-mt.dylib
         Frameworks/libboost_system-mt.dylib

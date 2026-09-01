@@ -32,11 +32,15 @@ target_link_libraries( llxml
         llmath
         llcommon
         ll::expat
-        ll::SDL
+        ll::SDL3
     )
 target_include_directories( llxml  INTERFACE   ${CMAKE_CURRENT_SOURCE_DIR})
 
 include(LibraryInstall)
+
+if (USE_PRECOMPILED_HEADERS)
+  target_precompile_headers(llxml REUSE_FROM llprecompiled)
+endif ()
 
 # tests
 

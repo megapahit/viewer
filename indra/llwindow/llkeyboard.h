@@ -54,10 +54,12 @@ class LLWindowCallbacks;
 class LLKeyboard
 {
 public:
-#ifndef LL_SDL
-    typedef U16 NATIVE_KEY_TYPE;
-#else
+#ifdef LL_SDL_WINDOW
+    // linux relies on SDL which uses U32 for its native key type
     typedef U32 NATIVE_KEY_TYPE;
+#else
+    // on non-linux platforms we can get by with a smaller native key type
+    typedef U16 NATIVE_KEY_TYPE;
 #endif
     LLKeyboard();
     virtual ~LLKeyboard();
@@ -72,14 +74,14 @@ public:
     bool            getKeyRepeated(const KEY key) { return mKeyRepeated[key]; }
 
     bool            translateKey(const NATIVE_KEY_TYPE os_key, KEY *translated_key);
-    NATIVE_KEY_TYPE     inverseTranslateKey(const KEY translated_key);
-    bool            handleTranslatedKeyUp(KEY translated_key, U32 translated_mask);     // Translated into "Linden" keycodes
-    bool            handleTranslatedKeyDown(KEY translated_key, U32 translated_mask);   // Translated into "Linden" keycodes
+    NATIVE_KEY_TYPE inverseTranslateKey(const KEY translated_key);
+    bool            handleTranslatedKeyUp(KEY translated_key, MASK translated_mask);     // Translated into "Linden" keycodes
+    bool            handleTranslatedKeyDown(KEY translated_key, MASK translated_mask);   // Translated into "Linden" keycodes
 
     virtual bool    handleKeyUp(const NATIVE_KEY_TYPE key, MASK mask) = 0;
     virtual bool    handleKeyDown(const NATIVE_KEY_TYPE key, MASK mask) = 0;
 
-#if defined(LL_DARWIN) && !defined(LL_SDL)
+#if LL_DARWIN && !LL_SDL_WINDOW
     // We only actually use this for macOS.
     virtual void    handleModifier(MASK mask) = 0;
 #endif // LL_DARWIN

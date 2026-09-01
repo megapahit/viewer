@@ -13,7 +13,6 @@ include(bugsplat)
 include(BuildVersion)
 include(CMakeCopyIfDifferent)
 include(CubemapToEquirectangularJS)
-#include(DBusGlib)
 include(DragDrop)
 if (USE_DISCORD)
   include(Discord)
@@ -47,7 +46,6 @@ include(UI)
 include(ViewerMiscLibs)
 #include(ViewerManager)
 include(VisualLeakDetector)
-#include(VulkanGltf)
 include(ZLIBNG)
 include(LLPrimitive)
 
@@ -83,6 +81,8 @@ if (HAVOK)
       endif (DARWIN)
    endif()
 endif ()
+
+configure_file(llversioninfovars.h.in llversioninfovars.h @ONLY)
 
 set(viewer_SOURCE_FILES
     gltfscenemanager.cpp
@@ -238,6 +238,7 @@ set(viewer_SOURCE_FILES
     llfloaterfonttest.cpp
     llfloaterforgetuser.cpp
     llfloatergesture.cpp
+    llfloatergestureautocompletepicker.cpp
     llfloatergltfasseteditor.cpp
     llfloatergodtools.cpp
     llfloatergotoline.cpp
@@ -249,7 +250,6 @@ set(viewer_SOURCE_FILES
     llfloaterhelpbrowser.cpp
     llfloaterhoverheight.cpp
     mpfloatertuning.cpp
-    llfloaterhowto.cpp
     llfloaterhud.cpp
     llfloaterimagepreview.cpp
     llfloaterimsessiontab.cpp
@@ -302,6 +302,7 @@ set(viewer_SOURCE_FILES
     llfloatersceneloadstats.cpp
     llfloaterscriptdebug.cpp
     llfloaterscriptedprefs.cpp
+    llfloaterscripting.cpp
     llfloaterscriptlimits.cpp
     llfloatersearch.cpp
     llfloatersellland.cpp
@@ -539,6 +540,7 @@ set(viewer_SOURCE_FILES
     llpathfindingobjectlist.cpp
     llpathfindingpathtool.cpp
     llpbrterrainfeatures.cpp
+    llperfstats.cpp
     llpersistentnotificationstorage.cpp
     llphysicsmotion.cpp
     llphysicsshapebuilderutil.cpp
@@ -552,6 +554,7 @@ set(viewer_SOURCE_FILES
     llpreview.cpp
     llpreviewanim.cpp
     llpreviewgesture.cpp
+    llpublishedobjectmgr.cpp
     llpreviewnotecard.cpp
     llpreviewscript.cpp
     llpreviewsound.cpp
@@ -571,6 +574,7 @@ set(viewer_SOURCE_FILES
     llsceneview.cpp
     llscreenchannel.cpp
     llscripteditor.cpp
+    llscripteditorws.cpp
     llscriptfloater.cpp
     llscrollingpanelparam.cpp
     llscrollingpanelparambase.cpp
@@ -733,7 +737,6 @@ set(viewer_SOURCE_FILES
     llvoicechannel.cpp
     llvoiceclient.cpp
     llvoicevisualizer.cpp
-    llvoicewebrtc.cpp
     llvoinventorylistener.cpp
     llvopartgroup.cpp
     llvosky.cpp
@@ -764,10 +767,6 @@ set(viewer_SOURCE_FILES
     rlvhelper.cpp
     rlvhandler.cpp
     )
-
-if (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES aarch64))
-    list(REMOVE_ITEM viewer_SOURCE_FILES llvoicewebrtc.cpp)
-endif ()
 
 set(VIEWER_BINARY_NAME "secondlife-bin" CACHE STRING
     "The name of the viewer executable to create.")
@@ -931,6 +930,7 @@ set(viewer_HEADER_FILES
     llfloaterfonttest.h
     llfloaterforgetuser.h
     llfloatergesture.h
+    llfloatergestureautocompletepicker.h
     llfloatergltfasseteditor.h
     llfloatergodtools.h
     llfloatergotoline.h
@@ -942,7 +942,6 @@ set(viewer_HEADER_FILES
     llfloaterhelpbrowser.h
     llfloaterhoverheight.h
     mpfloatertuning.h
-    llfloaterhowto.h
     llfloaterhud.h
     llfloaterimagepreview.h
     llfloaterimnearbychat.h
@@ -999,6 +998,7 @@ set(viewer_HEADER_FILES
     llfloatersceneloadstats.h
     llfloaterscriptdebug.h
     llfloaterscriptedprefs.h
+    llfloaterscripting.h
     llfloaterscriptlimits.h
     llfloatersearch.h
     llfloatersellland.h
@@ -1219,6 +1219,7 @@ set(viewer_HEADER_FILES
     llpathfindingobject.h
     llpathfindingobjectlist.h
     llpathfindingpathtool.h
+    llperfstats.h
     llpbrterrainfeatures.h
     llpersistentnotificationstorage.h
     llphysicsmotion.h
@@ -1233,6 +1234,7 @@ set(viewer_HEADER_FILES
     llpreview.h
     llpreviewanim.h
     llpreviewgesture.h
+    llpublishedobjectmgr.h
     llpreviewnotecard.h
     llpreviewscript.h
     llpreviewsound.h
@@ -1254,6 +1256,7 @@ set(viewer_HEADER_FILES
     llsceneview.h
     llscreenchannel.h
     llscripteditor.h
+    llscripteditorws.h
     llscriptfloater.h
     llscriptruntimeperms.h
     llscrollingpanelparam.h
@@ -1419,7 +1422,6 @@ set(viewer_HEADER_FILES
     llvoicechannel.h
     llvoiceclient.h
     llvoicevisualizer.h
-    llvoicewebrtc.h
     llvoinventorylistener.h
     llvopartgroup.h
     llvosky.h
@@ -1451,12 +1453,7 @@ set(viewer_HEADER_FILES
     rlvhelper.h
     rlvhandler.h
     roles_constants.h
-    VertexCache.h
-    VorbisFramework.h
     )
-
-  list(APPEND viewer_SOURCE_FILES llperfstats.cpp)
-  list(APPEND viewer_HEADER_FILES llperfstats.h)
 
 source_group("CMake Rules" FILES ViewerInstall.cmake)
 
@@ -1465,11 +1462,15 @@ source_group("CMake Rules" FILES ViewerInstall.cmake)
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/viewer_version.txt"
            "${VIEWER_SHORT_VERSION}.${VIEWER_VERSION_REVISION}\n")
 
-set_source_files_properties(
-   llversioninfo.cpp tests/llversioninfo_test.cpp
-   PROPERTIES
-   COMPILE_DEFINITIONS "${VIEWER_CHANNEL_VERSION_DEFINES}" # see BuildVersion.cmake
-   )
+if (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES aarch64))
+    set(DISABLE_WEBRTC ON)
+    add_compile_definitions(DISABLE_WEBRTC=1)
+endif ()
+
+if (NOT DISABLE_WEBRTC)
+  LIST(APPEND viewer_SOURCE_FILES llvoicewebrtc.cpp)
+  LIST(APPEND viewer_HEADER_FILES llvoicewebrtc.h)
+endif()
 
 if (DARWIN)
   LIST(APPEND viewer_SOURCE_FILES llappviewermacosx.cpp)
@@ -1498,7 +1499,6 @@ if (DARWIN)
     llappdelegate-objc.mm
     PROPERTIES
     SKIP_PRECOMPILE_HEADERS TRUE
-    COMPILE_DEFINITIONS "${VIEWER_CHANNEL_VERSION_DEFINES}"
     # BugsplatMac is a module, imported with @import. That language feature
     # demands these -f switches.
     # Xcode 10.2 requires that Objective-C++ headers declare nullability of
@@ -1525,18 +1525,39 @@ if (DARWIN)
   list(APPEND viewer_SOURCE_FILES ${viewer_RESOURCE_FILES})
 endif (DARWIN)
 
+# Platform-specific files for IDE visibility (excluded from build on other platforms)
+set(macosx_viewer_SOURCE_FILES
+    llappviewermacosx.cpp
+    llappviewermacosx-objc.mm
+    llfilepicker_mac.mm
+    llappdelegate-objc.mm
+    )
+
+set(macosx_viewer_HEADER_FILES
+    llappviewermacosx.h
+    llappviewermacosx-objc.h
+    llfilepicker_mac.h
+    )
+
+set(linux_viewer_SOURCE_FILES
+    llappviewerlinux.cpp
+    )
+
+set(linux_viewer_HEADER_FILES
+    )
+
+set(windows_viewer_SOURCE_FILES
+    llappviewerwin32.cpp
+    llwindebug.cpp
+    )
+
+set(windows_viewer_HEADER_FILES
+    llappviewerwin32.h
+    llwindebug.h
+    )
+
 if (NOT (DARWIN OR WINDOWS))
     LIST(APPEND viewer_SOURCE_FILES llappviewerlinux.cpp)
-    set_source_files_properties(
-      llappviewerlinux.cpp
-      PROPERTIES
-      COMPILE_DEFINITIONS "${VIEWER_CHANNEL_VERSION_DEFINES}"
-      )
-    #LIST(APPEND viewer_SOURCE_FILES llappviewerlinux_api_dbus.cpp)
-  if (NOT CMAKE_CXX_COMPILER_ID MATCHES AppleClang)
-    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--as-needed")
-  endif ()
-
 endif ()
 
 if (WINDOWS)
@@ -1683,6 +1704,45 @@ if (WINDOWS)
 
 endif (WINDOWS)
 
+# Add all platform-specific files to the target for IDE visibility
+# Collect non-platform files for IDE visibility only
+set(ide_visibility_files "")
+if (NOT DARWIN)
+  list(APPEND ide_visibility_files ${macosx_viewer_SOURCE_FILES} ${macosx_viewer_HEADER_FILES})
+endif()
+if (NOT (LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD))
+  list(APPEND ide_visibility_files ${linux_viewer_SOURCE_FILES} ${linux_viewer_HEADER_FILES})
+endif()
+if (NOT WINDOWS)
+  list(APPEND ide_visibility_files ${windows_viewer_SOURCE_FILES} ${windows_viewer_HEADER_FILES})
+endif()
+
+list(APPEND viewer_SOURCE_FILES ${ide_visibility_files})
+
+# Mark non-platform files as excluded from build
+if (WINDOWS)
+  set_source_files_properties(
+    ${macosx_viewer_SOURCE_FILES}
+    ${linux_viewer_SOURCE_FILES}
+    PROPERTIES
+    HEADER_FILE_ONLY TRUE
+    )
+elseif (DARWIN)
+  set_source_files_properties(
+    ${windows_viewer_SOURCE_FILES}
+    ${linux_viewer_SOURCE_FILES}
+    PROPERTIES
+    HEADER_FILE_ONLY TRUE
+    )
+elseif (LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
+  set_source_files_properties(
+    ${macosx_viewer_SOURCE_FILES}
+    ${windows_viewer_SOURCE_FILES}
+    PROPERTIES
+    HEADER_FILE_ONLY TRUE
+    )
+endif()
+
 # Add the xui files. This is handy for searching for xui elements
 # from within the IDE.
 file(GLOB_RECURSE viewer_XUI_FILES LIST_DIRECTORIES FALSE
@@ -1700,7 +1760,8 @@ set_source_files_properties(${viewer_SHADER_FILES}
                             PROPERTIES HEADER_FILE_ONLY TRUE)
 list(APPEND viewer_SOURCE_FILES ${viewer_SHADER_FILES})
 
-
+# note that the scripts which publish these files are sensitive to the file 
+# extensions. Be cautious about adding new file types here.
 set(viewer_APPSETTINGS_FILES
     app_settings/anim.ini
     app_settings/autoreplace.xml
@@ -1711,7 +1772,6 @@ set(viewer_APPSETTINGS_FILES
     app_settings/grass.xml
     app_settings/ignorable_dialogs.xml
     app_settings/key_bindings.xml
-    app_settings/keywords_lsl_default.xml
     app_settings/logcontrol.xml
     app_settings/settings.xml
     app_settings/settings_crash_behavior.xml
@@ -1726,6 +1786,7 @@ set(viewer_APPSETTINGS_FILES
     #packages-info.txt
     featuretable.txt
     featuretable_mac.txt
+    featuretable_linux.txt
     )
 
 source_group("App Settings" FILES ${viewer_APPSETTINGS_FILES})
@@ -1749,6 +1810,15 @@ set_source_files_properties(${viewer_CHARACTER_FILES}
                             PROPERTIES HEADER_FILE_ONLY TRUE)
 list(APPEND viewer_SOURCE_FILES ${viewer_CHARACTER_FILES})
 
+set(viewer_MISC_FILES
+    viewer_manifest.py
+    )
+
+set_source_files_properties(${viewer_MISC_FILES}
+                            PROPERTIES HEADER_FILE_ONLY TRUE)
+
+list(APPEND viewer_SOURCE_FILES ${viewer_MISC_FILES})
+
 if (WINDOWS)
   file(GLOB viewer_INSTALLER_FILES installers/windows/*.nsi)
 
@@ -1760,13 +1830,6 @@ if (WINDOWS)
   list(APPEND viewer_SOURCE_FILES ${viewer_INSTALLER_FILES})
 endif (WINDOWS)
 
-if( DEFINED LLSTARTUP_COMPILE_FLAGS )
-   # progress view disables/enables icons based on available packages
-   set_source_files_properties(llprogressview.cpp PROPERTIES COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS}")
-
-   set_source_files_properties(llstartup.cpp PROPERTIES COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS}")
-endif()
-
 list(APPEND viewer_SOURCE_FILES ${viewer_HEADER_FILES})
 
 add_executable(${VIEWER_BINARY_NAME}
@@ -1774,6 +1837,8 @@ add_executable(${VIEWER_BINARY_NAME}
     MACOSX_BUNDLE
     ${viewer_SOURCE_FILES}
     )
+
+target_include_directories(${VIEWER_BINARY_NAME} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 # add package files
 file(GLOB EVENT_HOST_SCRIPT_GLOB_LIST
@@ -2126,11 +2191,13 @@ elseif (DARWIN)
       target_link_libraries(${VIEWER_BINARY_NAME} llphysicsextensionsos)
     endif()
 else (WINDOWS)
-        # Linux
-    set_target_properties(${VIEWER_BINARY_NAME}
-        PROPERTIES
-        LINK_FLAGS_RELEASE "${LINK_FLAGS_RELEASE} -Wl,--Map=${VIEWER_BINARY_NAME}.MAP"
-        )
+    if (HAVOK OR HAVOK_TPV)
+    	# Linux
+    	set_target_properties(${VIEWER_BINARY_NAME}
+        	PROPERTIES
+        	LINK_FLAGS_RELEASE "${LINK_FLAGS_RELEASE} -no-pie -Wl,--Map=${VIEWER_BINARY_NAME}.MAP"
+        	)
+    endif ()
 endif (WINDOWS)
 
 # *NOTE: - this list is very sensitive to ordering, test carefully on all
@@ -2178,7 +2245,6 @@ target_link_libraries(${VIEWER_BINARY_NAME}
         llcorehttp
         llcommon
         llmeshoptimizer
-        ll::ndof
         lllogin
         llprimitive
         llappearance
@@ -2188,10 +2254,6 @@ target_link_libraries(${VIEWER_BINARY_NAME}
         ll::tracy
         ll::openxr
         )
-
-if (NOT (CMAKE_SYSTEM_NAME MATCHES FreeBSD OR ($ENV{MSYSTEM_CARCH} MATCHES aarch64)))
-   target_link_libraries(${VIEWER_BINARY_NAME} llwebrtc )
-endif ()
 
 if (ENABLE_MEDIA_PLUGINS)
    target_link_libraries(${VIEWER_BINARY_NAME} ll::libvlc )
@@ -2206,8 +2268,12 @@ if (ENABLE_MEDIA_PLUGINS)
    target_compile_definitions(${VIEWER_BINARY_NAME} PRIVATE LL_CEF=1)
 endif ()
 
+if (NOT DISABLE_WEBRTC)
+    target_link_libraries(${VIEWER_BINARY_NAME} llwebrtc )
+endif()
+
 if (USE_DISCORD)
-   target_link_libraries(${VIEWER_BINARY_NAME} ll::discord_sdk )
+    target_link_libraries(${VIEWER_BINARY_NAME} ll::discord_sdk )
 endif ()
 
 if (TARGET ll::velopack)
@@ -2215,11 +2281,11 @@ if (TARGET ll::velopack)
 endif ()
 
 if( TARGET ll::intel_memops )
-   target_link_libraries(${VIEWER_BINARY_NAME} ll::intel_memops )
+    target_link_libraries(${VIEWER_BINARY_NAME} ll::intel_memops )
 endif()
 
 if( TARGET ll::nvapi )
-   target_link_libraries(${VIEWER_BINARY_NAME} ll::nvapi )
+    target_link_libraries(${VIEWER_BINARY_NAME} ll::nvapi )
 endif()
 
 if ( TARGET llconvexdecomposition )
@@ -2287,6 +2353,10 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
         PROPERTIES COMPILE_FLAGS -Wno-unused-function)
     set_source_files_properties(llmutelist.cpp
         PROPERTIES COMPILE_FLAGS -Wno-free-nonheap-object)
+    set_source_files_properties(
+        llpaneloutfitedit.cpp
+        llviewerassetstorage.cpp
+        PROPERTIES COMPILE_FLAGS -Wno-array-bounds)
 endif ()
 
 message("Copying fonts")
@@ -2319,13 +2389,12 @@ if (LINUX)
   set(COPY_INPUT_DEPENDENCIES
     ${VIEWER_BINARY_NAME}
     SLPlugin
-    #media_plugin_gstreamer010
-    llcommon
+    media_plugin_cef
+    media_plugin_gstreamer10
+    media_plugin_libvlc
+    media_plugin_example
+    llwebrtc
     )
-
-  #if (NOT USE_BUGSPLAT)
-  #    LIST(APPEND COPY_INPUT_DEPENDENCIES linux-crash-logger)
-  #endif (NOT USE_BUGSPLAT)
 
   add_custom_command(
       OUTPUT ${product}.tar.xz
@@ -2356,7 +2425,7 @@ if (LINUX)
   if (PACKAGE)
     if (${LINUX_DISTRO} MATCHES arch)
       if (CMAKE_SYSTEM_PROCESSOR MATCHES x86_64)
-        set(ARCH_DEPS 'cef<151.3.23')
+        set(ARCH_DEPS 'cef<151.3.14')
       else ()
         set(ARCH_DEPS "at-spi2-core minizip")
       endif ()
@@ -2378,10 +2447,10 @@ if (LINUX)
       set(CPACK_DEBIAN_PACKAGE_SECTION net
         CACHE STRING "Debian package section.")
       if (${LINUX_DISTRO} MATCHES debian)
-        set(CPACK_DEBIAN_PACKAGE_DEPENDS "libalut0, libaprutil1t64, libboost-fiber1.83.0, libboost-filesystem1.83.0, libboost-program-options1.83.0, libboost-regex1.83.0, libboost-thread1.83.0, libboost-url1.83.0, libexpat1, libfltk1.4, libglu1-mesa, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1t64, libnghttp2-14, libnspr4, libnss3, libopenjp2-7, libsdl2-2.0-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS "libalut0, libaprutil1t64, libboost-fiber1.83.0, libboost-filesystem1.83.0, libboost-program-options1.83.0, libboost-regex1.83.0, libboost-thread1.83.0, libboost-url1.83.0, libexpat1, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1t64, libnghttp2-14, libnspr4, libnss3, libopenjp2-7, libsdl3-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
           CACHE STRING "Debian package dependencies.")
       else ()
-        set(CPACK_DEBIAN_PACKAGE_DEPENDS "libalut0, libaprutil1t64, libboost-fiber1.90.0, libboost-filesystem1.90.0, libboost-program-options1.90.0, libboost-regex1.90.0, libboost-thread1.90.0, libboost-url1.90.0, libexpat1, libfltk1.4, libglu1-mesa, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1t64, libnghttp2-14, libnspr4, libnss3, libopenjp2-7, libsdl2-2.0-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS "libalut0, libaprutil1t64, libboost-fiber1.90.0, libboost-filesystem1.90.0, libboost-process1.90.0, libboost-program-options1.90.0, libboost-regex1.90.0, libboost-thread1.90.0, libboost-url1.90.0, libexpat1, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1t64, libnghttp2-14, libnspr4, libnss3, libopenjp2-7, libsdl3-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
         CACHE STRING "Debian package dependencies.")
       endif ()
     elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed))
@@ -2399,10 +2468,10 @@ if (LINUX)
       set(CPACK_RPM_PACKAGE_DESCRIPTION ${VIEWER_PACKAGE_DESCRIPTION}
         CACHE STRING "RPM package description.")
       if (${LINUX_DISTRO} MATCHES fedora)
-        set(CPACK_RPM_PACKAGE_REQUIRES "freealut, apr-util, boost-fiber, boost-program-options, boost-regex, boost-thread, boost-url, cef, expat, fltk, mesa-libGLU, hunspell, minizip-ng-compat, libnghttp2, openjpeg, sdl2-compat, vlc-libs, vlc-plugins-base, libvorbis"
+        set(CPACK_RPM_PACKAGE_REQUIRES "freealut, apr-util, boost-fiber, boost-process, boost-program-options, boost-regex, boost-thread, boost-url, cef, expat, hunspell, minizip-ng-compat, libnghttp2, openjpeg, SDL3, vlc-libs, vlc-plugins-base, libvorbis"
           CACHE STRING "RPM package requirements.")
       else ()
-        set(CPACK_RPM_PACKAGE_REQUIRES "libalut0, libapr-util1-0, libboost_fiber1_91_0, libboost_program_options1_91_0, libboost_regex1_91_0, libboost_thread1_91_0, libboost_url1_91_0, libboost_url1_91_0-x86-64-v3, libpng16-16 expat, libfltk1_3, libGLU1, libhunspell-1_7-0, libnghttp2-14, openjpeg2, libSDL2-2_0-0, libvlc5, libvorbis0"
+        set(CPACK_RPM_PACKAGE_REQUIRES "libalut0, libapr-util1-0, libboost_fiber1_91_0, libboost_process1_91_0, libboost_program_options1_91_0, libboost_regex1_91_0, libboost_thread1_91_0, libboost_url1_91_0, libboost_url1_91_0-x86-64-v3, libexpat1, libhunspell-1_7-0, libnghttp2-14, openjpeg2, libpng16-16, libSDL3-0, libvlc5, libvorbis0"
           CACHE STRING "RPM package requirements.")
       endif ()
     endif ()
@@ -2459,7 +2528,7 @@ elseif (CMAKE_SYSTEM_NAME MATCHES FreeBSD AND PACKAGE)
     CACHE STRING "FreeBSD package maintainer.")
   set(CPACK_FREEBSD_PACKAGE_ORIGIN net/${VIEWER_BINARY_NAME}
     CACHE STRING "FreeBSD package origin.")
-  set(CPACK_FREEBSD_PACKAGE_DEPS "audio/freealut;devel/apr;devel/boost-libs;x11-toolkits/fltk;textproc/hunspell;misc/meshoptimizer;archivers/minizip;www/libnghttp2;graphics/openjpeg;devel/sdl2;multimedia/vlc;audio/libvorbis"
+  set(CPACK_FREEBSD_PACKAGE_DEPS "audio/freealut;devel/apr;devel/boost-libs;textproc/hunspell;misc/meshoptimizer;archivers/minizip;www/libnghttp2;graphics/openjpeg;devel/sdl3;multimedia/vlc;audio/libvorbis"
     CACHE STRING "FreeBSD package dependencies.")
 
 endif (LINUX)
@@ -2664,7 +2733,7 @@ if (LL_TESTS)
     lldateutil.cpp
 #    llmediadataclient.cpp
     lllogininstance.cpp
-#    llremoteparcelrequest.cpp
+    llremoteparcelrequest.cpp
     llviewerhelputil.cpp
     llversioninfo.cpp
 #    llvocache.cpp
@@ -2689,21 +2758,24 @@ if (LL_TESTS)
 #  )
 
   set(test_libs
-          llcommon
-          llfilesystem
-          llxml
-          llmessage
-          llcharacter
-          llui
-          lllogin
-          llplugin
-          llappearance
-    )
+    llfilesystem
+    llmath
+    llcommon
+    llmessage
+    llcorehttp
+    llxml
+    llui
+    llplugin
+    llappearance
+    llprimitive
+    lllogin
+  )
 
-  set_source_files_properties(
-    llmediadataclient.cpp
-    PROPERTIES
-    LL_TEST_ADDITIONAL_LIBRARIES "${test_libs}"
+  set_property(SOURCE
+    ${viewer_TEST_SOURCE_FILES}
+    PROPERTY
+    LL_TEST_ADDITIONAL_LIBRARIES 
+    ${test_libs}
   )
 
   set_source_files_properties(
@@ -2715,66 +2787,39 @@ if (LL_TESTS)
   )
 
   set_source_files_properties(
-    llmediadataclient.cpp
-    PROPERTIES
-    LL_TEST_ADDITIONAL_LIBRARIES llprimitive
-  )
-
-  set_source_files_properties(
     lllogininstance.cpp
     PROPERTIES
-    LL_TEST_ADDITIONAL_SOURCE_FILES llversioninfo.cpp
-  )
-
-  set_property( SOURCE
-          ${viewer_TEST_SOURCE_FILES}
-          PROPERTY
-          LL_TEST_ADDITIONAL_LIBRARIES ${test_libs}
+    LL_TEST_ADDITIONAL_SOURCE_FILES
+    llversioninfo.cpp
   )
 
   LL_ADD_PROJECT_UNIT_TESTS(${VIEWER_BINARY_NAME} "${viewer_TEST_SOURCE_FILES}")
 
   #set(TEST_DEBUG on)
-
-  set(test_libs
-          llfilesystem
-          llmath
-          llcommon
-          llmessage
-          llcorehttp
-          llxml
-          llui
-          llplugin
-          llappearance
-          lllogin
-          llprimitive
-          lllogin
-          )
-
   LL_ADD_INTEGRATION_TEST(cppfeatures
     ""
     "${test_libs}"
-    )
+  )
 
   LL_ADD_INTEGRATION_TEST(llsechandler_basic
     llsechandler_basic.cpp
     "${test_libs}"
-    )
+  )
 
   LL_ADD_INTEGRATION_TEST(llsecapi
-     llsecapi.cpp
+    llsecapi.cpp
     "${test_libs}"
-    )
+  )
 
   set(llslurl_test_sources
-      llslurl.cpp
-      llviewernetwork.cpp
+    llslurl.cpp
+    llviewernetwork.cpp
   )
 
   LL_ADD_INTEGRATION_TEST(llslurl
-     "${llslurl_test_sources}"
+    "${llslurl_test_sources}"
     "${test_libs}"
-    )
+  )
 
   set(llviewercontrollistener_test_sources
     llviewercontrollistener.cpp
@@ -2782,31 +2827,34 @@ if (LL_TESTS)
     ../llxml/llxmltree.cpp
     ../llxml/llxmlparser.cpp
     ../llcommon/commoncontrol.cpp
-    )
+  )
 
   LL_ADD_INTEGRATION_TEST(llviewercontrollistener
     "${llviewercontrollistener_test_sources}"
     "${test_libs}"
-    )
+  )
 
   LL_ADD_INTEGRATION_TEST(llviewernetwork
-     llviewernetwork.cpp
+    llviewernetwork.cpp
     "${test_libs}"
-    )
+  )
 
   LL_ADD_INTEGRATION_TEST(llviewerassetstats
     llviewerassetstats.cpp
     "${test_libs}"
-    )
+  )
 
-# LL_ADD_INTEGRATION_TEST(llhttpretrypolicy "llhttpretrypolicy.cpp" "${test_libs}")
+  LL_ADD_INTEGRATION_TEST(llhttpretrypolicy "llhttpretrypolicy.cpp" "${test_libs}")
 
-  #ADD_VIEWER_BUILD_TEST(llmemoryview viewer)
-  #ADD_VIEWER_BUILD_TEST(llagentaccess viewer)
-  #ADD_VIEWER_BUILD_TEST(lltextureinfo viewer)
-  #ADD_VIEWER_BUILD_TEST(lltextureinfodetails viewer)
-
-
+  set(lltextureinfo_test_sources
+    lltextureinfo.cpp
+    ../llxml/llcontrol.cpp
+    ../llxml/llxmltree.cpp
+    ../llxml/llxmlparser.cpp
+    ../llcommon/commoncontrol.cpp
+  )
+  LL_ADD_INTEGRATION_TEST(lltextureinfo "${lltextureinfo_test_sources}" "${test_libs}")
+  #LL_ADD_INTEGRATION_TEST(lltextureinfodetails "" "${test_libs}") test cases currently empty
 endif (LL_TESTS)
 
 check_message_template(${VIEWER_BINARY_NAME})

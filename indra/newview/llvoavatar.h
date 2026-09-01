@@ -97,6 +97,7 @@ class LLVOAvatar :
 public:
     friend class LLVOAvatarSelf;
     friend class LLAvatarCheckImpostorMode;
+    friend class LLVisualParamHint;
 
 /********************************************************************************
  **                                                                            **
@@ -266,7 +267,7 @@ public:
 
 
 private: //aligned members
-    LL_ALIGN_16(LLVector4a  mImpostorExtents[2]);
+    LLVector4a  mImpostorExtents[2];
 
     //--------------------------------------------------------------------
     // Updates
@@ -704,7 +705,6 @@ public:
 protected:
     void        updateVisibility();
 private:
-    F32         mVisibilityPreference;
     U32         mVisibilityRank;
     bool        mVisible;
 
@@ -752,8 +752,6 @@ private:
     LLVector3   mLastAnimExtents[2];
     LLVector3   mLastAnimBasePos;
 
-    LLCachedControl<bool> mRenderUnloadedAvatar;
-
     //--------------------------------------------------------------------
     // Wind rippling in clothes
     //--------------------------------------------------------------------
@@ -772,10 +770,13 @@ private:
     // Culling
     //--------------------------------------------------------------------
 public:
+    static void setCullNeedsUpdate() { sAvatarCullNeedsUpdate = true; }
     static void cullAvatarsByPixelArea();
     bool        isCulled() const { return mCulled; }
 private:
     bool        mCulled;
+    static bool sAvatarCullNeedsUpdate;
+    static F64  sLastCullUpdateTime; // Time of last cull update
 
     //--------------------------------------------------------------------
     // Constants
@@ -954,9 +955,26 @@ protected:
  **                    APPEARANCE
  **/
 
+public:
+    // Used when an AvatarAppearance UDP message is received before the
+    // corresponding avatar could be created.
+    static void registerEarlyAppearance(const LLUUID& av_id)
+    {
+        sEarlyAppearanceList.emplace(av_id);
+    }
+
+    // Entries left behind by agents who never get instantiated (e.g. an
+    // AvatarAppearance message arrives for an avatar we never rez) are a
+    // small resource leak. Teleporting to another region invalidates the
+    // whole list, since it was only ever relevant to avatars in the region
+    // we're leaving, so clear it out at that point to bound the leak.
+    static void resetEarlyAppearanceList()
+    {
+        sEarlyAppearanceList.clear();
+    }
+
     LLPointer<LLAppearanceMessageContents>  mLastProcessedAppearance;
 
-public:
     void            parseAppearanceMessage(LLMessageSystem* mesgsys, LLAppearanceMessageContents& msg);
     void            processAvatarAppearance(LLMessageSystem* mesgsys);
     void            applyParsedAppearanceMessage(LLAppearanceMessageContents& contents, bool slam_params);
@@ -987,6 +1005,8 @@ private:
     F32             mLastAppearanceBlendTime;
     bool            mIsEditingAppearance; // flag for if we're actively in appearance editing mode
     bool            mUseLocalAppearance; // flag for if we're using a local composite
+
+    static uuid_list_t  sEarlyAppearanceList;
 
     //--------------------------------------------------------------------
     // Visibility
@@ -1105,7 +1125,7 @@ public:
     void            startTyping() { mTyping = true; mTypingTimer.reset(); }
     void            stopTyping() { mTyping = false; }
 private:
-    bool            mVisibleChat;
+    bool            mVisibleChat = false;
 
     //--------------------------------------------------------------------
     // Lip synch morphs
@@ -1291,11 +1311,12 @@ public:
     static F32          sGreyUpdateTime; // Last time stats were updated (to prevent multiple updates per frame)
 protected:
     S32                 getUnbakedPixelAreaRank();
-    bool                mHasGrey;
+    bool                mHasGrey = false;
 private:
     F32                 mMinPixelArea;
     F32                 mMaxPixelArea;
-    F32                 mAdjustedPixelArea;
+    F32                 mAdjustedPixelArea = 0.f;
+    F32                 mLastCulledPixelArea = -1.f; // Pixel area when last culled, for tracking significant changes
     std::string         mDebugText;
     std::string         mBakedTextureDebugText;
 

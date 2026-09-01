@@ -35,6 +35,8 @@
 
 #include "stdtypes.h"
 
+#include <vector>
+
 #if LL_DARWIN
 #include <Carbon/Carbon.h>
 
@@ -43,7 +45,6 @@
 #undef check
 #undef require
 
-#include <vector>
 #include "llstring.h"
 
 #endif
@@ -150,14 +151,14 @@ private:
     // is enabled and if not, tidy up and indicate we're not allowed to do this.
     bool check_local_file_access_enabled();
 
-#if LL_WINDOWS
+#if LL_WINDOWS && !LL_SDL_WINDOW
     OPENFILENAMEW mOFN;             // for open and save dialogs
     WCHAR mFilesW[FILENAME_BUFFER_SIZE];
 
     bool setupFilter(ELoadFilter filter);
 #endif
 
-#if LL_DARWIN
+#if LL_DARWIN && !LL_SDL_WINDOW
     S32 mPickOptions;
     std::vector<std::string> mFileVector;
 
@@ -171,14 +172,6 @@ private:
                                  const std::string& filename,
                                  void (*callback)(bool, std::string&, void*),
                                  void *userdata);
-#endif
-
-#if LL_FLTK
-    enum EType
-    {
-     eSaveFile, eOpenFile, eOpenMultiple
-    };
-    bool openFileDialog( int32_t filter, bool blocking, EType aType );
 #endif
 
     std::vector<std::string> mFiles;

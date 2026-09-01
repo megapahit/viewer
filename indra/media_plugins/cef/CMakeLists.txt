@@ -23,7 +23,7 @@ set(media_plugin_cef_HEADER_FILES
     )
 
 # Select which VolumeCatcher implementation to use
-if (LINUX)
+if (LINUX AND NOT (${LINUX_DISTRO} MATCHES freedesktop)) # Disable linux volume catcher due to issues dlopening with CEF 139
   foreach( PULSE_FILE pulse/introspect.h pulse/context.h pulse/subscribe.h pulse/glib-mainloop.h )
     find_path( PULSE_FILE_${PULSE_FILE}_FOUND ${PULSE_FILE} NO_CACHE)
     if( NOT PULSE_FILE_${PULSE_FILE}_FOUND )
@@ -33,42 +33,34 @@ if (LINUX)
       message( "Looking for ${PULSE_FILE} ... found")
     endif()
   endforeach()
-  
+
   include(FindPipeWire)
   include_directories(SYSTEM ${PIPEWIRE_INCLUDE_DIRS} ${SPA_INCLUDE_DIRS})
-  
+
   message( "Building with Linux volume catcher for PipeWire and PulseAudio" )
 
   list(APPEND media_plugin_cef_HEADER_FILES
     linux/volume_catcher_linux.h
   )
 
-  set(LINUX_VOLUME_CATCHER 
-    linux/volume_catcher_linux.cpp 
+  set(LINUX_VOLUME_CATCHER
+    linux/volume_catcher_linux.cpp
     linux/volume_catcher_pulseaudio.cpp
-    linux/volume_catcher_pipewire.cpp 
+    linux/volume_catcher_pipewire.cpp
   )
 
   list(APPEND media_plugin_cef_SOURCE_FILES ${LINUX_VOLUME_CATCHER})
-  set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--build-id")
   if (${LINUX_DISTRO} MATCHES arch AND (CMAKE_SYSTEM_PROCESSOR MATCHES x86_64) OR (${LINUX_DISTRO} MATCHES fedora))
     if (${LINUX_DISTRO} MATCHES fedora)
         set(LIB_SUFFIX ${ADDRESS_SIZE})
     endif ()
     set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH};${INSTALL_PREFIX}/lib${LIB_SUFFIX}/cef)
   endif ()
-  list(APPEND media_plugin_cef_LINK_LIBRARIES llwindow )
-elseif (DARWIN)
-  list(APPEND media_plugin_cef_SOURCE_FILES volume_catcher_null.cpp)
-  find_library(CORESERVICES_LIBRARY CoreServices)
-  find_library(AUDIOUNIT_LIBRARY AudioUnit)
-  set( media_plugin_cef_LINK_LIBRARIES
-       ${CORESERVICES_LIBRARY}     # for Component Manager calls
-       ${AUDIOUNIT_LIBRARY}        # for AudioUnit calls
-       )
 elseif (WINDOWS)
   list(APPEND media_plugin_cef_SOURCE_FILES windows_volume_catcher.cpp)
-endif (LINUX)
+else()
+  list(APPEND media_plugin_cef_SOURCE_FILES volume_catcher_null.cpp)
+endif ()
 
 list(APPEND media_plugin_cef_SOURCE_FILES ${media_plugin_cef_HEADER_FILES})
 
@@ -76,10 +68,6 @@ add_library(media_plugin_cef
     SHARED
     ${media_plugin_cef_SOURCE_FILES}
     )
-
-#add_dependencies(media_plugin_cef
-#  ${MEDIA_PLUGIN_BASE_LIBRARIES}
-#)
 
 target_link_libraries(media_plugin_cef
         media_plugin_base
@@ -97,9 +85,15 @@ if (WINDOWS)
     PROPERTIES
     LINK_FLAGS "/MANIFEST:NO /NODEFAULTLIB:LIBCMT /IGNORE:4099"
     )
-endif (WINDOWS)
+elseif (DARWIN)
+    find_library(CORESERVICES_LIBRARY CoreServices)
+    find_library(AUDIOUNIT_LIBRARY AudioUnit)
 
-if (DARWIN)
+    target_link_libraries(media_plugin_cef
+    ${CORESERVICES_LIBRARY}     # for Component Manager calls
+    ${AUDIOUNIT_LIBRARY}        # for AudioUnit calls
+    )
+
   # Don't prepend 'lib' to the executable name, and don't embed a full path in the library's install name
   set_target_properties(
     media_plugin_cef
@@ -120,6 +114,7 @@ if (DARWIN)
         -change "/opt/local/libexec/boost/1.88/lib/libboost_context-mt.dylib" "@loader_path/libboost_context-mt.dylib"
         -change "/opt/local/libexec/boost/1.88/lib/libboost_fiber-mt.dylib" "@loader_path/libboost_fiber-mt.dylib"
         -change "/opt/local/libexec/boost/1.88/lib/libboost_filesystem-mt.dylib" "@loader_path/libboost_filesystem-mt.dylib"
+        -change "/opt/local/libexec/boost/1.88/lib/libboost_process-mt.dylib" "@loader_path/libboost_process-mt.dylib"
         -change "/opt/local/libexec/boost/1.88/lib/libboost_program_options-mt.dylib" "@loader_path/libboost_program_options-mt.dylib"
         -change "/opt/local/libexec/boost/1.88/lib/libboost_thread-mt.dylib" "@loader_path/libboost_thread-mt.dylib"
         -change "/opt/local/libexec/boost/1.88/lib/libboost_url-mt.dylib" "@loader_path/libboost_url-mt.dylib"
@@ -131,7 +126,9 @@ if (DARWIN)
     COMMENT "Fixing paths to CEF media plugin dependencies"
   )
 
-endif (DARWIN)
+elseif (LINUX)
+  target_link_options(media_plugin_cef PRIVATE  "LINKER:--build-id")
+endif ()
 
 if (CMAKE_BUILD_TYPE MATCHES Release AND (CMAKE_CXX_COMPILER_ID STREQUAL Clang OR CMAKE_CXX_COMPILER_ID MATCHES GNU))
   add_custom_command(

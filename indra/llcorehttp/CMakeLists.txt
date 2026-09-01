@@ -13,6 +13,7 @@ include(LLAddBuildTest)
 endif ()
 include(LLCommon)
 include(bugsplat)
+include(websocketpp)
 
 set(llcorehttp_SOURCE_FILES
     bufferarray.cpp
@@ -24,6 +25,8 @@ set(llcorehttp_SOURCE_FILES
     httprequest.cpp
     httpresponse.cpp
     httpstats.cpp
+    llwebsocketmgr.cpp
+    lljsonrpcws.cpp
     _httplibcurl.cpp
     _httpopcancel.cpp
     _httpoperation.cpp
@@ -52,6 +55,8 @@ set(llcorehttp_HEADER_FILES
     httprequest.h
     httpresponse.h
     httpstats.h
+    llwebsocketmgr.h
+    lljsonrpcws.h
     _httpinternal.h
     _httplibcurl.h
     _httpopcancel.h
@@ -82,10 +87,12 @@ list(APPEND llcorehttp_SOURCE_FILES ${llcorehttp_HEADER_FILES})
 add_library (llcorehttp ${llcorehttp_SOURCE_FILES})
 target_link_libraries(
         llcorehttp
+        llmath
         llcommon
         ll::libcurl
         ll::openssl
         ll::nghttp2
+        ll::websocketpp
   )
 target_include_directories( llcorehttp INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 # llmessage depends on llcorehttp, yet llcorehttp also depends on llmessage (at least for includes).
@@ -94,6 +101,10 @@ target_include_directories( llcorehttp INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories( llcorehttp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../llmessage)
 
 include(LibraryInstall)
+
+if (USE_PRECOMPILED_HEADERS)
+  target_precompile_headers(llcorehttp REUSE_FROM llprecompiled)
+endif ()
 
 # tests
 set(LLCOREHTTP_TESTS ON CACHE BOOL
@@ -111,6 +122,7 @@ if (LL_TESTS AND LLCOREHTTP_TESTS)
       tests/test_httpheaders.hpp
       tests/test_bufferarray.hpp
       tests/test_bufferstream.hpp
+      tests/test_jsonrpcws.hpp
       )
 
   list(APPEND llcorehttp_TEST_SOURCE_FILES ${llcorehttp_TEST_HEADER_FILES})
@@ -134,7 +146,7 @@ if (LL_TESTS AND LLCOREHTTP_TESTS)
                           ${PYTHON_EXECUTABLE}
                           "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_llcorehttp_peer.py"
                           )
- 
+
   #
   # Example Programs
   #
@@ -154,6 +166,7 @@ if (LL_TESTS AND LLCOREHTTP_TESTS)
   set_target_properties(http_texture_load
                         PROPERTIES
                         RUNTIME_OUTPUT_DIRECTORY "${EXE_STAGING_DIR}"
+                        FOLDER "Tests"
                         )
 
   if (WINDOWS)
@@ -165,6 +178,13 @@ if (LL_TESTS AND LLCOREHTTP_TESTS)
                           LINK_FLAGS_RELEASE ""
                           )
   endif (WINDOWS)
+
+  if(DARWIN)
+    set_target_properties(http_texture_load
+                        PROPERTIES
+                        OSX_ARCHITECTURES ${LL_MACOS_TEST_ARCHITECTURE}
+                        )
+  endif()
 
   target_link_libraries(http_texture_load ${example_libs})
 

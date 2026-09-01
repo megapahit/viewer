@@ -274,7 +274,7 @@ void  LLPrimitive::setAllTETextures(const LLUUID &tex_id)
 //===============================================================
 void LLPrimitive::setTE(const U8 index, const LLTextureEntry& te)
 {
-    if(mTextureList.copyTexture(index, &te) != TEM_CHANGE_NONE && te.getBumpmap() > 0)
+    if(mTextureList.copyTexture(index, te) != TEM_CHANGE_NONE && te.getBumpmap() > 0)
     {
         mNumBumpmapTEs++;
     }
@@ -753,7 +753,7 @@ void LLPrimitive::copyTEs(const LLPrimitive *primitivep)
     }
     for (i = 0; i < num_tes; i++)
     {
-        mTextureList.copyTexture(i, primitivep->getTE(i));
+        mTextureList.copyTexture(i, *(primitivep->getTE(i)));
     }
 }
 
@@ -1370,6 +1370,12 @@ bool LLPrimitive::packTEMessage(LLDataPacker &dp) const
 
 S32 LLPrimitive::parseTEMessage(LLMessageSystem* mesgsys, char const* block_name, const S32 block_num, LLTEContents& tec)
 {
+    return parseTEMessage(mesgsys, block_name, block_num, tec, getNumTEs());
+}
+
+// static
+S32 LLPrimitive::parseTEMessage(LLMessageSystem* mesgsys, char const* block_name, const S32 block_num, LLTEContents& tec, U8 face_count)
+{
     S32 retval = 0;
     // temp buffer for material ID processing
     // data will end up in tec.material_id[]
@@ -1403,7 +1409,7 @@ S32 LLPrimitive::parseTEMessage(LLMessageSystem* mesgsys, char const* block_name
     tec.packed_buffer[tec.size] = 0x00;
     ++tec.size;
 
-    tec.face_count = llmin((U32)getNumTEs(),(U32)LLTEContents::MAX_TES);
+    tec.face_count = llmin((U32)face_count,(U32)LLTEContents::MAX_TES);
 
     U8 *cur_ptr = tec.packed_buffer;
     LL_DEBUGS("TEXTUREENTRY") << "Texture Entry with buffere sized: " << tec.size << LL_ENDL;

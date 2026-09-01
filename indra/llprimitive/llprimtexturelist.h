@@ -71,7 +71,7 @@ public:
 
     // copies LLTextureEntry 'te'
     // returns TEM_CHANGE_TEXTURE if successful, otherwise TEM_CHANGE_NONE
-    S32 copyTexture(const U8 index, const LLTextureEntry* te);
+    S32 copyTexture(const U8 index, const LLTextureEntry& te);
 
     // takes ownership of LLTextureEntry* 'te'
     // returns TEM_CHANGE_TEXTURE if successful, otherwise TEM_CHANGE_NONE

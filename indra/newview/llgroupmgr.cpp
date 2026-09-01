@@ -869,7 +869,6 @@ void LLGroupMgr::removeObserver(LLGroupMgrObserver* observer)
     {
         return;
     }
-
     observer_multimap_t::iterator it = mObservers.lower_bound(observer->getID());
     observer_multimap_t::iterator end = mObservers.upper_bound(observer->getID());
     for (; it != end; ++it)

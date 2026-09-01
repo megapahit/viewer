@@ -1,10 +1,12 @@
 # -*- cmake -*-
 
 include(Prebuilt)
+include(Linking)
 
 include_guard()
 add_library( ll::zlib-ng INTERFACE IMPORTED )
 
+include(FindPkgConfig)
 pkg_check_modules(Zlib REQUIRED zlib)
 target_include_directories( ll::zlib-ng SYSTEM INTERFACE ${Zlib_INCLUDE_DIRS})
 target_link_directories( ll::zlib-ng INTERFACE ${Zlib_LIBRARY_DIRS} )

@@ -396,7 +396,7 @@ namespace tut
     {
         F64 value;
         std::string str_val("9223372036854775807"); //0x7FFFFFFFFFFFFFFF
-        ensure("1: convertToF64 failed", LLStringUtil::convertToF64(str_val, value) && value == 9223372036854775807.);
+        ensure("1: convertToF64 failed", LLStringUtil::convertToF64(str_val, value) && value == 9223372036854775807.0);
 
         str_val = "0";
         ensure("2: convertToF64 failed", LLStringUtil::convertToF64(str_val, value) && value == 0.0F);

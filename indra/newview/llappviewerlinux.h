@@ -27,36 +27,49 @@
 #ifndef LL_LLAPPVIEWERLINUX_H
 #define LL_LLAPPVIEWERLINUX_H
 
+extern "C" {
+# include <glib.h>
+}
+
 #ifndef LL_LLAPPVIEWER_H
 #include "llappviewer.h"
 #endif
 
 class LLCommandLineParser;
 
-class LLAppViewerLinux : public LLAppViewer
+class LLAppViewerLinux final : public LLAppViewer
 {
 public:
     LLAppViewerLinux();
-    virtual ~LLAppViewerLinux();
+    ~LLAppViewerLinux() override;
 
     //
     // Main application logic
     //
-    virtual bool init();            // Override to do application initialization
-    std::string generateSerialNumber();
+    bool init() override;            // Override to do application initialization
+    std::string generateSerialNumber() override;
     bool setupSLURLHandler();
 
 protected:
-    virtual bool beingDebugged();
+    bool beingDebugged() override;
 
-    virtual bool restoreErrorTrap();
-    virtual void initCrashReporting(bool reportFreeze);
+    bool restoreErrorTrap() override;
+    void initCrashReporting(bool reportFreeze);
 
-    virtual void initLoggingAndGetLastDuration();
-    virtual bool initParseCommandLine(LLCommandLineParser& clp);
+    bool initParseCommandLine(LLCommandLineParser& clp) override;
 
-    virtual bool initSLURLHandler();
-    virtual bool sendURLToOtherInstance(const std::string& url);
+    bool initSLURLHandler() override;
+    bool sendURLToOtherInstance(const std::string& url) override;
+    void setOSHibernationMode(eHibernationMode mode) override;
+
+private:
+    // Power management state tracking
+    static guint32 sPowerInhibitCookie;
+    static bool sPowerInhibitActive;
+
+    // Helper methods for power management
+    bool inhibitPowerManagement(bool inhibit_display);
+    void uninhibitPowerManagement();
 };
 
 #endif // LL_LLAPPVIEWERLINUX_H

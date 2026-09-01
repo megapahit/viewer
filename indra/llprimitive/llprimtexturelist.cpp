@@ -125,7 +125,7 @@ void LLPrimTextureList::take(LLPrimTextureList& other_list)
 // virtual
 // copies LLTextureEntry 'te'
 // returns TEM_CHANGE_TEXTURE if successful, otherwise TEM_CHANGE_NONE
-S32 LLPrimTextureList::copyTexture(const U8 index, const LLTextureEntry* te)
+S32 LLPrimTextureList::copyTexture(const U8 index, const LLTextureEntry& te)
 {
     if (size_t(index) >= mEntryList.size())
     {
@@ -137,7 +137,14 @@ S32 LLPrimTextureList::copyTexture(const U8 index, const LLTextureEntry* te)
         // we're changing an existing entry
     llassert(mEntryList[index]);
     delete (mEntryList[index]);
-    mEntryList[index] = te->newCopy();
+    if  (te != LLTextureEntry::null)
+    {
+        mEntryList[index] = te.newCopy();
+    }
+    else
+    {
+        mEntryList[index] = LLPrimTextureList::newTextureEntry();
+    }
     return TEM_CHANGE_TEXTURE;
 }
 

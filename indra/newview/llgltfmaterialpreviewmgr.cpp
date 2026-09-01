@@ -430,7 +430,7 @@ bool LLGLTFPreviewTexture::render()
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    LLGLDepthTest(GL_FALSE);
+    LLGLDepthTest depth(GL_FALSE);
     LLGLDisable stencil(GL_STENCIL_TEST);
     LLGLDisable scissor(GL_SCISSOR_TEST);
     SetTemporarily<bool> no_dof(&LLPipeline::RenderDepthOfField, false);
@@ -527,7 +527,6 @@ bool LLGLTFPreviewTexture::render()
 
     if (hdr)
     {
-    gPipeline.copyScreenSpaceReflections(&screen, &gPipeline.mSceneMap);
     gPipeline.generateLuminance(&screen, &gPipeline.mLuminanceMap);
     gPipeline.generateExposure(&gPipeline.mLuminanceMap, &gPipeline.mExposureMap, /*use_history = */ false);
 /*
@@ -542,8 +541,6 @@ bool LLGLTFPreviewTexture::render()
 /*
     gPipeline.generateGlow(&gPipeline.mPostPingMap);
     gPipeline.combineGlow(&gPipeline.mPostPingMap, &screen);
-    gPipeline.renderDoF(&screen, &gPipeline.mPostPingMap);
-    gPipeline.applyFXAA(&gPipeline.mPostPingMap, &screen);
 */
 
     gPipeline.generateGlow(&gPipeline.mPostMaps[activeRT]);
@@ -565,9 +562,7 @@ bool LLGLTFPreviewTexture::render()
 
     gPipeline.copyRenderTarget(&gPipeline.mPostMaps[activeRT], &screen);
 
-
     // Final render
-
     gDeferredPostNoDoFProgram.bind();
 
     // From LLPipeline::renderFinalize: "Whatever is last in the above post processing chain should _always_ be rendered directly here.  If not, expect problems."

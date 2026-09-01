@@ -32,5 +32,9 @@ target_link_libraries(llmeshoptimizer
 
 include(LibraryInstall)
 
+if (USE_PRECOMPILED_HEADERS)
+  target_precompile_headers(llmeshoptimizer REUSE_FROM llprecompiled)
+endif ()
+
 # Add tests
 

@@ -22,6 +22,5 @@
   <right_toolbar
     button_display_mode="icons_only">
     <command name="performance"/>
-    <command name="howto"/>
   </right_toolbar>
 </toolbars>

@@ -40,6 +40,11 @@ file(CREATE_LINK
     SYMBOLIC
     )
 file(CREATE_LINK
+    "../../../../Frameworks/libboost_date_time-mt.dylib"
+    "${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libboost_date_time-mt.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
     "../../../../Frameworks/libboost_fiber-mt.dylib"
     "${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libboost_fiber-mt.dylib"
     SYMBOLIC
@@ -47,6 +52,11 @@ file(CREATE_LINK
 file(CREATE_LINK
     "../../../../Frameworks/libboost_filesystem-mt.dylib"
     "${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libboost_filesystem-mt.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libboost_process-mt.dylib"
+    "${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libboost_process-mt.dylib"
     SYMBOLIC
     )
 file(CREATE_LINK
@@ -128,12 +138,18 @@ execute_process(
     COMMAND lipo libboost_context-mt.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libboost_context-mt.dylib
+    COMMAND lipo libboost_date_time-mt.dylib
+        -thin ${CMAKE_OSX_ARCHITECTURES}
+        -output libboost_date_time-mt.dylib
     COMMAND lipo libboost_fiber-mt.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libboost_fiber-mt.dylib
     COMMAND lipo libboost_filesystem-mt.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libboost_filesystem-mt.dylib
+    COMMAND lipo libboost_process-mt.dylib
+        -thin ${CMAKE_OSX_ARCHITECTURES}
+        -output libboost_process-mt.dylib
     COMMAND lipo libboost_program_options-mt.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libboost_program_options-mt.dylib
