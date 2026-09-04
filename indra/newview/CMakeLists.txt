@@ -1786,8 +1786,7 @@ set(PACKAGE ON CACHE BOOL
 if (PACKAGE)
   set(CPACK_PACKAGE_NAME ${VIEWER_BINARY_NAME}
     CACHE STRING "Viewer binary name.")
-  set(CPACK_PACKAGE_VERSION ${VIEWER_VERSION_MAJOR}.${VIEWER_VERSION_MINOR}.${VIEWER_VERSION_PATCH}.${VIEWER_VERSION_REVISION}
-    CACHE STRING "Viewer major.minor.patch.revision versions.")
+  set(CPACK_PACKAGE_VERSION ${VIEWER_VERSION_MAJOR}.${VIEWER_VERSION_MINOR}.${VIEWER_VERSION_PATCH}.${VIEWER_VERSION_REVISION})
   set(VIEWER_PACKAGE_COMMENT "A fork of the Second Life viewer")
   set(VIEWER_PACKAGE_DESCRIPTION "An entrance to virtual empires in only megabytes. A shelter for the metaverse refugees, especially those from less supported operating systems.")
   string(TOLOWER ${VIEWER_BINARY_NAME} DOMAIN_NAME)
