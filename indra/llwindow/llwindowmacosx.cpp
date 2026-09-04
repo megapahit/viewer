@@ -166,6 +166,7 @@ LLWindowMacOSX::LLWindowMacOSX(LLWindowCallbacks* callbacks,
     // Route them to a dummy callback structure until the end of constructor.
     LLWindowCallbacks null_callbacks;
     mCallbacks = &null_callbacks;
+    mIsConstructing = true;
 
     // Voodoo for calling cocoa from carbon (see llwindowmacosx-objc.mm).
     setupCocoa();
@@ -239,9 +240,8 @@ LLWindowMacOSX::LLWindowMacOSX(LLWindowCallbacks* callbacks,
     setUseMultGL(sUseMultGL);
 
     mCallbacks = callbacks;
+    mIsConstructing = false;
     stop_glerror();
-
-
 }
 
 // These functions are used as wrappers for our internal event handling callbacks.
@@ -412,6 +412,14 @@ void callResize(unsigned int width, unsigned int height)
     if (gWindowImplementation && gWindowImplementation->getCallbacks())
     {
         gWindowImplementation->getCallbacks()->handleResize(gWindowImplementation, width, height);
+    }
+}
+
+void callRequestResolutionUpdate()
+{
+    if (gWindowImplementation && gWindowImplementation->getCallbacks())
+    {
+        gWindowImplementation->getCallbacks()->handleRequestResolutionUpdate(gWindowImplementation);
     }
 }
 
@@ -706,6 +714,11 @@ void getPreeditLocation(float *location, unsigned int length)
         location[0] = c[0];
         location[1] = c[1];
     }
+}
+
+bool windowCallbacksReady()
+{
+    return gWindowImplementation && !gWindowImplementation->isConstructing();
 }
 
 void LLWindowMacOSX::updateMouseDeltas(float* deltas)
