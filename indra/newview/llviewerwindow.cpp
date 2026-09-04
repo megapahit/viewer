@@ -1578,6 +1578,7 @@ void LLViewerWindow::handleResize(LLWindow *window,  S32 width,  S32 height)
 {
     reshape(width, height);
     mResDirty = true;
+    LL_DEBUGS("Window") << "handleResize, new width: " << width << " height: " << height << LL_ENDL;
 }
 
 // The top-level window has gained focus (e.g. via ALT-TAB)
@@ -1877,6 +1878,10 @@ bool LLViewerWindow::handleWindowDidChangeScreen(LLWindow *window)
     LLCoordScreen window_rect;
     mWindow->getSize(&window_rect);
     reshape(window_rect.mX, window_rect.mY);
+    // The window may still be transitioning between states,
+    // schedule an update at checkSettings()
+    mResDirty = true;
+    LL_DEBUGS("Window") << "Window did change screen, new size: " << window_rect.mX << "x" << window_rect.mY << LL_ENDL;
     return true;
 }
 
@@ -2623,6 +2628,15 @@ void LLViewerWindow::reshape(S32 width, S32 height)
         mWindowRectRaw.mRight = mWindowRectRaw.mLeft + width;
         mWindowRectRaw.mTop = mWindowRectRaw.mBottom + height;
 
+        LL_DEBUGS("Window") << "reshape called:";
+        LLCoordWindow live_size;
+        mWindow->getSize(&live_size);
+        LL_CONT << " args=" << width << "x" << height
+            << " live_getSize=" << live_size.mX << "x" << live_size.mY
+            << " current_mDisplayScale=" << mDisplayScale
+            << " systemUISize=" << mWindow->getSystemUISize()
+            << LL_ENDL;
+
         //glViewport(0, 0, width, height );
 
         LLViewerCamera * camera = LLViewerCamera::getInstance(); // simpleton, might not exist
@@ -2956,12 +2970,13 @@ bool LLViewerWindow::handleKeyUp(KEY key, MASK mask)
     {
         if (keyboard_focus->handleKeyUp(key, mask, false))
         {
-            LL_DEBUGS() << "LLviewerWindow::handleKeyUp - in 'traverse up' - no loops seen... just called keyboard_focus->handleKeyUp an it returned true" << LL_ENDL;
+            LL_DEBUGS() << "LLviewerWindow::handleKeyUp - in 'traverse up' - no loops seen... just called keyboard_focus->handleKeyUp and it returned true" << LL_ENDL;
             LLViewerEventRecorder::instance().logKeyEvent(key, mask);
             return true;
         }
-        else {
-            LL_DEBUGS() << "LLviewerWindow::handleKeyUp - in 'traverse up' - no loops seen... just called keyboard_focus->handleKeyUp an it returned false" << LL_ENDL;
+        else
+        {
+            LL_DEBUGS() << "LLviewerWindow::handleKeyUp - in 'traverse up' - no loops seen... just called keyboard_focus->handleKeyUp and it returned false" << LL_ENDL;
         }
     }
 
@@ -3177,17 +3192,19 @@ bool LLViewerWindow::handleKey(KEY key, MASK mask)
         if (keyboard_focus->handleKey(key, mask, false))
         {
 
-            LL_DEBUGS() << "LLviewerWindow::handleKey - in 'traverse up' - no loops seen... just called keyboard_focus->handleKey an it returned true" << LL_ENDL;
+            LL_DEBUGS("Window") << "LLViewerWindow::handleKey - in 'traverse up' - no loops seen... just called keyboard_focus->handleKey and it returned true" << LL_ENDL;
             LLViewerEventRecorder::instance().logKeyEvent(key,mask);
             return true;
-        } else {
-            LL_DEBUGS() << "LLviewerWindow::handleKey - in 'traverse up' - no loops seen... just called keyboard_focus->handleKey an it returned false" << LL_ENDL;
+        }
+        else
+        {
+            LL_DEBUGS("Window") << "LLViewerWindow::handleKey - in 'traverse up' - no loops seen... just called keyboard_focus->handleKey and it returned false" << LL_ENDL;
         }
     }
 
     if( LLToolMgr::getInstance()->getCurrentTool()->handleKey(key, mask) )
     {
-        LL_DEBUGS() << "LLviewerWindow::handleKey toolbar handling?" << LL_ENDL;
+        LL_DEBUGS("Window") << "LLViewerWindow::handleKey toolbar handling?" << LL_ENDL;
         LLViewerEventRecorder::instance().logKeyEvent(key,mask);
         return true;
     }
@@ -3195,7 +3212,7 @@ bool LLViewerWindow::handleKey(KEY key, MASK mask)
     // Try for a new-format gesture
     if (LLGestureMgr::instance().triggerGesture(key, mask))
     {
-        LL_DEBUGS() << "LLviewerWindow::handleKey new gesture feature" << LL_ENDL;
+        LL_DEBUGS("Window") << "LLViewerWindow::handleKey new gesture feature" << LL_ENDL;
         LLViewerEventRecorder::instance().logKeyEvent(key,mask);
         return true;
     }
@@ -3307,7 +3324,7 @@ void LLViewerWindow::handleScrollWheel(S32 clicks)
         mouse_captor->handleScrollWheel(local_x, local_y, clicks);
         if (LLView::sDebugMouseHandling)
         {
-            LL_INFOS() << "Scroll Wheel handled by captor " << mouse_captor->getName() << LL_ENDL;
+            LL_INFOS("Window") << "Scroll Wheel handled by captor " << mouse_captor->getName() << LL_ENDL;
         }
         return;
     }
@@ -3331,7 +3348,7 @@ void LLViewerWindow::handleScrollWheel(S32 clicks)
     }
     else if (LLView::sDebugMouseHandling)
     {
-        LL_INFOS() << "Scroll Wheel not handled by view" << LL_ENDL;
+        LL_INFOS("Window") << "Scroll Wheel not handled by view" << LL_ENDL;
     }
 
     // Zoom the camera in and out behavior
@@ -3362,7 +3379,7 @@ void LLViewerWindow::handleScrollHWheel(S32 clicks)
         mouse_captor->handleScrollHWheel(local_x, local_y, clicks);
         if (LLView::sDebugMouseHandling)
         {
-            LL_INFOS() << "Scroll Horizontal Wheel handled by captor " << mouse_captor->getName() << LL_ENDL;
+            LL_INFOS("Window") << "Scroll Horizontal Wheel handled by captor " << mouse_captor->getName() << LL_ENDL;
         }
         return;
     }
@@ -3386,7 +3403,7 @@ void LLViewerWindow::handleScrollHWheel(S32 clicks)
     }
     else if (LLView::sDebugMouseHandling)
     {
-        LL_INFOS() << "Scroll Horizontal Wheel not handled by view" << LL_ENDL;
+        LL_INFOS("Window") << "Scroll Horizontal Wheel not handled by view" << LL_ENDL;
     }
 
     return;
@@ -3590,7 +3607,7 @@ void LLViewerWindow::updateUI()
         }
         if (child_count_timer.hasExpired())
         {
-            LL_INFOS() << "gMenuHolder child count: " << gMenuHolder->getChildCount() << LL_ENDL;
+            LL_INFOS("Window") << "gMenuHolder child count: " << gMenuHolder->getChildCount() << LL_ENDL;
             std::vector<std::string> local_child_vec;
             LLView::child_list_t child_list = *gMenuHolder->getChildList();
             for (auto child : child_list)
@@ -3605,7 +3622,7 @@ void LLViewerWindow::updateUI()
                 std::set_difference(child_vec.begin(), child_vec.end(), local_child_vec.begin(), local_child_vec.end(), std::inserter(out_vec, out_vec.begin()));
                 if (!out_vec.empty())
                 {
-                    LL_INFOS() << "gMenuHolder removal diff size: '"<<out_vec.size() <<"' begin_child_diff";
+                    LL_INFOS("Window") << "gMenuHolder removal diff size: '"<<out_vec.size() <<"' begin_child_diff";
                     for (auto str : out_vec)
                     {
                         LL_CONT << " : " << str;
@@ -3617,7 +3634,7 @@ void LLViewerWindow::updateUI()
                 std::set_difference(local_child_vec.begin(), local_child_vec.end(), child_vec.begin(), child_vec.end(), std::inserter(out_vec, out_vec.begin()));
                 if (!out_vec.empty())
                 {
-                    LL_INFOS() << "gMenuHolder addition diff size: '" << out_vec.size() << "' begin_child_diff";
+                    LL_INFOS("Window") << "gMenuHolder addition diff size: '" << out_vec.size() << "' begin_child_diff";
                     for (auto str : out_vec)
                     {
                         LL_CONT << " : " << str;
@@ -4412,11 +4429,11 @@ bool LLViewerWindow::clickPointOnSurfaceGlobal(const S32 x, const S32 y, LLViewe
     if (!intersect)
     {
         point_global = clickPointInWorldGlobal(x, y, objectp);
-        LL_INFOS() << "approx intersection at " <<  (objectp->getPositionGlobal() - point_global) << LL_ENDL;
+        LL_INFOS("Window") << "approx intersection at " <<  (objectp->getPositionGlobal() - point_global) << LL_ENDL;
     }
     else
     {
-        LL_INFOS() << "good intersection at " <<  (objectp->getPositionGlobal() - point_global) << LL_ENDL;
+        LL_INFOS("Window") << "good intersection at " <<  (objectp->getPositionGlobal() - point_global) << LL_ENDL;
     }
 
     return intersect;
@@ -5010,7 +5027,7 @@ void LLViewerWindow::saveImageLocal(LLImageFormatted *image, const snapshot_save
     while( -1 != err  // Search until the file is not found (i.e., stat() gives an error).
             && is_snapshot_name_loc_set); // Or stop if we are rewriting.
 
-    LL_INFOS() << "Saving snapshot to " << filepath << LL_ENDL;
+    LL_INFOS("Window") << "Saving snapshot to " << filepath << LL_ENDL;
     if (image->save(filepath))
     {
         playSnapshotAnimAndSound();
@@ -5064,7 +5081,7 @@ void LLViewerWindow::movieSize(S32 new_width, S32 new_height)
 
 bool LLViewerWindow::saveSnapshot(const std::string& filepath, S32 image_width, S32 image_height, bool show_ui, bool show_hud, bool do_rebuild, bool show_balance, LLSnapshotModel::ESnapshotLayerType type, LLSnapshotModel::ESnapshotFormat format)
 {
-    LL_INFOS() << "Saving snapshot to: " << filepath << LL_ENDL;
+    LL_INFOS("Window") << "Saving snapshot to: " << filepath << LL_ENDL;
 
     LLPointer<LLImageRaw> raw = new LLImageRaw;
     bool success = rawSnapshot(raw, image_width, image_height, true, false, show_ui, show_hud, do_rebuild, show_balance);
@@ -5944,7 +5961,7 @@ void LLViewerWindow::stopGL()
     //especially be careful to put anything behind gTextureList.destroyGL(save_state);
     if (!gGLManager.mIsDisabled)
     {
-        LL_INFOS() << "Shutting down GL..." << LL_ENDL;
+        LL_INFOS("Window") << "Shutting down GL..." << LL_ENDL;
 
         // Pause texture decode threads (will get unpaused during main loop)
         LLAppViewer::getTextureCache()->pause();
@@ -6008,7 +6025,7 @@ void LLViewerWindow::restoreGL(const std::string& progress_message)
     //especially, be careful to put something before gTextureList.restoreGL();
     if (gGLManager.mIsDisabled)
     {
-        LL_INFOS() << "Restoring GL..." << LL_ENDL;
+        LL_INFOS("Window") << "Restoring GL..." << LL_ENDL;
         gGLManager.mIsDisabled = false;
 
         initGLDefaults();
@@ -6042,7 +6059,7 @@ void LLViewerWindow::restoreGL(const std::string& progress_message)
             setShowProgress(true);
             setProgressString(progress_message);
         }
-        LL_INFOS() << "...Restoring GL done" << LL_ENDL;
+        LL_INFOS("Window") << "...Restoring GL done" << LL_ENDL;
         if(!LLAppViewer::instance()->restoreErrorTrap())
         {
             LL_WARNS() << " Someone took over my signal/exception handler (post restoreGL)!" << LL_ENDL;
@@ -6115,7 +6132,19 @@ void LLViewerWindow::calcDisplayScale()
 
     if (display_scale != mDisplayScale)
     {
-        LL_INFOS() << "Setting display scale to " << display_scale << " for ui scale: " << ui_scale_factor << LL_ENDL;
+        LL_INFOS("Window") << "Setting display scale to " << display_scale << " for ui scale: " << ui_scale_factor << LL_ENDL;
+
+        LL_DEBUGS("Window") << "calcDisplayScale changing:";
+
+        LLCoordWindow win_size;
+        mWindow->getSize(&win_size);
+        LL_CONT << " old=" << mDisplayScale
+            << " new=" << display_scale
+            << " UIScaleFactor=" << gSavedSettings.getF32("UIScaleFactor")
+            << " systemUISize=" << mWindow->getSystemUISize()
+            << " windowSize=" << win_size.mX << "x" << win_size.mY
+            << " mWindowRectRaw=" << mWindowRectRaw.getWidth() << "x" << mWindowRectRaw.getHeight()
+            << LL_ENDL;
 
         mDisplayScale = display_scale;
         // Init default fonts
