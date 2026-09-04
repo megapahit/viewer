@@ -720,7 +720,11 @@ void LLWebRTCImpl::workerStartPlayout()
 {
     // Only run playout while voice is enabled and there's a connection to
     // render (running the output device otherwise is heard as a buzz).
+#if CM_WEBRTC
     if (!mDeviceModule || !mVoiceEnabled || mTuningMode || mDeviceModule->Playing() || mPeerConnections.empty())
+#else
+    if (!mDeviceModule || !mVoiceEnabled || mTuningMode || mPeerConnections.empty())
+#endif
     {
         return;
     }
@@ -743,6 +747,18 @@ void LLWebRTCImpl::workerStartPlayout()
             }
         }
     }
+
+#if !CM_WEBRTC
+    if (mDeviceModule->Playing())
+    {
+        if (mDeviceModule->GetPlayoutDevice() == playoutDevice)
+        {
+            return;
+        }
+
+        mDeviceModule->StopPlayout();
+    }
+#endif
 
 #if WEBRTC_WIN
     if (playoutDevice < 0)
