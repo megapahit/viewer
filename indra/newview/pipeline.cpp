@@ -240,7 +240,7 @@ const F32 ALPHA_BLEND_CUTOFF = 0.598f;
 const F32 DEFERRED_LIGHT_FALLOFF = 0.5f;
 const U32 DEFERRED_VB_MASK = LLVertexBuffer::MAP_VERTEX | LLVertexBuffer::MAP_TEXCOORD0 | LLVertexBuffer::MAP_TEXCOORD1;
 
-const U32 SHADOWS_RESX = 512;
+const U32 SHADOWS_RESX = 768;
 const U32 SHADOWS_RESY = 512;
 
 extern S32 gBoxFrame;
@@ -788,16 +788,16 @@ void LLPipeline::resizeScreenTexture()
             releaseScreenBuffers();
             releaseSunShadowTargets();
             releaseSpotShadowTargets();
-            allocateScreenBuffer(resX,resY);
+            allocateScreenBuffer(resX, resY);
             gResizeScreenTexture = false;
         }
     }
 }
 
-bool LLPipeline::allocateScreenBuffer(U32 resX, U32 resY)
+bool LLPipeline::allocateScreenBuffer(U32 resX, U32 resY, U32 snapshot_)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DISPLAY;
-    eFBOStatus ret = doAllocateScreenBuffer(resX, resY);
+    eFBOStatus ret = doAllocateScreenBuffer(resX, resY, snapshot_);
 
     return ret == FBO_SUCCESS_FULLRES;
 }
@@ -809,7 +809,7 @@ void LLPipeline::renderTriangle()
 }
 
 
-LLPipeline::eFBOStatus LLPipeline::doAllocateScreenBuffer(U32 resX, U32 resY)
+LLPipeline::eFBOStatus LLPipeline::doAllocateScreenBuffer(U32 resX, U32 resY, U32 snapshot_)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DISPLAY;
     // try to allocate screen buffers at requested resolution and samples
@@ -820,8 +820,11 @@ LLPipeline::eFBOStatus LLPipeline::doAllocateScreenBuffer(U32 resX, U32 resY)
     // refresh cached settings here to protect against inconsistent event handling order
     refreshCachedSettings();
 
+    mHDRBuffers = false;
+    if(mHDRDisplay && !snapshot_) mHDRBuffers = true;
+
     eFBOStatus ret = FBO_SUCCESS_FULLRES;
-    if (!allocateScreenBufferInternal(resX, resY))
+    if (!allocateScreenBufferInternal(resX, resY, snapshot_))
     {
         //failed to allocate at requested specification, return false
         ret = FBO_FAILURE;
@@ -832,14 +835,14 @@ LLPipeline::eFBOStatus LLPipeline::doAllocateScreenBuffer(U32 resX, U32 resY)
         while (resY > 0 && resX > 0)
         {
             resY /= 2;
-            if (allocateScreenBufferInternal(resX, resY))
+            if (allocateScreenBufferInternal(resX, resY, snapshot_))
             {
                 return FBO_SUCCESS_LOWRES;
             }
             releaseScreenBuffers();
 
             resX /= 2;
-            if (allocateScreenBufferInternal(resX, resY))
+            if (allocateScreenBufferInternal(resX, resY, snapshot_))
             {
                 return FBO_SUCCESS_LOWRES;
             }
@@ -852,7 +855,7 @@ LLPipeline::eFBOStatus LLPipeline::doAllocateScreenBuffer(U32 resX, U32 resY)
     return ret;
 }
 
-bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY, U32 type_)
+bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY, U32 snapshot_)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DISPLAY;
     bool has_hdr = gSavedSettings.getBOOL("RenderHDREnabled");
@@ -872,14 +875,14 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY, U32 type_)
 
         mRT = &mAuxillaryRT;
         U32 res = mReflectionMapManager.mProbeResolution * 4;  //multiply by 4 because probes will be 16x super sampled
-        allocateScreenBufferInternal(res, res, 1);
+        allocateScreenBufferInternal(res, res, snapshot_);
 
         if (RenderMirrors)
         {
             mHeroProbeManager.initReflectionMaps();
             res = mHeroProbeManager.mProbeResolution;  // We also scale the hero probe RT to the probe res since we don't super sample it.
             mRT = &mHeroProbeRT;
-            allocateScreenBufferInternal(res, res, 2);
+            allocateScreenBufferInternal(res, res, snapshot_);
         }
 
         mRT = &mMainRT;
@@ -890,12 +893,15 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY, U32 type_)
     mRT->width = resX;
     mRT->height = resY;
 
-    F32 res_mod = fmin(RenderResolutionDivisor, 4.0);
-
-    if (res_mod >= 0.5 && res_mod <= 4.0)
+    if(!snapshot_)
     {
-        resX = (U32)(floor((F32)resX / res_mod));
-        resY = (U32)(floor((F32)resY / res_mod));
+        F32 res_mod = fmin(RenderResolutionDivisor, 4.0);
+
+        if (res_mod >= 0.5 && res_mod <= 4.0)
+        {
+            resX = (U32)(floor((F32)resX / res_mod));
+            resY = (U32)(floor((F32)resY / res_mod));
+        }
     }
 
     S32 shadow_detail = RenderShadowDetail;
@@ -910,9 +916,10 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY, U32 type_)
     if (!addDeferredAttachments(mRT->deferredScreen)) return false;
 
     GLuint screenFormat = GL_RGBA16F;
-    if(!hdr && !mHDRDisplay && MPColorPrecision == 1) screenFormat = GL_RGB10_A2;
+    if(!hdr || ( !mHDRBuffers && MPColorPrecision == 1 )) screenFormat = GL_RGB10_A2;
 
-    if (!mRT->screen.allocate(resX, resY, GL_RGBA16F)) return false;
+    //if (!mRT->screen.allocate(resX, resY, GL_RGBA16F)) return false;
+    if (!mRT->screen.allocate(resX, resY, screenFormat)) return false;
 
     mRT->deferredScreen.shareDepthBuffer(mRT->screen);
 
@@ -926,7 +933,7 @@ bool LLPipeline::allocateScreenBufferInternal(U32 resX, U32 resY, U32 type_)
     }
 
     //allocateShadowBuffer(resX, resY);
-    if(type_ == 0) allocateShadowBuffer(SHADOWS_RESX, SHADOWS_RESY);
+    allocateShadowBuffer(SHADOWS_RESX, SHADOWS_RESY);
 
     if (!gCubeSnapshot) // hack to not re-allocate various targets for cube snapshots
     {
@@ -5951,21 +5958,21 @@ void LLPipeline::setupHWLights()
         mSunDiffuse.setVec(psky->getSunlightColor());
         mMoonDiffuse.setVec(psky->getMoonlightColor());
 
-        if(!mHDRDisplay)
+        if(!mHDRBuffers)
         {
-        F32 max_color = llmax(mSunDiffuse.mV[0], mSunDiffuse.mV[1], mSunDiffuse.mV[2]);
-        if (max_color > 1.f)
-        {
-            mSunDiffuse *= 1.f/max_color;
-        }
-        mSunDiffuse.clamp();
+            F32 max_color = llmax(mSunDiffuse.mV[0], mSunDiffuse.mV[1], mSunDiffuse.mV[2]);
+            if (max_color > 1.f)
+            {
+                mSunDiffuse *= 1.f/max_color;
+            }
+            mSunDiffuse.clamp();
 
-        max_color = llmax(mMoonDiffuse.mV[0], mMoonDiffuse.mV[1], mMoonDiffuse.mV[2]);
-        if (max_color > 1.f)
-        {
-            mMoonDiffuse *= 1.f/max_color;
-        }
-        mMoonDiffuse.clamp();
+            max_color = llmax(mMoonDiffuse.mV[0], mMoonDiffuse.mV[1], mMoonDiffuse.mV[2]);
+            if (max_color > 1.f)
+            {
+                mMoonDiffuse *= 1.f/max_color;
+            }
+            mMoonDiffuse.clamp();
         }
 
         // prevent underlighting from having neither lightsource facing us
@@ -7513,14 +7520,14 @@ void LLPipeline::gammaCorrect(LLRenderTarget* src, LLRenderTarget* dst)
             gDeferredPostGammaCorrectProgram;
 
         static LLCachedControl<F32> mp_hdr_gamma(gSavedSettings, "MPHDRGamma", false);
-        if(mHDRDisplay) shader = gHDRGammaCorrectProgram;
+        if(mHDRBuffers) shader = gHDRGammaCorrectProgram;
 
         shader.bind();
         shader.bindTexture(LLShaderMgr::DEFERRED_DIFFUSE, src, false, LLTexUnit::TFO_POINT);
         //screensize isn't a uniform in the shader, we comment out for now
         //shader.uniform2f(LLShaderMgr::DEFERRED_SCREEN_RES, (GLfloat)src->getWidth(), (GLfloat)src->getHeight());
 
-        if(mHDRDisplay)
+        if(mHDRBuffers)
         {
             shader.uniform1f(LLShaderMgr::GAMMA, (GLfloat)mp_hdr_gamma);
             shader.uniform1f(LLShaderMgr::MP_HDR_BOOST, 1.0);
@@ -8276,7 +8283,7 @@ bool LLPipeline::renderBloom(LLRenderTarget* src, LLRenderTarget* dst)
     static LLCachedControl<F32> mp_bloom_nonmetal(gSavedSettings, "MPBloomExtractNonMetal", 0.2);
 
     F32 clampValue = 1.0;
-    if(mHDRDisplay) clampValue = 11.0;
+    if(mHDRBuffers) clampValue = 11.0;
 
     LLGLDepthTest depth(GL_FALSE, GL_FALSE);
     LLGLDisable blend(GL_BLEND);
@@ -8404,11 +8411,11 @@ void LLPipeline::renderFinalize()
 
     bool apply_cas = false;
     static LLCachedControl<F32> cas_sharpness(gSavedSettings, "RenderCASSharpness", 0.0f);
-    if (cas_sharpness > 0.0f && gCASProgram.isComplete() && gCASLegacyGammaProgram.isComplete() && !mHDRDisplay) apply_cas = true;
+    if (cas_sharpness > 0.0f && gCASProgram.isComplete() && gCASLegacyGammaProgram.isComplete() && !mHDRBuffers) apply_cas = true;
 
     U16 activeRT = 0;
 
-    if (hdr && !mHDRDisplay)
+    if (hdr && !mHDRBuffers)
     {
         copyScreenSpaceReflections(&mRT->screen, &mSceneMap);
 
@@ -8427,7 +8434,7 @@ void LLPipeline::renderFinalize()
     }
     else
     {
-        if(mHDRDisplay) copyScreenSpaceReflections(&mRT->screen, &mSceneMap);
+        if(mHDRBuffers) copyScreenSpaceReflections(&mRT->screen, &mSceneMap);
         gammaCorrect(&mRT->screen, &mPostMaps[activeRT]);
     }
 

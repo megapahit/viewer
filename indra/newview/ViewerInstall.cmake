@@ -161,7 +161,7 @@ elseif (WINDOWS)
         get_filename_component(_boost_context_dll_name "${_boost_context_dll}" NAME_WE)
         string(REPLACE "boost_context" "" BOOST_DLL_SFX "${_boost_context_dll_name}")
     else ()
-        set(BOOST_DLL_SFX -vc143-mt-${BOOST_PLATFORM}-1_91)
+        set(BOOST_DLL_SFX -vc145-mt-${BOOST_PLATFORM}-1_92)
         message(WARNING "Could not detect Boost DLL suffix via glob; using fallback '${BOOST_DLL_SFX}'.")
     endif ()
 

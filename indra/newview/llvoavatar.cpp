@@ -6541,7 +6541,7 @@ bool LLVOAvatar::startMotion(const LLUUID& id, F32 time_offset)
                             {
                                 auto name = (*iter)->getName();
                                 auto colon = name.find_first_of(':');
-                                if (name == action || colon != std::string::npos && !name.compare(0, colon, action))
+                                if (name == action || (colon != std::string::npos && !name.compare(0, colon, action)))
                                 {
                                     folderID = findDescendentCategoryIDByName(folderID, name);
                                     gInventory.getDirectDescendentsOf(folderID, cats, items);

@@ -28,9 +28,9 @@
      top_delta="2">
         Disk
     </text>
-    <view_border 
+    <view_border
      bevel_style="in"
-     follows="left|top|right" 
+     follows="left|top|right"
      height="1"
      left="9"
      layout="topleft"
@@ -51,31 +51,35 @@
          name="CurrentWindow"
          value="[i0,i0]" />
         <combo_box.item
-         label="320x240"
-         name="320x240"
-         value="[i320,i240]" />
+         label="screen 720p"
+         name="1280x720"
+         value="[i1280,i720]" />
         <combo_box.item
-         label="640x480"
-         name="640x480"
-         value="[i640,i480]" />
-        <combo_box.item
-         label="800x600"
-         name="800x600"
-         value="[i800,i600]" />
-        <combo_box.item
-         label="1024x768"
-         name="1024x768"
-         value="[i1024,i768]" />
-        <combo_box.item
-         label="1280x1024"
-         name="1280x1024"
-         value="[i1280,i1024]" />
-        <combo_box.item
-         label="1600x1200"
-         name="1600x1200"
-         value="[i1600,i1200]" />
+         label="screen 1080p"
+         name="1920x1080"
+         value="[i1920,i1080]" />
          <combo_box.item
-         label="2048x2048"
+         label="landscape 1024p"
+         name="1536x1024"
+         value="[i1536,i1024]" />
+         <combo_box.item
+         label="portrait 1024p"
+         name="1024x1536"
+         value="[i1024,i1536]" />
+         <combo_box.item
+         label="MPx2 1400x1050"
+         name="1400x1050"
+         value="[i1400,i1050]" />
+         <combo_box.item
+         label="MPx4 2800x2100"
+         name="2800x2100"
+         value="[i2800,i2100]" />
+         <combo_box.item
+         label="square 1024p"
+         name="1024x1024"
+         value="[i1024,i1024]" />
+         <combo_box.item
+         label="square 2048p"
          name="2048x2048"
          value="[i2048,i2048]" />
         <combo_box.item
