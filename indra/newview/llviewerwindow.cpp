@@ -6104,7 +6104,6 @@ void LLViewerWindow::checkSettings()
         mStatesDirty = false;
     }
 
-    // We want to update the resolution AFTER the states getting refreshed not before.
     if (mResDirty)
     {
         LLCoordWindow size;
@@ -6112,7 +6111,8 @@ void LLViewerWindow::checkSettings()
         mWindowRectRaw.set(0, size.mY, size.mX, 0);
         mWindowRectScaled.set(0, ll_round((F32)size.mY / mDisplayScale.mV[VY]), ll_round((F32)size.mX / mDisplayScale.mV[VX]), 0);
 
-        LLCoordScreen window_size;
+        // Deferred resolution update after states have been refreshed.
+        LLCoordWindow window_size;
         if (mWindow->getSize(&window_size))
         {
             reshape(window_size.mX, window_size.mY);
