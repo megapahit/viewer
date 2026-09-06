@@ -2458,7 +2458,7 @@ elseif (CMAKE_SYSTEM_NAME MATCHES FreeBSD AND PACKAGE)
     CACHE STRING "FreeBSD package maintainer.")
   set(CPACK_FREEBSD_PACKAGE_ORIGIN net/${VIEWER_BINARY_NAME}
     CACHE STRING "FreeBSD package origin.")
-  set(CPACK_FREEBSD_PACKAGE_DEPS "audio/freealut;devel/apr;devel/boost-libs;x11-toolkits/fltk;textproc/hunspell;misc/meshoptimizer;archivers/minizip;www/libnghttp2;graphics/openjpeg;devel/sdl2;multimedia/vlc;audio/libvorbis"
+  set(CPACK_FREEBSD_PACKAGE_DEPS "audio/freealut;devel/apr;devel/boost-libs;x11-toolkits/fltk;textproc/hunspell;misc/meshoptimizer;archivers/minizip;www/libnghttp2;graphics/openjpeg;devel/sdl2;multimedia/vlc;audio/libvorbis;x11/zenity"
     CACHE STRING "FreeBSD package dependencies.")
 
 endif (LINUX)
