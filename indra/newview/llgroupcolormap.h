@@ -40,6 +40,8 @@ public:
     /** Return the tint for @p group_id, or LLColor4::transparent if none. */
     LLColor4 getGroupColor(const LLUUID& group_id) const;
 
+    bool hasAnyGroupColor() const;
+
     /** True if a non-transparent color is stored for this group. */
     bool hasGroupColor(const LLUUID& group_id) const;
 

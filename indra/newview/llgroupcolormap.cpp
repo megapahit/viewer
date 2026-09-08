@@ -56,6 +56,11 @@ LLColor4 LLGroupColorMap::getGroupColor(const LLUUID& group_id) const
     return LLColor4::transparent;
 }
 
+bool LLGroupColorMap::hasAnyGroupColor() const
+{
+    return !mColors.empty();
+}
+
 bool LLGroupColorMap::hasGroupColor(const LLUUID& group_id) const
 {
     if (group_id.isNull())

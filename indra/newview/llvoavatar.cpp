@@ -3663,7 +3663,7 @@ void LLVOAvatar::idleUpdateNameTagText(bool new_name)
         // and we can discover the active group UUID.  We register ourselves as an
         // observer for APT_GROUPS in processProperties() below.
         const std::string new_title = title ? title->getString() : "";
-        if (!isSelf() && new_title != mTitle)
+        if (LLGroupColorMap::getInstance()->hasAnyGroupColor() && !isSelf() && new_title != mTitle)
         {
             // Reset cached group UUID - it will be repopulated by the reply.
             mActiveGroupID.setNull();
@@ -3910,6 +3910,8 @@ LLColor4 LLVOAvatar::getNameTagColor(bool is_friend)
     }
 
     LLColor4 base_color = LLUIColorTable::getInstance()->getColor(color_name);
+
+    if (!LLGroupColorMap::getInstance()->hasAnyGroupColor()) return base_color;
 
     // Group-based nameplate tinting: override with the group color if one is set.
     // For self, the active group UUID is always available via gAgent.
