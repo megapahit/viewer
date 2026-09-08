@@ -34,6 +34,7 @@
 #include "lldateutil.h"
 #include "llviewergenericmessage.h"
 #include "llstartup.h"
+#include "llgroupcolormap.h"
 
 // Linden library includes
 #include "llavataractions.h" // for getProfileUrl
@@ -533,6 +534,8 @@ void LLAvatarPropertiesProcessor::processAvatarGroupsReply(LLMessageSystem* msg,
 
     LL_DEBUGS("AvatarProperties") << "Received AvatarGroupsReply for "
                                   << avatar_groups.avatar_id << LL_ENDL;
+
+    if (!LLGroupColorMap::getInstance()->hasAnyGroupColor()) return;
 
     S32 group_count = msg->getNumberOfBlocksFast(_PREHASH_GroupData);
     for (S32 i = 0; i < group_count; ++i)
