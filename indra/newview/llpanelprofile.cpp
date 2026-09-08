@@ -1440,6 +1440,10 @@ void LLPanelProfileSecondLife::onCommitMenu(const LLSD& userdata)
     {
         LLAvatarActions::startIM(agent_id);
     }
+    else if (item_name == "view_profile")
+    {
+        LLAvatarActions::showProfile(agent_id);
+    }
     else if (item_name == "offer_teleport")
     {
         LLAvatarActions::offerTeleport(agent_id);
