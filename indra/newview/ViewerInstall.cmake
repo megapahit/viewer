@@ -241,7 +241,7 @@ if (LINUX)
                 DESTINATION ${_LIB}
                 )
         endif ()
-	if (USE_OPENAL AND (${LINUX_DISTRO} MATCHES freedesktop))
+        if (USE_OPENAL AND (${LINUX_DISTRO} MATCHES freedesktop))
             install(
                 FILES
                   ${ARCH_PREBUILT_DIRS_RELEASE}/libalut.so
