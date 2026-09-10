@@ -46,7 +46,7 @@ $ megapahit
 ### Debian
 
 ```
-$ sudo apt install cmake patchelf pkg-config libxml2-utils libalut-dev libaprutil1-dev libboost-fiber-dev libboost-json-dev libboost-process-dev libboost-program-options-dev libboost-regex-dev libboost-url-dev libexpat1-dev libfontconfig-dev libfreetype-dev libhunspell-dev libjpeg-dev libmeshoptimizer-dev libminizip-dev libnanosvg-dev libnghttp2-dev libopenjp2-7-dev libpipewire-0.3-dev libpng-dev libsdl3-dev libvlc-dev libvlccore-dev libvorbis-dev libxft-dev libxml2-dev libxxhash-dev
+$ sudo apt install cmake patchelf pkg-config libxml2-utils libalut-dev libaprutil1-dev libexpat1-dev libfontconfig-dev libfreetype-dev libhunspell-dev libjpeg-dev libmeshoptimizer-dev libminizip-dev libnanosvg-dev libnghttp2-dev libopenjp2-7-dev libpipewire-0.3-dev libpng-dev libvlc-dev libvlccore-dev libvorbis-dev libxft-dev libxml2-dev libxxhash-dev
 $ export LL_BUILD_RELEASE="-O3 -std=c++20 -fPIC -DLL_RELEASE=1 -DLL_RELEASE_FOR_DOWNLOAD=1 -DNDEBUG -DLL_LINUX=1 -DPIC -DLL_OS_DRAGDROP_ENABLED=1"
 $ export LL_BUILD_RELWITHDEBINFO="-O0 -g -std=c++20 -fPIC -DLL_RELEASE=1 -DLL_RELEASE_WITH_DEBUG_INFO=1 -DNDEBUG -DLL_LINUX=1 -DPIC -DLL_OS_DRAGDROP_ENABLED=1"
 $ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=ON -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON -DOPENGL_glx_LIBRARY:FILEPATH=/usr/lib/`uname -m`-linux-gnu/libGLX.so -DOPENGL_opengl_LIBRARY:FILEPATH=/usr/lib/`uname -m`-linux-gnu/libOpenGL.so -DX11_X11_LIB:FILEPATH=/usr/lib/`uname -m`-linux-gnu/libX11.so ../indra
