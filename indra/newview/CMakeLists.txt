@@ -2448,10 +2448,10 @@ if (LINUX)
       set(CPACK_DEBIAN_PACKAGE_SECTION net
         CACHE STRING "Debian package section.")
       if (${LINUX_DISTRO} MATCHES debian)
-        set(CPACK_DEBIAN_PACKAGE_DEPENDS "libalut0, libaprutil1t64, libboost-fiber1.83.0, libboost-filesystem1.83.0, libboost-program-options1.83.0, libboost-regex1.83.0, libboost-thread1.83.0, libboost-url1.83.0, libexpat1, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1t64, libnghttp2-14, libnspr4, libnss3, libopenjp2-7, libsdl3-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS "libalut0, libaprutil1t64, libboost-fiber1.83.0, libboost-filesystem1.83.0, libboost-program-options1.83.0, libboost-regex1.83.0, libboost-thread1.83.0, libboost-url1.83.0, libexpat1, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1t64, libnghttp2-14, libnspr4, libnss3, libopenjp2-7, libsdl3-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base, zenity"
           CACHE STRING "Debian package dependencies.")
       else ()
-        set(CPACK_DEBIAN_PACKAGE_DEPENDS "libalut0, libaprutil1t64, libboost-fiber1.90.0, libboost-filesystem1.90.0, libboost-process1.90.0, libboost-program-options1.90.0, libboost-regex1.90.0, libboost-thread1.90.0, libboost-url1.90.0, libexpat1, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1t64, libnghttp2-14, libnspr4, libnss3, libopenjp2-7, libsdl3-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base"
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS "libalut0, libaprutil1t64, libboost-fiber1.90.0, libboost-filesystem1.90.0, libboost-process1.90.0, libboost-program-options1.90.0, libboost-regex1.90.0, libboost-thread1.90.0, libboost-url1.90.0, libexpat1, libhunspell-1.7-0, libmeshoptimizer2d, libminizip1t64, libnghttp2-14, libnspr4, libnss3, libopenjp2-7, libsdl3-0, libvlc5, libvorbisenc2, libvorbisfile3, vlc-plugin-base, zenity"
         CACHE STRING "Debian package dependencies.")
       endif ()
     elseif (${LINUX_DISTRO} MATCHES fedora OR (${LINUX_DISTRO} MATCHES opensuse-tumbleweed))
@@ -2469,10 +2469,10 @@ if (LINUX)
       set(CPACK_RPM_PACKAGE_DESCRIPTION ${VIEWER_PACKAGE_DESCRIPTION}
         CACHE STRING "RPM package description.")
       if (${LINUX_DISTRO} MATCHES fedora)
-        set(CPACK_RPM_PACKAGE_REQUIRES "freealut, apr-util, boost-fiber, boost-process, boost-program-options, boost-regex, boost-thread, boost-url, cef, expat, hunspell, minizip-ng-compat, libnghttp2, openjpeg, SDL3, vlc-libs, vlc-plugins-base, libvorbis"
+        set(CPACK_RPM_PACKAGE_REQUIRES "freealut, apr-util, boost-fiber, boost-process, boost-program-options, boost-regex, boost-thread, boost-url, cef, expat, hunspell, minizip-ng-compat, libnghttp2, openjpeg, SDL3, vlc-libs, vlc-plugins-base, libvorbis, zenity"
           CACHE STRING "RPM package requirements.")
       else ()
-        set(CPACK_RPM_PACKAGE_REQUIRES "libalut0, libapr-util1-0, libboost_fiber1_91_0, libboost_process1_91_0, libboost_program_options1_91_0, libboost_regex1_91_0, libboost_thread1_91_0, libboost_url1_91_0, libboost_url1_91_0-x86-64-v3, libexpat1, libhunspell-1_7-0, libnghttp2-14, openjpeg2, libpng16-16, libSDL3-0, libvlc5, libvorbis0"
+        set(CPACK_RPM_PACKAGE_REQUIRES "libalut0, libapr-util1-0, libboost_fiber1_91_0, libboost_process1_91_0, libboost_program_options1_91_0, libboost_regex1_91_0, libboost_thread1_91_0, libboost_url1_91_0, libboost_url1_91_0-x86-64-v3, libexpat1, libhunspell-1_7-0, libnghttp2-14, openjpeg2, libpng16-16, libSDL3-0, libvlc5, libvorbis0, zenity"
           CACHE STRING "RPM package requirements.")
       endif ()
     endif ()
