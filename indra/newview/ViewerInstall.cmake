@@ -260,6 +260,15 @@ if (LINUX)
                 DESTINATION ${_LIB}
                 )
         endif ()
+        if (${LINUX_DISTRO} MATCHES debian)
+            install(
+                FILES
+                  ${ARCH_PREBUILT_DIRS_RELEASE}/libSDL3.so
+                  ${ARCH_PREBUILT_DIRS_RELEASE}/libSDL3.so.0
+                  ${ARCH_PREBUILT_DIRS_RELEASE}/libSDL3.so.0.2.24
+                DESTINATION ${_LIB}
+                )
+        endif ()
 endif (LINUX)
 
 install(DIRECTORY skins app_settings fonts
