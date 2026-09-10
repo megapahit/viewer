@@ -30,7 +30,28 @@ elseif (WINDOWS)
                     "Check that vcpkg installed boost into ${prefix_result}.")
   endif ()
 endif ()
-if (NOT (${LINUX_DISTRO} MATCHES freedesktop))
+if ((${LINUX_DISTRO} MATCHES debian AND NOT (CMAKE_SYSTEM_PROCESSOR MATCHES x86_64)) AND (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/boost_installed OR NOT ${boost_installed} EQUAL 0))
+    if (NOT EXISTS ${CMAKE_BINARY_DIR}/boost_1_90_0.tar.bz2)
+        file(DOWNLOAD
+            https://archives.boost.io/release/1.90.0/source/boost_1_90_0.tar.bz2
+            ${CMAKE_BINARY_DIR}/boost_1_90_0.tar.bz2
+        )
+    endif ()
+    file(ARCHIVE_EXTRACT
+        INPUT ${CMAKE_BINARY_DIR}/boost_1_90_0.tar.bz2
+        DESTINATION ${CMAKE_BINARY_DIR}
+    )
+    execute_process(
+        COMMAND ./bootstrap.sh --prefix=${LIBS_PREBUILT_DIR} --libdir=${ARCH_PREBUILT_DIRS_RELEASE}
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/boost_1_90_0
+    )
+    execute_process(
+        COMMAND ./b2 install
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/boost_1_90_0
+    )
+    file(WRITE ${PREBUILD_TRACKING_DIR}/boost_installed "${boost_installed}")
+endif ()
+if (NOT (${LINUX_DISTRO} MATCHES freedesktop OR (${LINUX_DISTRO} MATCHES debian AND CMAKE_SYSTEM_PROCESSOR MATCHES x86_64)))
   target_link_libraries( ll::boost INTERFACE
     boost_context${sfx}
     boost_fiber${sfx}
