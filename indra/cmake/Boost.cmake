@@ -29,8 +29,6 @@ elseif (WINDOWS)
     message(WARNING "Could not detect Boost suffix via glob; using fallback '${sfx}'. "
                     "Check that vcpkg installed boost into ${prefix_result}.")
   endif ()
-elseif (NOT (${LINUX_DISTRO} MATCHES freedesktop))
-  find_package( Boost )
 endif ()
 if (NOT (${LINUX_DISTRO} MATCHES freedesktop))
   target_link_libraries( ll::boost INTERFACE
