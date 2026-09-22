@@ -4217,7 +4217,7 @@ void LLAppearanceMgr::removeItemsFromAvatar(const uuid_vec_t& ids_to_remove, nul
         const LLUUID& id_to_remove = *it;
         auto attachment = gAgentAvatarp->getWornAttachment(id_to_remove);
         if (attachment && attachment->isLocked()) continue;
-        const LLUUID& linked_item_id = gInventory.getLinkedItemID(id_to_remove);
+        const LLUUID linked_item_id = gInventory.getLinkedItemID(id_to_remove);
         LLViewerInventoryItem *item = gInventory.getItem(linked_item_id);
         if (item && item->getType() == LLAssetType::AT_OBJECT)
         {

@@ -3089,8 +3089,6 @@ LRESULT CALLBACK LLWindowWin32::mainWindowProc(HWND h_wnd, UINT u_msg, WPARAM w_
             LL_PROFILE_ZONE_NAMED_CATEGORY_WIN32("mwp - WM_LBUTTONDBLCLK");
             window_imp->postMouseButtonEvent([=]()
                 {
-                    //RN: ignore right button double clicks for now
-                    //case WM_RBUTTONDBLCLK:
                     if (!sHandleDoubleClick)
                     {
                         sHandleDoubleClick = true;
@@ -3100,7 +3098,7 @@ LRESULT CALLBACK LLWindowWin32::mainWindowProc(HWND h_wnd, UINT u_msg, WPARAM w_
 
                     // generate move event to update mouse coordinates
                     window_imp->mCursorPosition = window_coord;
-                    window_imp->mCallbacks->handleDoubleClick(window_imp, window_imp->mCursorPosition.convert(), mask);
+                    window_imp->mCallbacks->handleLeftMouseDoubleClick(window_imp, window_imp->mCursorPosition.convert(), mask);
                 });
 
             return 0;
@@ -3129,6 +3127,24 @@ LRESULT CALLBACK LLWindowWin32::mainWindowProc(HWND h_wnd, UINT u_msg, WPARAM w_
             return 0;
         }
         case WM_RBUTTONDBLCLK:
+        {
+            LL_PROFILE_ZONE_NAMED_CATEGORY_WIN32("mwp - WM_RBUTTONDBLCLK");
+            window_imp->postMouseButtonEvent([=]()
+            {
+                if (!sHandleDoubleClick)
+                {
+                    sHandleDoubleClick = true;
+                    return;
+                }
+                MASK mask = gKeyboard->currentMask(true);
+
+                // generate move event to update mouse coordinates
+                window_imp->mCursorPosition = window_coord;
+                window_imp->mCallbacks->handleRightMouseDoubleClick(window_imp, window_imp->mCursorPosition.convert(), mask);
+            });
+
+            return 0;
+        }
         case WM_RBUTTONDOWN:
         {
             LL_PROFILE_ZONE_NAMED_CATEGORY_WIN32("mwp - WM_RBUTTONDOWN");
@@ -3166,6 +3182,25 @@ LRESULT CALLBACK LLWindowWin32::mainWindowProc(HWND h_wnd, UINT u_msg, WPARAM w_
         }
         break;
 
+        case WM_MBUTTONDBLCLK:
+        {
+            LL_PROFILE_ZONE_NAMED_CATEGORY_WIN32("mwp - WM_MBUTTONDBLCLK");
+            window_imp->postMouseButtonEvent([=]()
+            {
+                if (!sHandleDoubleClick)
+                {
+                    sHandleDoubleClick = true;
+                    return;
+                }
+                MASK mask = gKeyboard->currentMask(true);
+
+                // generate move event to update mouse coordinates
+                window_imp->mCursorPosition = window_coord;
+                window_imp->mCallbacks->handleMiddleMouseDoubleClick(window_imp, window_imp->mCursorPosition.convert(), mask);
+            });
+            return 0;
+        }
+
         case WM_MBUTTONDOWN:
             //      case WM_MBUTTONDBLCLK:
         {
@@ -3183,6 +3218,7 @@ LRESULT CALLBACK LLWindowWin32::mainWindowProc(HWND h_wnd, UINT u_msg, WPARAM w_
                         window_imp->mCallbacks->handleMiddleMouseDown(window_imp, window_imp->mCursorPosition.convert(), mask);
                     });
             }
+            return 0;
         }
         break;
 
@@ -3199,6 +3235,9 @@ LRESULT CALLBACK LLWindowWin32::mainWindowProc(HWND h_wnd, UINT u_msg, WPARAM w_
             }
         }
         break;
+        case WM_XBUTTONDBLCLK:
+            // TODO: not supported yet.
+            // Fall through to WM_XBUTTONDOWN for now.
         case WM_XBUTTONDOWN:
         {
             LL_PROFILE_ZONE_NAMED_CATEGORY_WIN32("mwp - WM_XBUTTONDOWN");
