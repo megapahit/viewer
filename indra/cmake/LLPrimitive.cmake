@@ -59,6 +59,9 @@ elseif (${LINUX_DISTRO} MATCHES freedesktop)
     set(Minizip_LIBRARY_DIRS ${ARCH_PREBUILT_DIRS_RELEASE})
 endif ()
 pkg_search_module(Libxml2 REQUIRED libxml-2.0)
+if (Minizip_LIBRARY_DIRS)
+  target_link_directories(ll::minizip-ng INTERFACE ${Minizip_LIBRARY_DIRS})
+endif ()
 target_link_libraries( ll::minizip-ng INTERFACE ${Minizip_LIBRARIES} )
 target_link_libraries( ll::libxml INTERFACE ${Libxml2_LIBRARIES} )
 if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKING_DIR}/colladadom_installed OR NOT ${colladadom_installed} EQUAL 0)
@@ -102,9 +105,16 @@ if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKIN
         )
     endif ()
     if (DARWIN)
-        set(BOOST_CFLAGS -I${Libxml2_LIBRARY_DIRS}exec/boost/1.88/include)
-        set(BOOST_LIBS -L${Minizip_LIBRARY_DIRS}exec/boost/1.88/lib)
-        set(BOOST_LIBRARY_SUFFIX -mt)
+        include(DarwinPackages)
+        if (DARWIN_USE_HOMEBREW)
+            set(BOOST_CFLAGS -I${DARWIN_BOOST_PREFIX}/include)
+            set(BOOST_LIBS -L${DARWIN_BOOST_PREFIX}/lib)
+            set(BOOST_LIBRARY_SUFFIX "")
+        else ()
+            set(BOOST_CFLAGS -I${Libxml2_LIBRARY_DIRS}exec/boost/1.88/include)
+            set(BOOST_LIBS -L${Minizip_LIBRARY_DIRS}exec/boost/1.88/lib)
+            set(BOOST_LIBRARY_SUFFIX -mt)
+        endif ()
     elseif (WINDOWS)
         set(BOOST_CFLAGS -I${prefix_result}/../include)
         set(BOOST_LIBS -L${prefix_result})
@@ -134,6 +144,20 @@ if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKIN
         set(BOOST_LIBS -L${ARCH_PREBUILT_DIRS_RELEASE})
     endif ()
     file(MAKE_DIRECTORY ${LIBS_PREBUILT_DIR}/include/collada/1.4)
+    if (DARWIN AND DARWIN_USE_HOMEBREW)
+        # Boost.System is header-only here, so colladaDOM must not link it.
+        set(_collada_boost_system "")
+        if (Libxml2_INCLUDE_DIRS)
+            set(_collada_extra_cflags "-I${Libxml2_INCLUDE_DIRS}")
+        else ()
+            # A bare -I (empty Libxml2_INCLUDE_DIRS from the macOS libxml pc)
+            # would consume Boost_CFLAGS as its argument.
+            set(_collada_extra_cflags "")
+        endif ()
+    else ()
+        set(_collada_boost_system "boost_system${BOOST_LIBRARY_SUFFIX}")
+        set(_collada_extra_cflags "-I${Libxml2_INCLUDE_DIRS}")
+    endif ()
     try_compile(COLLADADOM_RESULT
         PROJECT colladadom
         SOURCE_DIR ${CMAKE_BINARY_DIR}/3p-colladadom-2.3-r11
@@ -147,10 +171,10 @@ if (${PREBUILD_TRACKING_DIR}/sentinel_installed IS_NEWER_THAN ${PREBUILD_TRACKIN
             -DCMAKE_CXX_STANDARD:STRING=17
             -DCMAKE_CXX_FLAGS:STRING=-I${Minizip_INCLUDE_DIRS}
             -DBoost_CFLAGS:STRING=${BOOST_CFLAGS}
-            -DEXTRA_COMPILE_FLAGS:STRING=-I${Libxml2_INCLUDE_DIRS}
+            -DEXTRA_COMPILE_FLAGS:STRING=${_collada_extra_cflags}
             "-DCMAKE_SHARED_LINKER_FLAGS:STRING=-L${Minizip_LIBRARY_DIRS} ${BOOST_LIBS}"
             -DBoost_FILESYSTEM_LIBRARY:STRING=boost_filesystem${BOOST_LIBRARY_SUFFIX}
-            -DBoost_SYSTEM_LIBRARY:STRING=boost_system${BOOST_LIBRARY_SUFFIX}
+            -DBoost_SYSTEM_LIBRARY:STRING=${_collada_boost_system}
             -DZLIB_LIBRARIES:STRING=${Libxml2_LIBRARIES}
             -DOPT_COLLADA14:BOOL=ON
             -DCOLLADA_DOM_INCLUDE_INSTALL_DIR:PATH=${LIBS_PREBUILT_DIR}/include/collada

@@ -1944,7 +1944,7 @@ endif ()
 if (CMAKE_BUILD_TYPE MATCHES Release AND (CMAKE_CXX_COMPILER_ID STREQUAL Clang OR CMAKE_CXX_COMPILER_ID MATCHES GNU))
   add_custom_command(
     TARGET ${VIEWER_BINARY_NAME} POST_BUILD
-    COMMAND ${CMAKE_STRIP} ${VIEWER_BINARY_NAME}
+    COMMAND ${CMAKE_STRIP} "$<TARGET_FILE:${VIEWER_BINARY_NAME}>"
     )
 endif ()
 
@@ -2258,7 +2258,14 @@ target_link_libraries(${VIEWER_BINARY_NAME}
         )
 
 if (ENABLE_MEDIA_PLUGINS)
-   target_link_libraries(${VIEWER_BINARY_NAME} ll::libvlc )
+   if (DARWIN)
+      # Version macros only. Linking ll::libvlc records the mounted VLC disk
+      # image as an rpath, so the running viewer keeps that image busy.
+      target_include_directories(${VIEWER_BINARY_NAME} SYSTEM PRIVATE
+         $<TARGET_PROPERTY:ll::libvlc,INTERFACE_INCLUDE_DIRECTORIES>)
+   else ()
+      target_link_libraries(${VIEWER_BINARY_NAME} ll::libvlc )
+   endif ()
    if (NOT (CMAKE_SYSTEM_NAME MATCHES FreeBSD))
       target_link_libraries(${VIEWER_BINARY_NAME} ll::cef )
    endif ()
