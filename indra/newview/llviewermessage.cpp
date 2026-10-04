@@ -2521,7 +2521,7 @@ void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
                     {
                         break;
                     }
-                    else if (show_script_chat_particles)
+                    else if (chatter && show_script_chat_particles)
                     {
                         LLPointer<LLViewerPartSourceChat> psc = new LLViewerPartSourceChat(chatter->getPositionAgent());
                         psc->setSourceObject(chatter);
