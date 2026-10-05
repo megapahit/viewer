@@ -1,5 +1,112 @@
 include(BundleUtilities)
 
+if ("@DARWIN_USE_HOMEBREW@" STREQUAL "TRUE")
+set(dirs
+    @DARWIN_BOOST_PREFIX@/lib
+    @DARWIN_NGHTTP2_PREFIX@/lib
+    @DARWIN_APR_PREFIX@/lib
+    @DARWIN_APRUTIL_PREFIX@/lib
+    @DARWIN_ICU_PREFIX@/lib
+    @DARWIN_HOMEBREW_PREFIX@/lib
+   )
+# Homebrew dylibs have no -mt suffix and no libboost_system. iconv, expat,
+# and zlib stay macOS system libraries. Transitive Boost deps use @loader_path.
+file(CREATE_LINK
+    "../../../../Frameworks/libnghttp2.14.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libnghttp2.14.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libaprutil-1.0.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libaprutil-1.0.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libapr-1.0.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libapr-1.0.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libboost_atomic.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libboost_atomic.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libboost_chrono.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libboost_chrono.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libboost_container.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libboost_container.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libboost_context.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libboost_context.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libboost_date_time.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libboost_date_time.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libboost_fiber.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libboost_fiber.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libboost_filesystem.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libboost_filesystem.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libboost_process.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libboost_process.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libboost_program_options.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libboost_program_options.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libboost_thread.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libboost_thread.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libboost_url.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libboost_url.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libboost_regex.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libboost_regex.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libicudata.78.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicudata.78.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libicui18n.78.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicui18n.78.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libicuuc.78.dylib"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicuuc.78.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/Chromium Embedded Framework.framework"
+    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/Chromium Embedded Framework.framework"
+    SYMBOLIC
+    )
+else ()
 set(dirs
     /opt/local/lib
    )
@@ -109,8 +216,12 @@ file(CREATE_LINK
     "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/Chromium Embedded Framework.framework"
     SYMBOLIC
     )
+endif ()
 
-fixup_bundle(${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/MacOS/${VIEWER_CHANNEL} "" "${dirs}")
+# configure_file clears variable references, so the fixup call that reads
+# dirs lives in FixBundleRun.cmake. _fixup_app is substituted here.
+set(_fixup_app "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/MacOS/${VIEWER_CHANNEL}")
+include("${CMAKE_CURRENT_SOURCE_DIR}/FixBundleRun.cmake")
 
 file(CHMOD
     "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/DullahanHelper.app/Contents/MacOS/DullahanHelper"
@@ -121,6 +232,12 @@ file(CHMOD
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
     )
 
+if ("@DARWIN_USE_HOMEBREW@" STREQUAL "TRUE")
+execute_process(
+    COMMAND hdiutil detach /Volumes/VLC\ media\ player
+    ERROR_QUIET
+    )
+else ()
 execute_process(
     COMMAND hdiutil detach /Volumes/VLC\ media\ player
     COMMAND lipo libalut.0.dylib
@@ -249,3 +366,4 @@ execute_process(
     WORKING_DIRECTORY ${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Frameworks
     ERROR_QUIET
     )
+endif ()

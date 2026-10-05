@@ -240,6 +240,8 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   else()
     set(LL_MACOS_TEST_ARCHITECTURE "x86_64")
   endif()
+
+  include(DarwinPackages)
 endif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
 # Default deploy grid
