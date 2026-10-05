@@ -1839,9 +1839,16 @@ void LLImageGL::syncToMainThread(LLGLuint new_tex_name)
             // wait for texture upload to finish before notifying main thread
             // upload is complete
             auto sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-            glFlush();
-            glClientWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
-            glDeleteSync(sync);
+            if (sync)
+            {
+                glFlush();
+                glClientWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
+                glDeleteSync(sync);
+            }
+            else
+            {
+                glFinish();
+            }
         }
         else
         {
@@ -1851,20 +1858,29 @@ void LLImageGL::syncToMainThread(LLGLuint new_tex_name)
             glFlush();
             auto sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
             glFlush();
-            LL::WorkQueue::postMaybe(
-                mMainQueue,
-                [=]()
-                {
-                    LL_PROFILE_ZONE_NAMED("cglt - wait sync");
+            if (sync)
+            {
+                LL::WorkQueue::postMaybe(
+                    mMainQueue,
+                    [=]()
                     {
-                        LL_PROFILE_ZONE_NAMED("glWaitSync");
-                        glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
-                    }
-                    {
-                        LL_PROFILE_ZONE_NAMED("glDeleteSync");
-                        glDeleteSync(sync);
-                    }
-                });
+                        LL_PROFILE_ZONE_NAMED("cglt - wait sync");
+                        {
+                            LL_PROFILE_ZONE_NAMED("glWaitSync");
+                            glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
+                        }
+                        {
+                            LL_PROFILE_ZONE_NAMED("glDeleteSync");
+                            glDeleteSync(sync);
+                        }
+                    });
+            }
+            else
+            {
+                // glFenceSync failed. glWaitSync(0) is dispatched to Apple's
+                // OpenGL thread, which faults in GLDFenceRec::getStatus.
+                glFinish();
+            }
         }
     }
 

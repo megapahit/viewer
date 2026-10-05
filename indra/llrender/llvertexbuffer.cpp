@@ -315,7 +315,28 @@ static void delete_buffers(S32 count, GLuint* buffers)
 
         if (!sFreeList[idx].empty())
         {
-            glDeleteBuffers((GLsizei)sFreeList[idx].size(), sFreeList[idx].data());
+            if (gGLManager.mIsApple)
+            {
+                // Apple's GL/Metal translator crashes in GLDFenceRec::getStatus
+                // (null fence, fault at +0x24) when glDeleteBuffers waits on a
+                // sync that was never created. Unbind and finish first.
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+                LLVertexBuffer::sGLRenderBuffer = 0;
+                LLVertexBuffer::sGLRenderIndices = 0;
+                glFinish();
+                for (GLuint name : sFreeList[idx])
+                {
+                    if (name)
+                    {
+                        glDeleteBuffers(1, &name);
+                    }
+                }
+            }
+            else
+            {
+                glDeleteBuffers((GLsizei)sFreeList[idx].size(), sFreeList[idx].data());
+            }
             sFreeList[idx].resize(0);
         }
     }
