@@ -27,6 +27,8 @@
 #include "linden_common.h"
 #include "llsingleton.h"
 
+#include <atomic>
+
 #include "llerror.h"
 #include "llerrorcontrol.h"
 #include "lldependencies.h"
@@ -406,8 +408,19 @@ void LLSingletonBase::cleanup_()
 }
 
 //static
+namespace
+{
+    std::atomic<bool> sShuttingDown{false};
+}
+
+bool LLSingletonBase::shuttingDown()
+{
+    return sShuttingDown.load(std::memory_order_acquire);
+}
+
 void LLSingletonBase::deleteAll()
 {
+    sShuttingDown.store(true, std::memory_order_release);
     // It's essential to traverse these in dependency order.
     for (LLSingletonBase* sp : dep_sort())
     {

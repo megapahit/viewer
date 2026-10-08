@@ -30,20 +30,44 @@
 #include "llsd.h"
 #include "llxmlnode.h"  // apparently needed to call LLNotifications::instance()
 
+namespace
+{
+    // deleteAll() must not resurrect LLNotifications after its dependencies
+    // are gone. A null return means the caller should skip the toast.
+    LLNotifications* live_notifications()
+    {
+        if (LLNotifications::wasDeleted() || LLSingletonBase::shuttingDown())
+        {
+            return nullptr;
+        }
+        return LLNotifications::getInstance();
+    }
+}
+
 LLNotificationPtr LLNotificationsUtil::add(const std::string& name)
 {
+    LLNotifications* notifications = live_notifications();
+    if (!notifications)
+    {
+        return LLNotificationPtr();
+    }
     LLNotification::Params::Functor functor_p;
     functor_p.name = name;
-    return LLNotifications::instance().add(
+    return notifications->add(
         LLNotification::Params().name(name).substitutions(LLSD()).payload(LLSD()).functor(functor_p));
 }
 
 LLNotificationPtr LLNotificationsUtil::add(const std::string& name,
                       const LLSD& substitutions)
 {
+    LLNotifications* notifications = live_notifications();
+    if (!notifications)
+    {
+        return LLNotificationPtr();
+    }
     LLNotification::Params::Functor functor_p;
     functor_p.name = name;
-    return LLNotifications::instance().add(
+    return notifications->add(
         LLNotification::Params().name(name).substitutions(substitutions).payload(LLSD()).functor(functor_p));
 }
 
@@ -51,9 +75,14 @@ LLNotificationPtr LLNotificationsUtil::add(const std::string& name,
                       const LLSD& substitutions,
                       const LLSD& payload)
 {
+    LLNotifications* notifications = live_notifications();
+    if (!notifications)
+    {
+        return LLNotificationPtr();
+    }
     LLNotification::Params::Functor functor_p;
     functor_p.name = name;
-    return LLNotifications::instance().add(
+    return notifications->add(
         LLNotification::Params().name(name).substitutions(substitutions).payload(payload).functor(functor_p));
 }
 
@@ -62,9 +91,14 @@ LLNotificationPtr LLNotificationsUtil::add(const std::string& name,
                       const LLSD& payload,
                       const std::string& functor_name)
 {
+    LLNotifications* notifications = live_notifications();
+    if (!notifications)
+    {
+        return LLNotificationPtr();
+    }
     LLNotification::Params::Functor functor_p;
     functor_p.name = functor_name;
-    return LLNotifications::instance().add(
+    return notifications->add(
         LLNotification::Params().name(name).substitutions(substitutions).payload(payload).functor(functor_p));
 }
 
@@ -73,9 +107,14 @@ LLNotificationPtr LLNotificationsUtil::add(const std::string& name,
                       const LLSD& payload,
                       std::function<void (const LLSD&, const LLSD&)> functor)
 {
+    LLNotifications* notifications = live_notifications();
+    if (!notifications)
+    {
+        return LLNotificationPtr();
+    }
     LLNotification::Params::Functor functor_p;
     functor_p.function = functor;
-    return LLNotifications::instance().add(
+    return notifications->add(
         LLNotification::Params().name(name).substitutions(substitutions).payload(payload).functor(functor_p));
 }
 
@@ -86,10 +125,19 @@ S32 LLNotificationsUtil::getSelectedOption(const LLSD& notification, const LLSD&
 
 void LLNotificationsUtil::cancel(LLNotificationPtr pNotif)
 {
-    LLNotifications::instance().cancel(pNotif);
+    LLNotifications* notifications = live_notifications();
+    if (notifications)
+    {
+        notifications->cancel(pNotif);
+    }
 }
 
 LLNotificationPtr LLNotificationsUtil::find(LLUUID uuid)
 {
-    return LLNotifications::instance().find(uuid);
+    LLNotifications* notifications = live_notifications();
+    if (!notifications)
+    {
+        return LLNotificationPtr();
+    }
+    return notifications->find(uuid);
 }

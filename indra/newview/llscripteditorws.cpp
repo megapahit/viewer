@@ -465,7 +465,13 @@ void LLScriptEditorWSServer::onStopped()
 
     LL_INFOS("ScriptEditorWS") << "Script editor WebSocket server stopped, all state cleaned up" << LL_ENDL;
 
-    LLNotificationsUtil::add("ExternalEditorServerStopped");
+    // Skip the toast during shutdown. cleanup() destroys LLUI before
+    // WebSocket singletons, and constructing this alert crashes in the
+    // already-freed notification tables.
+    if (!LLApp::isExiting())
+    {
+        LLNotificationsUtil::add("ExternalEditorServerStopped");
+    }
 }
 
 void LLScriptEditorWSServer::onConnectionOpened(const LLWebsocketMgr::WSConnection::ptr_t& connection)
