@@ -41,8 +41,6 @@ execute_process(
         Frameworks/libopenal.1.25.1.dylib
         Frameworks/libopenjp2.2.5.4.dylib
         Frameworks/libpng16.16.dylib
-        Frameworks/libvlc.5.dylib
-        Frameworks/libvlccore.9.dylib
         Frameworks/libvorbis.0.dylib
         Frameworks/libvorbisenc.2.dylib
         Frameworks/libvorbisfile.3.dylib
