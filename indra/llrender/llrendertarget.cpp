@@ -95,7 +95,15 @@ void LLRenderTarget::resize(U32 resx, U32 resy)
     {
         gGL.getTexUnit(0)->bindManual(mUsage, mDepth);
         U32 internal_type = LLTexUnit::getInternalType(mUsage);
-        LLImageGL::setManualImage(internal_type, 0, GL_DEPTH_COMPONENT24, mResX, mResY, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL, false);
+        // Apple's GL rejects sized GL_DEPTH_COMPONENT24 with GL_UNSIGNED_INT.
+#if LL_DARWIN
+        const U32 depth_internal = GL_DEPTH_COMPONENT;
+#else
+        const U32 depth_internal = GL_DEPTH_COMPONENT24;
+#endif
+        glGetError();
+        LLImageGL::setManualImage(internal_type, 0, depth_internal, mResX, mResY, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL, false);
+        glGetError();
 
         sBytesAllocated += pix_diff*4;
     }

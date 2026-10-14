@@ -28,6 +28,7 @@
 
 #include "llapp.h"
 
+#include <csignal>
 #include <cstdlib>
 
 #ifdef LL_DARWIN
@@ -397,6 +398,22 @@ void LLApp::writeMiniDump()
 {
 }
 
+namespace
+{
+    volatile sig_atomic_t sTermCount = 0;
+}
+
+// static
+bool LLApp::consumeSignalQuit()
+{
+    if (sTermCount == 0)
+    {
+        return false;
+    }
+    sTermCount = 0;
+    return true;
+}
+
 // static
 void LLApp::setQuitting()
 {
@@ -623,18 +640,19 @@ void default_unix_signal_handler(int signum, siginfo_t *info, void *)
         {
             LL_WARNS() << "Signal handler - Got SIGINT, or TERM, exiting gracefully" << LL_ENDL;
         }
-        // Graceful exit
-        // Just set our state to quitting, not error
-        if (LLApp::isQuitting() || LLApp::isError())
+        // The first signal asks the main loop to log out. setQuitting() here
+        // makes the Mac frame pump return immediately, so LogoutRequest is
+        // never sent and the simulator keeps the agent in the region.
+        if (sTermCount > 0 || LLApp::isQuitting() || LLApp::isError())
         {
-            // We're already trying to die, just ignore this signal
             if (LLApp::sLogInSignal)
             {
-                LL_INFOS() << "Signal handler - Already trying to quit, ignoring signal!" << LL_ENDL;
+                LL_INFOS() << "Signal handler - Already trying to quit, forcing exit" << LL_ENDL;
             }
+            LLApp::setQuitting();
             return;
         }
-        LLApp::setQuitting();
+        sTermCount = 1;
         return;
     case SIGALRM:
     case SIGPIPE:

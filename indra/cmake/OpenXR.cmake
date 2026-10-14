@@ -22,13 +22,13 @@ if(USE_OPENXR)
   if( NOT LINUX )
     target_include_directories( ll::openxr SYSTEM INTERFACE ${LIBS_PREBUILT_DIR}/include)
   endif()
-endif()
 
-if (DARWIN)
+  if (DARWIN)
     execute_process(
-        COMMAND lipo libopenxr_loader.a
-            -thin ${CMAKE_OSX_ARCHITECTURES}
-            -output libopenxr_loader.a
-        WORKING_DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE}
+      COMMAND lipo libopenxr_loader.a
+        -thin ${CMAKE_OSX_ARCHITECTURES}
+        -output libopenxr_loader.a
+      WORKING_DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE}
     )
-endif ()
+  endif ()
+endif()

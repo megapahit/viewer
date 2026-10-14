@@ -6,6 +6,10 @@ include_guard()
 use_prebuilt_binary(dictionaries)
 
 add_library( ll::hunspell INTERFACE IMPORTED )
+if (DARWIN_USE_HOMEBREW)
+  # hunspell.pc's -I points at include/hunspell, while the viewer includes <hunspell/hunspell.hxx>.
+  target_include_directories(ll::hunspell SYSTEM INTERFACE "${DARWIN_HOMEBREW_PREFIX}/include")
+endif ()
 use_system_binary(hunspell)
 use_prebuilt_binary(libhunspell)
 

@@ -1361,6 +1361,14 @@ bool LLAppViewer::frame()
 
 bool LLAppViewer::doFrame()
 {
+    // SIGTERM asks for a normal logout. Quitting immediately skips
+    // LogoutRequest and leaves the agent in the region.
+    if (LLApp::consumeSignalQuit() && !mQuitRequested && !isQuitting())
+    {
+        LL_INFOS() << "Terminate signal, logging out before exit" << LL_ENDL;
+        requestQuit();
+    }
+
     resumeMainloopTimeout("Main:doFrameStart");
 
     U32 fpsLimitMaxFps = (U32)gSavedSettings.getU32("MaxFPS");

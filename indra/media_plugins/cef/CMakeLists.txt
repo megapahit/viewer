@@ -104,27 +104,49 @@ elseif (DARWIN)
     LINK_FLAGS "-exported_symbols_list ${CMAKE_CURRENT_SOURCE_DIR}/../base/media_plugin_base.exp"
   )
 
-  add_custom_command(TARGET ${PROJECT_NAME}
-    POST_BUILD COMMAND ${CMAKE_INSTALL_NAME_TOOL}
-        -change "/opt/local/lib/libnghttp2.14.dylib" "@loader_path/libnghttp2.14.dylib"
-        -change "/opt/local/lib/libaprutil-1.0.dylib" "@loader_path/libaprutil-1.0.dylib"
-        -change "/opt/local/lib/libiconv.2.dylib" "@loader_path/libiconv.2.dylib"
-        -change "/opt/local/lib/libapr-1.0.dylib" "@loader_path/libapr-1.0.dylib"
-        -change "/opt/local/lib/libz.1.dylib" "@loader_path/libz.1.dylib"
-        -change "/opt/local/libexec/boost/1.88/lib/libboost_context-mt.dylib" "@loader_path/libboost_context-mt.dylib"
-        -change "/opt/local/libexec/boost/1.88/lib/libboost_fiber-mt.dylib" "@loader_path/libboost_fiber-mt.dylib"
-        -change "/opt/local/libexec/boost/1.88/lib/libboost_filesystem-mt.dylib" "@loader_path/libboost_filesystem-mt.dylib"
-        -change "/opt/local/libexec/boost/1.88/lib/libboost_process-mt.dylib" "@loader_path/libboost_process-mt.dylib"
-        -change "/opt/local/libexec/boost/1.88/lib/libboost_program_options-mt.dylib" "@loader_path/libboost_program_options-mt.dylib"
-        -change "/opt/local/libexec/boost/1.88/lib/libboost_thread-mt.dylib" "@loader_path/libboost_thread-mt.dylib"
-        -change "/opt/local/libexec/boost/1.88/lib/libboost_url-mt.dylib" "@loader_path/libboost_url-mt.dylib"
-        -change "/opt/local/libexec/boost/1.88/lib/libboost_regex-mt.dylib" "@loader_path/libboost_regex-mt.dylib"
-        -change "/opt/local/libexec/boost/1.88/lib/libboost_system-mt.dylib" "@loader_path/libboost_system-mt.dylib"
-        -change "/opt/local/lib/libexpat.1.dylib" "@loader_path/libexpat.1.dylib"
-        "$<TARGET_FILE:${PROJECT_NAME}>"
-    VERBATIM
-    COMMENT "Fixing paths to CEF media plugin dependencies"
-  )
+  if (DARWIN_USE_HOMEBREW)
+    # Homebrew Boost has no -mt suffix and no libboost_system. iconv, expat,
+    # and zlib resolve to macOS system dylibs and stay absolute.
+    add_custom_command(TARGET ${PROJECT_NAME}
+      POST_BUILD COMMAND ${CMAKE_INSTALL_NAME_TOOL}
+          -change "${DARWIN_NGHTTP2_PREFIX}/lib/libnghttp2.14.dylib" "@loader_path/libnghttp2.14.dylib"
+          -change "${DARWIN_APRUTIL_PREFIX}/lib/libaprutil-1.0.dylib" "@loader_path/libaprutil-1.0.dylib"
+          -change "${DARWIN_APR_PREFIX}/lib/libapr-1.0.dylib" "@loader_path/libapr-1.0.dylib"
+          -change "${DARWIN_BOOST_PREFIX}/lib/libboost_context.dylib" "@loader_path/libboost_context.dylib"
+          -change "${DARWIN_BOOST_PREFIX}/lib/libboost_fiber.dylib" "@loader_path/libboost_fiber.dylib"
+          -change "${DARWIN_BOOST_PREFIX}/lib/libboost_filesystem.dylib" "@loader_path/libboost_filesystem.dylib"
+          -change "${DARWIN_BOOST_PREFIX}/lib/libboost_process.dylib" "@loader_path/libboost_process.dylib"
+          -change "${DARWIN_BOOST_PREFIX}/lib/libboost_program_options.dylib" "@loader_path/libboost_program_options.dylib"
+          -change "${DARWIN_BOOST_PREFIX}/lib/libboost_thread.dylib" "@loader_path/libboost_thread.dylib"
+          -change "${DARWIN_BOOST_PREFIX}/lib/libboost_url.dylib" "@loader_path/libboost_url.dylib"
+          -change "${DARWIN_BOOST_PREFIX}/lib/libboost_regex.dylib" "@loader_path/libboost_regex.dylib"
+          "$<TARGET_FILE:${PROJECT_NAME}>"
+      VERBATIM
+      COMMENT "Fixing paths to CEF media plugin dependencies"
+    )
+  else ()
+    add_custom_command(TARGET ${PROJECT_NAME}
+      POST_BUILD COMMAND ${CMAKE_INSTALL_NAME_TOOL}
+          -change "/opt/local/lib/libnghttp2.14.dylib" "@loader_path/libnghttp2.14.dylib"
+          -change "/opt/local/lib/libaprutil-1.0.dylib" "@loader_path/libaprutil-1.0.dylib"
+          -change "/opt/local/lib/libiconv.2.dylib" "@loader_path/libiconv.2.dylib"
+          -change "/opt/local/lib/libapr-1.0.dylib" "@loader_path/libapr-1.0.dylib"
+          -change "/opt/local/lib/libz.1.dylib" "@loader_path/libz.1.dylib"
+          -change "/opt/local/libexec/boost/1.88/lib/libboost_context-mt.dylib" "@loader_path/libboost_context-mt.dylib"
+          -change "/opt/local/libexec/boost/1.88/lib/libboost_fiber-mt.dylib" "@loader_path/libboost_fiber-mt.dylib"
+          -change "/opt/local/libexec/boost/1.88/lib/libboost_filesystem-mt.dylib" "@loader_path/libboost_filesystem-mt.dylib"
+          -change "/opt/local/libexec/boost/1.88/lib/libboost_process-mt.dylib" "@loader_path/libboost_process-mt.dylib"
+          -change "/opt/local/libexec/boost/1.88/lib/libboost_program_options-mt.dylib" "@loader_path/libboost_program_options-mt.dylib"
+          -change "/opt/local/libexec/boost/1.88/lib/libboost_thread-mt.dylib" "@loader_path/libboost_thread-mt.dylib"
+          -change "/opt/local/libexec/boost/1.88/lib/libboost_url-mt.dylib" "@loader_path/libboost_url-mt.dylib"
+          -change "/opt/local/libexec/boost/1.88/lib/libboost_regex-mt.dylib" "@loader_path/libboost_regex-mt.dylib"
+          -change "/opt/local/libexec/boost/1.88/lib/libboost_system-mt.dylib" "@loader_path/libboost_system-mt.dylib"
+          -change "/opt/local/lib/libexpat.1.dylib" "@loader_path/libexpat.1.dylib"
+          "$<TARGET_FILE:${PROJECT_NAME}>"
+      VERBATIM
+      COMMENT "Fixing paths to CEF media plugin dependencies"
+    )
+  endif ()
 
 elseif (LINUX)
   target_link_options(media_plugin_cef PRIVATE  "LINKER:--build-id")
@@ -133,7 +155,7 @@ endif ()
 if (CMAKE_BUILD_TYPE MATCHES Release AND (CMAKE_CXX_COMPILER_ID STREQUAL Clang OR CMAKE_CXX_COMPILER_ID MATCHES GNU))
   add_custom_command(
     TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_STRIP} lib${PROJECT_NAME}.so
+    COMMAND ${CMAKE_STRIP} "$<TARGET_FILE:${PROJECT_NAME}>"
     )
 endif ()
 

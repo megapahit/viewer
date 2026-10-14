@@ -1136,8 +1136,17 @@ void LLOcclusionCullingGroup::checkOcclusion()
             }
 
             static LLCachedControl<U32> occlusion_timeout(gSavedSettings, "RenderOcclusionTimeout", 4);
+            const bool timed_out = mOcclusionCheckCount[LLViewerCamera::sCurCameraID] > occlusion_timeout;
 
-            if (available || mOcclusionCheckCount[LLViewerCamera::sCurCameraID] > occlusion_timeout)
+            // Apple's GL thread segfaults in glGetQueryObject_CoreExecThread
+            // if GL_QUERY_RESULT blocks after the app was backgrounded and the
+            // query never becomes available. Drop the query instead of waiting.
+#if LL_DARWIN
+            const bool read_result = available != 0;
+#else
+            const bool read_result = available || timed_out;
+#endif
+            if (read_result)
             {
                 mOcclusionCheckCount[LLViewerCamera::sCurCameraID] = 0;
                 GLuint query_result;    // Will be # samples drawn, or a boolean depending on mHasOcclusionQuery2 (both are type GLuint)
@@ -1161,6 +1170,20 @@ void LLOcclusionCullingGroup::checkOcclusion()
                 }
                 clearOcclusionState(QUERY_PENDING);
             }
+#if LL_DARWIN
+            else if (timed_out)
+            {
+                GLuint name = mOcclusionQuery[LLViewerCamera::sCurCameraID];
+#if LL_TRACK_PENDING_OCCLUSION_QUERIES
+                sPendingQueries.erase(name);
+#endif
+                glDeleteQueries(1, &name);
+                mOcclusionQuery[LLViewerCamera::sCurCameraID] = 0;
+                mOcclusionCheckCount[LLViewerCamera::sCurCameraID] = 0;
+                clearOcclusionState(LLOcclusionCullingGroup::OCCLUDED, LLOcclusionCullingGroup::STATE_MODE_DIFF);
+                clearOcclusionState(QUERY_PENDING);
+            }
+#endif
         }
     }
     else if (mSpatialPartition->isOcclusionEnabled() && isOcclusionState(LLOcclusionCullingGroup::OCCLUDED))

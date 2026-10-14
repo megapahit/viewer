@@ -46,6 +46,12 @@ if(USE_SDL_WINDOW)
                 file(WRITE ${PREBUILD_TRACKING_DIR}/SDL3_installed "${SDL3_installed}")
             endif ()
         endif ()
+        if (CMAKE_BUILD_TYPE MATCHES Release)
+            execute_process(
+                COMMAND ${CMAKE_STRIP} libSDL3.so.0.2.24
+                WORKING_DIRECTORY ${ARCH_PREBUILT_DIRS_RELEASE}
+            )
+        endif ()
 
     find_library( SDL3_LIBRARY
         NAMES SDL3 SDL3.lib libSDL3.so libSDL3.dylib

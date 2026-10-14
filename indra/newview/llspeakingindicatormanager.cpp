@@ -152,6 +152,8 @@ void SpeakingIndicatorManager::registerSpeakingIndicator(const LLUUID& speaker_i
 
     speaking_indicator->setTargetSessionID(session_id);
 
+    mSpeakingIndicators.erase(speaker_id);
+
     speaking_indicator_value_t value_type(speaker_id, speaking_indicator);
     mSpeakingIndicators.insert(value_type);
 
@@ -253,7 +255,7 @@ void SpeakingIndicatorManager::switchSpeakerIndicators(const speaker_ids_t& spea
             LLSpeakingIndicator* indicator = (*it_indicator).second;
             was_switched_on = was_switched_on || switch_on;
 
-            indicator->switchIndicator(switch_on);
+            if (indicator) indicator->switchIndicator(switch_on);
         }
 
         if (was_found)
@@ -278,24 +280,17 @@ void SpeakingIndicatorManager::ensureInstanceDoesNotExist(LLSpeakingIndicator* c
 {
     LL_DEBUGS("SpeakingIndicator") << "Searching for an registered indicator instance: " << speaking_indicator << LL_ENDL;
     speaking_indicators_mmap_t::iterator it = mSpeakingIndicators.begin();
-    for (;it != mSpeakingIndicators.end(); ++it)
+    while (it != mSpeakingIndicators.end())
     {
         if (it->second == speaking_indicator)
         {
-            LL_DEBUGS("SpeakingIndicator") << "Found" << LL_ENDL;
-            break;
+            LL_WARNS() << "Duplicate instance, removing: " << it->first << " | " << speaking_indicator << LL_ENDL;
+            it = mSpeakingIndicators.erase(it);
         }
-    }
-
-    // It is possible with LLOutputMonitorCtrl the same instance of indicator is registered several
-    // times with different UUIDs. This leads to crash after instance is destroyed because the
-    // only one (specified by UUID in unregisterSpeakingIndicator()) is removed from the map.
-    // So, using stored deleted pointer leads to crash. See EXT-4782.
-    if (it != mSpeakingIndicators.end())
-    {
-        LL_WARNS() << "The same instance of indicator has already been registered, removing it: " << it->first << "|"<< speaking_indicator << LL_ENDL;
-        llassert(it == mSpeakingIndicators.end());
-        mSpeakingIndicators.erase(it);
+        else
+        {
+            ++it;
+        }
     }
 }
 

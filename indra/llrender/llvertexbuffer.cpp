@@ -315,7 +315,27 @@ static void delete_buffers(S32 count, GLuint* buffers)
 
         if (!sFreeList[idx].empty())
         {
-            glDeleteBuffers((GLsizei)sFreeList[idx].size(), sFreeList[idx].data());
+            if (gGLManager.mIsApple)
+            {
+                // Unbind, then delete one name at a time. Do not glFinish():
+                // that drains a queued glWaitSync and faults in
+                // GLDFenceRec::getStatus when Apple's fence record is null.
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+                LLVertexBuffer::sGLRenderBuffer = 0;
+                LLVertexBuffer::sGLRenderIndices = 0;
+                for (GLuint name : sFreeList[idx])
+                {
+                    if (name)
+                    {
+                        glDeleteBuffers(1, &name);
+                    }
+                }
+            }
+            else
+            {
+                glDeleteBuffers((GLsizei)sFreeList[idx].size(), sFreeList[idx].data());
+            }
             sFreeList[idx].resize(0);
         }
     }

@@ -46,6 +46,9 @@ class LLSingletonBase
 {
 public:
     class MasterList;
+    // True once deleteAll() has started. getInstance() must not construct
+    // a replacement for a singleton that shutdown has already destroyed.
+    static bool shuttingDown();
 
     LLSingletonBase(const LLSingletonBase&) = delete;
     LLSingletonBase& operator=(const LLSingletonBase&) = delete;
@@ -533,6 +536,13 @@ public:
 
             case DELETED:
                 // called after deleteSingleton()
+                if (LLSingletonBase::shuttingDown())
+                {
+                    logwarns({"Refusing to recreate deleted singleton ",
+                             classname<DERIVED_TYPE>(),
+                             " during shutdown"});
+                    return nullptr;
+                }
                 logwarns({"Trying to access deleted singleton ",
                          classname<DERIVED_TYPE>(),
                          " -- creating new instance"});
@@ -540,6 +550,13 @@ public:
                 [[fallthrough]];
             case UNINITIALIZED:
             case QUEUED:
+                if (LLSingletonBase::shuttingDown())
+                {
+                    logwarns({"Refusing to construct singleton ",
+                             classname<DERIVED_TYPE>(),
+                             " during shutdown"});
+                    return nullptr;
+                }
                 // QUEUED means some secondary thread has already requested an
                 // instance, but for present purposes that's semantically
                 // identical to UNINITIALIZED: either way, we must ourselves
