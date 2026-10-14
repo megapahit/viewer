@@ -315,9 +315,6 @@ execute_process(
     COMMAND lipo libjpeg.8.3.2.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libjpeg.8.3.2.dylib
-    COMMAND lipo libllwebrtc.dylib
-        -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libllwebrtc.dylib
     COMMAND lipo libminizip.1.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libminizip.1.dylib
@@ -342,12 +339,6 @@ execute_process(
     COMMAND lipo libpng16.16.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libpng16.16.dylib
-    COMMAND lipo libvlc.5.dylib
-        -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libvlc.5.dylib
-    COMMAND lipo libvlccore.9.dylib
-        -thin ${CMAKE_OSX_ARCHITECTURES}
-        -output libvlccore.9.dylib
     COMMAND lipo libvorbis.0.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libvorbis.0.dylib
