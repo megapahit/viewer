@@ -195,6 +195,9 @@ public:
     // Application status
     //
     static void setQuitting();  // Set status to QUITTING, the app is now shutting down
+    // True once after SIGTERM or SIGINT. The main loop should log out
+    // before setQuitting(), so the simulator releases the agent.
+    static bool consumeSignalQuit();
     static void setStopped();   // Set status to STOPPED, the app is done running and should exit
     static void setError();     // Set status to ERROR, the error handler should run
     static bool isStopped();
