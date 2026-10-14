@@ -60,7 +60,6 @@ execute_process(
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libaccess_output_shout_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libaccess_output_srt_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libaccess_output_udp_plugin.dylib
-        Resources/SLPlugin.app/Contents/Frameworks/plugins/libaccess_realrtsp_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libaccess_srt_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libadaptive_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libaddonsfsstorage_plugin.dylib
@@ -97,8 +96,8 @@ execute_process(
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libblend_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libblendbench_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libbluescreen_plugin.dylib
-        Resources/SLPlugin.app/Contents/Frameworks/plugins/libbluray-awt-j2se-1.4.0.jar
-        Resources/SLPlugin.app/Contents/Frameworks/plugins/libbluray-j2se-1.4.0.jar
+        Resources/SLPlugin.app/Contents/Frameworks/plugins/libbluray-awt-j2se-1.4.1.jar
+        Resources/SLPlugin.app/Contents/Frameworks/plugins/libbluray-j2se-1.4.1.jar
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libbonjour_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libcache_block_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libcache_read_plugin.dylib
@@ -289,7 +288,6 @@ execute_process(
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libscaletempo_pitch_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libscaletempo_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libscene_plugin.dylib
-        Resources/SLPlugin.app/Contents/Frameworks/plugins/libschroedinger_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libscreen_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libscte18_plugin.dylib
         Resources/SLPlugin.app/Contents/Frameworks/plugins/libscte27_plugin.dylib
