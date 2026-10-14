@@ -317,14 +317,13 @@ static void delete_buffers(S32 count, GLuint* buffers)
         {
             if (gGLManager.mIsApple)
             {
-                // Apple's GL/Metal translator crashes in GLDFenceRec::getStatus
-                // (null fence, fault at +0x24) when glDeleteBuffers waits on a
-                // sync that was never created. Unbind and finish first.
+                // Unbind, then delete one name at a time. Do not glFinish():
+                // that drains a queued glWaitSync and faults in
+                // GLDFenceRec::getStatus when Apple's fence record is null.
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
                 LLVertexBuffer::sGLRenderBuffer = 0;
                 LLVertexBuffer::sGLRenderIndices = 0;
-                glFinish();
                 for (GLuint name : sFreeList[idx])
                 {
                     if (name)

@@ -1855,31 +1855,41 @@ void LLImageGL::syncToMainThread(LLGLuint new_tex_name)
             // post a sync to the main thread (will execute before tex name swap lambda below)
             // glFlush calls here are partly superstitious and partly backed by observation
             // on AMD hardware
-            glFlush();
-            auto sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-            glFlush();
-            if (sync)
+            if (gGLManager.mIsApple)
             {
-                LL::WorkQueue::postMaybe(
-                    mMainQueue,
-                    [=]()
-                    {
-                        LL_PROFILE_ZONE_NAMED("cglt - wait sync");
-                        {
-                            LL_PROFILE_ZONE_NAMED("glWaitSync");
-                            glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
-                        }
-                        {
-                            LL_PROFILE_ZONE_NAMED("glDeleteSync");
-                            glDeleteSync(sync);
-                        }
-                    });
+                // Apple's GL/Metal translator faults in GLDFenceRec::getStatus
+                // (null fence, address 0x24) while executing glWaitSync.
+                // glFenceSync and glFinish both enqueue that wait. Flush the
+                // upload onto the serial OpenGL queue and let the main thread
+                // issue later commands behind it.
+                glFlush();
             }
             else
             {
-                // glFenceSync failed. glWaitSync(0) is dispatched to Apple's
-                // OpenGL thread, which faults in GLDFenceRec::getStatus.
-                glFinish();
+                glFlush();
+                auto sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+                glFlush();
+                if (sync)
+                {
+                    LL::WorkQueue::postMaybe(
+                        mMainQueue,
+                        [=]()
+                        {
+                            LL_PROFILE_ZONE_NAMED("cglt - wait sync");
+                            {
+                                LL_PROFILE_ZONE_NAMED("glWaitSync");
+                                glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
+                            }
+                            {
+                                LL_PROFILE_ZONE_NAMED("glDeleteSync");
+                                glDeleteSync(sync);
+                            }
+                        });
+                }
+                else
+                {
+                    glFinish();
+                }
             }
         }
     }
