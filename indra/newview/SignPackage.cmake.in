@@ -38,7 +38,7 @@ execute_process(
         Frameworks/libndofdev.dylib
         Frameworks/libnghttp2.14.dylib
         Frameworks/libogg.0.dylib
-        Frameworks/libopenal.1.25.1.dylib
+        Frameworks/libopenal.1.25.2.dylib
         Frameworks/libopenjp2.2.5.4.dylib
         Frameworks/libpng16.16.dylib
         Frameworks/libvorbis.0.dylib
