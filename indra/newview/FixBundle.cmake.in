@@ -87,21 +87,6 @@ file(CREATE_LINK
     SYMBOLIC
     )
 file(CREATE_LINK
-    "../../../../Frameworks/libicudata.78.dylib"
-    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicudata.78.dylib"
-    SYMBOLIC
-    )
-file(CREATE_LINK
-    "../../../../Frameworks/libicui18n.78.dylib"
-    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicui18n.78.dylib"
-    SYMBOLIC
-    )
-file(CREATE_LINK
-    "../../../../Frameworks/libicuuc.78.dylib"
-    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicuuc.78.dylib"
-    SYMBOLIC
-    )
-file(CREATE_LINK
     "../../../../Frameworks/Chromium Embedded Framework.framework"
     "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/Chromium Embedded Framework.framework"
     SYMBOLIC
@@ -194,21 +179,6 @@ file(CREATE_LINK
 file(CREATE_LINK
     "../../../../Frameworks/libexpat.1.dylib"
     "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libexpat.1.dylib"
-    SYMBOLIC
-    )
-file(CREATE_LINK
-    "../../../../Frameworks/libicudata.78.dylib"
-    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicudata.78.dylib"
-    SYMBOLIC
-    )
-file(CREATE_LINK
-    "../../../../Frameworks/libicui18n.78.dylib"
-    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicui18n.78.dylib"
-    SYMBOLIC
-    )
-file(CREATE_LINK
-    "../../../../Frameworks/libicuuc.78.dylib"
-    "${viewer_BINARY_DIR}/${VIEWER_CHANNEL}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicuuc.78.dylib"
     SYMBOLIC
     )
 file(CREATE_LINK
