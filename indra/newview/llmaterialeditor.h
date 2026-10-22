@@ -27,6 +27,7 @@
 #pragma once
 
 #include "llpreview.h"
+#include <functional>
 #include "llvoinventorylistener.h"
 #include "llimagej2c.h"
 #include "llviewertexture.h"
@@ -110,6 +111,16 @@ class LLMaterialEditor : public LLPreview, public LLVOInventoryListener
                                         S32 index,
                                         const LLUUID& dest_folder_id = LLUUID::null);
     static void loadMaterialFromFile(const std::string& filename, S32 index = -1, const LLUUID& dest_folder = LLUUID::null);
+
+    // Upload one material from a glTF file without showing the editor.
+    // done(ok, item_id, detail). index selects the material when the file has several.
+    static bool startHeadlessUpload(const std::string& filename,
+                                    S32 index,
+                                    const LLUUID& dest_folder,
+                                    const LLSD& options,
+                                    const std::function<void(bool, const LLUUID&, const std::string&)>& done,
+                                    std::string& error);
+    static std::function<void(bool, const LLUUID&, const std::string&)> sHeadlessDone;
 
     void onSelectionChanged(); // live overrides selection changes
 

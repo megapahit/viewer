@@ -42,6 +42,7 @@
 #include "llviewercontrol.h"
 #include "llviewerobjectlist.h"
 #include "llviewertexturelist.h"
+#include "llviewermcp.h"
 
 //
 // Statics
@@ -127,6 +128,8 @@ LLFloater* LLFloaterScriptDebug::addOutputWindow(const LLUUID &object_id)
 
 void LLFloaterScriptDebug::addScriptLine(const std::string &utf8mesg, const std::string &user_name, const LLColor4& color, const LLUUID& source_id)
 {
+    LLViewerMCP::noteDebug(user_name, source_id, utf8mesg);
+
     LLViewerObject* objectp = gObjectList.findObject(source_id);
     std::string floater_label;
 

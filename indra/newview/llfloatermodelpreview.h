@@ -30,6 +30,9 @@
 #include "llfloaternamedesc.h"
 #include "llfloatermodeluploadbase.h"
 #include "llmeshrepository.h"
+#include <functional>
+#include <utility>
+#include <vector>
 
 class LLComboBox;
 class LLJoint;
@@ -75,6 +78,16 @@ public:
     void initModelPreview();
     void setUploadDestination(const LLUUID& dest_folder) { mDestinationFolderId = dest_folder; }
     static void showModelPreview(const LLUUID& dest_folder = LLUUID::null);
+
+    // Load a model file and upload it without showing the preview dialog.
+    // done(ok, detail, upload_price). detail is the model name on success.
+    static bool startHeadlessUpload(const std::string& path,
+                                    const LLUUID& dest_folder,
+                                    const LLSD& options,
+                                    const std::function<void(bool, const std::string&, S32)>& done);
+    void onHeadlessModelReady(S32 lod);
+    void onHeadlessModelFailed(const std::string& reason);
+    void tryHeadlessUpload();
 
     bool handleMouseDown(S32 x, S32 y, MASK mask);
     bool handleMouseUp(S32 x, S32 y, MASK mask);
@@ -201,6 +214,13 @@ protected:
     LLMutex* mStatusLock;
 
     LLSD mModelPhysicsFee;
+    bool mHeadlessUpload = false;
+    bool mHeadlessStarted = false;
+    std::vector<std::pair<S32, std::string>> mHeadlessPendingLods;
+    std::function<void(bool, const std::string&, S32)> mHeadlessDone;
+
+    void finishHeadless(bool ok, const std::string& detail, S32 price);
+    void queueHeadlessLod(S32 lod, const std::string& path);
 
 private:
     void onClickCalculateBtn();
