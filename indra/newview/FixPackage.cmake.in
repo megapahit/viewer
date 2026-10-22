@@ -95,6 +95,21 @@ file(CREATE_LINK
     SYMBOLIC
     )
 file(CREATE_LINK
+    "../../../../Frameworks/libicudata.78.dylib"
+    "${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicudata.78.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libicui18n.78.dylib"
+    "${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicui18n.78.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
+    "../../../../Frameworks/libicuuc.78.dylib"
+    "${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicuuc.78.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
     "../../../../Frameworks/Chromium Embedded Framework.framework"
     "${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/Chromium Embedded Framework.framework"
     SYMBOLIC
