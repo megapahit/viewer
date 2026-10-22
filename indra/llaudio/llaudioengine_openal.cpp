@@ -518,6 +518,7 @@ bool LLAudioEngine_OpenAL::initWind()
     if((error=alGetError()) != AL_NO_ERROR)
     {
         LL_WARNS() << "LLAudioEngine_OpenAL::initWind() Error creating wind sources: "<<error<<LL_ENDL;
+        mWindSource = AL_NONE;
     }
 
     mWindGen = new LLWindGen<WIND_SAMPLE_T>;
@@ -582,6 +583,9 @@ void LLAudioEngine_OpenAL::updateWind(LLVector3 wind_vec, F32 camera_altitude)
     if(!mWindBuf)
         return;
 
+    if (mWindSource == AL_NONE)
+        return;
+
     if (mWindUpdateTimer.checkExpirationAndReset(LL_WIND_UPDATE_INTERVAL))
     {
 
@@ -607,7 +611,7 @@ void LLAudioEngine_OpenAL::updateWind(LLVector3 wind_vec, F32 camera_altitude)
 
     // ok lets make a wind buffer now
 
-    ALint processed, queued, unprocessed;
+    ALint processed = 0, queued = 0, unprocessed = 0;
     alGetSourcei(mWindSource, AL_BUFFERS_PROCESSED, &processed);
     alGetSourcei(mWindSource, AL_BUFFERS_QUEUED, &queued);
     unprocessed = queued - processed;
@@ -619,7 +623,7 @@ void LLAudioEngine_OpenAL::updateWind(LLVector3 wind_vec, F32 camera_altitude)
 
     //LL_INFOS() << "mNumEmptyWindALBuffers: " << mNumEmptyWindALBuffers    <<" (" << unprocessed << ":" << processed << ")" << LL_ENDL;
 
-    while(processed--) // unqueue old buffers
+    while (processed > 0) // unqueue old buffers
     {
         ALuint buffer;
         ALenum error;
@@ -628,12 +632,11 @@ void LLAudioEngine_OpenAL::updateWind(LLVector3 wind_vec, F32 camera_altitude)
         error = alGetError();
         if(error != AL_NO_ERROR)
         {
-            LL_WARNS() << "LLAudioEngine_OpenAL::updateWind() error swapping (unqueuing) buffers" << LL_ENDL;
+            LL_WARNS() << "LLAudioEngine_OpenAL::updateWind() error swapping (unqueuing) buffers: " << error << LL_ENDL;
+            break;
         }
-        else
-        {
-            alDeleteBuffers(1, &buffer);
-        }
+        alDeleteBuffers(1, &buffer);
+        --processed;
     }
 
     unprocessed += mNumEmptyWindALBuffers;

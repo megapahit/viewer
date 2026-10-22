@@ -147,6 +147,10 @@ void SpeakingIndicatorManager::registerSpeakingIndicator(const LLUUID& speaker_i
 
     LL_DEBUGS("SpeakingIndicator") << "Registering indicator: " << speaker_id << "|"<< speaking_indicator << ", session: " << session_id << LL_ENDL;
 
+    if (!speaking_indicator)
+    {
+        return;
+    }
 
     ensureInstanceDoesNotExist(speaking_indicator);
 
@@ -167,15 +171,20 @@ void SpeakingIndicatorManager::registerSpeakingIndicator(const LLUUID& speaker_i
 void SpeakingIndicatorManager::unregisterSpeakingIndicator(const LLUUID& speaker_id, const LLSpeakingIndicator* const speaking_indicator)
 {
     LL_DEBUGS("SpeakingIndicator") << "Unregistering indicator: " << speaker_id << "|"<< speaking_indicator << LL_ENDL;
-    speaking_indicators_mmap_t::iterator it;
-    it = mSpeakingIndicators.find(speaker_id);
-    for (;it != mSpeakingIndicators.end(); ++it)
+    // The same control can be registered under more than one speaker id.
+    // Removing only the current id leaves a dangling pointer that crashes
+    // the next time that speaker's indicators are switched. See EXT-4782.
+    speaking_indicators_mmap_t::iterator it = mSpeakingIndicators.begin();
+    while (it != mSpeakingIndicators.end())
     {
         if (it->second == speaking_indicator)
         {
             LL_DEBUGS("SpeakingIndicator") << "Unregistered." << LL_ENDL;
-            mSpeakingIndicators.erase(it);
-            break;
+            it = mSpeakingIndicators.erase(it);
+        }
+        else
+        {
+            ++it;
         }
     }
 }
@@ -253,6 +262,10 @@ void SpeakingIndicatorManager::switchSpeakerIndicators(const speaker_ids_t& spea
         {
             was_found = true;
             LLSpeakingIndicator* indicator = (*it_indicator).second;
+            if (!indicator)
+            {
+                continue;
+            }
             was_switched_on = was_switched_on || switch_on;
 
             if (indicator) indicator->switchIndicator(switch_on);
@@ -279,6 +292,8 @@ void SpeakingIndicatorManager::switchSpeakerIndicators(const speaker_ids_t& spea
 void SpeakingIndicatorManager::ensureInstanceDoesNotExist(LLSpeakingIndicator* const speaking_indicator)
 {
     LL_DEBUGS("SpeakingIndicator") << "Searching for an registered indicator instance: " << speaking_indicator << LL_ENDL;
+    // The same LLOutputMonitorCtrl can be registered under several speaker ids.
+    // Every copy has to be removed before it is registered again. See EXT-4782.
     speaking_indicators_mmap_t::iterator it = mSpeakingIndicators.begin();
     while (it != mSpeakingIndicators.end())
     {

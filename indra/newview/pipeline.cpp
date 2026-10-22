@@ -8906,6 +8906,13 @@ void LLPipeline::renderDeferredLighting()
     LLRenderTarget *screen_target         = &mRT->screen;
     LLRenderTarget* deferred_light_target = &mRT->deferredLight;
 
+    // A failed depth allocation leaves these targets with no textures.
+    // Binding them logs the empty-target warnings and then faults in the GL driver.
+    if (screen_target->getNumTextures() == 0)
+    {
+        return;
+    }
+
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_PIPELINE("deferred");
         LLViewerCamera *camera = LLViewerCamera::getInstance();
