@@ -1363,7 +1363,7 @@ LLVector3d LLAgent::getPosGlobalFromAgent(const LLVector3 &pos_agent) const
 
 static void finish_sit_on_ground(bool success, void*)
 {
-    if (success && mAllowedToSit)
+    if (success && gAgent.isAllowedToSit())
     {
         gAgent.setFlying(false);
         gAgent.clearControlFlags(AGENT_CONTROL_STAND_UP); // might have been set by autopilot
