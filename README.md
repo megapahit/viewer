@@ -105,7 +105,7 @@ $ megapahit
 ### macOS
 
 ```
-$ sudo port install cmake pkgconfig freealut apr-util boost188 glm hunspell freetype minizip nghttp2 openjpeg libvorbis xxhashlib
+$ sudo port install cmake pkgconfig freealut apr-util boost188 glm hunspell freetype minizip nghttp2 openjpeg SDL3 libvorbis xxhashlib
 $ export LL_BUILD="-mmacosx-version-min=12 -std=c++20 -fPIC -DLL_RELEASE=1 -DNDEBUG -DLL_DARWIN=1 -DLIB_NDOF=1 -DPIC -DLL_OS_DRAGDROP_ENABLED=1"
 $ export LL_BUILD_RELEASE="$LL_BUILD -O3 -DLL_RELEASE_FOR_DOWNLOAD=1"
 $ export LL_BUILD_RELWITHDEBINFO="$LL_BUILD -O0 -g --debug -DLL_RELEASE_WITH_DEBUG_INFO=1"
@@ -120,7 +120,7 @@ $ open newview/Megapahit.app
 CMake selects Homebrew when `/opt/local/libexec/boost/1.88` is absent. `-DDARWIN_PACKAGE_MANAGER=homebrew` or `-DDARWIN_PACKAGE_MANAGER=macports` selects one explicitly. `openal-soft` is keg-only; the Darwin CMake logic adds its pkg-config directory so `freealut` can find `openal`.
 
 ```
-$ brew install cmake pkgconf freealut openal-soft apr-util boost glm hunspell freetype minizip libnghttp2 openjpeg libvorbis xxhash
+$ brew install cmake pkgconf freealut openal-soft apr-util boost glm hunspell freetype minizip libnghttp2 openjpeg sdl3 libvorbis xxhash
 $ export LL_BUILD="-stdlib=libc++ -mmacosx-version-min=12 -iwithsysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -std=c++20 -fPIC -DLL_RELEASE=1 -DNDEBUG -DLL_DARWIN=1 -DLIB_NDOF=1 -DPIC -DLL_OS_DRAGDROP_ENABLED=1"
 $ export LL_BUILD_RELEASE="$LL_BUILD -O3 -gdwarf-2 -DLL_RELEASE_FOR_DOWNLOAD=1"
 $ export LL_BUILD_RELWITHDEBINFO="$LL_BUILD -O0 -g -DLL_RELEASE_WITH_DEBUG_INFO=1"
@@ -162,7 +162,7 @@ $ megapahit
 
 ### Windows arm64
 ```
-$ vcpkg install freealut apr-util boost curl freetype hunspell libjpeg-turbo meshoptimizer minizip nanosvg nghttp2 openjpeg sse2neon libvorbis libxml2[tools] xxhash
+$ vcpkg install freealut apr-util boost curl freetype hunspell libjpeg-turbo meshoptimizer minizip nanosvg nghttp2 openjpeg sdl3 sse2neon libvorbis libxml2[tools] xxhash
 $ vcpkg install --allow-unsupported boost-fiber
 $ export LL_BUILD_RELEASE="/MD /O2 /Ob2 /std:c++20 /permissive- /Zc:wchar_t /Zi /GR /Zc:preprocessor /DLL_RELEASE=1 /DLL_RELEASE_FOR_DOWNLOAD=1 /DNDEBUG /D_SECURE_STL=0 /D_HAS_ITERATOR_DEBUGGING=0 /DWIN32 /D_WINDOWS /DLL_WINDOWS=1 /DUNICODE /D_UNICODE /DWINVER=0x0602 /D_WIN32_WINNT=0x0602 /DLL_OS_DRAGDROP_ENABLED=1"
 $ export LL_BUILD_RELWITHDEBINFO="/MD /Od /Ob0 /std:c++20 /permissive- /Zc:wchar_t /Zi /GR /Zc:preprocessor /DEBUG /DLL_RELEASE=1 /DLL_RELEASE_WITH_DEBUG_INFO=1 /DNDEBUG /D_SECURE_STL=0 /D_HAS_ITERATOR_DEBUGGING=0 /DWIN32 /D_WINDOWS /DLL_WINDOWS=1 /DUNICODE /D_UNICODE /DWINVER=0x0602 /D_WIN32_WINNT=0x0602 /DLL_OS_DRAGDROP_ENABLED=1"
@@ -176,7 +176,7 @@ $ start Megapahit-`cat newview/viewer_version.txt`-win64.exe
 
 ### Windows x64
 ```
-$ vcpkg install freealut apr-util boost freetype glm hunspell libjpeg-turbo meshoptimizer minizip nanosvg nghttp2 openjpeg libvorbis libxml2[tools] xxhash
+$ vcpkg install freealut apr-util boost freetype glm hunspell libjpeg-turbo meshoptimizer minizip nanosvg nghttp2 openjpeg sdl3 libvorbis libxml2[tools] xxhash
 $ export LL_BUILD_RELEASE="/MD /O2 /Ob2 /std:c++20 /permissive- /Zc:wchar_t /Zi /GR /DLL_RELEASE=1 /DLL_RELEASE_FOR_DOWNLOAD=1 /DNDEBUG /D_SECURE_STL=0 /D_HAS_ITERATOR_DEBUGGING=0 /DWIN32 /D_WINDOWS /DLL_WINDOWS=1 /DUNICODE /D_UNICODE /DWINVER=0x0602 /D_WIN32_WINNT=0x0602 /DLL_OS_DRAGDROP_ENABLED=1 /DLIB_NDOF=1"
 $ export LL_BUILD_RELWITHDEBINFO="/MD /Od /Ob0 /std:c++20 /permissive- /Zc:wchar_t /Zi /GR /DEBUG /DLL_RELEASE=1 /DLL_RELEASE_WITH_DEBUG_INFO=1 /DNDEBUG /D_SECURE_STL=0 /D_HAS_ITERATOR_DEBUGGING=0 /DWIN32 /D_WINDOWS /DLL_WINDOWS=1 /DUNICODE /D_UNICODE /DWINVER=0x0602 /D_WIN32_WINNT=0x0602 /DLL_OS_DRAGDROP_ENABLED=1 /DLIB_NDOF=1"
 $ export PATH="$VCPKG_ROOT/downloads/tools/cmake-4.4.3-windows/cmake-4.4.3-windows-x86_64/bin:$VCPKG_ROOT/installed/x64-windows/tools/libxml2:/c/Program Files (x86)/Microsoft Visual Studio/18/BuildTools/MSBuild/Current/Bin:$PATH"

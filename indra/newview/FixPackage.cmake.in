@@ -90,6 +90,11 @@ file(CREATE_LINK
     SYMBOLIC
     )
 file(CREATE_LINK
+    "../../../../Frameworks/libSDL3.0.dylib"
+    "${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libSDL3.0.dylib"
+    SYMBOLIC
+    )
+file(CREATE_LINK
     "../../../../Frameworks/libicudata.78.dylib"
     "${CMAKE_CACHEFILE_DIR}/_CPack_Packages/${CMAKE_SYSTEM_NAME}/Bundle/${CPACK_BUNDLE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}/${CPACK_BUNDLE_NAME}.app/Contents/Resources/SLPlugin.app/Contents/Frameworks/libicudata.78.dylib"
     SYMBOLIC
@@ -222,6 +227,9 @@ execute_process(
     COMMAND lipo libpng16.16.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libpng16.16.dylib
+    COMMAND lipo libSDL3.0.dylib
+        -thin ${CMAKE_OSX_ARCHITECTURES}
+        -output libSDL3.0.dylib
     COMMAND lipo libvorbis.0.dylib
         -thin ${CMAKE_OSX_ARCHITECTURES}
         -output libvorbis.0.dylib
