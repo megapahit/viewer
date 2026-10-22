@@ -2085,6 +2085,16 @@ function="World.EnvPreset"
              function="ToggleControl"
              parameter="DisableCameraConstraints" />
         </menu_item_check>
+        <menu_item_check
+         label="Always Allow Fly"
+         name="Always Allow Fly">
+            <menu_item_check.on_check
+             function="CheckControl"
+             parameter="AlwaysAllowFly" />
+            <menu_item_check.on_click
+             function="ToggleControl"
+             parameter="AlwaysAllowFly" />
+        </menu_item_check>
 
         <menu_item_separator/>
 
