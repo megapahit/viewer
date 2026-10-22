@@ -523,7 +523,7 @@ bool LLGLSLShader::createShader()
             mShaderLevel--;
 
             // Drain error queue before trying again
-            log_glerror("");
+            log_glerror("shader link retry");
 
             return createShader();
         }
