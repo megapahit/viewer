@@ -370,20 +370,38 @@ bool LLRenderTarget::addColorAttachment(U32 color_fmt)
 bool LLRenderTarget::allocateDepth()
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_DISPLAY;
+    if (mResX == 0 || mResY == 0)
+    {
+        LL_WARNS() << "Unable to allocate depth buffer for render target " << mName
+                   << ": size " << mResX << "x" << mResY << LL_ENDL;
+        return false;
+    }
+
     LLImageGL::generateTextures(1, &mDepth);
     gGL.getTexUnit(0)->bindManual(mUsage, mDepth);
 
     U32 internal_type = LLTexUnit::getInternalType(mUsage);
-    LLImageGL::setManualImage(internal_type, 0, GL_DEPTH_COMPONENT24, mResX, mResY, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL, false);
-    gGL.getTexUnit(0)->setTextureFilteringOption(LLTexUnit::TFO_POINT);
-
-    sBytesAllocated += mResX*mResY*4;
-
-    if (glGetError() != GL_NO_ERROR)
+    // Apple's GL rejects the sized GL_DEPTH_COMPONENT24 internal format
+    // with GL_UNSIGNED_INT. The unsized format is the one it allocates.
+#if LL_DARWIN
+    const U32 depth_internal = GL_DEPTH_COMPONENT;
+#else
+    const U32 depth_internal = GL_DEPTH_COMPONENT24;
+#endif
+    glGetError();
+    LLImageGL::setManualImage(internal_type, 0, depth_internal, mResX, mResY, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL, false);
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR)
     {
-        LL_WARNS() << "Unable to allocate depth buffer for render target " << mName << LL_ENDL;
+        LL_WARNS() << "Unable to allocate depth buffer for render target " << mName
+                   << " (" << mResX << "x" << mResY << ") gl error " << err << LL_ENDL;
         return false;
     }
+
+    gGL.getTexUnit(0)->setTextureFilteringOption(LLTexUnit::TFO_POINT);
+    glGetError();
+
+    sBytesAllocated += mResX*mResY*4;
 
     return true;
 }
