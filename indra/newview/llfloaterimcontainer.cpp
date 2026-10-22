@@ -57,6 +57,8 @@
 #include "llworld.h"
 #include "llsdserialize.h"
 #include "llviewermenu.h" // is_agent_mappable
+#include "llviewerwindow.h"
+#include "llwindow.h"
 #include "llviewerobjectlist.h"
 #include "llvoavatar.h"
 #include "llnearbyvoicemoderation.h"
@@ -1288,6 +1290,13 @@ void LLFloaterIMContainer::doToParticipants(const std::string& command, uuid_vec
         if ("view_profile" == command)
         {
             LLAvatarActions::showProfile(userID);
+        }
+        else if ("copy_uuid" == command)
+        {
+            if (gViewerWindow && gViewerWindow->getWindow())
+            {
+                gViewerWindow->getWindow()->copyTextToClipboard(utf8str_to_wstring(userID.asString()));
+            }
         }
         else if ("im" == command)
         {

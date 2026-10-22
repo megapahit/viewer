@@ -2,6 +2,32 @@
 <context_menu
  layout="topleft"
  name="Attachment Pie">
+    <context_menu
+     label="Copy UUID"
+     name="Copy UUID Menu">
+        <menu_item_call
+         label="This object"
+         name="Copy This Object UUID">
+            <menu_item_call.on_click
+             function="Object.CopyUUID" />
+        </menu_item_call>
+        <menu_item_call
+         label="Linkset"
+         name="Copy Linkset UUIDs">
+            <menu_item_call.on_click
+             function="Object.CopyLinksetUUIDs" />
+            <menu_item_call.on_visible
+             function="Object.VisibleCopyLinksetUUIDs" />
+        </menu_item_call>
+        <menu_item_call
+         label="Selection"
+         name="Copy Selected UUIDs">
+            <menu_item_call.on_click
+             function="Object.CopySelectedUUIDs" />
+            <menu_item_call.on_visible
+             function="Object.VisibleCopySelectedUUIDs" />
+        </menu_item_call>
+    </context_menu>
     <menu_item_call
      enabled="false"
      label="Edit item"

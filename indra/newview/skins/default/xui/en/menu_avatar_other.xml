@@ -10,6 +10,12 @@
          function="ShowAgentProfile"
          parameter="hit object" />
     </menu_item_call>
+    <menu_item_call
+     label="Copy UUID"
+     name="Copy UUID">
+        <menu_item_call.on_click
+         function="Avatar.CopyUUID" />
+    </menu_item_call>
    <menu_item_call
      enabled="false"
      label="Add Friend"
