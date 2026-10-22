@@ -196,6 +196,7 @@ elseif (WINDOWS)
             ${prefix_result}/../bin/nghttp2.dll
             ${prefix_result}/../bin/ogg.dll
             ${prefix_result}/../bin/openjp2.dll
+            ${prefix_result}/../bin/SDL3.dll
             ${prefix_result}/../bin/vorbis.dll
             ${prefix_result}/../bin/vorbisenc.dll
             ${prefix_result}/../bin/vorbisfile.dll
