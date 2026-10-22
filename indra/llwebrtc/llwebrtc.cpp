@@ -29,6 +29,7 @@
 #include <chrono>
 #include <future>
 #include <thread>
+#include <system_error>
 #include <string.h>
 #include "api/audio/create_audio_device_module.h"
 #include "api/audio_codecs/audio_decoder_factory.h"
@@ -558,7 +559,27 @@ bool LLWebRTCImpl::terminate()
         return false;
     }
 
-    shutdown_thread.join();
+    // Joining the current thread throws system_error and aborts the process.
+    if (shutdown_thread.get_id() == std::this_thread::get_id())
+    {
+        RTC_LOG(LS_WARNING) << __FUNCTION__ << ": shutdown thread is the caller; detaching.";
+        shutdown_thread.detach();
+    }
+    else
+    {
+        try
+        {
+            shutdown_thread.join();
+        }
+        catch (const std::system_error& e)
+        {
+            RTC_LOG(LS_WARNING) << __FUNCTION__ << ": join failed: " << e.what();
+            if (shutdown_thread.joinable())
+            {
+                shutdown_thread.detach();
+            }
+        }
+    }
 
     webrtc::LogMessage::RemoveLogToStream(mLogSink);
     return true;

@@ -31,6 +31,7 @@
 #include <thread>
 
 #include "llinventorymodel.h"
+#include "llthread.h"
 
 #include "llaisapi.h"
 #include "llagent.h"
@@ -2505,7 +2506,7 @@ void LLInventoryModel::waitForPendingCacheWrites()
     {
         if (thread.joinable())
         {
-            thread.join();
+            ll_join_thread(thread);
         }
     }
     sPendingCacheThreads.clear();
