@@ -28,6 +28,7 @@
 
 #include "llwebsocketmgr.h"
 #include "llerror.h"
+#include "llthread.h"
 #include "llsdserialize.h"
 #include "llhost.h"
 #include "llsdjson.h"
@@ -508,7 +509,7 @@ void LLWebsocketMgr::WSServer::stop()
                 << "thread-boundary regression." << LL_ENDL;
         }
 
-        mServerThread.join();
+        ll_join_thread(mServerThread);
         LL_INFOS("WebSocket") << "WebSocket server thread joined for: " << mServerName << LL_ENDL;
     }
     onStopped();

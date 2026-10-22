@@ -33,6 +33,32 @@
 
 extern void set_thread_name(const char* threadName);
 
+// Join unless this is the calling thread. Joining the current thread throws
+// system_error(resource_deadlock_would_occur) and aborts via std::terminate.
+inline void ll_join_thread(std::thread& thread)
+{
+    if (!thread.joinable())
+    {
+        return;
+    }
+    if (thread.get_id() == std::this_thread::get_id())
+    {
+        thread.detach();
+        return;
+    }
+    try
+    {
+        thread.join();
+    }
+    catch (const std::system_error&)
+    {
+        if (thread.joinable())
+        {
+            thread.detach();
+        }
+    }
+}
+
 namespace LLTrace
 {
     class ThreadRecorder;

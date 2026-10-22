@@ -20,6 +20,7 @@
 #include "commoncontrol.h"
 #include "llerror.h"
 #include "llevents.h"
+#include "llthread.h"
 #include "llsd.h"
 #include "stringize.h"
 
@@ -127,8 +128,17 @@ void LL::ThreadPoolBase::close()
         {
             if (pair.second.joinable())
             {
+                // close() runs on a worker when the LLApp status listener
+                // fires on that thread. Joining it throws and aborts shutdown.
+                if (pair.second.get_id() == std::this_thread::get_id())
+                {
+                    LL_WARNS("ThreadPool") << mName << " detaching current thread "
+                        << pair.first << LL_ENDL;
+                    pair.second.detach();
+                    continue;
+                }
                 LL_DEBUGS("ThreadPool") << mName << " waiting on thread " << pair.first << LL_ENDL;
-                pair.second.join();
+                ll_join_thread(pair.second);
             }
         }
         LL_DEBUGS("ThreadPool") << mName << " shutdown complete" << LL_ENDL;
