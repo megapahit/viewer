@@ -1639,8 +1639,22 @@ public:
                     {
                         update_inventory_item(new_item_id, updates, NULL);
                     }
+                    if (LLMaterialEditor::sHeadlessDone)
+                    {
+                        const LLUUID reported = new_item_id.notNull() ? new_item_id : item_id;
+                        auto done = std::move(LLMaterialEditor::sHeadlessDone);
+                        done(true, reported, std::string());
+                    }
                 },
-                nullptr // failure callback, floater already closed
+                [](LLUUID, LLUUID, LLSD, std::string reason)
+                {
+                    if (LLMaterialEditor::sHeadlessDone)
+                    {
+                        auto done = std::move(LLMaterialEditor::sHeadlessDone);
+                        done(false, LLUUID::null, reason);
+                    }
+                    return true;
+                }
             );
 
         const LLViewerRegion* region = gAgent.getRegion();
@@ -2057,6 +2071,117 @@ void LLMaterialEditor::uploadMaterialFromModel(
     me->saveIfNeeded();
 }
 
+
+std::function<void(bool, const LLUUID&, const std::string&)> LLMaterialEditor::sHeadlessDone;
+
+bool LLMaterialEditor::startHeadlessUpload(const std::string& filename,
+                                           S32 index,
+                                           const LLUUID& dest_folder,
+                                           const LLSD& options,
+                                           const std::function<void(bool, const LLUUID&, const std::string&)>& done,
+                                           std::string& error)
+{
+    if (sHeadlessDone)
+    {
+        error = "a material upload is already in progress";
+        return false;
+    }
+
+    tinygltf::TinyGLTF loader;
+    std::string error_msg;
+    std::string warn_msg;
+    tinygltf::Model model_in;
+    std::string filename_lc = filename;
+    LLStringUtil::toLower(filename_lc);
+    const bool loaded = (std::string::npos == filename_lc.rfind(".gltf"))
+        ? loader.LoadBinaryFromFile(&model_in, &error_msg, &warn_msg, filename)
+        : loader.LoadASCIIFromFile(&model_in, &error_msg, &warn_msg, filename);
+    if (!loaded)
+    {
+        error = error_msg.empty() ? "failed to read the material file" : error_msg;
+        return false;
+    }
+    if (model_in.materials.empty())
+    {
+        error = "file contains no materials";
+        return false;
+    }
+    if (index < 0)
+    {
+        if (model_in.materials.size() != 1)
+        {
+            error = "file contains " + std::to_string(model_in.materials.size()) + " materials; pass index";
+            return false;
+        }
+        index = 0;
+    }
+    if ((size_t)index >= model_in.materials.size())
+    {
+        error = "material index is out of range";
+        return false;
+    }
+
+    LLMaterialEditor* me = (LLMaterialEditor*)LLFloaterReg::getInstance("material_editor");
+    if (!me)
+    {
+        error = "material editor is not available";
+        return false;
+    }
+    me->setVisible(false);
+    me->mUploadFolder = dest_folder;
+    me->loadMaterial(model_in, filename, index, false);
+    auto set_opt = [me](const char* name, const LLSD& value)
+    {
+        if (LLUICtrl* ctrl = me->findChild<LLUICtrl>(name))
+        {
+            ctrl->setValue(value);
+        }
+    };
+    if (options.has("double_sided"))
+    {
+        set_opt("double sided", options["double_sided"]);
+    }
+    if (options.has("transparency"))
+    {
+        set_opt("transparency", options["transparency"]);
+    }
+    if (options.has("alpha_mode"))
+    {
+        set_opt("alpha mode", options["alpha_mode"]);
+    }
+    if (options.has("alpha_cutoff"))
+    {
+        set_opt("alpha cutoff", options["alpha_cutoff"]);
+    }
+    if (options.has("metalness"))
+    {
+        set_opt("metalness factor", options["metalness"]);
+    }
+    if (options.has("roughness"))
+    {
+        set_opt("roughness factor", options["roughness"]);
+    }
+    if (options.has("base_color"))
+    {
+        set_opt("base color", options["base_color"]);
+    }
+    if (options.has("emissive_color"))
+    {
+        set_opt("emissive color", options["emissive_color"]);
+    }
+    if (options.has("name"))
+    {
+        me->setMaterialName(options["name"].asString());
+    }
+    sHeadlessDone = done;
+    if (!me->saveIfNeeded())
+    {
+        sHeadlessDone = nullptr;
+        error = "material upload could not be started";
+        return false;
+    }
+    return true;
+}
 
 void LLMaterialEditor::loadMaterialFromFile(const std::string& filename, S32 index, const LLUUID& dest_folder)
 {

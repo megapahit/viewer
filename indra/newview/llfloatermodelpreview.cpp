@@ -360,6 +360,161 @@ void LLFloaterModelPreview::showModelPreview(const LLUUID& dest_folder)
     }
 }
 
+bool LLFloaterModelPreview::startHeadlessUpload(const std::string& path,
+                                                const LLUUID& dest_folder,
+                                                const LLSD& options,
+                                                const std::function<void(bool, const std::string&, S32)>& done)
+{
+    LLFloaterModelPreview* fmp = (LLFloaterModelPreview*)LLFloaterReg::getInstance("upload_model");
+    if (!fmp || fmp->isModelLoading() || fmp->mHeadlessUpload)
+    {
+        return false;
+    }
+    fmp->setVisible(false);
+    fmp->requestAgentUploadPermissions();
+    fmp->setUploadDestination(dest_folder);
+    fmp->resetUploadOptions();
+    auto set_opt = [fmp](const char* name, const LLSD& value)
+    {
+        if (LLUICtrl* ctrl = fmp->findChild<LLUICtrl>(name))
+        {
+            ctrl->setValue(value);
+        }
+    };
+    if (options.has("scale"))
+    {
+        set_opt("import_scale", options["scale"]);
+    }
+    if (options.has("pelvis_offset"))
+    {
+        set_opt("pelvis_offset", options["pelvis_offset"]);
+    }
+    if (options.has("upload_textures"))
+    {
+        set_opt("upload_textures", options["upload_textures"]);
+    }
+    if (options.has("upload_skin"))
+    {
+        set_opt("upload_skin", options["upload_skin"]);
+    }
+    if (options.has("upload_joints"))
+    {
+        set_opt("upload_joints", options["upload_joints"]);
+    }
+    if (options.has("lock_scale"))
+    {
+        set_opt("lock_scale_if_joint_position", options["lock_scale"]);
+    }
+    if (options.has("name"))
+    {
+        set_opt("model_name", options["name"]);
+    }
+    if (options.has("description"))
+    {
+        set_opt("description_form", options["description"]);
+    }
+    fmp->mHeadlessPendingLods.clear();
+    auto queue_lod = [&](const char* key, S32 lod)
+    {
+        if (options.has(key))
+        {
+            const std::string lod_path = options[key].asString();
+            if (!lod_path.empty())
+            {
+                fmp->mHeadlessPendingLods.emplace_back(lod, lod_path);
+            }
+        }
+    };
+    queue_lod("lod_medium", LLModel::LOD_MEDIUM);
+    queue_lod("lod_low", LLModel::LOD_LOW);
+    queue_lod("lod_lowest", LLModel::LOD_IMPOSTOR);
+    queue_lod("physics", LLModel::LOD_PHYSICS);
+    fmp->mHeadlessDone = done;
+    fmp->mHeadlessStarted = false;
+    fmp->mHeadlessUpload = true;
+    fmp->loadModel(LLModel::LOD_HIGH, path, true);
+    return true;
+}
+
+void LLFloaterModelPreview::queueHeadlessLod(S32 lod, const std::string& path)
+{
+    if (lod == LLModel::LOD_PHYSICS)
+    {
+        setCtrlLoadFromFile(LLModel::LOD_PHYSICS);
+        childSetValue("physics_file", path);
+    }
+    else if (lod >= 0 && lod <= LLModel::LOD_HIGH)
+    {
+        mLODMode[lod] = LLModelPreview::LOD_FROM_FILE;
+        if (LLComboBox* combo = findChild<LLComboBox>("lod_source_" + lod_name[lod]))
+        {
+            combo->setCurrentByIndex(LLModelPreview::LOD_FROM_FILE);
+        }
+        childSetValue("lod_file_" + lod_name[lod], path);
+    }
+    loadModel(lod, path, true);
+}
+
+void LLFloaterModelPreview::finishHeadless(bool ok, const std::string& detail, S32 price)
+{
+    mHeadlessUpload = false;
+    mHeadlessStarted = false;
+    auto done = std::move(mHeadlessDone);
+    mHeadlessDone = nullptr;
+    if (done)
+    {
+        done(ok, detail, price);
+    }
+}
+
+void LLFloaterModelPreview::onHeadlessModelFailed(const std::string& reason)
+{
+    if (mHeadlessUpload)
+    {
+        finishHeadless(false, reason, 0);
+    }
+}
+
+void LLFloaterModelPreview::onHeadlessModelReady(S32 lod)
+{
+    if (!mHeadlessUpload || !mModelPreview)
+    {
+        return;
+    }
+    if (!mHeadlessPendingLods.empty())
+    {
+        const std::pair<S32, std::string> next = mHeadlessPendingLods.front();
+        mHeadlessPendingLods.erase(mHeadlessPendingLods.begin());
+        queueHeadlessLod(next.first, next.second);
+        return;
+    }
+    if (lod != LLModel::LOD_HIGH && lod != LLModel::LOD_MEDIUM && lod != LLModel::LOD_LOW
+        && lod != LLModel::LOD_IMPOSTOR && lod != LLModel::LOD_PHYSICS)
+    {
+        return;
+    }
+    if (!mModelPreview->mModelNoErrors)
+    {
+        finishHeadless(false, "model has errors and cannot be uploaded", 0);
+        return;
+    }
+    onClickCalculateBtn();
+}
+
+void LLFloaterModelPreview::tryHeadlessUpload()
+{
+    if (!mHeadlessUpload || mHeadlessStarted)
+    {
+        return;
+    }
+    if (!isModelUploadAllowed())
+    {
+        return;
+    }
+    mHeadlessStarted = true;
+    onUpload(this);
+}
+
 void LLFloaterModelPreview::onUploadOptionChecked(LLUICtrl* ctrl)
 {
     if (mModelPreview)
@@ -1958,6 +2113,7 @@ void LLFloaterModelPreview::handleModelPhysicsFeeReceived()
     childSetVisible("upload_fee", true);
     childSetVisible("price_breakdown", true);
     mUploadBtn->setEnabled(isModelUploadAllowed());
+    tryHeadlessUpload();
 }
 
 void LLFloaterModelPreview::setModelPhysicsFeeErrorStatus(S32 status, const std::string& reason, const LLSD& result)
@@ -1969,6 +2125,11 @@ void LLFloaterModelPreview::setModelPhysicsFeeErrorStatus(S32 status, const std:
     LLFloaterModelPreview::addStringToLog(out, false);
     doOnIdleOneTime(boost::bind(&LLFloaterModelPreview::toggleCalculateButton, this, true));
 
+    if (mHeadlessUpload)
+    {
+        finishHeadless(false, reason.empty() ? "mesh fee request failed" : reason, 0);
+        return;
+    }
     if (result.has("upload_price"))
     {
         mModelPhysicsFee = result;
@@ -1985,6 +2146,16 @@ void LLFloaterModelPreview::setModelPhysicsFeeErrorStatus(S32 status, const std:
 void LLFloaterModelPreview::onModelUploadSuccess()
 {
     assert_main_thread();
+    if (mHeadlessUpload)
+    {
+        std::string name;
+        if (LLUICtrl* ctrl = findChild<LLUICtrl>("model_name"))
+        {
+            name = ctrl->getValue().asString();
+        }
+        const S32 price = mModelPhysicsFee.has("upload_price") ? mModelPhysicsFee["upload_price"].asInteger() : 0;
+        finishHeadless(true, name, price);
+    }
     closeFloater(false);
 }
 
@@ -1992,6 +2163,12 @@ void LLFloaterModelPreview::onModelUploadSuccess()
 void LLFloaterModelPreview::onModelUploadFailure()
 {
     assert_main_thread();
+    if (mHeadlessUpload)
+    {
+        finishHeadless(false, "mesh upload failed", 0);
+        setVisible(false);
+        return;
+    }
     toggleCalculateButton(true);
     mUploadBtn->setEnabled(true);
 }
@@ -2068,6 +2245,12 @@ void LLFloaterModelPreview::onPermissionsReceived(const LLSD& result)
     mUploadBtn->setEnabled(isModelUploadAllowed());
     getChild<LLTextBox>("warning_title")->setVisible(!mHasUploadPerm);
     getChild<LLTextBox>("warning_message")->setVisible(!mHasUploadPerm);
+    if (mHeadlessUpload && !mHasUploadPerm)
+    {
+        finishHeadless(false, "mesh upload permission denied", 0);
+        return;
+    }
+    tryHeadlessUpload();
 }
 
 void LLFloaterModelPreview::setPermissonsErrorStatus(S32 status, const std::string& reason)

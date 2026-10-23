@@ -52,6 +52,7 @@
 
 #include "llfirstuse.h"
 #include "llfloaterimnearbychat.h"
+#include "llviewermcp.h"
 #include "llfloaterimnearbychatlistener.h"
 #include "llagent.h" // gAgent
 #include "llgesturemgr.h"
@@ -733,6 +734,7 @@ void LLFloaterIMNearbyChat::sendChat( EChatType type )
 
 void LLFloaterIMNearbyChat::addMessage(const LLChat& chat,bool archive,const LLSD &args)
 {
+    LLViewerMCP::noteChat("nearby", chat.mFromName, chat.mFromID, chat.mText);
     appendMessage(chat, args);
 
     if(archive)

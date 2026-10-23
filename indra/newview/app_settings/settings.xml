@@ -2994,6 +2994,28 @@
       <key>Value</key>
       <integer>0</integer>
     </map>
+    <key>EnableViewerMCP</key>
+    <map>
+      <key>Comment</key>
+      <string>Listen on 127.0.0.1 for an MCP client that can see and act as this logged-in viewer. The address is http://127.0.0.1:ViewerMCPPort/mcp and does not change between launches.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>0</integer>
+    </map>
+    <key>ViewerMCPPort</key>
+    <map>
+      <key>Comment</key>
+      <string>Loopback port for the viewer MCP server. The URL stays http://127.0.0.1:this/mcp across launches.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>S32</string>
+      <key>Value</key>
+      <integer>9411</integer>
+    </map>
     <key>EnableVoiceChat</key>
     <map>
       <key>Comment</key>

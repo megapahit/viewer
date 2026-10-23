@@ -321,6 +321,10 @@ public:
 
     void setObjectName(std::string name) { mObjectName = name; }
 
+    // Same action as the Edit button. If the script text is still
+    // downloading, the external editor opens when the load finishes.
+    void openInExternalEditorWhenReady();
+
     bool getIsModifiable() const { return mIsModifiable; } // Evaluated on load assert
 
 private:
@@ -352,6 +356,7 @@ private:
 
 private:
     bool                mIsNew;
+    bool                mOpenExternalWhenLoaded = false;
     //LLUUID mTransmitID;
     //LLCheckBoxCtrl*       mRunningCheckbox;
     bool                mAskedForRunningInfo;

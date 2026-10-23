@@ -975,6 +975,10 @@ void LLModelPreview::loadModelCallback(S32 loaded_lod)
     if (!mModelLoader)
     {
         mLoading = false;
+        if (mFMP)
+        {
+            ((LLFloaterModelPreview*)mFMP)->onHeadlessModelFailed("model loader was not running");
+        }
         return;
     }
     if (getLoadState() >= LLModelLoader::ERROR_PARSING)
@@ -982,6 +986,10 @@ void LLModelPreview::loadModelCallback(S32 loaded_lod)
         mLoading = false;
         mModelLoader = NULL;
         mLodsWithParsingError.push_back(loaded_lod);
+        if (mFMP)
+        {
+            ((LLFloaterModelPreview*)mFMP)->onHeadlessModelFailed("failed to parse the model file");
+        }
         return;
     }
 
@@ -1277,6 +1285,20 @@ void LLModelPreview::loadModelCallback(S32 loaded_lod)
     mModelLoadedSignal();
 
     mModelLoader = NULL;
+
+    // The next LOD load rejects a live loader. Schedule it after this
+    // callback returns so the mutex is released and mModelLoader is clear.
+    if (mFMP)
+    {
+        LLFloaterModelPreview* floater = (LLFloaterModelPreview*)mFMP;
+        doOnIdleOneTime([floater, loaded_lod]()
+        {
+            if (LLFloaterModelPreview::sInstance == floater)
+            {
+                floater->onHeadlessModelReady(loaded_lod);
+            }
+        });
+    }
 }
 
 void LLModelPreview::resetPreviewTarget()
