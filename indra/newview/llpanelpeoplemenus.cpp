@@ -36,6 +36,8 @@
 #include "llagent.h"
 #include "llagentdata.h"            // for gAgentID
 #include "llavataractions.h"
+#include "llviewerwindow.h"
+#include "llwindow.h"
 #include "llcallingcard.h"          // for LLAvatarTracker
 #include "lllogchat.h"
 #include "llparcel.h"
@@ -49,6 +51,15 @@
 
 namespace LLPanelPeopleMenus
 {
+
+static void copy_avatar_uuid(const LLUUID& id)
+{
+    if (id.isNull() || !gViewerWindow || !gViewerWindow->getWindow())
+    {
+        return;
+    }
+    gViewerWindow->getWindow()->copyTextToClipboard(utf8str_to_wstring(id.asString()));
+}
 
 PeopleContextMenu gPeopleContextMenu;
 NearbyPeopleContextMenu gNearbyPeopleContextMenu;
@@ -68,6 +79,7 @@ LLContextMenu* PeopleContextMenu::createMenu()
 
         const LLUUID& id = mUUIDs.front();
         registrar.add("Avatar.Profile",         boost::bind(&LLAvatarActions::showProfile,              id));
+        registrar.add("Avatar.CopyUUID",        boost::bind(&LLPanelPeopleMenus::copy_avatar_uuid,      id));
         registrar.add("Avatar.AddFriend",       boost::bind(&LLAvatarActions::requestFriendshipDialog,  id));
         registrar.add("Avatar.RemoveFriend",    boost::bind(&LLAvatarActions::removeFriendDialog,       id));
         registrar.add("Avatar.IM",              boost::bind(&LLAvatarActions::startIM,                  id));
@@ -137,6 +149,7 @@ void PeopleContextMenu::buildContextMenu(class LLMenuGL& menu, U32 flags)
     else
     {
         items.push_back(std::string("view_profile"));
+        items.push_back(std::string("copy_uuid"));
         items.push_back(std::string("im"));
         items.push_back(std::string("offer_teleport"));
         items.push_back(std::string("request_teleport"));
@@ -415,6 +428,7 @@ void NearbyPeopleContextMenu::buildContextMenu(class LLMenuGL& menu, U32 flags)
     else
     {
         items.push_back(std::string("view_profile"));
+        items.push_back(std::string("copy_uuid"));
         items.push_back(std::string("im"));
         items.push_back(std::string("offer_teleport"));
         items.push_back(std::string("request_teleport"));
