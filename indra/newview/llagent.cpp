@@ -870,6 +870,10 @@ bool LLAgent::canFly()
 {
     if (isGodlike()) return true;
 
+    // Client-side override for parcel and region no-fly. The simulator can
+    // still refuse the fly control.
+    if (gSavedSettings.getBOOL("AlwaysAllowFly")) return true;
+
     LLViewerRegion* regionp = getRegion();
     if (regionp && regionp->getBlockFly()) return false;
 
