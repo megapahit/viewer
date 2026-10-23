@@ -85,9 +85,15 @@
 #include "message.h"
 #include "llsearchableui.h"
 #include "llsearcheditor.h"
+#include "bufferarray.h"
+#include "httphandler.h"
+#include "httpoptions.h"
+#include "httprequest.h"
+#include "httpresponse.h"
 
 // system includes
 #include <iomanip>
+#include <sstream>
 
 
 //
@@ -116,6 +122,9 @@ LLStatusBar::LLStatusBar(const LLRect& rect)
     mBtnVolume(NULL),
     mBoxBalance(NULL),
     mBalance(0),
+    mExchangeRate(0.0),
+    mExchangeRateFetchInFlight(false),
+    mExchangeRateRequest(nullptr),
     mBalanceClicked(false),
     mObscureBalance(false),
     mHealth(100),
@@ -136,6 +145,8 @@ LLStatusBar::LLStatusBar(const LLRect& rect)
 
 LLStatusBar::~LLStatusBar()
 {
+    delete mExchangeRateRequest;
+    mExchangeRateRequest = nullptr;
     // LLView destructor cleans up children
 }
 
@@ -147,6 +158,11 @@ LLStatusBar::~LLStatusBar()
 void LLStatusBar::draw()
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_UI;
+    // Deliver the LindeX reply on this thread. update() only invokes the handler.
+    if (mExchangeRateRequest && mExchangeRateFetchInFlight)
+    {
+        mExchangeRateRequest->update(0);
+    }
     refresh();
     LLPanel::draw();
 }
@@ -202,6 +218,7 @@ bool LLStatusBar::postBuild()
         mBtnVolume->setImageUnselected(LLUI::getUIImage("VoiceMute_Off"));
     }
     mObscureBalance = gSavedSettings.getBOOL("ObscureBalanceInStatusBar");
+    requestExchangeRate();
 
     // Adding Net Stat Graph
     S32 x = getRect().getWidth() - 2;
@@ -348,6 +365,15 @@ void LLStatusBar::refresh()
         mTextTime->setToolTip (dtStr);
     }
 
+    // The LindeX feed updates about every few minutes. Refresh the rate
+    // a few times an hour so the USD figure stays current. Retry sooner
+    // until the first rate arrives.
+    const F32 rate_refresh_delay = (mExchangeRate > 0.0) ? (15.f * 60.f) : 30.f;
+    if (!mExchangeRateFetchInFlight && mExchangeRateTimer.getElapsedTimeF32() > rate_refresh_delay)
+    {
+        requestExchangeRate();
+    }
+
     if (mBalanceClicked && mBalanceClickTimer.getElapsedTimeF32() > 1.f)
     {
         mBalanceClicked = false;
@@ -409,6 +435,30 @@ void LLStatusBar::creditBalance(S32 credit)
     setBalance(getBalance() + credit);
 }
 
+// Same thousands separators as L$. Cents stay two digits after the locale decimal point.
+static std::string format_usd_amount(F64 usd)
+{
+    const bool negative = usd < 0.0;
+    const F64 magnitude = negative ? -usd : usd;
+    const S64 cents_total = (S64)ll_round(magnitude * 100.0);
+    const S32 dollars = (S32)(cents_total / 100);
+    const S32 cents = (S32)(cents_total % 100);
+
+    LLResMgr* res = LLResMgr::getInstance();
+    std::string whole = res->getMonetaryString(dollars);
+    char decimal = res->getMonetaryDecimalPoint();
+    if (decimal == '\0')
+    {
+        decimal = '.';
+    }
+    std::string amount = llformat("%s%c%02d", whole.c_str(), decimal, cents);
+    if (negative)
+    {
+        amount.insert(0, "-");
+    }
+    return amount;
+}
+
 void LLStatusBar::setBalance(S32 balance)
 {
     if (balance > getBalance() && getBalance() != 0)
@@ -417,19 +467,37 @@ void LLStatusBar::setBalance(S32 balance)
     }
 
     std::string money_str = LLResMgr::getInstance()->getMonetaryString( balance );
+    std::string usd_str;
+    if (!mObscureBalance && mExchangeRate > 0.0)
+    {
+        usd_str = format_usd_amount((F64)balance / mExchangeRate);
+    }
 
     LLStringUtil::format_map_t string_args;
     if (mObscureBalance)
     {
         string_args["[AMT]"] = "****";
+        string_args["[USD]"] = "****";
     }
     else
     {
-        string_args["[AMT]"] = llformat("%s", money_str.c_str());
+        string_args["[AMT]"] = money_str;
+        if (!usd_str.empty())
+        {
+            string_args["[USD]"] = usd_str;
+        }
     }
-    std::string label_str = getString("buycurrencylabel", string_args);
+    const char* label_name = (!mObscureBalance && mExchangeRate > 0.0)
+        ? "buycurrencylabel_usd" : "buycurrencylabel";
+    std::string label_str = getString(label_name, string_args);
     mBoxBalance->setValue(label_str);
     mBoxBalance->setToolTipArg(LLStringExplicit("[AMT]"), llformat("%s", money_str.c_str()));
+    if (!usd_str.empty())
+    {
+        mBoxBalance->setToolTip(llformat(
+            "L$ %s / $USD %s\nLindeX rate: L$ %.2f per USD\nClick to refresh your L$ balance.\nDouble-click to display or hide your L$ balance.",
+            money_str.c_str(), usd_str.c_str(), mExchangeRate));
+    }
 
     updateBalancePanelPosition();
 
@@ -508,6 +576,125 @@ void LLStatusBar::setHealth(S32 health)
 S32 LLStatusBar::getBalance() const
 {
     return mBalance;
+}
+
+void LLStatusBar::setExchangeRate(F64 lindens_per_usd)
+{
+    if (lindens_per_usd <= 0.0)
+    {
+        return;
+    }
+    mExchangeRate = lindens_per_usd;
+    setBalance(mBalance);
+}
+
+namespace
+{
+
+const char* const LINDEX_HOMEPAGE_URL = "http://secondlife.com/httprequest/homepage.php";
+
+class ExchangeRateHandler : public LLCore::HttpHandler
+{
+public:
+    void onCompleted(LLCore::HttpHandle handle, LLCore::HttpResponse* response) override
+    {
+        if (!gStatusBar)
+        {
+            return;
+        }
+        if (!response)
+        {
+            gStatusBar->finishExchangeRateRequest(0.0, "empty LindeX response");
+            return;
+        }
+
+        const LLCore::HttpStatus status = response->getStatus();
+        if (!status)
+        {
+            gStatusBar->finishExchangeRateRequest(0.0, status.toString());
+            return;
+        }
+
+        std::string body;
+        LLCore::BufferArray* raw = response->getBody();
+        if (raw && raw->size() > 0)
+        {
+            body.resize(raw->size());
+            raw->read(0, body.data(), body.size());
+        }
+
+        std::istringstream lines(body);
+        std::string line;
+        std::string previous;
+        F64 rate = 0.0;
+        while (std::getline(lines, line))
+        {
+            if (!line.empty() && line.back() == '\r')
+            {
+                line.pop_back();
+            }
+            if (previous == "exchange_rate")
+            {
+                rate = std::strtod(line.c_str(), nullptr);
+                break;
+            }
+            previous = line;
+        }
+        if (rate > 0.0)
+        {
+            gStatusBar->finishExchangeRateRequest(rate, std::string());
+        }
+        else
+        {
+            gStatusBar->finishExchangeRateRequest(0.0, "LindeX feed did not contain an exchange rate");
+        }
+    }
+};
+
+} // namespace
+
+void LLStatusBar::finishExchangeRateRequest(F64 lindens_per_usd, const std::string& error)
+{
+    mExchangeRateFetchInFlight = false;
+    if (!error.empty())
+    {
+        LL_WARNS("StatusBar") << "LindeX rate request failed: " << error << LL_ENDL;
+        return;
+    }
+    setExchangeRate(lindens_per_usd);
+}
+
+void LLStatusBar::requestExchangeRate()
+{
+    if (mExchangeRateFetchInFlight)
+    {
+        return;
+    }
+    if (!mExchangeRateRequest)
+    {
+        mExchangeRateRequest = new LLCore::HttpRequest();
+    }
+
+    LLCore::HttpOptions::ptr_t httpOpts = std::make_shared<LLCore::HttpOptions>();
+    httpOpts->setFollowRedirects(true);
+    httpOpts->setTimeout(30);
+
+    const LLCore::HttpHandle handle = mExchangeRateRequest->requestGet(
+        LLCore::HttpRequest::DEFAULT_POLICY_ID,
+        LINDEX_HOMEPAGE_URL,
+        httpOpts,
+        LLCore::HttpHeaders::ptr_t(),
+        std::make_shared<ExchangeRateHandler>());
+    if (handle == LLCORE_HTTP_HANDLE_INVALID)
+    {
+        LL_WARNS("StatusBar") << "LindeX rate request was not queued: "
+            << mExchangeRateRequest->getStatus().toString() << LL_ENDL;
+        mExchangeRateTimer.reset();
+        return;
+    }
+
+    mExchangeRateFetchInFlight = true;
+    mExchangeRateTimer.reset();
 }
 
 

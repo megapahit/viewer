@@ -29,6 +29,8 @@
 
 #include "llpanel.h"
 
+#include <string>
+
 // "Constants" loaded from settings.xml at start time
 extern S32 STATUS_BAR_HEIGHT;
 
@@ -47,6 +49,11 @@ class LLPanelVolumePulldown;
 class LLPanelNearByMedia;
 class LLIconCtrl;
 class LLSearchEditor;
+
+namespace LLCore
+{
+    class HttpRequest;
+}
 
 namespace ll
 {
@@ -95,6 +102,10 @@ public:
     S32 getSquareMetersLeft() const;
 
     void setBalanceVisible(bool visible);
+    void setExchangeRate(F64 lindens_per_usd);
+    void requestExchangeRate();
+    // Called on the main thread when the LindeX GET finishes. rate is L$ per USD.
+    void finishExchangeRateRequest(F64 lindens_per_usd, const std::string& error);
 
     LLPanelNearByMedia* getNearbyMediaPanel() { return mPanelNearByMedia; }
 
@@ -143,6 +154,11 @@ private:
     LLFrameTimer    *mFpsUpdateTimer;
 
     S32             mBalance;
+    F64             mExchangeRate; // L$ per 1 USD from the LindeX feed. 0 until known.
+    bool            mExchangeRateFetchInFlight;
+    LLTimer         mExchangeRateTimer;
+    // Pumped from draw(). Not a coroutine: a fiber here aborted the process.
+    LLCore::HttpRequest* mExchangeRateRequest;
     bool            mBalanceClicked;
     bool            mObscureBalance;
     LLTimer         mBalanceClickTimer;
