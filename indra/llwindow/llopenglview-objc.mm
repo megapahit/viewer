@@ -389,6 +389,7 @@ attributedStringInfo getSegments(NSAttributedString *str)
 
     [self registerForDraggedTypes:[NSArray arrayWithObject:NSPasteboardTypeURL]];
 
+    [glContext release]; // setOpenGLContext: retains the context for the view.
     return self;
 }
 

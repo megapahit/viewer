@@ -2537,6 +2537,11 @@ void LLAgent::endAnimationUpdateUI()
         LLFloaterCamera::onAvatarEditingAppearance(true);
     }
 
+    // Sync before updating attachment visibility
+    // Don't let this be called more than once if the camera
+    // mode hasn't changed.  --JC
+    gAgentCamera.updateLastCamera();
+
     if (isAgentAvatarValid())
     {
         gAgentAvatarp->updateAttachmentVisibility(gAgentCamera.getCameraMode());
@@ -2546,10 +2551,6 @@ void LLAgent::endAnimationUpdateUI()
     {
         gFloaterTools->dirty();
     }
-
-    // Don't let this be called more than once if the camera
-    // mode hasn't changed.  --JC
-    gAgentCamera.updateLastCamera();
 }
 
 boost::signals2::connection LLAgent::setMouselookModeInCallback( const camera_signal_t::slot_type& cb )
