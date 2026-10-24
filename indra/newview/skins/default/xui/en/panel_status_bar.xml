@@ -34,11 +34,11 @@
     </panel.string>
 	<panel.string
      name="buycurrencylabel">
-        L$ [AMT]
+        [AMT] L$
     </panel.string>
 	<panel.string
      name="buycurrencylabel_usd">
-        L$ [AMT] / $USD [USD]
+        [AMT] L$ / [USD]
     </panel.string>
   <panel
 	 height="18"
@@ -94,11 +94,11 @@
      height="18"
      left="0" 
      name="balance"
-     tool_tip="L$ [AMT]&#10;Click to refresh your L$ balance.&#10;Double-click to display or hide your L$ balance."
+     tool_tip="Click to refresh your L$ balance.&#10;Double-click to display or hide your L$ balance."
      v_pad="2"
      top="0"
      wrap="false" 
-     value="L$??" 
+     value="?? L$" 
      width="40" />
     <button
      halign="center"

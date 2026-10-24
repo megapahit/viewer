@@ -418,6 +418,78 @@
      name="item4"
      value="0" />
   </combo_box>
+    <check_box
+     control_name="ShowLocalCurrency"
+     follows="left|top"
+     height="16"
+     label="Local currency"
+     layout="topleft"
+     left="175"
+     name="show_local_currency"
+     tool_tip="Show the L$ balance converted into the currency selected on the right. Linden dollars are converted with the LindeX rate, then the US Treasury rate."
+     top_delta="4"
+     width="130" />
+    <combo_box
+     control_name="LocalCurrencyOverride"
+     enabled_control="ShowLocalCurrency"
+     follows="left|top"
+     height="23"
+     layout="topleft"
+     left="310"
+     max_chars="40"
+     name="local_currency_combo"
+     tool_tip="Automatic uses the system region, then the viewer language."
+     top_delta="-4"
+     width="175">
+        <combo_box.item label="Automatic" name="auto" value="" />
+        <combo_box.item label="US Dollar ($)" name="USD" value="USD" />
+        <combo_box.item label="Euro (€)" name="EUR" value="EUR" />
+        <combo_box.item label="British Pound (£)" name="GBP" value="GBP" />
+        <combo_box.item label="Japanese Yen (¥)" name="JPY" value="JPY" />
+        <combo_box.item label="Canadian Dollar (CA$)" name="CAD" value="CAD" />
+        <combo_box.item label="Australian Dollar (A$)" name="AUD" value="AUD" />
+        <combo_box.item label="New Zealand Dollar (NZ$)" name="NZD" value="NZD" />
+        <combo_box.item label="Swiss Franc (Fr)" name="CHF" value="CHF" />
+        <combo_box.item label="Chinese Yuan (¥)" name="CNY" value="CNY" />
+        <combo_box.item label="Indian Rupee (₹)" name="INR" value="INR" />
+        <combo_box.item label="South Korean Won (₩)" name="KRW" value="KRW" />
+        <combo_box.item label="Hong Kong Dollar (HK$)" name="HKD" value="HKD" />
+        <combo_box.item label="Singapore Dollar (S$)" name="SGD" value="SGD" />
+        <combo_box.item label="Swedish Krona (kr)" name="SEK" value="SEK" />
+        <combo_box.item label="Norwegian Krone (kr)" name="NOK" value="NOK" />
+        <combo_box.item label="Danish Krone (kr)" name="DKK" value="DKK" />
+        <combo_box.item label="Polish Zloty (zł)" name="PLN" value="PLN" />
+        <combo_box.item label="Czech Koruna (Kč)" name="CZK" value="CZK" />
+        <combo_box.item label="Hungarian Forint (Ft)" name="HUF" value="HUF" />
+        <combo_box.item label="Brazilian Real (R$)" name="BRL" value="BRL" />
+        <combo_box.item label="Mexican Peso (Mex$)" name="MXN" value="MXN" />
+        <combo_box.item label="South African Rand (R)" name="ZAR" value="ZAR" />
+        <combo_box.item label="Turkish Lira (₺)" name="TRY" value="TRY" />
+        <combo_box.item label="Russian Ruble (₽)" name="RUB" value="RUB" />
+        <combo_box.item label="Ukrainian Hryvnia (₴)" name="UAH" value="UAH" />
+        <combo_box.item label="Israeli Shekel (₪)" name="ILS" value="ILS" />
+        <combo_box.item label="Thai Baht (฿)" name="THB" value="THB" />
+        <combo_box.item label="Philippine Peso (₱)" name="PHP" value="PHP" />
+        <combo_box.item label="Vietnamese Dong (₫)" name="VND" value="VND" />
+        <combo_box.item label="Indonesian Rupiah (Rp)" name="IDR" value="IDR" />
+        <combo_box.item label="Malaysian Ringgit (RM)" name="MYR" value="MYR" />
+        <combo_box.item label="New Taiwan Dollar (NT$)" name="TWD" value="TWD" />
+        <combo_box.item label="UAE Dirham" name="AED" value="AED" />
+        <combo_box.item label="Saudi Riyal" name="SAR" value="SAR" />
+        <combo_box.item label="Qatari Riyal" name="QAR" value="QAR" />
+        <combo_box.item label="Kuwaiti Dinar (KD)" name="KWD" value="KWD" />
+        <combo_box.item label="Bahraini Dinar (BD)" name="BHD" value="BHD" />
+        <combo_box.item label="Egyptian Pound (E£)" name="EGP" value="EGP" />
+        <combo_box.item label="Nigerian Naira (₦)" name="NGN" value="NGN" />
+        <combo_box.item label="Kenyan Shilling (KSh)" name="KES" value="KES" />
+        <combo_box.item label="Argentine Peso (AR$)" name="ARS" value="ARS" />
+        <combo_box.item label="Chilean Peso" name="CLP" value="CLP" />
+        <combo_box.item label="Colombian Peso" name="COP" value="COP" />
+        <combo_box.item label="Peruvian Sol (S/)" name="PEN" value="PEN" />
+        <combo_box.item label="Romanian Leu (lei)" name="RON" value="RON" />
+        <combo_box.item label="Icelandic Krona (kr)" name="ISK" value="ISK" />
+        <combo_box.item label="Serbian Dinar (din)" name="RSD" value="RSD" />
+    </combo_box>
     <text
      type="string"
      length="1"

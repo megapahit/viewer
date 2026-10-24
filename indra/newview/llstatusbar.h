@@ -29,7 +29,9 @@
 
 #include "llpanel.h"
 
+#include <map>
 #include <string>
+#include <utility>
 
 // "Constants" loaded from settings.xml at start time
 extern S32 STATUS_BAR_HEIGHT;
@@ -106,6 +108,12 @@ public:
     void requestExchangeRate();
     // Called on the main thread when the LindeX GET finishes. rate is L$ per USD.
     void finishExchangeRateRequest(F64 lindens_per_usd, const std::string& error);
+    void requestTreasuryRates();
+    // rates key is the Treasury country_currency_desc, lowercased.
+    // The pair is foreign-currency units per 1 USD, then the currency name.
+    void finishTreasuryRequest(bool ok, const std::string& record_date,
+        const std::map<std::string, std::pair<F64, std::string>>& rates,
+        const std::string& error);
 
     LLPanelNearByMedia* getNearbyMediaPanel() { return mPanelNearByMedia; }
 
@@ -116,6 +124,7 @@ private:
     void onVolumeChanged(const LLSD& newvalue);
     void onVoiceChanged(const LLSD& newvalue);
     void onObscureBalanceChanged(const LLSD& newvalue);
+    void onLocalCurrencyChanged(const LLSD& newvalue);
 
     void onMouseEnterPresetsCamera();
     void onMouseEnterPresets();
@@ -159,6 +168,13 @@ private:
     LLTimer         mExchangeRateTimer;
     // Pumped from draw(). Not a coroutine: a fiber here aborted the process.
     LLCore::HttpRequest* mExchangeRateRequest;
+    bool            mTreasuryFetchInFlight;
+    bool            mTreasuryReady;
+    LLTimer         mTreasuryTimer;
+    LLCore::HttpRequest* mTreasuryRequest;
+    std::string     mTreasuryRecordDate;
+    // Lowercased country_currency_desc -> (units per 1 USD, currency name).
+    std::map<std::string, std::pair<F64, std::string>> mTreasuryRates;
     bool            mBalanceClicked;
     bool            mObscureBalance;
     LLTimer         mBalanceClickTimer;
