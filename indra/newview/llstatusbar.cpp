@@ -915,7 +915,11 @@ void LLStatusBar::setBalance(S32 balance)
         }
     }
 
-    std::string label = amount + " L$";
+    // The translated buycurrencylabel chooses which side L$ is on.
+    // llformat only fills [AMT]; it does not place the symbol.
+    LLStringUtil::format_map_t string_args;
+    string_args["[AMT]"] = llformat("%s", amount.c_str());
+    std::string label = getString("buycurrencylabel", string_args);
     if (!fiat_amount.empty())
     {
         label += " / ";
