@@ -40,6 +40,22 @@ enum LLLOCALE_ID
     LLLOCALE_COUNT  // Number of values in this enum.  Keep at end.
 };
 
+// Snapshot of the locale used to draw money. grouping is a POSIX
+// mon_grouping byte string; empty means do not group.
+struct LLNumberFormat
+{
+    std::string locale_name;
+    std::string thousands_sep;
+    std::string decimal_point;
+    std::string grouping;
+    std::string currency_symbol;
+    std::string iso_currency;
+    S32 frac_digits = -1;
+    bool symbol_before = true;
+    bool symbol_spaced = false;
+    bool position_known = false;
+};
+
 class LLResMgr : public LLSingleton<LLResMgr>
 {
     LLSINGLETON(LLResMgr);
@@ -53,7 +69,12 @@ public:
 
     char                getMonetaryDecimalPoint() const;
     std::string         getMonetaryThousandsSeparator() const;
+    // Whole L$ amounts. Uses the same locale rules as formatNumber().
     std::string         getMonetaryString( S32 input ) const;
+    // Locale number with a fixed number of fraction digits (0 draws no decimal).
+    std::string         formatNumber( F64 value, S32 frac_digits ) const;
+    // Separators and currency hints for the user's numeric locale.
+    LLNumberFormat      getNumberFormat() const;
     void                getIntegerString( std::string& output, S32 input ) const;
 
 

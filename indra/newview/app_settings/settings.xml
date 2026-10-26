@@ -10174,6 +10174,28 @@
         <key>Value</key>
         <integer>0</integer>
     </map>
+    <key>ShowLocalCurrency</key>
+    <map>
+        <key>Comment</key>
+        <string>Show the L$ balance converted into a local currency in the status bar. Linden dollars are converted with the LindeX rate, then with the US Treasury rate of exchange. Also set in Preferences &gt; General.</string>
+        <key>Persist</key>
+        <integer>1</integer>
+        <key>Type</key>
+        <string>Boolean</string>
+        <key>Value</key>
+        <integer>0</integer>
+    </map>
+    <key>LocalCurrencyOverride</key>
+    <map>
+        <key>Comment</key>
+        <string>Currency for the status-bar balance. Empty uses the system locale, then the viewer language. Also set in Preferences &gt; General.</string>
+        <key>Persist</key>
+        <integer>1</integer>
+        <key>Type</key>
+        <string>String</string>
+        <key>Value</key>
+        <string></string>
+    </map>
     <key>RenderUIBuffer</key>
     <map>
       <key>Comment</key>

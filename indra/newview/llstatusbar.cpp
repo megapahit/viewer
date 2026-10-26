@@ -90,10 +90,15 @@
 #include "httpoptions.h"
 #include "httprequest.h"
 #include "httpresponse.h"
+#include "llsdjson.h"
 
 // system includes
+#include <cctype>
+#include <cstdlib>
 #include <iomanip>
 #include <sstream>
+
+#include <boost/json.hpp>
 
 
 //
@@ -125,6 +130,9 @@ LLStatusBar::LLStatusBar(const LLRect& rect)
     mExchangeRate(0.0),
     mExchangeRateFetchInFlight(false),
     mExchangeRateRequest(nullptr),
+    mTreasuryFetchInFlight(false),
+    mTreasuryReady(false),
+    mTreasuryRequest(nullptr),
     mBalanceClicked(false),
     mObscureBalance(false),
     mHealth(100),
@@ -147,6 +155,8 @@ LLStatusBar::~LLStatusBar()
 {
     delete mExchangeRateRequest;
     mExchangeRateRequest = nullptr;
+    delete mTreasuryRequest;
+    mTreasuryRequest = nullptr;
     // LLView destructor cleans up children
 }
 
@@ -162,6 +172,10 @@ void LLStatusBar::draw()
     if (mExchangeRateRequest && mExchangeRateFetchInFlight)
     {
         mExchangeRateRequest->update(0);
+    }
+    if (mTreasuryRequest && mTreasuryFetchInFlight)
+    {
+        mTreasuryRequest->update(0);
     }
     refresh();
     LLPanel::draw();
@@ -211,6 +225,8 @@ bool LLStatusBar::postBuild()
     gSavedSettings.getControl("MuteAudio")->getSignal()->connect(boost::bind(&LLStatusBar::onVolumeChanged, this, _2));
     gSavedSettings.getControl("EnableVoiceChat")->getSignal()->connect(boost::bind(&LLStatusBar::onVoiceChanged, this, _2));
     gSavedSettings.getControl("ObscureBalanceInStatusBar")->getSignal()->connect(boost::bind(&LLStatusBar::onObscureBalanceChanged, this, _2));
+    gSavedSettings.getControl("ShowLocalCurrency")->getSignal()->connect(boost::bind(&LLStatusBar::onLocalCurrencyChanged, this, _2));
+    gSavedSettings.getControl("LocalCurrencyOverride")->getSignal()->connect(boost::bind(&LLStatusBar::onLocalCurrencyChanged, this, _2));
 
     if (!gSavedSettings.getBOOL("EnableVoiceChat") && LLAppViewer::instance()->isSecondInstance())
     {
@@ -218,7 +234,11 @@ bool LLStatusBar::postBuild()
         mBtnVolume->setImageUnselected(LLUI::getUIImage("VoiceMute_Off"));
     }
     mObscureBalance = gSavedSettings.getBOOL("ObscureBalanceInStatusBar");
-    requestExchangeRate();
+    if (gSavedSettings.getBOOL("ShowLocalCurrency"))
+    {
+        requestExchangeRate();
+        requestTreasuryRates();
+    }
 
     // Adding Net Stat Graph
     S32 x = getRect().getWidth() - 2;
@@ -365,13 +385,20 @@ void LLStatusBar::refresh()
         mTextTime->setToolTip (dtStr);
     }
 
-    // The LindeX feed updates about every few minutes. Refresh the rate
-    // a few times an hour so the USD figure stays current. Retry sooner
-    // until the first rate arrives.
-    const F32 rate_refresh_delay = (mExchangeRate > 0.0) ? (15.f * 60.f) : 30.f;
-    if (!mExchangeRateFetchInFlight && mExchangeRateTimer.getElapsedTimeF32() > rate_refresh_delay)
+    // LindeX moves during the day. Treasury rates are published quarterly.
+    // Neither request runs until the local-currency line is turned on.
+    if (gSavedSettings.getBOOL("ShowLocalCurrency"))
     {
-        requestExchangeRate();
+        const F32 rate_refresh_delay = (mExchangeRate > 0.0) ? (15.f * 60.f) : 30.f;
+        if (!mExchangeRateFetchInFlight && mExchangeRateTimer.getElapsedTimeF32() > rate_refresh_delay)
+        {
+            requestExchangeRate();
+        }
+        const F32 treasury_delay = mTreasuryReady ? (6.f * 60.f * 60.f) : 60.f;
+        if (!mTreasuryFetchInFlight && mTreasuryTimer.getElapsedTimeF32() > treasury_delay)
+        {
+            requestTreasuryRates();
+        }
     }
 
     if (mBalanceClicked && mBalanceClickTimer.getElapsedTimeF32() > 1.f)
@@ -435,29 +462,420 @@ void LLStatusBar::creditBalance(S32 credit)
     setBalance(getBalance() + credit);
 }
 
-// Same thousands separators as L$. Cents stay two digits after the locale decimal point.
-static std::string format_usd_amount(F64 usd)
+namespace
 {
-    const bool negative = usd < 0.0;
-    const F64 magnitude = negative ? -usd : usd;
-    const S64 cents_total = (S64)ll_round(magnitude * 100.0);
-    const S32 dollars = (S32)(cents_total / 100);
-    const S32 cents = (S32)(cents_total % 100);
 
-    LLResMgr* res = LLResMgr::getInstance();
-    std::string whole = res->getMonetaryString(dollars);
-    char decimal = res->getMonetaryDecimalPoint();
-    if (decimal == '\0')
+struct CurrencyInfo
+{
+    const char* iso;
+    const char* treasury; // country_currency_desc; null when the currency is USD
+    const char* symbol;
+    S32 frac_digits;
+    S32 symbol_before; // 1 before, 0 after, -1 follow the locale when it matches
+    S32 symbol_space;
+};
+
+// Treasury publishes no USD row. One USD is the base of that table.
+const CurrencyInfo CURRENCIES[] =
+{
+    {"USD", nullptr, "$", 2, 1, 0},
+    {"EUR", "Euro Zone-Euro", "€", 2, -1, -1},
+    {"GBP", "United Kingdom-Pound", "£", 2, 1, 0},
+    {"JPY", "Japan-Yen", "¥", 0, 1, 0},
+    {"CAD", "Canada-Dollar", "CA$", 2, 1, 0},
+    {"AUD", "Australia-Dollar", "A$", 2, 1, 0},
+    {"NZD", "New Zealand-Dollar", "NZ$", 2, 1, 0},
+    {"CHF", "Switzerland-Franc", "Fr", 2, 0, 1},
+    {"CNY", "China-Renminbi", "¥", 2, 1, 0},
+    {"INR", "India-Rupee", "₹", 2, 1, 0},
+    {"KRW", "Korea-Won", "₩", 0, 1, 0},
+    {"HKD", "Hong Kong-Dollar", "HK$", 2, 1, 0},
+    {"SGD", "Singapore-Dollar", "S$", 2, 1, 0},
+    {"SEK", "Sweden-Krona", "kr", 2, 0, 1},
+    {"NOK", "Norway-Krone", "kr", 2, 0, 1},
+    {"DKK", "Denmark-Krone", "kr", 2, 0, 1},
+    {"PLN", "Poland-Zloty", "zł", 2, 0, 1},
+    {"CZK", "Czech Republic-Koruna", "Kč", 2, 0, 1},
+    {"HUF", "Hungary-Forint", "Ft", 0, 0, 1},
+    {"BRL", "Brazil-Real", "R$", 2, 1, 0},
+    {"MXN", "Mexico-Peso", "Mex$", 2, 1, 0},
+    {"ZAR", "South Africa-Rand", "R", 2, 1, 0},
+    {"TRY", "Turkey-New Lira", "₺", 2, 1, 0},
+    {"RUB", "Russia-Ruble", "₽", 2, 0, 1},
+    {"UAH", "Ukraine-Hryvnia", "₴", 2, 0, 1},
+    {"ILS", "Israel-Shekel", "₪", 2, 1, 0},
+    {"THB", "Thailand-Baht", "฿", 2, 1, 0},
+    {"PHP", "Philippines-Peso", "₱", 2, 1, 0},
+    {"VND", "Vietnam-Dong", "₫", 0, 0, 1},
+    {"IDR", "Indonesia-Rupiah", "Rp", 0, 1, 0},
+    {"MYR", "Malaysia-Ringgit", "RM", 2, 1, 0},
+    {"TWD", "Taiwan-Dollar", "NT$", 2, 1, 0},
+    {"AED", "United Arab Emirates-Dirham", "د.إ", 2, 1, 0},
+    {"SAR", "Saudi Arabia-Riyal", "﷼", 2, 1, 0},
+    {"QAR", "Qatar-Riyal", "﷼", 2, 1, 0},
+    {"KWD", "Kuwait-Dinar", "KD", 3, 1, 0},
+    {"BHD", "Bahrain-Dinar", "BD", 3, 1, 0},
+    {"EGP", "Egypt-Pound", "E£", 2, 1, 0},
+    {"NGN", "Nigeria-Naira", "₦", 2, 1, 0},
+    {"KES", "Kenya-Shilling", "KSh", 2, 1, 0},
+    {"ARS", "Argentina-Peso", "AR$", 2, 1, 0},
+    {"CLP", "Chile-Peso", "CLP$", 0, 1, 0},
+    {"COP", "Colombia-Peso", "COL$", 0, 1, 0},
+    {"PEN", "Peru-Sol", "S/", 2, 1, 0},
+    {"RON", "Romania-New Leu", "lei", 2, 0, 1},
+    {"ISK", "Iceland-Krona", "kr", 0, 0, 1},
+    {"RSD", "Serbia-Dinar", "din", 2, 0, 1},
+};
+
+struct RegionCurrency
+{
+    const char* region;
+    const char* iso;
+};
+
+const RegionCurrency REGIONS[] =
+{
+    {"US", "USD"}, {"PR", "USD"}, {"GU", "USD"}, {"VI", "USD"}, {"AS", "USD"},
+    {"EC", "USD"}, {"SV", "USD"}, {"PA", "USD"}, {"MH", "USD"}, {"FM", "USD"}, {"PW", "USD"},
+    {"DE", "EUR"}, {"FR", "EUR"}, {"ES", "EUR"}, {"IT", "EUR"}, {"NL", "EUR"}, {"BE", "EUR"},
+    {"AT", "EUR"}, {"IE", "EUR"}, {"PT", "EUR"}, {"FI", "EUR"}, {"GR", "EUR"}, {"LU", "EUR"},
+    {"SK", "EUR"}, {"SI", "EUR"}, {"EE", "EUR"}, {"LV", "EUR"}, {"LT", "EUR"}, {"MT", "EUR"},
+    {"CY", "EUR"}, {"HR", "EUR"}, {"AD", "EUR"}, {"MC", "EUR"}, {"SM", "EUR"}, {"VA", "EUR"},
+    {"GB", "GBP"}, {"UK", "GBP"}, {"GG", "GBP"}, {"JE", "GBP"}, {"IM", "GBP"},
+    {"JP", "JPY"}, {"CA", "CAD"}, {"AU", "AUD"}, {"NZ", "NZD"}, {"CH", "CHF"}, {"LI", "CHF"},
+    {"CN", "CNY"}, {"HK", "HKD"}, {"SG", "SGD"}, {"IN", "INR"}, {"KR", "KRW"},
+    {"SE", "SEK"}, {"NO", "NOK"}, {"DK", "DKK"}, {"PL", "PLN"}, {"CZ", "CZK"}, {"HU", "HUF"},
+    {"BR", "BRL"}, {"MX", "MXN"}, {"ZA", "ZAR"}, {"TR", "TRY"}, {"RU", "RUB"}, {"UA", "UAH"},
+    {"IL", "ILS"}, {"TH", "THB"}, {"PH", "PHP"}, {"VN", "VND"}, {"ID", "IDR"}, {"MY", "MYR"},
+    {"TW", "TWD"}, {"AE", "AED"}, {"SA", "SAR"}, {"QA", "QAR"}, {"KW", "KWD"}, {"BH", "BHD"},
+    {"EG", "EGP"}, {"NG", "NGN"}, {"KE", "KES"}, {"AR", "ARS"}, {"CL", "CLP"}, {"CO", "COP"},
+    {"PE", "PEN"}, {"RO", "RON"}, {"IS", "ISK"}, {"RS", "RSD"},
+};
+
+struct ResolvedCurrency
+{
+    std::string iso;
+    std::string symbol;
+    F64 per_usd = 0.0;
+    S32 frac_digits = 2;
+    bool symbol_before = true;
+    bool symbol_space = false;
+    bool is_usd = false;
+    bool known = false;
+};
+
+const CurrencyInfo* find_currency_iso(const std::string& iso)
+{
+    for (size_t index = 0; index < sizeof(CURRENCIES) / sizeof(CURRENCIES[0]); ++index)
     {
-        decimal = '.';
+        if (iso == CURRENCIES[index].iso)
+        {
+            return &CURRENCIES[index];
+        }
     }
-    std::string amount = llformat("%s%c%02d", whole.c_str(), decimal, cents);
+    return nullptr;
+}
+
+const CurrencyInfo* find_currency_treasury(const std::string& treasury_lower)
+{
+    for (size_t index = 0; index < sizeof(CURRENCIES) / sizeof(CURRENCIES[0]); ++index)
+    {
+        if (!CURRENCIES[index].treasury)
+        {
+            continue;
+        }
+        std::string name = CURRENCIES[index].treasury;
+        LLStringUtil::toLower(name);
+        if (name == treasury_lower)
+        {
+            return &CURRENCIES[index];
+        }
+    }
+    return nullptr;
+}
+
+const char* currency_for_region(const std::string& region)
+{
+    for (size_t index = 0; index < sizeof(REGIONS) / sizeof(REGIONS[0]); ++index)
+    {
+        if (region == REGIONS[index].region)
+        {
+            return REGIONS[index].iso;
+        }
+    }
+    return nullptr;
+}
+
+const char* currency_for_language(const std::string& language)
+{
+    std::string code = language;
+    const std::string::size_type split = code.find_first_of("_-");
+    if (split != std::string::npos)
+    {
+        code.erase(split);
+    }
+    LLStringUtil::toLower(code);
+    if (code == "de" || code == "fr" || code == "es" || code == "it" || code == "nl"
+        || code == "pt" || code == "fi" || code == "el" || code == "ga")
+    {
+        return "EUR";
+    }
+    if (code == "ja") return "JPY";
+    if (code == "zh") return "CNY";
+    if (code == "ko") return "KRW";
+    if (code == "ru") return "RUB";
+    if (code == "pl") return "PLN";
+    if (code == "uk") return "UAH";
+    if (code == "tr") return "TRY";
+    if (code == "da") return "DKK";
+    if (code == "sv") return "SEK";
+    if (code == "nb" || code == "nn" || code == "no") return "NOK";
+    if (code == "cs") return "CZK";
+    if (code == "hu") return "HUF";
+    if (code == "en") return "USD";
+    return nullptr;
+}
+
+std::string region_from_locale(const std::string& name)
+{
+    const std::string::size_type sep = name.find_first_of("_-");
+    if (sep == std::string::npos || sep + 2 >= name.size())
+    {
+        return std::string();
+    }
+    std::string region = name.substr(sep + 1, 2);
+    const bool script = sep + 3 < name.size()
+        && std::isalpha(static_cast<unsigned char>(name[sep + 3]))
+        && name[sep + 3] != '.';
+    if (script)
+    {
+        const std::string::size_type sep2 = name.find_first_of("_-", sep + 1);
+        if (sep2 == std::string::npos || sep2 + 2 >= name.size())
+        {
+            return std::string();
+        }
+        region = name.substr(sep2 + 1, 2);
+    }
+    if (!std::isalpha(static_cast<unsigned char>(region[0]))
+        || !std::isalpha(static_cast<unsigned char>(region[1])))
+    {
+        return std::string();
+    }
+    LLStringUtil::toUpper(region);
+    return region;
+}
+
+const char* preferred_treasury_word(const std::string& word)
+{
+    if (word == "euro") return "Euro Zone-Euro";
+    if (word == "pound" || word == "sterling") return "United Kingdom-Pound";
+    if (word == "yen") return "Japan-Yen";
+    if (word == "rupee") return "India-Rupee";
+    if (word == "franc") return "Switzerland-Franc";
+    if (word == "won") return "Korea-Won";
+    if (word == "yuan" || word == "renminbi" || word == "rmb") return "China-Renminbi";
+    if (word == "lira") return "Turkey-New Lira";
+    if (word == "ruble" || word == "rouble") return "Russia-Ruble";
+    if (word == "dollar" || word == "usd" || word == "us dollar" || word == "u.s. dollar") return nullptr;
+    return nullptr;
+}
+
+std::string symbol_for_currency_name(const std::string& name)
+{
+    if (name == "Euro") return "€";
+    if (name == "Yen") return "¥";
+    if (name == "Pound") return "£";
+    if (name == "Rupee") return "₹";
+    if (name == "Won") return "₩";
+    if (name == "Baht") return "฿";
+    if (name == "Dong") return "₫";
+    if (name == "Ruble") return "₽";
+    if (name == "Shekel") return "₪";
+    if (name == "Dollar" || name == "Dolares" || name == "U.S. Dollar") return "$";
+    if (name == "Franc") return "Fr";
+    if (name == "Krone" || name == "Krona") return "kr";
+    if (name == "Zloty") return "zł";
+    if (name == "Forint") return "Ft";
+    if (name == "Real") return "R$";
+    if (name == "Rand") return "R";
+    if (name == "Lira" || name == "New Lira") return "₺";
+    if (name == "Hryvnia") return "₴";
+    if (name == "Renminbi") return "¥";
+    return name;
+}
+
+std::string format_with_symbol(const std::string& amount, const std::string& symbol, bool before, bool space)
+{
+    const bool negative = !amount.empty() && amount[0] == '-';
+    const std::string body = negative ? amount.substr(1) : amount;
+    std::string formatted;
+    if (symbol.empty())
+    {
+        formatted = body;
+    }
+    else if (before)
+    {
+        formatted = space ? symbol + " " + body : symbol + body;
+    }
+    else
+    {
+        formatted = space ? body + " " + symbol : body + symbol;
+    }
     if (negative)
     {
-        amount.insert(0, "-");
+        formatted.insert(0, "-");
     }
-    return amount;
+    return formatted;
 }
+
+ResolvedCurrency currency_from_info(const CurrencyInfo& info)
+{
+    ResolvedCurrency resolved;
+    resolved.iso = info.iso;
+    resolved.symbol = info.symbol;
+    resolved.frac_digits = info.frac_digits;
+    resolved.is_usd = std::string(info.iso) == "USD";
+    resolved.known = true;
+    resolved.per_usd = resolved.is_usd ? 1.0 : 0.0;
+    resolved.symbol_before = info.symbol_before != 0;
+    resolved.symbol_space = info.symbol_space == 1;
+
+    if (info.symbol_before < 0 || info.symbol_space < 0)
+    {
+        const LLNumberFormat format = LLResMgr::getInstance()->getNumberFormat();
+        if (format.position_known && format.iso_currency == info.iso)
+        {
+            if (info.symbol_before < 0)
+            {
+                resolved.symbol_before = format.symbol_before;
+            }
+            if (info.symbol_space < 0)
+            {
+                resolved.symbol_space = format.symbol_spaced;
+            }
+        }
+    }
+    return resolved;
+}
+
+ResolvedCurrency usd_currency()
+{
+    return currency_from_info(CURRENCIES[0]);
+}
+
+ResolvedCurrency resolve_local_currency(
+    const std::map<std::string, std::pair<F64, std::string>>& rates,
+    bool rates_ready)
+{
+    std::string override_text = gSavedSettings.getString("LocalCurrencyOverride");
+    LLStringUtil::trim(override_text);
+
+    const CurrencyInfo* info = nullptr;
+    if (!override_text.empty())
+    {
+        std::string upper = override_text;
+        LLStringUtil::toUpper(upper);
+        std::string lower = override_text;
+        LLStringUtil::toLower(lower);
+        if (upper == "USD" || lower == "us dollar" || lower == "u.s. dollar" || lower == "united states-dollar")
+        {
+            info = &CURRENCIES[0];
+        }
+        else
+        {
+            info = find_currency_iso(upper);
+        }
+        if (!info)
+        {
+            info = find_currency_treasury(lower);
+        }
+        if (!info)
+        {
+            if (const char* preferred = preferred_treasury_word(lower))
+            {
+                std::string preferred_lower = preferred;
+                LLStringUtil::toLower(preferred_lower);
+                info = find_currency_treasury(preferred_lower);
+            }
+        }
+        if (!info)
+        {
+            const auto found = rates.find(lower);
+            if (found != rates.end() && found->second.first > 0.0)
+            {
+                ResolvedCurrency direct;
+                direct.iso = override_text;
+                direct.symbol = symbol_for_currency_name(found->second.second);
+                direct.per_usd = found->second.first;
+                direct.frac_digits = 2;
+                direct.symbol_before = direct.symbol.size() <= 2;
+                direct.symbol_space = !direct.symbol_before;
+                direct.known = true;
+                return direct;
+            }
+            if (!rates_ready)
+            {
+                ResolvedCurrency waiting;
+                waiting.iso = override_text;
+                waiting.known = true;
+                return waiting;
+            }
+            LL_WARNS_ONCE("StatusBar") << "LocalCurrencyOverride '" << override_text
+                << "' is not a known currency; using the system locale" << LL_ENDL;
+        }
+    }
+
+    if (!info)
+    {
+        const LLNumberFormat format = LLResMgr::getInstance()->getNumberFormat();
+        if (format.iso_currency.size() == 3)
+        {
+            info = find_currency_iso(format.iso_currency);
+        }
+        if (!info)
+        {
+            const std::string region = region_from_locale(format.locale_name);
+            if (const char* iso = currency_for_region(region))
+            {
+                info = find_currency_iso(iso);
+            }
+        }
+        if (!info)
+        {
+            if (const char* iso = currency_for_language(LLUI::getLanguage()))
+            {
+                info = find_currency_iso(iso);
+            }
+        }
+    }
+    if (!info)
+    {
+        info = &CURRENCIES[0];
+    }
+
+    ResolvedCurrency resolved = currency_from_info(*info);
+    if (!resolved.is_usd && info->treasury)
+    {
+        std::string key = info->treasury;
+        LLStringUtil::toLower(key);
+        const auto found = rates.find(key);
+        if (found != rates.end() && found->second.first > 0.0)
+        {
+            resolved.per_usd = found->second.first;
+        }
+    }
+
+    static std::string announced;
+    if (announced != resolved.iso)
+    {
+        announced = resolved.iso;
+        LL_INFOS("StatusBar") << "Status bar currency is " << resolved.iso
+            << " (" << resolved.symbol << ")" << LL_ENDL;
+    }
+    return resolved;
+}
+
+} // namespace
 
 void LLStatusBar::setBalance(S32 balance)
 {
@@ -466,38 +884,73 @@ void LLStatusBar::setBalance(S32 balance)
         LLFirstUse::receiveLindens();
     }
 
-    std::string money_str = LLResMgr::getInstance()->getMonetaryString( balance );
-    std::string usd_str;
-    if (!mObscureBalance && mExchangeRate > 0.0)
+    const bool show_local = gSavedSettings.getBOOL("ShowLocalCurrency");
+    ResolvedCurrency currency = show_local ? resolve_local_currency(mTreasuryRates, mTreasuryReady) : ResolvedCurrency();
+    std::string fallback_note;
+    if (show_local && !currency.is_usd && mTreasuryReady && currency.per_usd <= 0.0)
     {
-        usd_str = format_usd_amount((F64)balance / mExchangeRate);
+        fallback_note = "No Treasury rate for " + currency.iso + "; showing US dollars.";
+        currency = usd_currency();
     }
+    const bool can_convert = show_local && mExchangeRate > 0.0 && currency.per_usd > 0.0;
 
-    LLStringUtil::format_map_t string_args;
+    LLResMgr* resources = LLResMgr::getInstance();
+    std::string amount;
+    std::string fiat_amount;
     if (mObscureBalance)
     {
-        string_args["[AMT]"] = "****";
-        string_args["[USD]"] = "****";
+        amount = "****";
+        if (show_local && !currency.symbol.empty())
+        {
+            fiat_amount = "****";
+        }
     }
     else
     {
-        string_args["[AMT]"] = money_str;
-        if (!usd_str.empty())
+        amount = resources->formatNumber(static_cast<F64>(balance), 0);
+        if (can_convert)
         {
-            string_args["[USD]"] = usd_str;
+            const F64 local = (static_cast<F64>(balance) / mExchangeRate) * currency.per_usd;
+            fiat_amount = resources->formatNumber(local, currency.frac_digits);
         }
     }
-    const char* label_name = (!mObscureBalance && mExchangeRate > 0.0)
-        ? "buycurrencylabel_usd" : "buycurrencylabel";
-    std::string label_str = getString(label_name, string_args);
-    mBoxBalance->setValue(label_str);
-    mBoxBalance->setToolTipArg(LLStringExplicit("[AMT]"), llformat("%s", money_str.c_str()));
-    if (!usd_str.empty())
+
+    // The translated buycurrencylabel chooses which side L$ is on.
+    // llformat only fills [AMT]; it does not place the symbol.
+    LLStringUtil::format_map_t string_args;
+    string_args["[AMT]"] = llformat("%s", amount.c_str());
+    std::string label = getString("buycurrencylabel", string_args);
+    if (!fiat_amount.empty())
     {
-        mBoxBalance->setToolTip(llformat(
-            "L$ %s / $USD %s\nLindeX rate: L$ %.2f per USD\nClick to refresh your L$ balance.\nDouble-click to display or hide your L$ balance.",
-            money_str.c_str(), usd_str.c_str(), mExchangeRate));
+        label += " / ";
+        label += format_with_symbol(fiat_amount, currency.symbol, currency.symbol_before, currency.symbol_space);
     }
+    mBoxBalance->setValue(label);
+
+    std::string tip;
+    if (mObscureBalance)
+    {
+        tip = "Balance hidden.";
+    }
+    else
+    {
+        tip = label;
+        if (show_local && mExchangeRate > 0.0)
+        {
+            tip += llformat("\nLindeX: L$ %.2f per USD", mExchangeRate);
+            if (can_convert && !currency.is_usd && !mTreasuryRecordDate.empty())
+            {
+                tip += llformat("\nTreasury: 1 USD = %.4f %s (%s)",
+                    currency.per_usd, currency.iso.c_str(), mTreasuryRecordDate.c_str());
+            }
+        }
+        if (!fallback_note.empty())
+        {
+            tip += "\n" + fallback_note;
+        }
+    }
+    tip += "\nClick to refresh your L$ balance.\nDouble-click to display or hide your L$ balance.\nLocal currency is set in Preferences > General.";
+    mBoxBalance->setToolTip(tip);
 
     updateBalancePanelPosition();
 
@@ -662,6 +1115,163 @@ void LLStatusBar::finishExchangeRateRequest(F64 lindens_per_usd, const std::stri
         return;
     }
     setExchangeRate(lindens_per_usd);
+}
+
+namespace
+{
+
+const char* const TREASURY_RATES_URL =
+    "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/rates_of_exchange"
+    "?fields=country_currency_desc,exchange_rate,record_date,currency"
+    "&sort=-record_date&page%5Bsize%5D=300";
+
+class TreasuryRateHandler : public LLCore::HttpHandler
+{
+public:
+    void onCompleted(LLCore::HttpHandle handle, LLCore::HttpResponse* response) override
+    {
+        if (!gStatusBar)
+        {
+            return;
+        }
+        if (!response)
+        {
+            gStatusBar->finishTreasuryRequest(false, std::string(), {}, "empty Treasury response");
+            return;
+        }
+        const LLCore::HttpStatus status = response->getStatus();
+        if (!status)
+        {
+            gStatusBar->finishTreasuryRequest(false, std::string(), {}, status.toString());
+            return;
+        }
+
+        std::string body;
+        LLCore::BufferArray* raw = response->getBody();
+        if (raw && raw->size() > 0)
+        {
+            body.resize(raw->size());
+            raw->read(0, body.data(), body.size());
+        }
+
+        boost::system::error_code parse_error;
+        const boost::json::value parsed = boost::json::parse(body, parse_error);
+        if (parse_error)
+        {
+            gStatusBar->finishTreasuryRequest(false, std::string(), {}, "Treasury rate response was not JSON");
+            return;
+        }
+
+        const LLSD payload = LlsdFromJson(parsed);
+        const LLSD rows = payload["data"];
+        if (!rows.isArray() || rows.size() == 0)
+        {
+            gStatusBar->finishTreasuryRequest(false, std::string(), {}, "Treasury rate response had no rows");
+            return;
+        }
+
+        const std::string newest = rows[0]["record_date"].asString();
+        std::map<std::string, std::pair<F64, std::string>> rates;
+        for (S32 index = 0; index < rows.size(); ++index)
+        {
+            const LLSD row = rows[index];
+            if (row["record_date"].asString() != newest)
+            {
+                continue;
+            }
+            std::string description = row["country_currency_desc"].asString();
+            LLStringUtil::trim(description);
+            if (description.empty())
+            {
+                continue;
+            }
+            std::string key = description;
+            LLStringUtil::toLower(key);
+            if (rates.find(key) != rates.end())
+            {
+                continue;
+            }
+
+            F64 rate = 0.0;
+            const LLSD rate_value = row["exchange_rate"];
+            if (rate_value.isReal())
+            {
+                rate = rate_value.asReal();
+            }
+            else
+            {
+                rate = std::strtod(rate_value.asString().c_str(), nullptr);
+            }
+            if (rate <= 0.0)
+            {
+                continue;
+            }
+            rates[key] = std::make_pair(rate, row["currency"].asString());
+        }
+        if (rates.empty() || newest.empty())
+        {
+            gStatusBar->finishTreasuryRequest(false, std::string(), {}, "Treasury rate response had no usable rates");
+            return;
+        }
+        gStatusBar->finishTreasuryRequest(true, newest, rates, std::string());
+    }
+};
+
+} // namespace
+
+void LLStatusBar::finishTreasuryRequest(
+    bool ok,
+    const std::string& record_date,
+    const std::map<std::string, std::pair<F64, std::string>>& rates,
+    const std::string& error)
+{
+    mTreasuryFetchInFlight = false;
+    mTreasuryTimer.reset();
+    if (!ok)
+    {
+        LL_WARNS("StatusBar") << "Treasury rate request failed: " << error << LL_ENDL;
+        setBalance(mBalance);
+        return;
+    }
+
+    mTreasuryRates = rates;
+    mTreasuryRecordDate = record_date;
+    mTreasuryReady = true;
+    LL_INFOS("StatusBar") << "Treasury rates " << record_date << " (" << rates.size() << " currencies)" << LL_ENDL;
+    setBalance(mBalance);
+}
+
+void LLStatusBar::requestTreasuryRates()
+{
+    if (mTreasuryFetchInFlight || !gSavedSettings.getBOOL("ShowLocalCurrency"))
+    {
+        return;
+    }
+    if (!mTreasuryRequest)
+    {
+        mTreasuryRequest = new LLCore::HttpRequest();
+    }
+
+    LLCore::HttpOptions::ptr_t httpOpts = std::make_shared<LLCore::HttpOptions>();
+    httpOpts->setFollowRedirects(true);
+    httpOpts->setTimeout(30);
+
+    const LLCore::HttpHandle handle = mTreasuryRequest->requestGet(
+        LLCore::HttpRequest::DEFAULT_POLICY_ID,
+        TREASURY_RATES_URL,
+        httpOpts,
+        LLCore::HttpHeaders::ptr_t(),
+        std::make_shared<TreasuryRateHandler>());
+    if (handle == LLCORE_HTTP_HANDLE_INVALID)
+    {
+        LL_WARNS("StatusBar") << "Treasury rate request was not queued: "
+            << mTreasuryRequest->getStatus().toString() << LL_ENDL;
+        mTreasuryTimer.reset();
+        return;
+    }
+
+    mTreasuryFetchInFlight = true;
+    mTreasuryTimer.reset();
 }
 
 void LLStatusBar::requestExchangeRate()
@@ -917,6 +1527,22 @@ void LLStatusBar::onObscureBalanceChanged(const LLSD& newvalue)
     setBalance(mBalance);
 }
 
+void LLStatusBar::onLocalCurrencyChanged(const LLSD&)
+{
+    if (gSavedSettings.getBOOL("ShowLocalCurrency"))
+    {
+        if (mExchangeRate <= 0.0)
+        {
+            requestExchangeRate();
+        }
+        if (!mTreasuryReady)
+        {
+            requestTreasuryRates();
+        }
+    }
+    setBalance(mBalance);
+}
+
 void LLStatusBar::onUpdateFilterTerm()
 {
     LLWString searchValue = utf8str_to_wstring( mFilterEdit->getValue() );
@@ -987,14 +1613,19 @@ void LLStatusBar::updateMenuSearchPosition()
 
 void LLStatusBar::updateBalancePanelPosition()
 {
-    // Resize the L$ balance background to be wide enough for your balance plus the buy button
+    // Resize the L$ balance background to fit a localized amount plus a
+    // currency symbol. The text rect can be narrower than the string.
     const S32 HPAD = 24;
-    LLRect balance_rect = mBoxBalance->getTextBoundingRect();
+    S32 balance_width = mBoxBalance->getTextBoundingRect().getWidth();
+    if (const LLFontGL* font = mBoxBalance->getFont())
+    {
+        balance_width = llmax(balance_width, font->getWidth(mBoxBalance->getValue().asString()) + 12);
+    }
     LLRect buy_rect = getChildView("buyL")->getRect();
     LLRect shop_rect = getChildView("goShop")->getRect();
     LLView* balance_bg_view = getChildView("balance_bg");
     LLRect balance_bg_rect = balance_bg_view->getRect();
-    balance_bg_rect.mLeft = balance_bg_rect.mRight - (buy_rect.getWidth() + shop_rect.getWidth() + balance_rect.getWidth() + HPAD);
+    balance_bg_rect.mLeft = balance_bg_rect.mRight - (buy_rect.getWidth() + shop_rect.getWidth() + balance_width + HPAD);
     balance_bg_view->setShape(balance_bg_rect);
 }
 
