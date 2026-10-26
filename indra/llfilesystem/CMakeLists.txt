@@ -88,7 +88,7 @@ set(ide_visibility_files "")
 if (NOT DARWIN)
   list(APPEND ide_visibility_files ${macosx_SOURCE_FILES} ${macosx_HEADER_FILES})
 endif()
-if (NOT LINUX)
+if (NOT (LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD))
   list(APPEND ide_visibility_files ${linux_SOURCE_FILES} ${linux_HEADER_FILES})
 endif()
 if (NOT WINDOWS)
@@ -120,7 +120,7 @@ elseif (DARWIN)
     PROPERTIES
     HEADER_FILE_ONLY TRUE
     )
-elseif (LINUX)
+elseif (LINUX OR CMAKE_SYSTEM_NAME MATCHES FreeBSD)
   set_source_files_properties(
     ${macosx_SOURCE_FILES}
     ${macosx_HEADER_FILES}

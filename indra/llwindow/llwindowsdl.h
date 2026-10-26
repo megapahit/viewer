@@ -29,7 +29,7 @@
 
 // Simple Directmedia Layer (http://libsdl.org/) implementation of LLWindow class
 
-#if LL_LINUX
+#if LL_LINUX || __FreeBSD__
 #include "llwindow.h"
 #include "lltimer.h"
 #include "llmutex.h"
