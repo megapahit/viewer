@@ -61,6 +61,8 @@ public:
     // Initialization (deliberately static so they can safely be called in tight loops)
     static bool canEnable();
     static bool isEnabled() { return mIsEnabled; }
+    // True after a successful enable, including once setEnabled(false) has turned handling back off.
+    static bool wasEnabled() { return mWasEnabled; }
     static bool setEnabled(bool enable);
 
     /*
@@ -75,6 +77,7 @@ protected:
     command_output_signal_t mOnCommandOutput;
 private:
     static bool mIsEnabled;
+    static bool mWasEnabled;
 };
 
 // ============================================================================

@@ -79,6 +79,7 @@
 #include "llstartup.h"
 #include "llperfstats.h"
 #include "rlvcommon.h"
+#include "rlvhandler.h"
 
 #if LL_DARWIN
 #include "llwindowmacosx.h"
@@ -1005,6 +1006,10 @@ void settings_setup_listeners()
     setting_setup_signal_listener(gSavedPerAccountSettings, "AvatarHoverOffsetZ", handleAvatarHoverOffsetChanged);
 
     setting_setup_signal_listener(gSavedSettings, Rlv::Settings::TopLevelMenu, Rlv::Util::menuToggleVisible);
+    setting_setup_signal_listener(gSavedSettings, Rlv::Settings::Main, []()
+    {
+        RlvHandler::setEnabled(gSavedSettings.get<bool>(Rlv::Settings::Main));
+    });
 }
 
 #if TEST_CACHED_CONTROL

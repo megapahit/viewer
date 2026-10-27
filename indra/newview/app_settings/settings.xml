@@ -10656,7 +10656,7 @@
     <key>RestrainedLove</key>
     <map>
       <key>Comment</key>
-      <string>Toggles RLVa features (requires restart)</string>
+      <string>Toggles RLVa features. Turning this off stops command handling immediately. Turning it on takes effect at the next login.</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>

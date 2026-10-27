@@ -51,6 +51,7 @@ using namespace Rlv;
 //
 
 bool RlvHandler::mIsEnabled = false;
+bool RlvHandler::mWasEnabled = false;
 
 // ============================================================================
 // Command processing functions
@@ -62,6 +63,11 @@ bool RlvHandler::handleSimulatorChat(std::string& message, const LLChat& chat, c
     static LLCachedControl<bool> enable_temp_attach(gSavedSettings, Settings::EnableTempAttach);
     static LLCachedControl<bool> show_debug_output(gSavedSettings, Settings::Debug);
     static LLCachedControl<bool> hide_unset_dupes(gSavedSettings, Settings::DebugHideUnsetDup);
+
+    if (!mIsEnabled)
+    {
+        return false;
+    }
 
     if ( message.length() <= 3 || Constants::CmdPrefix != message[0] || CHAT_TYPE_OWNER != chat.mChatType ||
          (chatObj && chatObj->isTempAttachment() && !enable_temp_attach()) )
@@ -90,6 +96,11 @@ bool RlvHandler::handleSimulatorChat(std::string& message, const LLChat& chat, c
 
 ECmdRet RlvHandler::processCommand(const LLUUID& idObj, const std::string& strCmd, bool fromObj)
 {
+    if (!mIsEnabled)
+    {
+        return ECmdRet::FailedDisabled;
+    }
+
     const RlvCommand rlvCmd(idObj, strCmd);
     return processCommand(std::ref(rlvCmd), fromObj);
 }
@@ -151,6 +162,24 @@ bool RlvHandler::setEnabled(bool enable)
     {
         RLV_INFOS << "Enabling Restrained Love API support - " << Strings::getVersionAbout() << RLV_ENDL;
         mIsEnabled = true;
+        mWasEnabled = true;
+    }
+    else if (!enable)
+    {
+        // Off stops command handling immediately. Active sit, stand, and
+        // detach locks already applied are left in place; see the temporary
+        // attachment note in handleSimulatorChat.
+        RLV_INFOS << "Disabling Restrained Love API support" << RLV_ENDL;
+        mIsEnabled = false;
+    }
+    else
+    {
+        RLV_INFOS << "Restrained Love API support will turn on at the next login" << RLV_ENDL;
+    }
+
+    if (gMenuBarView)
+    {
+        Util::menuToggleVisible();
     }
 
     return mIsEnabled;
