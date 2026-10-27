@@ -40,6 +40,7 @@
 #include "llsd.h"
 #include "llsdl.h"
 #include "lltimer.h"
+#include "lldefs.h"
 
 namespace std
 {

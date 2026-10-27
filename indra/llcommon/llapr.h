@@ -31,6 +31,7 @@
 
 #if LL_LINUX
 #include <sys/param.h>  // Need PATH_MAX in APR headers...
+#include <memory>
 #endif
 
 #include "llwin32headers.h"
