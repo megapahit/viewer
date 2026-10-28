@@ -1878,7 +1878,9 @@ bool LLAppViewer::cleanup()
     gAgentAvatarp = NULL;
 
     // Sanity check to catch cases where someone forgot to do an RlvActions::isRlvEnabled() check
-    LL_ERRS_IF(!RlvHandler::isEnabled() && RlvHandler::instanceExists()) << "RLV handler instance exists even though RLVa is disabled" << LL_ENDL;
+    // The singleton is created by the first command. That is a bug only when
+    // Restrained Love was never enabled. Turning it off leaves the instance in place.
+    LL_ERRS_IF(!RlvHandler::isEnabled() && !RlvHandler::wasEnabled() && RlvHandler::instanceExists()) << "RLV handler instance exists even though RLVa is disabled" << LL_ENDL;
 
     LLNotifications::instance().clear();
 
