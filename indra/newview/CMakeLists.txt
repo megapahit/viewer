@@ -2494,7 +2494,7 @@ if (LINUX)
         set(CPACK_RPM_PACKAGE_REQUIRES "freealut, apr-util, boost-fiber, boost-process, boost-program-options, boost-regex, boost-thread, boost-url, cef, expat, hunspell, minizip-ng-compat, libnghttp2, openjpeg, SDL3, vlc-libs, vlc-plugins-base, libvorbis, zenity"
           CACHE STRING "RPM package requirements.")
       else ()
-        set(CPACK_RPM_PACKAGE_REQUIRES "libalut0, libapr-util1-0, libboost_fiber1_91_0, libboost_process1_91_0, libboost_program_options1_91_0, libboost_regex1_91_0, libboost_thread1_91_0, libboost_url1_91_0, libboost_url1_91_0-x86-64-v3, libexpat1, libhunspell-1_7-0, libnghttp2-14, openjpeg2, libpng16-16, libSDL3-0, libvlc5, libvorbis0, zenity"
+        set(CPACK_RPM_PACKAGE_REQUIRES "libalut0, libapr-util1-0, libboost_fiber1_92_0, libboost_process1_92_0, libboost_program_options1_92_0, libboost_regex1_92_0, libboost_thread1_92_0, libboost_url1_92_0, libboost_url1_92_0-x86-64-v3, libexpat1, libhunspell-1_7-0, libnghttp2-14, openjpeg2, libpng16-16, libSDL3-0, libvlc5, libvorbis0, zenity"
           CACHE STRING "RPM package requirements.")
       endif ()
     endif ()
