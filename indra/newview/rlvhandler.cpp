@@ -423,6 +423,13 @@ ECmdRet BehaviourToggleHandler<EBehaviour::RedirChat>::onCommand(const RlvComman
 }
 
 template<> template<>
+ECmdRet BehaviourToggleHandler<EBehaviour::RedirEmote>::onCommand(const RlvCommand& rlvCmd, bool& toggle)
+{
+    LLFloaterIMNearbyChat::addOrRemoveRedirEmoteChannel(std::stoi(rlvCmd.getOption()), toggle);
+    return ECmdRet::Succeeded;
+}
+
+template<> template<>
 ECmdRet BehaviourToggleHandler<EBehaviour::Sit>::onCommand(const RlvCommand& rlvCmd, bool& toggle)
 {
     gAgent.setAllowedToSit(toggle);

@@ -94,6 +94,7 @@ namespace Rlv
         VersionNew,
         VersionNum,
         RedirChat,
+        RedirEmote,
         GetSitID,
         Sit,
         SitGround,

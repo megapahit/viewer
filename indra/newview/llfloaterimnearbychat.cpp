@@ -156,7 +156,7 @@ static LLChatTypeTrigger sChatTypeTriggers[] = {
     { "/shout"  , CHAT_TYPE_SHOUT}
 };
 
-static std::unordered_set<S32> sRedirChatChannels;
+static std::unordered_set<S32> sRedirChatChannels, sRedirEmoteChannels;
 
 bool cb_do_nothing()
 {
@@ -801,6 +801,14 @@ void LLFloaterIMNearbyChat::addOrRemoveRedirChatChannel(S32 channel, bool add)
         sRedirChatChannels.erase(channel);
 }
 
+void LLFloaterIMNearbyChat::addOrRemoveRedirEmoteChannel(S32 channel, bool add)
+{
+    if (add)
+        sRedirEmoteChannels.insert(channel);
+    else
+        sRedirEmoteChannels.erase(channel);
+}
+
 void LLFloaterIMNearbyChat::sendChatFromViewer(const std::string &utf8text, EChatType type, bool animate)
 {
     sendChatFromViewer(utf8str_to_wstring(utf8text), type, animate);
@@ -821,12 +829,25 @@ void LLFloaterIMNearbyChat::sendChatFromViewer(const LLWString &wtext, EChatType
     }
 
     auto prefix = utf8_out_text.substr(0, 4);
-    if (RlvActions::isRlvEnabled() && channel == 0 && !sRedirChatChannels.empty() && prefix != "/me " && prefix != "/me'")
+    if (RlvActions::isRlvEnabled() && channel == 0)
     {
-        std::for_each(sRedirChatChannels.begin(), sRedirChatChannels.end(), [utf8_out_text,type](S32 channel){
-            send_chat_from_viewer(utf8_out_text, type, channel);
-        });
-        return;
+            if (prefix == "/me " || prefix == "/me'")
+            {
+                if (!sRedirEmoteChannels.empty())
+                {
+                    std::for_each(sRedirEmoteChannels.begin(), sRedirEmoteChannels.end(), [utf8_out_text,type](S32 channel){
+                        send_chat_from_viewer(utf8_out_text, type, channel);
+                    });
+                    return;
+                }
+            }
+            else if (!sRedirChatChannels.empty())
+            {
+                std::for_each(sRedirChatChannels.begin(), sRedirChatChannels.end(), [utf8_out_text,type](S32 channel){
+                    send_chat_from_viewer(utf8_out_text, type, channel);
+                });
+                return;
+            }
     }
 
     // Don't animate for chats people can't hear (chat to scripts)
