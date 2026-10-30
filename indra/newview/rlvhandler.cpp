@@ -71,7 +71,7 @@ bool RlvHandler::handleSimulatorChat(std::string& message, const LLChat& chat, c
 
     message.erase(0, 1);
     LLStringUtil::toLower(message);
-    CommandDbgOut cmdDbgOut(message, chatObj->getID() == gAgentID);
+    CommandDbgOut cmdDbgOut(message, chatObj && chatObj->getID() == gAgentID);
 
     boost_tokenizer tokens(message, boost::char_separator<char>(",", "", boost::drop_empty_tokens));
     for (const std::string& strCmd : tokens)
