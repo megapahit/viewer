@@ -416,6 +416,13 @@ ECmdRet CommandHandlerBaseImpl<EParamType::AddRem>::processCommand(const RlvComm
 }
 
 template<> template<>
+ECmdRet BehaviourToggleHandler<EBehaviour::SendChat>::onCommand(const RlvCommand& rlvCmd, bool& toggle)
+{
+    gAgent.setAllowedToSendChat(toggle);
+    return ECmdRet::Succeeded;
+}
+
+template<> template<>
 ECmdRet BehaviourToggleHandler<EBehaviour::RedirChat>::onCommand(const RlvCommand& rlvCmd, bool& toggle)
 {
     LLFloaterIMNearbyChat::addOrRemoveRedirChatChannel(std::stoi(rlvCmd.getOption()), toggle);

@@ -93,6 +93,7 @@ namespace Rlv
         Version = 0,
         VersionNew,
         VersionNum,
+        SendChat,
         RedirChat,
         RedirEmote,
         GetSitID,

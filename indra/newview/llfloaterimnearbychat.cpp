@@ -831,6 +831,8 @@ void LLFloaterIMNearbyChat::sendChatFromViewer(const LLWString &wtext, EChatType
     auto prefix = utf8_out_text.substr(0, 4);
     if (RlvActions::isRlvEnabled() && channel == 0)
     {
+        if (utf8_out_text.front() = '/')
+        {
             if (prefix == "/me " || prefix == "/me'")
             {
                 if (!sRedirEmoteChannels.empty())
@@ -848,6 +850,11 @@ void LLFloaterIMNearbyChat::sendChatFromViewer(const LLWString &wtext, EChatType
                 });
                 return;
             }
+        }
+        else if (!gAgent.isAllowedToSendChat())
+        {
+            return;
+        }
     }
 
     // Don't animate for chats people can't hear (chat to scripts)

@@ -453,6 +453,7 @@ LLAgent::LLAgent() :
     mHaveHomePosition(false),
     mHomeRegionHandle( 0 ),
     mNearChatRadius(CHAT_NORMAL_RADIUS / 2.f),
+    mAllowedToSendChat(true),
 
     mNextFidgetTime(0.f),
     mCurrentFidget(0),
