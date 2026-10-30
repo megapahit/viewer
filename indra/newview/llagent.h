@@ -397,12 +397,15 @@ public:
     F32             getTypingTime()         { return mTypingTimer.getElapsedTimeF32(); }
     LLUUID          getLastChatter() const  { return mLastChatterID; }
     F32             getNearChatRadius()     { return mNearChatRadius; }
+    bool            isAllowedToSendChat() const      { return mAllowedToSendChat; }
+    void            setAllowedToSendChat(bool allow) { mAllowedToSendChat = allow; }
 protected:
     void            ageChat();              // Helper function to prematurely age chat when agent is moving
 private:
     LLFrameTimer    mChatTimer;
     LLUUID          mLastChatterID;
     F32             mNearChatRadius;
+    bool            mAllowedToSendChat;
 
     //--------------------------------------------------------------------
     // Typing

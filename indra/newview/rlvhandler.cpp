@@ -77,7 +77,7 @@ bool RlvHandler::handleSimulatorChat(std::string& message, const LLChat& chat, c
 
     message.erase(0, 1);
     LLStringUtil::toLower(message);
-    CommandDbgOut cmdDbgOut(message, chatObj->getID() == gAgentID);
+    CommandDbgOut cmdDbgOut(message, chatObj && chatObj->getID() == gAgentID);
 
     boost_tokenizer tokens(message, boost::char_separator<char>(",", "", boost::drop_empty_tokens));
     for (const std::string& strCmd : tokens)
@@ -445,9 +445,23 @@ ECmdRet CommandHandlerBaseImpl<EParamType::AddRem>::processCommand(const RlvComm
 }
 
 template<> template<>
+ECmdRet BehaviourToggleHandler<EBehaviour::SendChat>::onCommand(const RlvCommand& rlvCmd, bool& toggle)
+{
+    gAgent.setAllowedToSendChat(toggle);
+    return ECmdRet::Succeeded;
+}
+
+template<> template<>
 ECmdRet BehaviourToggleHandler<EBehaviour::RedirChat>::onCommand(const RlvCommand& rlvCmd, bool& toggle)
 {
     LLFloaterIMNearbyChat::addOrRemoveRedirChatChannel(std::stoi(rlvCmd.getOption()), toggle);
+    return ECmdRet::Succeeded;
+}
+
+template<> template<>
+ECmdRet BehaviourToggleHandler<EBehaviour::RedirEmote>::onCommand(const RlvCommand& rlvCmd, bool& toggle)
+{
+    LLFloaterIMNearbyChat::addOrRemoveRedirEmoteChannel(std::stoi(rlvCmd.getOption()), toggle);
     return ECmdRet::Succeeded;
 }
 
