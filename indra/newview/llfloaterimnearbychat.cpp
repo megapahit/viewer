@@ -833,7 +833,7 @@ void LLFloaterIMNearbyChat::sendChatFromViewer(const LLWString &wtext, EChatType
     auto prefix = utf8_out_text.substr(0, 4);
     if (RlvActions::isRlvEnabled() && channel == 0)
     {
-        if (utf8_out_text.front() = '/')
+        if (utf8_out_text.front() == '/')
         {
             if (prefix == "/me " || prefix == "/me'")
             {
