@@ -833,23 +833,20 @@ void LLFloaterIMNearbyChat::sendChatFromViewer(const LLWString &wtext, EChatType
     {
         if (utf8_out_text.front() == '/')
         {
-            if (prefix == "/me " || prefix == "/me'")
+            if ((prefix == "/me " || prefix == "/me'") && !sRedirEmoteChannels.empty())
             {
-                if (!sRedirEmoteChannels.empty())
-                {
-                    std::for_each(sRedirEmoteChannels.begin(), sRedirEmoteChannels.end(), [utf8_out_text,type](S32 channel){
-                        send_chat_from_viewer(utf8_out_text, type, channel);
-                    });
-                    return;
-                }
-            }
-            else if (!sRedirChatChannels.empty())
-            {
-                std::for_each(sRedirChatChannels.begin(), sRedirChatChannels.end(), [utf8_out_text,type](S32 channel){
+                std::for_each(sRedirEmoteChannels.begin(), sRedirEmoteChannels.end(), [utf8_out_text,type](S32 channel){
                     send_chat_from_viewer(utf8_out_text, type, channel);
                 });
                 return;
             }
+        }
+        else if (!sRedirChatChannels.empty())
+        {
+            std::for_each(sRedirChatChannels.begin(), sRedirChatChannels.end(), [utf8_out_text,type](S32 channel){
+                send_chat_from_viewer(utf8_out_text, type, channel);
+            });
+            return;
         }
         else if (!gAgent.isAllowedToSendChat())
         {
