@@ -734,9 +734,13 @@ void LLWebRTCImpl::workerStartRecording()
     // disable before InitRecording so the recording stream is configured to
     // use only WebRTC's software APM.
     workerDisableBuiltInAudioProcessing();
+#if CM_WEBRTC
+    mDeviceModule->ForceInitRecording();
+#else
     // With "stop capture while muted", capture as media; otherwise as communications.
     mDeviceModule->ForceInitRecording(mStopCaptureOnMute.load() ? webrtc::AudioDeviceModule::AudioCategory::kMedia
                                                                 : webrtc::AudioDeviceModule::AudioCategory::kCommunications);
+#endif
     mDeviceModule->ForceStartRecording();
 }
 
@@ -1122,8 +1126,12 @@ void LLWebRTCImpl::intSetMute(bool mute, int delay_ms)
         mDeviceModule->ForceStopRecording();
         if (start)
         {
+#if CM_WEBRTC
+            mDeviceModule->ForceInitRecording();
+#else
             mDeviceModule->ForceInitRecording(mStopCaptureOnMute.load() ? webrtc::AudioDeviceModule::AudioCategory::kMedia
                                                                         : webrtc::AudioDeviceModule::AudioCategory::kCommunications);
+#endif
             mDeviceModule->ForceStartRecording();
         }
     };

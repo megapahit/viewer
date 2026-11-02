@@ -234,7 +234,11 @@ public:
     int32_t SetRecordingDevice(WindowsDeviceType type) override { return inner_->SetRecordingDevice(type); }
 
     // --- Init/start/stop (forward) ---
+#if CM_WEBRTC
+    int32_t InitPlayout() override { return inner_->InitPlayout(); }
+#else
     int32_t InitPlayout(AudioCategory category = AudioCategory::kMedia) override { return inner_->InitPlayout(category); }
+#endif
     bool    PlayoutIsInitialized() const override { return inner_->PlayoutIsInitialized(); }
     int32_t StartPlayout() override {
         if (tuning_) return 0;  // For tuning, don't allow playout
@@ -243,14 +247,22 @@ public:
     int32_t StopPlayout() override { return inner_->StopPlayout(); }
     bool    Playing() const override { return inner_->Playing(); }
 
+#if CM_WEBRTC
+    int32_t InitRecording() override {
+#else
     int32_t InitRecording(AudioCategory category = AudioCategory::kMedia) override
     {
+#endif
         // Ignore webrtc.lib's InitRecording (sent when a send stream starts), as
         // with StartRecording/StopRecording: it would leave capture initialised even
         // while we hold capture off. The app initialises capture itself via ForceInitRecording.
         return 0;
     }
+#if CM_WEBRTC
+    int32_t ForceInitRecording() { return inner_->InitRecording(); }
+#else
     int32_t ForceInitRecording(AudioCategory category = AudioCategory::kMedia) { return inner_->InitRecording(category); }
+#endif
     bool    RecordingIsInitialized() const override { return inner_->RecordingIsInitialized(); }
     int32_t StartRecording() override {
         // ignore start recording as webrtc.lib will
