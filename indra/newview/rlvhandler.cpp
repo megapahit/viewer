@@ -425,14 +425,14 @@ ECmdRet BehaviourToggleHandler<EBehaviour::SendChat>::onCommand(const RlvCommand
 template<> template<>
 ECmdRet BehaviourToggleHandler<EBehaviour::RedirChat>::onCommand(const RlvCommand& rlvCmd, bool& toggle)
 {
-    LLFloaterIMNearbyChat::addOrRemoveRedirChatChannel(std::stoi(rlvCmd.getOption()), toggle);
+    LLFloaterIMNearbyChat::addOrRemoveRedirChatChannel(std::stoi(rlvCmd.getOption()), !toggle);
     return ECmdRet::Succeeded;
 }
 
 template<> template<>
 ECmdRet BehaviourToggleHandler<EBehaviour::RedirEmote>::onCommand(const RlvCommand& rlvCmd, bool& toggle)
 {
-    LLFloaterIMNearbyChat::addOrRemoveRedirEmoteChannel(std::stoi(rlvCmd.getOption()), toggle);
+    LLFloaterIMNearbyChat::addOrRemoveRedirEmoteChannel(std::stoi(rlvCmd.getOption()), !toggle);
     return ECmdRet::Succeeded;
 }
 
