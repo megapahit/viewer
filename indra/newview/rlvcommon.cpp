@@ -80,17 +80,26 @@ std::string Strings::getVersionImplNum()
 
 void Util::menuToggleVisible()
 {
+    if (!gMenuBarView)
+    {
+        return;
+    }
+
+    // Keep the menu available while Restrained Love is off so the switch
+    // can turn it back on. The first item of each menu is that switch.
     bool isTopLevel = gSavedSettings.getBOOL(Settings::TopLevelMenu);
-    bool isRlvEnabled = RlvHandler::isEnabled();
 
     LLMenuGL* menuRLVaMain = gMenuBarView->findChildMenuByName("RLVa Main", false);
     LLMenuGL* menuAdvanced = gMenuBarView->findChildMenuByName("Advanced", false);
-    LLMenuGL* menuRLVaEmbed= menuAdvanced->findChildMenuByName("RLVa Embedded", false);
+    LLMenuGL* menuRLVaEmbed = menuAdvanced ? menuAdvanced->findChildMenuByName("RLVa Embedded", false) : nullptr;
 
-    gMenuBarView->setItemVisible("RLVa Main", isRlvEnabled && isTopLevel);
-    menuAdvanced->setItemVisible("RLVa Embedded", isRlvEnabled && !isTopLevel);
+    gMenuBarView->setItemVisible("RLVa Main", isTopLevel);
+    if (menuAdvanced)
+    {
+        menuAdvanced->setItemVisible("RLVa Embedded", !isTopLevel);
+    }
 
-    if ( isRlvEnabled && menuRLVaMain && menuRLVaEmbed &&
+    if ( menuRLVaMain && menuRLVaEmbed &&
          ( (isTopLevel && 1 == menuRLVaMain->getItemCount()) || (!isTopLevel && 1 == menuRLVaEmbed->getItemCount())) )
     {
         LLMenuGL* menuFrom = isTopLevel ? menuRLVaEmbed : menuRLVaMain;

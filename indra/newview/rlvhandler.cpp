@@ -153,28 +153,40 @@ bool RlvHandler::canEnable()
     return LLStartUp::getStartupState() <= STATE_LOGIN_CLEANUP;
 }
 
+namespace
+{
+
+// Sit, stand, and chat redirects are the restrictions this build records.
+// Per-object detach locks are not tracked, so those stay as they are.
+void release_applied_restrictions()
+{
+    gAgent.setAllowedToSit(true);
+    gAgent.setAllowedToStand(true);
+    if (LLPanelStandStopFlying* panel = LLPanelStandStopFlying::getInstance())
+    {
+        panel->setVisibleStandButton(true);
+    }
+    LLFloaterIMNearbyChat::clearRedirChatChannels();
+}
+
+} // namespace
+
 bool RlvHandler::setEnabled(bool enable)
 {
     if (mIsEnabled == enable)
         return enable;
 
-    if (enable && canEnable())
+    if (enable)
     {
         RLV_INFOS << "Enabling Restrained Love API support - " << Strings::getVersionAbout() << RLV_ENDL;
         mIsEnabled = true;
         mWasEnabled = true;
     }
-    else if (!enable)
-    {
-        // Off stops command handling immediately. Active sit, stand, and
-        // detach locks already applied are left in place; see the temporary
-        // attachment note in handleSimulatorChat.
-        RLV_INFOS << "Disabling Restrained Love API support" << RLV_ENDL;
-        mIsEnabled = false;
-    }
     else
     {
-        RLV_INFOS << "Restrained Love API support will turn on at the next login" << RLV_ENDL;
+        RLV_INFOS << "Disabling Restrained Love API support" << RLV_ENDL;
+        mIsEnabled = false;
+        release_applied_restrictions();
     }
 
     if (gMenuBarView)
