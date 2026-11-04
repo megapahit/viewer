@@ -1977,6 +1977,17 @@ function="World.EnvPreset"
      name="RLVa Main"
      tear_off="true"
      visible="true">
+      <menu_item_check
+       label="Restrained Love"
+       name="Restrained Love">
+        <menu_item_check.on_check
+         function="CheckControl"
+         parameter="RestrainedLove" />
+        <menu_item_check.on_click
+         function="ToggleControl"
+         parameter="RestrainedLove" />
+      </menu_item_check>
+      <menu_item_separator />
       <menu
        label="Debug"
        name="Debug"
@@ -2559,7 +2570,18 @@ function="World.EnvPreset"
          label="RLVa"
          name="RLVa Embedded"
          tear_off="true"
-         visible="true" />
+         visible="true">
+            <menu_item_check
+             label="Restrained Love"
+             name="Restrained Love Embedded">
+                <menu_item_check.on_check
+                 function="CheckControl"
+                 parameter="RestrainedLove" />
+                <menu_item_check.on_click
+                 function="ToggleControl"
+                 parameter="RestrainedLove" />
+            </menu_item_check>
+        </menu>
         <menu_item_check
          label="Use Plugin Read Thread"
          name="Use Plugin Read Thread">

@@ -811,6 +811,12 @@ void LLFloaterIMNearbyChat::addOrRemoveRedirEmoteChannel(S32 channel, bool add)
         sRedirEmoteChannels.erase(channel);
 }
 
+void LLFloaterIMNearbyChat::clearRedirChatChannels()
+{
+    sRedirChatChannels.clear();
+    sRedirEmoteChannels.clear();
+}
+
 void LLFloaterIMNearbyChat::sendChatFromViewer(const std::string &utf8text, EChatType type, bool animate)
 {
     sendChatFromViewer(utf8str_to_wstring(utf8text), type, animate);
