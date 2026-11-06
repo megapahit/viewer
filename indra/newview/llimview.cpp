@@ -1875,6 +1875,9 @@ LLIMModel::LLIMSession* LLIMModel::addMessageSilently(const LLUUID& session_id, 
     {
         history_context = LLChatServiceHistory::prepareLiveMessage(utf8_text, timestamp, history_context);
     }
+
+    // Append without recomposing stale history. History loads and snapshot
+    // updates reconcile copies when their source data is published.
     addToHistory(session_id, from_name, from_id, utf8_text, is_region_msg, timestamp);
     if (session->isP2P())
     {
@@ -2041,6 +2044,10 @@ void LLIMModel::sendMessage(const std::string& utf8_text,
 
     U8 offline = (!info || info->isOnline()) ? IM_ONLINE : IM_OFFLINE;
 
+    // Resolve the session before dispatch so its history boundary predates this send.
+    LLIMModel::LLIMSession* session = LLIMModel::getInstance()->findIMSession(im_session_id);
+    LLSD history_context;
+
     if(!sent)
     {
         // Send message normally.
@@ -2053,6 +2060,14 @@ void LLIMModel::sendMessage(const std::string& utf8_text,
         {
             new_dialog = IM_SESSION_SEND;
         }
+
+        // Capture once before transport; translation may finish after service publication.
+        if (dialog == IM_NOTHING_SPECIAL && other_participant_id.notNull() &&
+            session && session->isP2P())
+        {
+            history_context = session->mChatServiceHistory.outgoingContext(other_participant_id);
+        }
+
         pack_instant_message(
             gMessageSystem,
             gAgent.getID(),
@@ -2068,7 +2083,6 @@ void LLIMModel::sendMessage(const std::string& utf8_text,
     }
 
     bool is_group_chat = false;
-    LLIMModel::LLIMSession* session = LLIMModel::getInstance()->findIMSession(im_session_id);
     if(session)
     {
         is_group_chat = session->isGroupSessionType();
@@ -2107,10 +2121,11 @@ void LLIMModel::sendMessage(const std::string& utf8_text,
             LLChatServiceHistory::noteDirectMessageActivity(other_participant_id);
         }
 
-        // Do we have to replace the /me's here?
+        // Keep the pre-send boundary on the local echo through asynchronous translation.
         std::string from;
         LLAgentUI::buildFullname(from);
-        LLIMModel::getInstance()->addMessage(im_session_id, from, gAgentID, utf8_text);
+        LLIMModel::getInstance()->addMessage(im_session_id, from, gAgentID, utf8_text,
+                                           true, false, 0, history_context);
 
         //local echo for the legacy communicate panel
         std::string history_echo;
