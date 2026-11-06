@@ -1597,7 +1597,7 @@ void LLAgentCamera::updateCamera()
             diff.mV[VZ] = 0.f;
         }
 #endif
-        static LLCachedControl<bool> useRealisticMouselook(gSavedSettings, "AlchemyRealisticMouselook", false);
+        bool useRealisticMouselook = false;
         if (useRealisticMouselook)
         {
             auto frame_agent = gAgent.getFrameAgent();
