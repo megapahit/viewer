@@ -2873,6 +2873,17 @@
       <key>Value</key>
       <integer>0</integer>
     </map>
+    <key>BuildEditAtRoot</key>
+    <map>
+      <key>Comment</key>
+      <string>Place move and rotate handles on the root prim instead of the linkset geometric center. Build tools floater, under Snap.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>0</integer>
+    </map>
     <key>EditLinkedParts</key>
     <map>
       <key>Comment</key>
