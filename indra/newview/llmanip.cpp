@@ -39,6 +39,7 @@
 #include "llagent.h"
 #include "llagentcamera.h"
 #include "llviewercontrol.h"
+#include "llviewercontrol.h"
 #include "lldrawable.h"
 #include "llfontgl.h"
 #include "llhudrender.h"
@@ -348,13 +349,51 @@ bool LLManip::nearestPointOnLineFromMouse( S32 x, S32 y, const LLVector3& b1, co
     return parallel;
 }
 
+namespace
+{
+LLViewerObject* pivot_root(LLObjectSelection* selection)
+{
+    if (!selection
+        || selection->getSelectType() == SELECT_TYPE_HUD
+        || !gSavedSettings.getBOOL("BuildEditAtRoot"))
+    {
+        return nullptr;
+    }
+    return selection->getFirstRootObject(true);
+}
+}
+
 LLVector3 LLManip::getSavedPivotPoint() const
 {
+    // findNode is not const. This only reads the position saved at drag start.
+    LLObjectSelection* selection = const_cast<LLObjectSelection*>(mObjectSelection.get());
+    LLViewerObject* root = pivot_root(selection);
+    if (root)
+    {
+        // The saved bbox center is the linkset midpoint. The drag started
+        // at the root, so use the root position captured with the transform.
+        LLSelectNode* node = selection->findNode(root);
+        if (node)
+        {
+            return gAgent.getPosAgentFromGlobal(node->mSavedPositionGlobal);
+        }
+    }
     return LLSelectMgr::getInstance()->getSavedBBoxOfSelection().getCenterAgent();
 }
 
 LLVector3 LLManip::getPivotPoint()
 {
+    LLViewerObject* root = pivot_root(mObjectSelection.get());
+    if (root)
+    {
+        LLSelectNode* node = mObjectSelection->findNode(root);
+        if (node && node->mSelectedGLTFNode != -1)
+        {
+            return root->getGLTFNodePositionAgent(node->mSelectedGLTFNode);
+        }
+        return root->getPivotPositionAgent();
+    }
+
     LLViewerObject* object = mObjectSelection->getFirstObject();
     if (object && mObjectSelection->getObjectCount() == 1 && mObjectSelection->getSelectType() != SELECT_TYPE_HUD)
     {

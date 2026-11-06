@@ -299,7 +299,7 @@
      follows="left|top"
      height="20"
      label="Link"
-     top="108"
+     top="122"
      layout="topleft"
      left="143"
      name="link_btn"
@@ -359,6 +359,19 @@
      top_pad="-1"
      name="checkbox snap to grid"
      width="134"
+     font="DejaVu"
+     font.size="LSmall"/>
+   <check_box
+     control_name="BuildEditAtRoot"
+     follows="left|top"
+     height="16"
+     label="Edit at Root"
+     layout="topleft"
+     left="143"
+     name="checkbox edit at root"
+     tool_tip="Place the move and rotate handles on the root prim instead of the linkset's geometric center."
+     top_pad="2"
+     width="145"
      font="DejaVu"
      font.size="LSmall"/>
     <combo_box
@@ -862,7 +875,7 @@
     layout="topleft"
     left="6"
     name="cost_text_border"
-    top="135"
+    top="146"
     width="282"/>
     <tab_container
      follows="left|top"
