@@ -120,6 +120,7 @@ elseif (DARWIN)
           -change "${DARWIN_BOOST_PREFIX}/lib/libboost_thread.dylib" "@loader_path/libboost_thread.dylib"
           -change "${DARWIN_BOOST_PREFIX}/lib/libboost_url.dylib" "@loader_path/libboost_url.dylib"
           -change "${DARWIN_BOOST_PREFIX}/lib/libboost_regex.dylib" "@loader_path/libboost_regex.dylib"
+          -change "${DARWIN_BOOST_PREFIX}/lib/libSDL3.0.dylib" "@loader_path/libSDL3.0.dylib"
           "$<TARGET_FILE:${PROJECT_NAME}>"
       VERBATIM
       COMMENT "Fixing paths to CEF media plugin dependencies"
@@ -142,6 +143,7 @@ elseif (DARWIN)
           -change "/opt/local/libexec/boost/1.88/lib/libboost_regex-mt.dylib" "@loader_path/libboost_regex-mt.dylib"
           -change "/opt/local/libexec/boost/1.88/lib/libboost_system-mt.dylib" "@loader_path/libboost_system-mt.dylib"
           -change "/opt/local/lib/libexpat.1.dylib" "@loader_path/libexpat.1.dylib"
+          -change "/opt/local/lib/libSDL3.0.dylib" "@loader_path/libSDL3.0.dylib"
           "$<TARGET_FILE:${PROJECT_NAME}>"
       VERBATIM
       COMMENT "Fixing paths to CEF media plugin dependencies"
