@@ -65,6 +65,7 @@ $ export LL_BUILD_RELWITHDEBINFO="-O0 -g -std=c++20 -fPIC -DLL_RELEASE=1 -DLL_RE
 $ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=ON -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON ../indra
 $ make -j`nproc`
 $ cpack -G RPM
+$ rpm --addsign --key-id KEYID megapahit-`cat newview/viewer_version.txt`-Linux.rpm
 $ sudo dnf install megapahit-`cat newview/viewer_version.txt`-Linux.rpm
 $ megapahit
 ```
