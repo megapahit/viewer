@@ -46,7 +46,7 @@ $ megapahit
 ### Debian
 
 ```
-$ sudo apt install cmake patchelf pkg-config libxml2-utils libalut-dev libaprutil1-dev libexpat1-dev libfontconfig-dev libfreetype-dev libhunspell-dev libjpeg-dev libmeshoptimizer-dev libminizip-dev libnanosvg-dev libnghttp2-dev libopenjp2-7-dev libpipewire-0.3-dev libpng-dev libvlc-dev libvlccore-dev libvorbis-dev libxft-dev libxml2-dev libxxhash-dev
+$ sudo apt install cmake patchelf pkg-config libxml2-utils libalut-dev libaprutil1-dev libexpat1-dev libfontconfig-dev libfreetype-dev libhunspell-dev libjpeg-dev libmeshoptimizer-dev libminizip-dev libnanosvg-dev libnghttp2-dev libopenjp2-7-dev libosmesa6-dev libpipewire-0.3-dev libpng-dev libvlc-dev libvlccore-dev libvorbis-dev libxft-dev libxml2-dev libxxhash-dev
 $ export LL_BUILD_RELEASE="-O3 -std=c++20 -fPIC -DLL_RELEASE=1 -DLL_RELEASE_FOR_DOWNLOAD=1 -DNDEBUG -DLL_LINUX=1 -DPIC -DLL_OS_DRAGDROP_ENABLED=1"
 $ export LL_BUILD_RELWITHDEBINFO="-O0 -g -std=c++20 -fPIC -DLL_RELEASE=1 -DLL_RELEASE_WITH_DEBUG_INFO=1 -DNDEBUG -DLL_LINUX=1 -DPIC -DLL_OS_DRAGDROP_ENABLED=1"
 $ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=ON -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON -DOPENGL_glx_LIBRARY:FILEPATH=/usr/lib/`uname -m`-linux-gnu/libGLX.so -DOPENGL_opengl_LIBRARY:FILEPATH=/usr/lib/`uname -m`-linux-gnu/libOpenGL.so -DX11_X11_LIB:FILEPATH=/usr/lib/`uname -m`-linux-gnu/libX11.so ../indra
@@ -59,12 +59,13 @@ $ megapahit
 ### Fedora
 
 ```
-$ sudo dnf install cmake gcc-c++ patch patchelf rpm-build perl-FindBin freealut-devel apr-util-devel boost-devel cef-devel expat-devel glm-devel hunspell-devel minizip-ng-compat-devel libnghttp2-devel nanosvg-devel openjpeg-devel pipewire-devel pulseaudio-libs-devel SDL3-devel v-hacd-devel vlc-devel libvorbis-devel libXcursor-devel libXfixes-devel libXinerama-devel xxhash-devel
+$ sudo dnf install cmake gcc-c++ patch patchelf rpm-build rpmsign perl-FindBin freealut-devel apr-util-devel boost-devel cef-devel expat-devel glm-devel hunspell-devel minizip-ng-compat-devel libnghttp2-devel nanosvg-devel openjpeg-devel mesa-compat-libOSMesa-devel pipewire-devel pulseaudio-libs-devel SDL3-devel v-hacd-devel vlc-devel libvorbis-devel libXcursor-devel libXfixes-devel libXinerama-devel xxhash-devel
 $ export LL_BUILD_RELEASE="-O3 -std=c++20 -fPIC -DLL_RELEASE=1 -DLL_RELEASE_FOR_DOWNLOAD=1 -DNDEBUG -DLL_LINUX=1 -DPIC -DLL_OS_DRAGDROP_ENABLED=1"
 $ export LL_BUILD_RELWITHDEBINFO="-O0 -g -std=c++20 -fPIC -DLL_RELEASE=1 -DLL_RELEASE_WITH_DEBUG_INFO=1 -DNDEBUG -DLL_LINUX=1 -DPIC -DLL_OS_DRAGDROP_ENABLED=1"
 $ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=ON -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON ../indra
 $ make -j`nproc`
 $ cpack -G RPM
+$ rpm --addsign --key-id KEYID megapahit-`cat newview/viewer_version.txt`-Linux.rpm
 $ sudo dnf install megapahit-`cat newview/viewer_version.txt`-Linux.rpm
 $ megapahit
 ```
@@ -150,7 +151,7 @@ $ megapahit
 ### Ubuntu
 
 ```
-$ sudo apt install cmake patchelf pkg-config libxml2-utils libalut-dev libaprutil1-dev libboost-fiber-dev libboost-json-dev libboost-process-dev libboost-program-options-dev libboost-regex-dev libboost-url-dev libexpat1-dev libfontconfig-dev libfreetype-dev libglm-dev libhunspell-dev libjpeg-dev libmeshoptimizer-dev libminizip-dev libnanosvg-dev libnghttp2-dev libopenjp2-7-dev libpipewire-0.3-dev libpng-dev libsdl3-dev libvlc-dev libvlccore-dev libvorbis-dev libxft-dev libxml2-dev libxxhash-dev
+$ sudo apt install cmake patchelf pkg-config libxml2-utils libalut-dev libaprutil1-dev libboost-fiber-dev libboost-json-dev libboost-process-dev libboost-program-options-dev libboost-regex-dev libboost-url-dev libexpat1-dev libfontconfig-dev libfreetype-dev libglm-dev libhunspell-dev libjpeg-dev libmeshoptimizer-dev libminizip-dev libnanosvg-dev libnghttp2-dev libopenjp2-7-dev libosmesa6-dev libpipewire-0.3-dev libpng-dev libsdl3-dev libvlc-dev libvlccore-dev libvorbis-dev libxft-dev libxml2-dev libxxhash-dev
 $ export LL_BUILD_RELEASE="-O3 -std=c++20 -fPIC -DLL_RELEASE=1 -DLL_RELEASE_FOR_DOWNLOAD=1 -DNDEBUG -DLL_LINUX=1 -DPIC -DLL_OS_DRAGDROP_ENABLED=1"
 $ export LL_BUILD_RELWITHDEBINFO="-O0 -g -std=c++20 -fPIC -DLL_RELEASE=1 -DLL_RELEASE_WITH_DEBUG_INFO=1 -DNDEBUG -DLL_LINUX=1 -DPIC -DLL_OS_DRAGDROP_ENABLED=1"
 $ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=ON -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON -DOPENGL_glx_LIBRARY:FILEPATH=/usr/lib/`uname -m`-linux-gnu/libGLX.so -DOPENGL_opengl_LIBRARY:FILEPATH=/usr/lib/`uname -m`-linux-gnu/libOpenGL.so -DX11_X11_LIB:FILEPATH=/usr/lib/`uname -m`-linux-gnu/libX11.so ../indra
@@ -166,7 +167,7 @@ $ vcpkg install freealut apr-util boost curl freetype hunspell libjpeg-turbo mes
 $ vcpkg install --allow-unsupported boost-fiber
 $ export LL_BUILD_RELEASE="/MD /O2 /Ob2 /std:c++20 /permissive- /Zc:wchar_t /Zi /GR /Zc:preprocessor /DLL_RELEASE=1 /DLL_RELEASE_FOR_DOWNLOAD=1 /DNDEBUG /D_SECURE_STL=0 /D_HAS_ITERATOR_DEBUGGING=0 /DWIN32 /D_WINDOWS /DLL_WINDOWS=1 /DUNICODE /D_UNICODE /DWINVER=0x0602 /D_WIN32_WINNT=0x0602 /DLL_OS_DRAGDROP_ENABLED=1"
 $ export LL_BUILD_RELWITHDEBINFO="/MD /Od /Ob0 /std:c++20 /permissive- /Zc:wchar_t /Zi /GR /Zc:preprocessor /DEBUG /DLL_RELEASE=1 /DLL_RELEASE_WITH_DEBUG_INFO=1 /DNDEBUG /D_SECURE_STL=0 /D_HAS_ITERATOR_DEBUGGING=0 /DWIN32 /D_WINDOWS /DLL_WINDOWS=1 /DUNICODE /D_UNICODE /DWINVER=0x0602 /D_WIN32_WINNT=0x0602 /DLL_OS_DRAGDROP_ENABLED=1"
-$ export PATH="$VCPKG_ROOT/downloads/tools/cmake-4.4.3-windows/cmake-4.4.3-windows-arm64/bin:$VCPKG_ROOT/installed/arm64-windows/tools/libxml2:/c/Program Files (x86)/Microsoft Visual Studio/18/BuildTools/MSBuild/Current/Bin:$PATH"
+$ export PATH="$VCPKG_ROOT/downloads/tools/cmake-4.4.4-windows/cmake-4.4.4-windows-arm64/bin:$VCPKG_ROOT/installed/arm64-windows/tools/libxml2:/c/Program Files (x86)/Microsoft Visual Studio/18/BuildTools/MSBuild/Current/Bin:$PATH"
 $ export PYTHON="$VCPKG_ROOT/downloads/tools/python/python-3.14.2-arm64-1"
 $ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=OFF -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=OFF -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=Megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -DVS_DISABLE_FATAL_WARNINGS:BOOL=ON ../indra
 $ MSBuild.exe Megapahit.slnx -p:Configuration=Release
@@ -179,7 +180,7 @@ $ start Megapahit-`cat newview/viewer_version.txt`-win64.exe
 $ vcpkg install freealut apr-util boost freetype glm hunspell libjpeg-turbo meshoptimizer minizip nanosvg nghttp2 openjpeg sdl3 libvorbis libxml2[tools] xxhash
 $ export LL_BUILD_RELEASE="/MD /O2 /Ob2 /std:c++20 /permissive- /Zc:wchar_t /Zi /GR /DLL_RELEASE=1 /DLL_RELEASE_FOR_DOWNLOAD=1 /DNDEBUG /D_SECURE_STL=0 /D_HAS_ITERATOR_DEBUGGING=0 /DWIN32 /D_WINDOWS /DLL_WINDOWS=1 /DUNICODE /D_UNICODE /DWINVER=0x0602 /D_WIN32_WINNT=0x0602 /DLL_OS_DRAGDROP_ENABLED=1 /DLIB_NDOF=1"
 $ export LL_BUILD_RELWITHDEBINFO="/MD /Od /Ob0 /std:c++20 /permissive- /Zc:wchar_t /Zi /GR /DEBUG /DLL_RELEASE=1 /DLL_RELEASE_WITH_DEBUG_INFO=1 /DNDEBUG /D_SECURE_STL=0 /D_HAS_ITERATOR_DEBUGGING=0 /DWIN32 /D_WINDOWS /DLL_WINDOWS=1 /DUNICODE /D_UNICODE /DWINVER=0x0602 /D_WIN32_WINNT=0x0602 /DLL_OS_DRAGDROP_ENABLED=1 /DLIB_NDOF=1"
-$ export PATH="$VCPKG_ROOT/downloads/tools/cmake-4.4.3-windows/cmake-4.4.3-windows-x86_64/bin:$VCPKG_ROOT/installed/x64-windows/tools/libxml2:/c/Program Files (x86)/Microsoft Visual Studio/18/BuildTools/MSBuild/Current/Bin:$PATH"
+$ export PATH="$VCPKG_ROOT/downloads/tools/cmake-4.4.4-windows/cmake-4.4.4-windows-x86_64/bin:$VCPKG_ROOT/installed/x64-windows/tools/libxml2:/c/Program Files (x86)/Microsoft Visual Studio/18/BuildTools/MSBuild/Current/Bin:$PATH"
 $ export PYTHON="$VCPKG_ROOT/downloads/tools/python/python-3.14.2-x64-1"
 $ cmake -DCMAKE_BUILD_TYPE:STRING=Release -DADDRESS_SIZE:STRING=64 -DUSE_OPENAL:BOOL=ON -DUSE_FMODSTUDIO:BOOL=OFF -DENABLE_MEDIA_PLUGINS:BOOL=ON -DLL_TESTS:BOOL=OFF -DNDOF:BOOL=ON -DROOT_PROJECT_NAME:STRING=Megapahit -DVIEWER_CHANNEL:STRING=Megapahit -DVIEWER_BINARY_NAME:STRING=Megapahit -DBUILD_SHARED_LIBS:BOOL=OFF -DINSTALL:BOOL=ON -DPACKAGE:BOOL=ON -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -DVS_DISABLE_FATAL_WARNINGS:BOOL=ON ../indra
 $ MSBuild.exe Megapahit.slnx -p:Configuration=Release
