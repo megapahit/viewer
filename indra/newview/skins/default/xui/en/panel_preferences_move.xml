@@ -324,9 +324,9 @@
   <button
    height="23"
    label="3Dconnexion devices"
-   left="30"
+   left="275"
    name="joystick_setup_button"
-   top="30"
+   top="-40"
    width="155">
     <button.commit_callback
      function="Floater.Show"
