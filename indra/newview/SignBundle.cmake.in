@@ -46,7 +46,7 @@ execute_process(
         Frameworks/libvorbisenc.2.dylib
         Frameworks/libvorbisfile.3.dylib
         Frameworks/libxml2.16.dylib
-        Frameworks/libz.1.3.2.dylib
+        Frameworks/libz.1.4.dylib
         Resources/libndofdev.dylib
         Resources/SLPlugin.app/Contents/Frameworks/media_plugin_cef.dylib
         Resources/SLPlugin.app/Contents/Frameworks/media_plugin_libvlc.dylib
