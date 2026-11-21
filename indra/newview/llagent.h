@@ -464,6 +464,8 @@ public:
     void            standUp();
     /// @brief ground-sit at agent's current position
     void            sitDown();
+    // game-control ground-sit
+    void            sitDownNearby();
     bool            isAllowedToStand() const      { return mAllowedToStand; }
     void            setAllowedToStand(bool allow) { mAllowedToStand = allow; }
     bool            isAllowedToSit() const        { return mAllowedToSit; }
