@@ -291,7 +291,11 @@ target_link_libraries(
     )
 
 target_include_directories(llcommon PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+if (CMAKE_GENERATOR MATCHES Xcode)
+target_include_directories(llcommon PUBLIC ${CMAKE_SOURCE_DIR}/llmath)
+else ()
 target_include_directories(llcommon PRIVATE ${CMAKE_SOURCE_DIR}/llmath)
+endif ()
 
 if (USE_PRECOMPILED_HEADERS)
   target_precompile_headers(llcommon REUSE_FROM llprecompiled)
