@@ -1849,6 +1849,39 @@ endif (WINDOWS)
 
 list(APPEND viewer_SOURCE_FILES ${viewer_HEADER_FILES})
 
+if (CMAKE_GENERATOR MATCHES Xcode)
+    configure_file(
+        ${CMAKE_SOURCE_DIR}/../scripts/messages/message_template.msg
+        ${CMAKE_SOURCE_DIR}/newview/app_settings/message_template.msg
+    )
+    list(APPEND viewer_SOURCE_FILES
+        app_settings
+        ${AUTOBUILD_INSTALL_DIR}/ca-bundle.crt
+        character
+        cube.dae
+        cursors_mac
+        da.lproj
+        English.lproj
+        es.lproj
+        fonts
+        fr.lproj
+        German.lproj
+        hu.lproj
+        it.lproj
+        Japanese.lproj
+        Korean.lproj
+        nl.lproj
+        pl.lproj
+        pt.lproj
+        ru.lproj
+        SecondLife.nib
+        skins
+        tr.lproj
+        uk.lproj
+        zh-Hans.lproj
+        )
+endif()
+
 add_executable(${VIEWER_BINARY_NAME}
     WIN32
     MACOSX_BUNDLE
@@ -2175,6 +2208,38 @@ if (WINDOWS)
       endif (FALSE)
 
     endif (PACKAGE)
+elseif (CMAKE_GENERATOR MATCHES Xcode)
+    set(RESOURCE_FILES
+        app_settings
+        ${AUTOBUILD_INSTALL_DIR}/ca-bundle.crt
+        character
+        cube.dae
+        cursors_mac
+        da.lproj
+        English.lproj
+        es.lproj
+        featuretable_mac.txt
+        fonts
+        fr.lproj
+        German.lproj
+        hu.lproj
+        it.lproj
+        Japanese.lproj
+        Korean.lproj
+        nl.lproj
+        pl.lproj
+        pt.lproj
+        ru.lproj
+        SecondLife.nib
+        skins
+        tr.lproj
+        uk.lproj
+        zh-Hans.lproj
+        )
+    set_target_properties(${VIEWER_BINARY_NAME}
+        PROPERTIES
+        RESOURCE "${RESOURCE_FILES}"
+        )
 elseif (DARWIN)
     set_target_properties(${VIEWER_BINARY_NAME}
         PROPERTIES
